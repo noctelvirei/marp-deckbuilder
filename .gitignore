@@ -1,0 +1,13 @@
+node_modules/
+.npm-cache/
+.tmp/
+dist/
+coverage/
+*.log
+*.pptx
+*.html
+*.png
+*.jpg
+*.jpeg
+!resources/README.md
+!samples/*.md
