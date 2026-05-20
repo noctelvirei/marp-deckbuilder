@@ -4,6 +4,7 @@ node_modules/
 dist/
 !skills/marp-deckbuilder/tool/dist/
 !skills/marp-deckbuilder/tool/dist/deckbuilder.cjs
+skills/*/output*/
 coverage/
 *.log
 *.pptx

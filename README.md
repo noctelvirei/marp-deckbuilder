@@ -174,3 +174,13 @@ definitions, and a bundled single-file copy of the native renderer under
 `node_modules`, `npm install`, LibreOffice, PowerPoint automation, Chromium, Marp
 CLI, or other `.exe` dependencies. Branding updates are made by replacing
 `skills/marp-deckbuilder/tool/resources/definitions/`.
+
+Use the repo root as the full developer project and treat `skills/marp-deckbuilder/`
+as the distributable skill payload. Build a fresh uploadable zip with:
+
+```powershell
+npm run package:skill
+```
+
+The package step rebuilds `tool/dist/deckbuilder.cjs`, excludes local output and
+cache folders, and fails if the uncompressed skill exceeds 30 MB.
