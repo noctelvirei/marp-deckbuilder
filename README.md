@@ -152,6 +152,20 @@ renderer will not infer editable PowerPoint structure from arbitrary CSS.
 <deck-close title="Thank you" name="Jane Smith" role="VP Solutions"></deck-close>
 ```
 
+## Proof Demos
+
+The `samples/` folder includes proof decks that exercise the bundle-only skill path:
+
+- `proof-executive-brief.md`: all core business deck components.
+- `proof-report-pack.md`: reporting charts, cards, comparison, and next steps.
+- `proof-rich-html.md`: raw HTML for the high-fidelity web deck plus editable PPTX components.
+
+Build one through the Claude skill wrapper:
+
+```powershell
+node skills\marp-deckbuilder\scripts\build-deck.mjs samples\proof-rich-html.md --out-dir dist\proof-rich-html
+```
+
 ## Commands
 
 ```powershell

@@ -11,10 +11,10 @@ node scripts/build-deck.mjs examples/example.md --out-dir output
 Equivalent direct CLI call:
 
 ```bash
-node tool/src/cli.js build deck.md --html output/deck.html --pptx output/deck.pptx --mode native --resources tool/resources
+node tool/dist/deckbuilder.cjs build deck.md --html output/deck.html --pptx output/deck.pptx --mode native --resources tool/resources
 ```
 
-The first run installs Node dependencies into `tool/node_modules` if needed.
+The skill runs the bundled renderer and does not install dependencies.
 
 ## Component Syntax
 
@@ -144,4 +144,3 @@ Replace files in `tool/resources/definitions/` to update the brand:
 - `theme.css`: HTML/Marp styling
 
 Do not edit `SKILL.md` for brand changes.
-
