@@ -9,7 +9,7 @@ Use this skill to turn source material into a lightweight component Markdown dec
 
 ## Core Rule
 
-Do not hand-write PowerPoint code. Write `deck.md` using supported `deck-*` components, then run the bundled CLI. Brand rules, layout coordinates, colors, fonts, and rendering mechanics live in `tool/resources/definitions/`.
+Do not hand-write PowerPoint code. Write `deck.md` using supported `deck-*` components, then run the bundled CLI. Brand rules, layout coordinates, colors, fonts, and rendering mechanics live in `tool/resources/definitions/`. The skill runs the bundled `tool/dist/deckbuilder.cjs` file and does not need `node_modules`, `npm install`, Marp CLI, LibreOffice, PowerPoint automation, Chromium, or other external executables.
 
 ## Workflow
 
@@ -35,4 +35,3 @@ node scripts/build-deck.mjs deck.md --out-dir output
 - Keep the Markdown compact; the tool owns layout and branding.
 
 See [REFERENCE.md](REFERENCE.md) for component syntax and examples.
-

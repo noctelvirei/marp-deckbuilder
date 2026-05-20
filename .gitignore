@@ -2,6 +2,8 @@ node_modules/
 .npm-cache/
 .tmp/
 dist/
+!skills/marp-deckbuilder/tool/dist/
+!skills/marp-deckbuilder/tool/dist/deckbuilder.cjs
 coverage/
 *.log
 *.pptx

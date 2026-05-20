@@ -1,70 +1,22 @@
 #!/usr/bin/env node
-import { mkdir, readFile, rm, writeFile } from 'node:fs/promises'
+import { mkdir, readFile, writeFile } from 'node:fs/promises'
 import path from 'node:path'
 import process from 'node:process'
-import yargs from 'yargs'
-import { hideBin } from 'yargs/helpers'
 
-import { renderSlideImagesAndText } from './browser.js'
 import { loadDefinitions } from './brand.js'
 import { parseDeckMarkdown } from './markdown.js'
 import { renderDeckHtml } from './render.js'
 import { writePptx } from './pptx.js'
 
 async function main() {
-  await yargs(hideBin(process.argv))
-    .scriptName('marp-deckbuilder')
-    .command(
-      'build <input>',
-      'Build Deckbuilder HTML and PPTX slides from Marp-flavored Markdown.',
-      (command) =>
-        command
-          .positional('input', {
-            describe: 'Input Markdown file.',
-            type: 'string',
-            demandOption: true,
-          })
-          .option('html', {
-            describe: 'Write rich HTML output.',
-            type: 'string',
-          })
-          .option('pptx', {
-            describe: 'Write PPTX output.',
-            type: 'string',
-          })
-          .option('images', {
-            describe: 'Directory for rendered slide images.',
-            type: 'string',
-          })
-          .option('resources', {
-            describe: 'Resource folder for template, logos, fonts, and images.',
-            type: 'string',
-            default: 'resources',
-          })
-          .option('definitions', {
-            describe: 'Folder containing brand.json and theme.css.',
-            type: 'string',
-          })
-          .option('browser', {
-            describe: 'Chromium-family browser executable for hybrid PPTX rendering.',
-            type: 'string',
-          })
-          .option('mode', {
-            describe: 'PPTX mode.',
-            choices: ['native', 'hybrid', 'editable', 'image'],
-            default: 'native',
-          })
-          .option('backdrop', {
-            describe: 'Use rendered image backdrops in PPTX when a browser is provided.',
-            type: 'boolean',
-            default: true,
-          }),
-      buildCommand,
-    )
-    .demandCommand(1)
-    .strict()
-    .help()
-    .parseAsync()
+  const argv = parseArgs(process.argv.slice(2))
+  if (argv.help || argv.command !== 'build' || !argv.input) {
+    console.log(helpText())
+    process.exitCode = argv.help ? 0 : 1
+    return
+  }
+
+  await buildCommand(argv)
 }
 
 async function buildCommand(argv) {
@@ -91,38 +43,12 @@ async function buildCommand(argv) {
     const pptxPath = path.resolve(argv.pptx)
     await mkdir(path.dirname(pptxPath), { recursive: true })
 
-    let images = []
-    let textBoxes = []
-    const nativeMode = argv.mode === 'native' || argv.mode === 'editable'
-    const wantsRenderedBackdrops = !nativeMode && argv.backdrop
-
-    if (wantsRenderedBackdrops && argv.browser) {
-      const imageDir = path.resolve(
-        argv.images || path.join(projectRoot, '.tmp', 'marp-deckbuilder-images'),
-      )
-      await resetWorkingDir(imageDir, projectRoot)
-      const renderedSlides = await renderSlideImagesAndText({
-        html: rendered.document,
-        browserPath: path.resolve(argv.browser),
-        outputDir: imageDir,
-        brand: definitions.brand,
-        hideText: argv.mode === 'hybrid',
-      })
-      images = renderedSlides.images
-      textBoxes = renderedSlides.textBoxes
-      console.log(`Rendered ${images.length} slide image(s) to ${imageDir}`)
-    } else if (wantsRenderedBackdrops && !argv.browser) {
-      console.warn('No --browser provided; building native editable PPTX without image backdrops.')
-    }
-
     await writePptx({
       deck,
       outputPath: pptxPath,
       brand: definitions.brand,
       resourcesDir,
-      images,
-      textBoxes,
-      mode: argv.mode,
+      mode: argv.mode || 'native',
     })
     console.log(`PPTX written to ${pptxPath}`)
   }
@@ -132,17 +58,54 @@ async function buildCommand(argv) {
   }
 }
 
-async function resetWorkingDir(targetDir, projectRoot) {
-  const resolvedTarget = path.resolve(targetDir)
-  const resolvedRoot = path.resolve(projectRoot)
-  const relative = path.relative(resolvedRoot, resolvedTarget)
-
-  if (relative.startsWith('..') || path.isAbsolute(relative)) {
-    throw new Error(`Refusing to reset a working directory outside the project: ${resolvedTarget}`)
+function parseArgs(args) {
+  const parsed = {
+    command: args[0],
+    input: '',
+    resources: 'resources',
+    mode: 'native',
   }
 
-  await rm(resolvedTarget, { recursive: true, force: true })
-  await mkdir(resolvedTarget, { recursive: true })
+  for (let i = 1; i < args.length; i += 1) {
+    const arg = args[i]
+    if (arg === '--help' || arg === '-h') {
+      parsed.help = true
+    } else if (arg.startsWith('--')) {
+      const [key, inlineValue] = arg.slice(2).split('=', 2)
+      const value = inlineValue ?? args[i + 1]
+      if (inlineValue === undefined) i += 1
+      parsed[toCamelCase(key)] = value
+    } else if (!parsed.input) {
+      parsed.input = arg
+    } else {
+      throw new Error(`Unexpected argument: ${arg}`)
+    }
+  }
+
+  if (!['native', 'editable'].includes(parsed.mode)) {
+    throw new Error(`Unsupported --mode "${parsed.mode}". Use "native" or "editable".`)
+  }
+
+  return parsed
+}
+
+function toCamelCase(value) {
+  return value.replace(/-([a-z])/g, (_, letter) => letter.toUpperCase())
+}
+
+function helpText() {
+  return `marp-deckbuilder build <input>
+
+Build HTML and native editable PPTX slides from Marp-flavored Markdown.
+
+Options:
+  --html <path>         Write rich HTML output.
+  --pptx <path>         Write editable PPTX output.
+  --resources <dir>     Resource folder. Defaults to resources.
+  --definitions <dir>   Folder containing brand.json and theme.css.
+  --mode <mode>         native or editable. Defaults to native.
+  --help, -h            Show this help.
+`
 }
 
 main().catch((error) => {

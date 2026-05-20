@@ -1,13 +1,14 @@
 {
   "name": "marp-deckbuilder",
   "version": "0.1.0",
-  "description": "brandable Marp wrapper for rich HTML slides and hybrid editable PPTX output.",
+  "description": "Brandable Marp wrapper for rich HTML slides and native editable PPTX output.",
   "license": "MIT",
   "type": "module",
   "bin": {
     "marp-deckbuilder": "src/cli.js"
   },
   "scripts": {
+    "bundle:skill": "node scripts/bundle-skill.mjs",
     "check": "node --check src/cli.js && node --test",
     "test": "node --test"
   },
@@ -18,8 +19,9 @@
     "@marp-team/marp-core": "^4.3.0",
     "cheerio": "^1.2.0",
     "js-yaml": "^4.1.0",
-    "pptxgenjs": "^4.0.1",
-    "puppeteer-core": "^24.39.1",
-    "yargs": "^17.7.2"
+    "pptxgenjs": "^4.0.1"
+  },
+  "devDependencies": {
+    "esbuild": "^0.27.2"
   }
 }

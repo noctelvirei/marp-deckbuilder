@@ -15,7 +15,6 @@ objects. This project intentionally narrows the problem:
 - Brand rules live in replaceable definition files.
 - Rich HTML output stays beautiful.
 - PPTX output uses native PowerPoint objects for known components.
-- Explicit screenshot-backed modes remain available for image-only escape hatches.
 
 ## Resource Folder
 
@@ -48,13 +47,6 @@ Render HTML and native editable PPTX:
 
 ```powershell
 npx marp-deckbuilder build samples/demo.md --html dist/demo.html --pptx dist/demo.pptx
-```
-
-For screenshot-backed PPTX backdrops, opt into hybrid mode and provide a
-Chromium-family browser executable:
-
-```powershell
-npx marp-deckbuilder build samples/demo.md --pptx dist/demo.pptx --mode hybrid --browser "D:\path\to\browser.exe"
 ```
 
 Native mode is the default because it produces editable PowerPoint objects.
@@ -98,8 +90,8 @@ Known components render to both HTML and native PPTX objects:
 ```
 
 Arbitrary HTML remains valid for HTML output. For PPTX, arbitrary HTML is not
-pretended to be editable; convert it into a known component or use an explicit
-image-backed mode.
+pretended to be editable; convert it into a known component when the slide needs
+to stay editable in PowerPoint.
 
 ## PPTX Editability Contract
 
@@ -163,23 +155,22 @@ renderer will not infer editable PowerPoint structure from arbitrary CSS.
 ## Commands
 
 ```powershell
-marp-deckbuilder build <input.md> [--html out.html] [--pptx out.pptx] [--images dir]
+marp-deckbuilder build <input.md> [--html out.html] [--pptx out.pptx]
 ```
 
 Key options:
 
 - `--resources <dir>`: resource folder, defaults to `resources`.
 - `--definitions <dir>`: brand definition folder, defaults to `resources/definitions`.
-- `--browser <path>`: browser executable for screenshots and DOM extraction.
-- `--mode native|hybrid|editable|image`: PPTX mode, defaults to `native`.
-- `--no-backdrop`: build editable text without rendered slide image backdrops.
+- `--mode native|editable`: PPTX mode, defaults to `native`.
 
 ## Claude Skill
 
 The portable Claude skill lives in `skills/marp-deckbuilder/`.
 
-It includes a small `SKILL.md`, examples, a build wrapper, and a bundled copy of
-the native renderer under `tool/`. The skill can produce HTML and editable PPTX
-without LibreOffice, PowerPoint automation, Chromium, or other `.exe`
-dependencies. Branding updates are made by replacing
+It includes a small `SKILL.md`, examples, a build wrapper, replaceable
+definitions, and a bundled single-file copy of the native renderer under
+`tool/dist/`. The skill can produce HTML and editable PPTX without
+`node_modules`, `npm install`, LibreOffice, PowerPoint automation, Chromium, Marp
+CLI, or other `.exe` dependencies. Branding updates are made by replacing
 `skills/marp-deckbuilder/tool/resources/definitions/`.

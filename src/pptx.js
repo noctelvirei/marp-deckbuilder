@@ -2,16 +2,13 @@ import pptxgen from 'pptxgenjs'
 import { existsSync } from 'node:fs'
 import path from 'node:path'
 
-import { color, font, ptToIn, pxToIn } from './brand.js'
+import { color, font, ptToIn } from './brand.js'
 
 export async function writePptx({
   deck,
   outputPath,
   brand,
   resourcesDir,
-  images = [],
-  textBoxes = [],
-  mode = 'native',
 }) {
   const pptx = new pptxgen()
   pptx.author = `${brand.name} Marp`
@@ -33,55 +30,10 @@ export async function writePptx({
 
   for (const slideModel of deck.slides) {
     const slide = pptx.addSlide()
-    const imagePath = images[slideModel.index]
-
-    if (imagePath && mode !== 'editable' && mode !== 'native') {
-      slide.addImage({
-        path: imagePath,
-        x: 0,
-        y: 0,
-        w: brand.slide.widthIn,
-        h: brand.slide.heightIn,
-      })
-    }
-
-    if (mode === 'image') continue
-
-    const extracted = textBoxes[slideModel.index]
-    if (extracted?.length && mode !== 'native') {
-      addExtractedText(slide, extracted, brand)
-    } else {
-      addNativeSlide(pptx, slide, slideModel, deck.frontmatter, brand, resourcesDir)
-    }
+    addNativeSlide(pptx, slide, slideModel, deck.frontmatter, brand, resourcesDir)
   }
 
   await pptx.writeFile({ fileName: outputPath })
-}
-
-function addExtractedText(slide, boxes, brand) {
-  for (const box of boxes) {
-    const fontSizePt = Math.max(6, box.fontSize * brand.slide.pxToPt)
-    const fontFace =
-      Number.parseInt(box.fontWeight, 10) >= 500
-        ? font(brand, 'medium')
-        : font(brand, 'regular')
-
-    slide.addText(box.text, {
-      x: pxToIn(box.x, brand.slide),
-      y: pxToIn(box.y, brand.slide),
-      w: Math.max(pxToIn(box.w, brand.slide), 0.1),
-      h: Math.max(pxToIn(box.h, brand.slide), 0.1),
-      color: box.color,
-      fontFace,
-      fontSize: fontSizePt,
-      bold: false,
-      margin: 0,
-      breakLine: false,
-      fit: 'shrink',
-      align: toPptAlign(box.textAlign),
-      valign: 'top',
-    })
-  }
 }
 
 function addNativeSlide(pptx, slide, model, frontmatter, brand, resourcesDir) {
@@ -561,10 +513,4 @@ function resolveResourcePath(value, resourcesDir) {
   const raw = value.startsWith('resource:') ? value.slice('resource:'.length) : value
   const candidate = path.isAbsolute(raw) ? raw : path.resolve(resourcesDir, raw)
   return existsSync(candidate) ? candidate : ''
-}
-
-function toPptAlign(value) {
-  if (value === 'center') return 'center'
-  if (value === 'right' || value === 'end') return 'right'
-  return 'left'
 }
