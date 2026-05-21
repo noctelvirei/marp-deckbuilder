@@ -28,6 +28,10 @@ When writing an HTML file, the renderer inlines every used `resource:` asset as 
 Desktop chats and artifact previews. Authors should still reference assets with
 `resource:`; do not paste brand SVGs or backgrounds into deck Markdown by hand.
 
+If `tool/resources/definitions/brand.json` declares `assets.backgrounds`, those
+background images are applied to HTML automatically and embedded into the HTML
+as `data:` URLs. The same declarations drive PPTX slide backgrounds.
+
 Use `--html-assets copy` only when you explicitly want a sibling `resources/`
 folder beside the HTML. That output shape looks like:
 

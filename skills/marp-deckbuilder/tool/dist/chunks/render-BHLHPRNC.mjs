@@ -135996,7 +135996,10 @@ import { pathToFileURL } from "node:url";
 function renderDeckHtml(deck, options = {}) {
   const htmlDeck = {
     ...deck,
-    slides: deck.slides.filter((slide) => !shouldSkipHtml(slide))
+    slides: deck.slides.filter((slide) => !shouldSkipHtml(slide)).map((slide) => ({
+      ...slide,
+      source: applyHtmlSlideClass(slide)
+    }))
   };
   const marp = new import_marp_core.Marp({
     html: true,
@@ -136012,7 +136015,7 @@ function renderDeckHtml(deck, options = {}) {
     assetUrlPrefix: options.assetUrlPrefix
   };
   const themeCss = resolveResourceUrls(
-    definitions.themeCss,
+    [definitions.themeCss, brandBackgroundCss(definitions.brand)].filter(Boolean).join("\n"),
     options.resourcesDir,
     resolverOptions
   );
@@ -136040,6 +136043,49 @@ function renderDeckHtml(deck, options = {}) {
       sourcePath
     })) : []
   };
+}
+function brandBackgroundCss(brand = {}) {
+  const backgrounds = brand.assets?.backgrounds || {};
+  const rules = [
+    backgroundRule("section", backgrounds.content || backgrounds.default),
+    backgroundRule("section.cover", backgrounds.cover),
+    backgroundRule(
+      "section.deck-divider-slide, section:has(.deck-divider), .deck-divider",
+      backgrounds.divider || backgrounds.cover
+    ),
+    backgroundRule(
+      "section.deck-close-slide, section:has(.deck-close), .deck-close",
+      backgrounds.close || backgrounds.cover
+    )
+  ].filter(Boolean);
+  return rules.length ? rules.join("\n") : "";
+}
+function backgroundRule(selector, resource) {
+  if (!resource) return "";
+  return `${selector} {
+  background-image: url("${escapeCssUrl(resource)}");
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+}`;
+}
+function applyHtmlSlideClass(slide) {
+  const className = htmlClassForLayout(slide.layout);
+  if (!className || /<!--\s*_class\s*:/i.test(slide.source)) return slide.source;
+  return `<!-- _class: ${className} -->
+${slide.source}`;
+}
+function htmlClassForLayout(layout) {
+  switch (layout) {
+    case "cover":
+      return "cover";
+    case "divider":
+      return "deck-divider-slide";
+    case "close":
+      return "deck-close-slide";
+    default:
+      return "";
+  }
 }
 function shouldSkipHtml(slideModel) {
   const directives = slideModel?.directives || {};
@@ -136121,6 +136167,9 @@ function mimeType(filePath) {
 function normalizeResourcePath(value) {
   return value.replace(/\\/g, "/");
 }
+function escapeCssUrl(value) {
+  return String(value).replace(/["\\\n\r\f]/g, "\\$&");
+}
 function isTruthyDirective(value) {
   return ["true", "yes", "on", "1"].includes(normalizeDirective(value));
 }
@@ -136148,6 +136197,7 @@ function escapeHtml(value) {
   return String(value).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#39;");
 }
 export {
+  brandBackgroundCss,
   htmlDocument,
   renderDeckHtml,
   resolveResourceUrls,

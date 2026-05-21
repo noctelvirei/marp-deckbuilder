@@ -274,6 +274,63 @@ section.cover { background-image: url(resource:logo.svg); }`,
   assert.doesNotMatch(rendered.document, /file:\/\//)
 })
 
+test('applies brand background assets to self-contained HTML slides', async () => {
+  await rm(tmpDir, { recursive: true, force: true })
+  await mkdir(path.join(tmpDir, 'resources'), { recursive: true })
+
+  const tinyPng = Buffer.from(
+    'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAFgwJ/l3sqqwAAAABJRU5ErkJggg==',
+    'base64',
+  )
+  await writeFile(path.join(tmpDir, 'resources', 'title-bg.png'), tinyPng)
+  await writeFile(path.join(tmpDir, 'resources', 'content-bg.png'), tinyPng)
+
+  const baseDefinitions = await loadDefinitions(
+    new URL('../resources/definitions', import.meta.url),
+  )
+  const definitions = {
+    ...baseDefinitions,
+    brand: {
+      ...baseDefinitions.brand,
+      assets: {
+        backgrounds: {
+          cover: 'resource:title-bg.png',
+          divider: 'resource:title-bg.png',
+          close: 'resource:title-bg.png',
+          content: 'resource:content-bg.png',
+        },
+      },
+    },
+  }
+  const deck = parseDeckMarkdown(`# Cover
+
+---
+
+<deck-divider title="Section" subtitle="Transition"></deck-divider>
+
+---
+
+# Content
+
+Body copy
+
+---
+
+<deck-close title="Thanks"></deck-close>`)
+  const rendered = renderDeckHtml(deck, {
+    resourcesDir: path.join(tmpDir, 'resources'),
+    definitions,
+    inlineAssets: true,
+  })
+
+  assert.match(rendered.document, /section\.cover/)
+  assert.match(rendered.document, /deck-divider-slide/)
+  assert.match(rendered.document, /deck-close-slide/)
+  assert.match(rendered.document, /background-image:url\("data:image\/png;base64,/)
+  assert.doesNotMatch(rendered.document, /resource:title-bg\.png/)
+  assert.doesNotMatch(rendered.document, /resource:content-bg\.png/)
+})
+
 test('splits premium HTML slides from editable PPTX fallback slides', async () => {
   await rm(tmpDir, { recursive: true, force: true })
   await mkdir(tmpDir, { recursive: true })

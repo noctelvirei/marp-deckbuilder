@@ -36,7 +36,7 @@ async function buildCommand(argv) {
   const htmlAssets = argv.htmlAssets || "inline";
   let rendered;
   if (wantsHtml) {
-    const { renderDeckHtml } = await import("./chunks/render-DH6RWJOW.mjs");
+    const { renderDeckHtml } = await import("./chunks/render-BHLHPRNC.mjs");
     rendered = renderDeckHtml(deck, {
       resourcesDir,
       definitions,
