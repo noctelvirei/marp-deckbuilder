@@ -125,6 +125,48 @@ Body copy`)
   assert.ok(mediaNames.some((name) => name.endsWith('.svg')))
 })
 
+test('writes branded chart area fills into PPTX charts', async () => {
+  await rm(tmpDir, { recursive: true, force: true })
+  await mkdir(tmpDir, { recursive: true })
+
+  const definitions = await loadDefinitions(new URL('../resources/definitions', import.meta.url))
+  const brand = {
+    ...definitions.brand,
+    colors: {
+      ...definitions.brand.colors,
+      cardLight: '0D1D36',
+      border: '1E3A5F',
+      body: 'C8D8F0',
+    },
+    layouts: {
+      ...definitions.brand.layouts,
+      chart: {
+        ...definitions.brand.layouts.chart,
+        chartAreaFill: 'cardLight',
+        plotAreaFill: 'cardLight',
+        dataLabel: { font: 'regular', size: 9, color: 'body' },
+      },
+    },
+  }
+  const deck = parseDeckMarkdown(`# Cover
+
+---
+
+# Chart
+
+<deck-chart title="Volume" labels="A,B" values="10,20"></deck-chart>`)
+  const out = path.join(tmpDir, 'chart-fill.pptx')
+
+  await writePptx({ deck, outputPath: out, brand })
+
+  const archive = await JSZip.loadAsync(await readFile(out))
+  const chartNames = Object.keys(archive.files).filter((name) => name.startsWith('ppt/charts/chart'))
+  assert.ok(chartNames.length >= 1)
+  const chartXml = await archive.file(chartNames[0]).async('string')
+  assert.match(chartXml, /0D1D36/)
+  assert.match(chartXml, /C8D8F0/)
+})
+
 test('renders multiline SVG visual components as live HTML SVG', async () => {
   const source = `# Cover
 
@@ -201,6 +243,35 @@ section.cover { background-image: url(resource:images/cover-bg.png); }`,
     },
   ])
   assert.doesNotMatch(rendered.document, /resource:images/)
+})
+
+test('can inline brand resources as self-contained HTML assets', async () => {
+  await rm(tmpDir, { recursive: true, force: true })
+  await mkdir(path.join(tmpDir, 'resources'), { recursive: true })
+  await writeFile(
+    path.join(tmpDir, 'resources', 'logo.svg'),
+    '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 10 10"><rect width="10" height="10" fill="#0f82f5"/></svg>',
+  )
+
+  const baseDefinitions = await loadDefinitions(
+    new URL('../resources/definitions', import.meta.url),
+  )
+  const definitions = {
+    ...baseDefinitions,
+    themeCss: `${baseDefinitions.themeCss}
+section.cover { background-image: url(resource:logo.svg); }`,
+  }
+  const deck = parseDeckMarkdown('# Cover')
+  const rendered = renderDeckHtml(deck, {
+    resourcesDir: path.join(tmpDir, 'resources'),
+    definitions,
+    inlineAssets: true,
+  })
+
+  assert.match(rendered.document, /background-image:url\(data:image\/svg\+xml;base64,/)
+  assert.deepEqual(rendered.assets, [])
+  assert.doesNotMatch(rendered.document, /resource:logo\.svg/)
+  assert.doesNotMatch(rendered.document, /file:\/\//)
 })
 
 test('keeps JavaScript in HTML-only slides and skips them in PPTX', async () => {

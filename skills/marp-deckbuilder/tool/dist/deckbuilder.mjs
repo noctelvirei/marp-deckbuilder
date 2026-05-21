@@ -33,25 +33,29 @@ async function buildCommand(argv) {
   const wantsHtml = Boolean(argv.html) || !argv.html && !argv.pptx;
   const htmlPath = argv.html ? path.resolve(argv.html) : "";
   const htmlResourcesDir = htmlPath ? path.join(path.dirname(htmlPath), "resources") : "";
+  const htmlAssets = argv.htmlAssets || "inline";
   let rendered;
   if (wantsHtml) {
-    const { renderDeckHtml } = await import("./chunks/render-QYD2FNWR.mjs");
+    const { renderDeckHtml } = await import("./chunks/render-BIOHDQAV.mjs");
     rendered = renderDeckHtml(deck, {
       resourcesDir,
       definitions,
-      collectResources: Boolean(htmlResourcesDir),
+      collectResources: htmlAssets === "copy" && Boolean(htmlResourcesDir),
+      inlineAssets: htmlAssets === "inline",
       assetUrlPrefix: htmlResourcesDir ? "resources" : ""
     });
   }
   if (argv.html && rendered) {
     await mkdir(path.dirname(htmlPath), { recursive: true });
-    await copyHtmlResources(rendered.assets, htmlResourcesDir);
+    if (htmlAssets === "copy") await copyHtmlResources(rendered.assets, htmlResourcesDir);
     await writeFile(htmlPath, rendered.document, "utf8");
     console.log(`HTML written to ${htmlPath}`);
-    if (rendered.assets?.length) console.log(`Resources written to ${htmlResourcesDir}`);
+    if (htmlAssets === "copy" && rendered.assets?.length) {
+      console.log(`Resources written to ${htmlResourcesDir}`);
+    }
   }
   if (argv.pptx) {
-    const { writePptx } = await import("./chunks/pptx-6AN5VIPT.mjs");
+    const { writePptx } = await import("./chunks/pptx-R3RLGS5Y.mjs");
     const pptxPath = path.resolve(argv.pptx);
     await mkdir(path.dirname(pptxPath), { recursive: true });
     await writePptx({
@@ -107,6 +111,11 @@ function parseArgs(args) {
   if (!["native", "editable"].includes(parsed.mode)) {
     throw new Error(`Unsupported --mode "${parsed.mode}". Use "native" or "editable".`);
   }
+  if (parsed.htmlAssets && !["inline", "copy", "file"].includes(parsed.htmlAssets)) {
+    throw new Error(
+      `Unsupported --html-assets "${parsed.htmlAssets}". Use "inline", "copy", or "file".`
+    );
+  }
   return parsed;
 }
 function toCamelCase(value) {
@@ -123,6 +132,7 @@ Options:
   --resources <dir>     Resource folder. Defaults to resources.
   --definitions <dir>   Folder containing brand.json and theme.css.
   --mode <mode>         native or editable. Defaults to native.
+  --html-assets <mode>  inline, copy, or file. Defaults to inline.
   --help, -h            Show this help.
 `;
 }

@@ -20,9 +20,13 @@ The generated HTML uses vendored Marp CLI/Bespoke presenter assets from
 `tool/resources/templates/`, including the on-screen controls, overview mode,
 presenter view, keyboard/touch/wheel navigation, and fullscreen behavior.
 
-When writing an HTML file, the renderer copies every used `resource:` asset into
-a sibling `resources/` folder beside the HTML and rewrites the generated HTML to
-use relative URLs. A normal output folder therefore looks like:
+When writing an HTML file, the renderer inlines every used `resource:` asset as a
+`data:` URL by default. The HTML is self-contained, which works best in Claude
+Desktop chats and artifact previews. Authors should still reference assets with
+`resource:`; do not paste brand SVGs or backgrounds into deck Markdown by hand.
+
+Use `--html-assets copy` only when you explicitly want a sibling `resources/`
+folder beside the HTML. That output shape looks like:
 
 ```text
 Documents/Presentations/2026-05-21/example-deck/
@@ -37,7 +41,7 @@ Documents/Presentations/2026-05-21/example-deck/
 ```
 
 Keep the HTML file and its sibling `resources/` folder together when sharing or
-moving the deck.
+moving a deck generated with `--html-assets copy`.
 
 ## Component Syntax
 

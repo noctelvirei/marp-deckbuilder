@@ -9102,7 +9102,7 @@ var require_source_map = __commonJS({
 var require_previous_map = __commonJS({
   "node_modules/postcss/lib/previous-map.js"(exports, module) {
     "use strict";
-    var { existsSync: existsSync2, readFileSync } = __require("fs");
+    var { existsSync: existsSync2, readFileSync: readFileSync2 } = __require("fs");
     var { dirname, join } = __require("path");
     var { SourceMapConsumer, SourceMapGenerator } = require_source_map();
     function fromBase64(str) {
@@ -9174,7 +9174,7 @@ var require_previous_map = __commonJS({
         this.root = dirname(path2);
         if (existsSync2(path2)) {
           this.mapFile = path2;
-          return readFileSync(path2, "utf-8").toString().trim();
+          return readFileSync2(path2, "utf-8").toString().trim();
         }
       }
       loadMap(file, prev) {
@@ -135990,7 +135990,7 @@ ${e2.before || ""}`), { emoji: t2 } = this.options;
 // src/render.js
 var import_marp_core = __toESM(require_marp(), 1);
 var import_marpit = __toESM(require_lib2(), 1);
-import { existsSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import path from "node:path";
 import { pathToFileURL } from "node:url";
 function renderDeckHtml(deck, options = {}) {
@@ -136004,6 +136004,7 @@ function renderDeckHtml(deck, options = {}) {
   const assetMap = options.collectResources ? /* @__PURE__ */ new Map() : null;
   const resolverOptions = {
     assetMap,
+    inlineAssets: options.inlineAssets,
     assetUrlPrefix: options.assetUrlPrefix
   };
   const themeCss = resolveResourceUrls(
@@ -136073,6 +136074,7 @@ function resolveResourceUrls(source, resourcesDir = "resources", options = {}) {
     if (!existsSync(resolved)) return full;
     const relativePath = normalizeResourcePath(path.relative(root, resolved));
     if (relativePath.startsWith("../") || relativePath === "..") return full;
+    if (options.inlineAssets) return toDataUri(resolved);
     if (options.assetMap) {
       options.assetMap.set(relativePath, resolved);
       return encodeURI(
@@ -136081,6 +136083,28 @@ function resolveResourceUrls(source, resourcesDir = "resources", options = {}) {
     }
     return pathToFileURL(resolved).href;
   });
+}
+function toDataUri(filePath) {
+  const bytes = readFileSync(filePath);
+  const mime = mimeType(filePath);
+  return `data:${mime};base64,${bytes.toString("base64")}`;
+}
+function mimeType(filePath) {
+  switch (path.extname(filePath).toLowerCase()) {
+    case ".svg":
+      return "image/svg+xml";
+    case ".png":
+      return "image/png";
+    case ".jpg":
+    case ".jpeg":
+      return "image/jpeg";
+    case ".gif":
+      return "image/gif";
+    case ".webp":
+      return "image/webp";
+    default:
+      return "application/octet-stream";
+  }
 }
 function normalizeResourcePath(value) {
   return value.replace(/\\/g, "/");

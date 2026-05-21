@@ -32,6 +32,7 @@ async function buildCommand(argv) {
   const wantsHtml = Boolean(argv.html) || (!argv.html && !argv.pptx)
   const htmlPath = argv.html ? path.resolve(argv.html) : ''
   const htmlResourcesDir = htmlPath ? path.join(path.dirname(htmlPath), 'resources') : ''
+  const htmlAssets = argv.htmlAssets || 'inline'
   let rendered
 
   if (wantsHtml) {
@@ -39,17 +40,20 @@ async function buildCommand(argv) {
     rendered = renderDeckHtml(deck, {
       resourcesDir,
       definitions,
-      collectResources: Boolean(htmlResourcesDir),
+      collectResources: htmlAssets === 'copy' && Boolean(htmlResourcesDir),
+      inlineAssets: htmlAssets === 'inline',
       assetUrlPrefix: htmlResourcesDir ? 'resources' : '',
     })
   }
 
   if (argv.html && rendered) {
     await mkdir(path.dirname(htmlPath), { recursive: true })
-    await copyHtmlResources(rendered.assets, htmlResourcesDir)
+    if (htmlAssets === 'copy') await copyHtmlResources(rendered.assets, htmlResourcesDir)
     await writeFile(htmlPath, rendered.document, 'utf8')
     console.log(`HTML written to ${htmlPath}`)
-    if (rendered.assets?.length) console.log(`Resources written to ${htmlResourcesDir}`)
+    if (htmlAssets === 'copy' && rendered.assets?.length) {
+      console.log(`Resources written to ${htmlResourcesDir}`)
+    }
   }
 
   if (argv.pptx) {
@@ -117,6 +121,11 @@ function parseArgs(args) {
   if (!['native', 'editable'].includes(parsed.mode)) {
     throw new Error(`Unsupported --mode "${parsed.mode}". Use "native" or "editable".`)
   }
+  if (parsed.htmlAssets && !['inline', 'copy', 'file'].includes(parsed.htmlAssets)) {
+    throw new Error(
+      `Unsupported --html-assets "${parsed.htmlAssets}". Use "inline", "copy", or "file".`,
+    )
+  }
 
   return parsed
 }
@@ -136,6 +145,7 @@ Options:
   --resources <dir>     Resource folder. Defaults to resources.
   --definitions <dir>   Folder containing brand.json and theme.css.
   --mode <mode>         native or editable. Defaults to native.
+  --html-assets <mode>  inline, copy, or file. Defaults to inline.
   --help, -h            Show this help.
 `
 }

@@ -15250,7 +15250,19 @@ function addChartSlide(pptx, slide, model, brand, resourcesDir) {
     titleFontFace: font(brand, layout.title.font),
     titleFontSize: layout.title.size,
     titleColor: color(brand, layout.title.color),
+    chartArea: {
+      fill: { color: color(brand, layout.chartAreaFill || "cardLight") },
+      border: { color: color(brand, layout.chartAreaBorder || "border"), pt: 0.5 },
+      roundedCorners: false
+    },
+    plotArea: {
+      fill: { color: color(brand, layout.plotAreaFill || layout.chartAreaFill || "cardLight") },
+      border: { color: color(brand, layout.plotAreaBorder || "border"), pt: 0.25 }
+    },
     chartColors: layout.colors.map((chartColor) => color(brand, chartColor)),
+    dataLabelColor: color(brand, layout.dataLabel?.color || layout.valueAxis.color),
+    dataLabelFontFace: font(brand, layout.dataLabel?.font || layout.valueAxis.font),
+    dataLabelFontSize: layout.dataLabel?.size || layout.valueAxis.size,
     showLegend: false,
     showValue: true,
     showCategoryName: true,

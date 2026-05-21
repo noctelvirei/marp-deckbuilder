@@ -1,6 +1,6 @@
 import { Marp } from '@marp-team/marp-core'
 import { Element } from '@marp-team/marpit'
-import { existsSync } from 'node:fs'
+import { existsSync, readFileSync } from 'node:fs'
 import path from 'node:path'
 import { pathToFileURL } from 'node:url'
 
@@ -17,6 +17,7 @@ export function renderDeckHtml(deck, options = {}) {
   const assetMap = options.collectResources ? new Map() : null
   const resolverOptions = {
     assetMap,
+    inlineAssets: options.inlineAssets,
     assetUrlPrefix: options.assetUrlPrefix,
   }
   const themeCss = resolveResourceUrls(
@@ -93,6 +94,7 @@ export function resolveResourceUrls(source, resourcesDir = 'resources', options 
     if (!existsSync(resolved)) return full
     const relativePath = normalizeResourcePath(path.relative(root, resolved))
     if (relativePath.startsWith('../') || relativePath === '..') return full
+    if (options.inlineAssets) return toDataUri(resolved)
     if (options.assetMap) {
       options.assetMap.set(relativePath, resolved)
       return encodeURI(
@@ -103,6 +105,30 @@ export function resolveResourceUrls(source, resourcesDir = 'resources', options 
     }
     return pathToFileURL(resolved).href
   })
+}
+
+function toDataUri(filePath) {
+  const bytes = readFileSync(filePath)
+  const mime = mimeType(filePath)
+  return `data:${mime};base64,${bytes.toString('base64')}`
+}
+
+function mimeType(filePath) {
+  switch (path.extname(filePath).toLowerCase()) {
+    case '.svg':
+      return 'image/svg+xml'
+    case '.png':
+      return 'image/png'
+    case '.jpg':
+    case '.jpeg':
+      return 'image/jpeg'
+    case '.gif':
+      return 'image/gif'
+    case '.webp':
+      return 'image/webp'
+    default:
+      return 'application/octet-stream'
+  }
 }
 
 function normalizeResourcePath(value) {
