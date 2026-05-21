@@ -46736,126 +46736,31 @@ var STRINGS = {
 var undici = __toESM(require_undici(), 1);
 var import_whatwg_mimetype = __toESM(require_mime_type(), 1);
 
-// src/components.js
-function compileDeckComponents(source) {
-  const root2 = load2(`<root>${source}</root>`, {
-    decodeEntities: false,
-    lowerCaseAttributeNames: true
-  });
-  const components = [];
-  root2("deck-stat-grid").each((_, element) => {
-    const grid = root2(element);
-    const stats = [];
-    grid.find("deck-stat").each((__, statElement) => {
-      const stat = root2(statElement);
-      const value = stat.attr("value") || cleanText(stat.find("value").text());
-      const label = stat.attr("label") || cleanText(stat.find("label").text() || stat.text());
-      if (value || label) stats.push({ value, label });
-    });
-    components.push({ type: "stat-grid", stats });
-    const html3 = `<div class="stat-grid">${stats.map(
-      (stat) => `<div class="stat-card">
-  <strong>${escapeHtml(stat.value)}</strong>
-  <span>${escapeHtml(stat.label)}</span>
-</div>`
-    ).join("\n")}</div>`;
-    grid.replaceWith(html3);
-  });
-  root2("deck-card-grid").each((_, element) => {
-    const grid = root2(element);
-    const columns = Number.parseInt(grid.attr("columns") || "3", 10);
-    const cards = [];
-    grid.find("deck-card").each((__, cardElement) => {
-      const card = root2(cardElement);
-      const header = card.attr("title") || card.attr("header") || cleanText(card.find("h2,h3").first().text());
-      const body = cleanText(card.find("p").first().text() || card.text());
-      if (header || body) cards.push({ header, body });
-    });
-    components.push({ type: "card-grid", columns, cards });
-    const className = columns === 4 ? "four" : "three";
-    const html3 = `<div class="card-grid ${className}">${cards.map(
-      (card) => `<article>
-  <h2>${escapeHtml(card.header)}</h2>
-  <p>${escapeHtml(card.body)}</p>
-</article>`
-    ).join("\n")}</div>`;
-    grid.replaceWith(html3);
-  });
-  root2("deck-chart").each((_, element) => {
-    const chart = root2(element);
-    const model = parseChart(chart);
-    components.push(model);
-    chart.replaceWith(renderChartHtml(model));
-  });
-  root2("deck-visual").each((_, element) => {
-    const visual = root2(element);
-    const model = parseVisual(visual);
-    components.push(model);
-    visual.replaceWith(renderVisualHtml(model));
-  });
-  root2("deck-comparison").each((_, element) => {
-    const comparison = root2(element);
-    const model = parseComparison(root2, comparison);
-    components.push(model);
-    comparison.replaceWith(renderComparisonHtml(model));
-  });
-  root2("deck-swimlane").each((_, element) => {
-    const swimlane = root2(element);
-    const model = parseSwimlane(root2, swimlane);
-    components.push(model);
-    swimlane.replaceWith(renderSwimlaneHtml(model));
-  });
-  root2("deck-proof").each((_, element) => {
-    const proof = root2(element);
-    const model = parseProof(root2, proof);
-    components.push(model);
-    proof.replaceWith(renderProofHtml(model));
-  });
-  root2("deck-next-steps").each((_, element) => {
-    const nextSteps = root2(element);
-    const model = parseNextSteps(root2, nextSteps);
-    components.push(model);
-    nextSteps.replaceWith(renderNextStepsHtml(model));
-  });
-  root2("deck-logo-wall").each((_, element) => {
-    const logoWall = root2(element);
-    const model = parseLogoWall(root2, logoWall);
-    components.push(model);
-    logoWall.replaceWith(renderLogoWallHtml(model));
-  });
-  root2("deck-divider").each((_, element) => {
-    const divider = root2(element);
-    const model = {
-      type: "divider",
-      act: divider.attr("act") || divider.attr("label") || "",
-      title: divider.attr("title") || cleanText(divider.find("h1").first().text()),
-      subtitle: divider.attr("subtitle") || cleanText(divider.find("p").first().text())
-    };
-    components.push(model);
-    divider.replaceWith(renderDividerHtml(model));
-  });
-  root2("deck-close").each((_, element) => {
-    const close = root2(element);
-    const model = {
-      type: "close",
-      title: close.attr("title") || cleanText(close.find("h1").first().text()) || "Thank you",
-      name: close.attr("name") || "",
-      role: close.attr("role") || ""
-    };
-    components.push(model);
-    close.replaceWith(renderCloseHtml(model));
-  });
-  root2("deck-takeaway").each((_, element) => {
-    const takeaway = root2(element);
-    const text3 = cleanText(takeaway.attr("text") || takeaway.text());
-    components.push({ type: "takeaway", text: text3 });
-    takeaway.replaceWith(`<div class="takeaway">${escapeHtml(text3)}</div>`);
-  });
-  return {
-    source: root2("root").html() || source,
-    components
-  };
+// src/components/utils.js
+function splitCsv(value = "") {
+  return String(value).split(",").map((item) => item.trim()).filter(Boolean);
 }
+function firstMatch(source, pattern) {
+  const match = String(source || "").match(pattern);
+  return match?.[1] || "";
+}
+function cleanText(value) {
+  return String(value || "").replace(/\s+/g, " ").trim();
+}
+function escapeHtml(value) {
+  return String(value || "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+}
+function escapeAttr(value) {
+  return escapeHtml(value).replace(/'/g, "&#39;");
+}
+function formatNumber(value) {
+  return Number.isInteger(value) ? String(value) : String(value);
+}
+function compactHtmlBlock(value) {
+  return String(value || "").split(/\r?\n/).filter((line) => line.trim().length > 0).join("\n");
+}
+
+// src/components/parsers.js
 function parseChart(chart) {
   const labels = splitCsv(chart.attr("labels"));
   const values = splitCsv(chart.attr("values")).map(Number);
@@ -46963,6 +46868,13 @@ function parseLogoWall(root2, logoWall) {
     logos
   };
 }
+function normalizeChartType(value) {
+  if (value === "line") return "line";
+  if (value === "column") return "bar";
+  return "bar";
+}
+
+// src/components/renderers.js
 function renderChartHtml(chart) {
   const max = Math.max(...chart.values, 1);
   const rows = chart.labels.map((label, index2) => {
@@ -47057,32 +46969,135 @@ function renderCloseHtml(close) {
   ${close.name ? `<p><strong>${escapeHtml(close.name)}</strong>${close.role ? `<br><span>${escapeHtml(close.role)}</span>` : ""}</p>` : ""}
 </div>`;
 }
-function normalizeChartType(value) {
-  if (value === "line") return "line";
-  if (value === "column") return "bar";
-  return "bar";
+
+// src/components.js
+function compileDeckComponents(source) {
+  const root2 = load2(`<root>${source}</root>`, {
+    decodeEntities: false,
+    lowerCaseAttributeNames: true
+  });
+  const components = [];
+  root2("deck-stat-grid").each((_, element) => compileStatGrid(root2, element, components));
+  root2("deck-card-grid").each((_, element) => compileCardGrid(root2, element, components));
+  root2("deck-chart").each((_, element) => {
+    const chart = root2(element);
+    const model = parseChart(chart);
+    components.push(model);
+    chart.replaceWith(renderChartHtml(model));
+  });
+  root2("deck-visual").each((_, element) => {
+    const visual = root2(element);
+    const model = parseVisual(visual);
+    components.push(model);
+    visual.replaceWith(renderVisualHtml(model));
+  });
+  root2("deck-comparison").each((_, element) => {
+    const comparison = root2(element);
+    const model = parseComparison(root2, comparison);
+    components.push(model);
+    comparison.replaceWith(renderComparisonHtml(model));
+  });
+  root2("deck-swimlane").each((_, element) => {
+    const swimlane = root2(element);
+    const model = parseSwimlane(root2, swimlane);
+    components.push(model);
+    swimlane.replaceWith(renderSwimlaneHtml(model));
+  });
+  root2("deck-proof").each((_, element) => {
+    const proof = root2(element);
+    const model = parseProof(root2, proof);
+    components.push(model);
+    proof.replaceWith(renderProofHtml(model));
+  });
+  root2("deck-next-steps").each((_, element) => {
+    const nextSteps = root2(element);
+    const model = parseNextSteps(root2, nextSteps);
+    components.push(model);
+    nextSteps.replaceWith(renderNextStepsHtml(model));
+  });
+  root2("deck-logo-wall").each((_, element) => {
+    const logoWall = root2(element);
+    const model = parseLogoWall(root2, logoWall);
+    components.push(model);
+    logoWall.replaceWith(renderLogoWallHtml(model));
+  });
+  root2("deck-divider").each((_, element) => compileDivider(root2, element, components));
+  root2("deck-close").each((_, element) => compileClose(root2, element, components));
+  root2("deck-takeaway").each((_, element) => compileTakeaway(root2, element, components));
+  return {
+    source: root2("root").html() || source,
+    components
+  };
 }
-function splitCsv(value = "") {
-  return String(value).split(",").map((item) => item.trim()).filter(Boolean);
+function compileStatGrid(root2, element, components) {
+  const grid = root2(element);
+  const stats = [];
+  grid.find("deck-stat").each((_, statElement) => {
+    const stat = root2(statElement);
+    const value = stat.attr("value") || cleanText(stat.find("value").text());
+    const label = stat.attr("label") || cleanText(stat.find("label").text() || stat.text());
+    if (value || label) stats.push({ value, label });
+  });
+  components.push({ type: "stat-grid", stats });
+  grid.replaceWith(renderStatGridHtml(stats));
 }
-function firstMatch(source, pattern) {
-  const match = String(source || "").match(pattern);
-  return match?.[1] || "";
+function compileCardGrid(root2, element, components) {
+  const grid = root2(element);
+  const columns = Number.parseInt(grid.attr("columns") || "3", 10);
+  const cards = [];
+  grid.find("deck-card").each((_, cardElement) => {
+    const card = root2(cardElement);
+    const header = card.attr("title") || card.attr("header") || cleanText(card.find("h2,h3").first().text());
+    const body = cleanText(card.find("p").first().text() || card.text());
+    if (header || body) cards.push({ header, body });
+  });
+  components.push({ type: "card-grid", columns, cards });
+  grid.replaceWith(renderCardGridHtml(columns, cards));
 }
-function cleanText(value) {
-  return String(value || "").replace(/\s+/g, " ").trim();
+function compileDivider(root2, element, components) {
+  const divider = root2(element);
+  const model = {
+    type: "divider",
+    act: divider.attr("act") || divider.attr("label") || "",
+    title: divider.attr("title") || cleanText(divider.find("h1").first().text()),
+    subtitle: divider.attr("subtitle") || cleanText(divider.find("p").first().text())
+  };
+  components.push(model);
+  divider.replaceWith(renderDividerHtml(model));
 }
-function escapeHtml(value) {
-  return String(value || "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+function compileClose(root2, element, components) {
+  const close = root2(element);
+  const model = {
+    type: "close",
+    title: close.attr("title") || cleanText(close.find("h1").first().text()) || "Thank you",
+    name: close.attr("name") || "",
+    role: close.attr("role") || ""
+  };
+  components.push(model);
+  close.replaceWith(renderCloseHtml(model));
 }
-function escapeAttr(value) {
-  return escapeHtml(value).replace(/'/g, "&#39;");
+function compileTakeaway(root2, element, components) {
+  const takeaway = root2(element);
+  const text3 = cleanText(takeaway.attr("text") || takeaway.text());
+  components.push({ type: "takeaway", text: text3 });
+  takeaway.replaceWith(`<div class="takeaway">${escapeHtml(text3)}</div>`);
 }
-function formatNumber(value) {
-  return Number.isInteger(value) ? String(value) : String(value);
+function renderStatGridHtml(stats) {
+  return `<div class="stat-grid">${stats.map(
+    (stat) => `<div class="stat-card">
+  <strong>${escapeHtml(stat.value)}</strong>
+  <span>${escapeHtml(stat.label)}</span>
+</div>`
+  ).join("\n")}</div>`;
 }
-function compactHtmlBlock(value) {
-  return String(value || "").split(/\r?\n/).filter((line) => line.trim().length > 0).join("\n");
+function renderCardGridHtml(columns, cards) {
+  const className = columns === 4 ? "four" : "three";
+  return `<div class="card-grid ${className}">${cards.map(
+    (card) => `<article>
+  <h2>${escapeHtml(card.header)}</h2>
+  <p>${escapeHtml(card.body)}</p>
+</article>`
+  ).join("\n")}</div>`;
 }
 
 // src/markdown.js

@@ -7,7 +7,7 @@ import {
   parseSlide,
   splitFrontmatter,
   splitSlides
-} from "./chunk-RUDG5UMV.mjs";
+} from "./chunk-DCAC3PJY.mjs";
 import "./chunk-IDDWZGZI.mjs";
 export {
   buildMarpMarkdown,
