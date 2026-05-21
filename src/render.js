@@ -14,12 +14,22 @@ export function renderDeckHtml(deck, options = {}) {
     slideContainer: [],
   })
   const definitions = options.definitions
-  const themeCss = resolveResourceUrls(definitions.themeCss, options.resourcesDir)
+  const assetMap = options.collectResources ? new Map() : null
+  const resolverOptions = {
+    assetMap,
+    assetUrlPrefix: options.assetUrlPrefix,
+  }
+  const themeCss = resolveResourceUrls(
+    definitions.themeCss,
+    options.resourcesDir,
+    resolverOptions,
+  )
   marp.themeSet.add(themeCss)
 
   const markdown = resolveResourceUrls(
     buildMarpMarkdown(deck, { themeName: definitions.brand.themeName }),
     options.resourcesDir,
+    resolverOptions,
   )
   const { html, css, comments } = marp.render(markdown)
 
@@ -35,6 +45,12 @@ export function renderDeckHtml(deck, options = {}) {
       bespokeJs: definitions.bespokeJs,
       title: deck.frontmatter.title || 'Deck',
     }),
+    assets: assetMap
+      ? [...assetMap.entries()].map(([relativePath, sourcePath]) => ({
+          relativePath,
+          sourcePath,
+        }))
+      : [],
   }
 }
 
@@ -69,14 +85,28 @@ ${renderNotes(comments)}
 `
 }
 
-export function resolveResourceUrls(source, resourcesDir = 'resources') {
+export function resolveResourceUrls(source, resourcesDir = 'resources', options = {}) {
   const root = path.resolve(resourcesDir)
 
   return source.replace(/resource:([^)"'<\s]+)/g, (full, resourcePath) => {
     const resolved = path.resolve(root, resourcePath)
     if (!existsSync(resolved)) return full
+    const relativePath = normalizeResourcePath(path.relative(root, resolved))
+    if (relativePath.startsWith('../') || relativePath === '..') return full
+    if (options.assetMap) {
+      options.assetMap.set(relativePath, resolved)
+      return encodeURI(
+        [options.assetUrlPrefix || 'resources', relativePath]
+          .filter(Boolean)
+          .join('/'),
+      )
+    }
     return pathToFileURL(resolved).href
   })
+}
+
+function normalizeResourcePath(value) {
+  return value.replace(/\\/g, '/')
 }
 
 function bespokeOsc() {

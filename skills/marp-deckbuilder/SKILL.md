@@ -14,8 +14,10 @@ Do not hand-write PowerPoint code. Write `deck.md` using supported `deck-*` comp
 ## Workflow
 
 1. Read the user's source material and identify the deck purpose, audience, and desired output.
-2. Create an output folder for the request.
-3. Draft `deck.md` using Marp-style slides separated by `---`.
+2. Create one presentation folder for the request. Prefer
+   `Documents/Presentations/YYYY-MM-DD/<deck-title-slug>/` when the user has not
+   specified a location.
+3. Draft `deck.md` in that folder using Marp-style slides separated by `---`.
 4. Use supported deck components for native PPTX output:
    `deck-divider`, `deck-stat-grid`, `deck-card-grid`, `deck-chart`, `deck-visual`, `deck-comparison`, `deck-swimlane`, `deck-proof`, `deck-logo-wall`, `deck-next-steps`, `deck-close`.
 5. Build the deck:
@@ -24,7 +26,9 @@ Do not hand-write PowerPoint code. Write `deck.md` using supported `deck-*` comp
 node scripts/build-deck.mjs deck.md --out-dir output
 ```
 
-6. Return links/paths to the generated `.html`, `.pptx`, and source `.md`.
+6. Return links/paths to the generated `.html`, `.pptx`, source `.md`, and
+   `resources/` folder. The HTML file depends on the sibling `resources/`
+   folder for any copied brand assets.
 
 ## Authoring Guidance
 

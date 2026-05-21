@@ -3,7 +3,7 @@ import { createRequire as __deckbuilderCreateRequire } from "node:module";
 const require = __deckbuilderCreateRequire(import.meta.url);
 
 // src/cli.js
-import { mkdir, readFile, writeFile } from "node:fs/promises";
+import { copyFile, mkdir, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
 import process from "node:process";
 async function main() {
@@ -31,16 +31,24 @@ async function buildCommand(argv) {
   const markdown = await readFile(inputPath, "utf8");
   const deck = parseDeckMarkdown(markdown);
   const wantsHtml = Boolean(argv.html) || !argv.html && !argv.pptx;
+  const htmlPath = argv.html ? path.resolve(argv.html) : "";
+  const htmlResourcesDir = htmlPath ? path.join(path.dirname(htmlPath), "resources") : "";
   let rendered;
   if (wantsHtml) {
-    const { renderDeckHtml } = await import("./chunks/render-O6JL2335.mjs");
-    rendered = renderDeckHtml(deck, { resourcesDir, definitions });
+    const { renderDeckHtml } = await import("./chunks/render-QYD2FNWR.mjs");
+    rendered = renderDeckHtml(deck, {
+      resourcesDir,
+      definitions,
+      collectResources: Boolean(htmlResourcesDir),
+      assetUrlPrefix: htmlResourcesDir ? "resources" : ""
+    });
   }
   if (argv.html && rendered) {
-    const htmlPath = path.resolve(argv.html);
     await mkdir(path.dirname(htmlPath), { recursive: true });
+    await copyHtmlResources(rendered.assets, htmlResourcesDir);
     await writeFile(htmlPath, rendered.document, "utf8");
     console.log(`HTML written to ${htmlPath}`);
+    if (rendered.assets?.length) console.log(`Resources written to ${htmlResourcesDir}`);
   }
   if (argv.pptx) {
     const { writePptx } = await import("./chunks/pptx-LBJJORGS.mjs");
@@ -58,6 +66,21 @@ async function buildCommand(argv) {
   if (!argv.html && !argv.pptx && rendered) {
     console.log(rendered.document);
   }
+}
+async function copyHtmlResources(assets = [], htmlResourcesDir) {
+  if (!assets.length || !htmlResourcesDir) return;
+  await Promise.all(
+    assets.map(async (asset) => {
+      const target = path.resolve(htmlResourcesDir, asset.relativePath);
+      if (!isInsidePath(htmlResourcesDir, target)) return;
+      await mkdir(path.dirname(target), { recursive: true });
+      await copyFile(asset.sourcePath, target);
+    })
+  );
+}
+function isInsidePath(root, candidate) {
+  const relative = path.relative(path.resolve(root), path.resolve(candidate));
+  return Boolean(relative) && !relative.startsWith("..") && !path.isAbsolute(relative);
 }
 function parseArgs(args) {
   const parsed = {

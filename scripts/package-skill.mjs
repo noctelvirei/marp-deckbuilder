@@ -54,6 +54,7 @@ async function addDirectory(directory) {
 }
 
 function shouldExclude(entry) {
+  if (entry.isFile() && entry.name.endsWith('.zip')) return true
   if (!entry.isDirectory()) return false
   return (
     excludedDirs.has(entry.name) ||

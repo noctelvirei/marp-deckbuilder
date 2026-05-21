@@ -20,6 +20,25 @@ The generated HTML uses vendored Marp CLI/Bespoke presenter assets from
 `tool/resources/templates/`, including the on-screen controls, overview mode,
 presenter view, keyboard/touch/wheel navigation, and fullscreen behavior.
 
+When writing an HTML file, the renderer copies every used `resource:` asset into
+a sibling `resources/` folder beside the HTML and rewrites the generated HTML to
+use relative URLs. A normal output folder therefore looks like:
+
+```text
+Documents/Presentations/2026-05-21/example-deck/
+  deck.md
+  deck.html
+  deck.pptx
+  resources/
+    lightico-logo-blue-white.svg
+    lightico-title-bg.png
+    icons/
+      utility-analytics-chart.svg
+```
+
+Keep the HTML file and its sibling `resources/` folder together when sharing or
+moving the deck.
+
 ## Component Syntax
 
 ### Divider

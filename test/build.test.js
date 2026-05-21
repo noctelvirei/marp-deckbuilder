@@ -118,6 +118,37 @@ section.cover { background-image: url(resource:cover-bg.png); }`,
   assert.doesNotMatch(rendered.document, /resource:cover-bg\.png/)
 })
 
+test('can rewrite brand resources as portable HTML assets', async () => {
+  await rm(tmpDir, { recursive: true, force: true })
+  await mkdir(path.join(tmpDir, 'resources', 'images'), { recursive: true })
+  await writeFile(path.join(tmpDir, 'resources', 'images', 'cover-bg.png'), 'fake image')
+
+  const baseDefinitions = await loadDefinitions(
+    new URL('../resources/definitions', import.meta.url),
+  )
+  const definitions = {
+    ...baseDefinitions,
+    themeCss: `${baseDefinitions.themeCss}
+section.cover { background-image: url(resource:images/cover-bg.png); }`,
+  }
+  const deck = parseDeckMarkdown('# Cover')
+  const rendered = renderDeckHtml(deck, {
+    resourcesDir: path.join(tmpDir, 'resources'),
+    definitions,
+    collectResources: true,
+    assetUrlPrefix: 'resources',
+  })
+
+  assert.match(rendered.document, /background-image:url\(resources\/images\/cover-bg\.png\)/)
+  assert.deepEqual(rendered.assets, [
+    {
+      relativePath: 'images/cover-bg.png',
+      sourcePath: path.join(tmpDir, 'resources', 'images', 'cover-bg.png'),
+    },
+  ])
+  assert.doesNotMatch(rendered.document, /resource:images/)
+})
+
 test('keeps JavaScript in HTML-only slides and skips them in PPTX', async () => {
   await rm(tmpDir, { recursive: true, force: true })
   await mkdir(tmpDir, { recursive: true })
