@@ -1,3 +1,4 @@
+import { existsSync } from 'node:fs'
 import { readFile } from 'node:fs/promises'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -7,6 +8,9 @@ export async function loadDefinitions(definitionsDir) {
     definitionsDir instanceof URL ? fileURLToPath(definitionsDir) : path.resolve(definitionsDir)
   const brandPath = path.join(root, 'brand.json')
   const themePath = path.join(root, 'theme.css')
+  const templateRoot = path.resolve(root, '..', 'templates')
+  const bespokeCssPath = path.join(templateRoot, 'bespoke.css')
+  const bespokeJsPath = path.join(templateRoot, 'bespoke.js')
 
   const [brandRaw, themeCss] = await Promise.all([
     readFile(brandPath, 'utf8'),
@@ -19,6 +23,8 @@ export async function loadDefinitions(definitionsDir) {
     root,
     brand,
     themeCss,
+    bespokeCss: existsSync(bespokeCssPath) ? await readFile(bespokeCssPath, 'utf8') : '',
+    bespokeJs: existsSync(bespokeJsPath) ? await readFile(bespokeJsPath, 'utf8') : '',
   }
 }
 

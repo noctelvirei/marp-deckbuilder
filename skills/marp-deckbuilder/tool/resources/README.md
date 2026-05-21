@@ -28,3 +28,9 @@ Brand and layout rules live in `definitions/`:
 
 Replace that folder, or pass `--definitions <dir>`, to use a different brand
 contract without editing CLI code.
+
+## Templates
+
+The `templates/` folder contains vendored Marp CLI/Bespoke presenter assets for
+HTML slideshows. It is part of the runtime, not the brand contract. Keep it when
+merging upstream skill updates.

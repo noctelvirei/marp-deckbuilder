@@ -4,8 +4,9 @@ Marp Deckbuilder is a narrow, brandable wrapper around Marp-style Markdown.
 
 It keeps the authoring experience close to Marp, renders rich HTML slides with
 brand styling, and builds editable PPTX from known deck components.
-HTML output opens as a full-viewport presentation with slide snapping,
-keyboard navigation, progress, and full-screen support.
+HTML output uses the vendored Marp CLI/Bespoke presenter shell: full-viewport
+slides, keyboard/touch/wheel navigation, on-screen controls, overview mode,
+presenter view, and fullscreen.
 
 ## Why This Exists
 
@@ -195,10 +196,12 @@ The portable Claude skill lives in `skills/marp-deckbuilder/`.
 
 It includes a small `SKILL.md`, examples, a build wrapper, replaceable
 definitions, and a bundled single-file copy of the native renderer under
-`tool/dist/`. The skill can produce HTML and editable PPTX without
-`node_modules`, `npm install`, LibreOffice, PowerPoint automation, Chromium, Marp
-CLI, or other `.exe` dependencies. Branding updates are made by replacing
-`skills/marp-deckbuilder/tool/resources/definitions/`.
+`tool/dist/`. The skill also vendors the Marp CLI/Bespoke HTML presenter assets
+under `tool/resources/templates/`, so the HTML deck behaves like a real Marp
+slideshow without needing Marp CLI at runtime. The skill can produce HTML and
+editable PPTX without `node_modules`, `npm install`, LibreOffice, PowerPoint
+automation, Chromium, Marp CLI, or other `.exe` dependencies. Branding updates
+are made by replacing `skills/marp-deckbuilder/tool/resources/definitions/`.
 
 Use the repo root as the full developer project and treat `skills/marp-deckbuilder/`
 as the distributable skill payload. Build a fresh uploadable zip with:
@@ -214,6 +217,7 @@ cache folders, and fails if the uncompressed skill exceeds 30 MB.
 
 For branded internal copies, merge public upstream changes rather than asking an
 agent to recreate the renderer. Preserve or reapply the branded files in
-`skills/marp-deckbuilder/tool/resources/definitions/`, replace the bundled
+`skills/marp-deckbuilder/tool/resources/definitions/`, keep the vendored
+`tool/resources/templates/` presenter assets from upstream, replace the bundled
 `tool/dist/deckbuilder.cjs`, and edit `SKILL.md` only when workflow guidance
 needs to differ.

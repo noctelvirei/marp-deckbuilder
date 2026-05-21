@@ -29700,7 +29700,7 @@ var require_element = __commonJS({
       value: true
     });
     exports2.marpitContainer = exports2.default = void 0;
-    var Element2 = class {
+    var Element3 = class {
       /**
        * Create a Element instance.
        *
@@ -29741,10 +29741,10 @@ var require_element = __commonJS({
         Object.freeze(this);
       }
     };
-    var marpitContainer = exports2.marpitContainer = new Element2("div", {
+    var marpitContainer = exports2.marpitContainer = new Element3("div", {
       class: "marpit"
     });
-    var _default2 = exports2.default = Element2;
+    var _default2 = exports2.default = Element3;
   }
 });
 
@@ -38782,7 +38782,7 @@ var require_source_map = __commonJS({
 var require_previous_map = __commonJS({
   "node_modules/postcss/lib/previous-map.js"(exports2, module2) {
     "use strict";
-    var { existsSync: existsSync3, readFileSync } = require("fs");
+    var { existsSync: existsSync4, readFileSync } = require("fs");
     var { dirname, join } = require("path");
     var { SourceMapConsumer, SourceMapGenerator } = require_source_map();
     function fromBase64(str2) {
@@ -38852,7 +38852,7 @@ var require_previous_map = __commonJS({
           }
         }
         this.root = dirname(path5);
-        if (existsSync3(path5)) {
+        if (existsSync4(path5)) {
           this.mapFile = path5;
           return readFileSync(path5, "utf-8").toString().trim();
         }
@@ -175405,6 +175405,7 @@ var import_node_path4 = __toESM(require("node:path"), 1);
 var import_node_process = __toESM(require("node:process"), 1);
 
 // src/brand.js
+var import_node_fs = require("node:fs");
 var import_promises = require("node:fs/promises");
 var import_node_path = __toESM(require("node:path"), 1);
 var import_node_url = require("node:url");
@@ -175412,6 +175413,9 @@ async function loadDefinitions(definitionsDir) {
   const root2 = definitionsDir instanceof URL ? (0, import_node_url.fileURLToPath)(definitionsDir) : import_node_path.default.resolve(definitionsDir);
   const brandPath = import_node_path.default.join(root2, "brand.json");
   const themePath = import_node_path.default.join(root2, "theme.css");
+  const templateRoot = import_node_path.default.resolve(root2, "..", "templates");
+  const bespokeCssPath = import_node_path.default.join(templateRoot, "bespoke.css");
+  const bespokeJsPath = import_node_path.default.join(templateRoot, "bespoke.js");
   const [brandRaw, themeCss] = await Promise.all([
     (0, import_promises.readFile)(brandPath, "utf8"),
     (0, import_promises.readFile)(themePath, "utf8")
@@ -175421,7 +175425,9 @@ async function loadDefinitions(definitionsDir) {
   return {
     root: root2,
     brand,
-    themeCss
+    themeCss,
+    bespokeCss: (0, import_node_fs.existsSync)(bespokeCssPath) ? await (0, import_promises.readFile)(bespokeCssPath, "utf8") : "",
+    bespokeJs: (0, import_node_fs.existsSync)(bespokeJsPath) ? await (0, import_promises.readFile)(bespokeJsPath, "utf8") : ""
   };
 }
 function ptToIn(value) {
@@ -193053,11 +193059,17 @@ function decodeHtml(value) {
 
 // src/render.js
 var import_marp_core = __toESM(require_marp(), 1);
-var import_node_fs = require("node:fs");
+var import_marpit = __toESM(require_lib3(), 1);
+var import_node_fs2 = require("node:fs");
 var import_node_path2 = __toESM(require("node:path"), 1);
 var import_node_url2 = require("node:url");
 function renderDeckHtml(deck, options = {}) {
-  const marp = new import_marp_core.Marp({ html: true });
+  const marp = new import_marp_core.Marp({
+    html: true,
+    container: new import_marpit.Element("div", { id: ":$p" }),
+    inlineSVG: true,
+    slideContainer: []
+  });
   const definitions = options.definitions;
   marp.themeSet.add(definitions.themeCss);
   const markdown = resolveResourceUrls(
@@ -193069,144 +193081,42 @@ function renderDeckHtml(deck, options = {}) {
     html: html3,
     css: css2,
     comments,
-    document: htmlDocument({ html: html3, css: css2, title: deck.frontmatter.title || "Deck" })
+    document: htmlDocument({
+      html: html3,
+      css: css2,
+      comments,
+      bespokeCss: definitions.bespokeCss,
+      bespokeJs: definitions.bespokeJs,
+      title: deck.frontmatter.title || "Deck"
+    })
   };
 }
-function htmlDocument({ html: html3, css: css2, title = "Deck" }) {
+function htmlDocument({
+  html: html3,
+  css: css2,
+  comments = [],
+  bespokeCss = "",
+  bespokeJs = "",
+  title = "Deck"
+}) {
   return `<!doctype html>
-<html>
+<html lang="en">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="viewport" content="width=device-width,height=device-height,initial-scale=1.0">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta http-equiv="X-UA-Compatible" content="ie=edge">
+  <meta property="og:type" content="website">
+  <meta name="twitter:card" content="summary">
   <title>${escapeHtml2(title)}</title>
   <style>${css2}</style>
-  <style>
-    :root {
-      --deck-scale: 1;
-      --deck-progress: 0%;
-    }
-    html,
-    body {
-      margin: 0;
-      width: 100%;
-      height: 100%;
-      overflow: hidden;
-      background: #141414;
-      color: #f5f5f5;
-      font-family: "Aptos", "Segoe UI", Arial, sans-serif;
-    }
-    .marpit {
-      width: 100%;
-      height: 100dvh;
-      overflow-x: hidden;
-      overflow-y: auto;
-      overscroll-behavior: contain;
-      scroll-behavior: smooth;
-      scroll-snap-type: y mandatory;
-      background: #141414;
-    }
-    .deck-slide-frame {
-      min-height: 100dvh;
-      box-sizing: border-box;
-      display: grid;
-      place-items: center;
-      overflow: hidden;
-      padding: clamp(18px, 4vmin, 44px);
-      scroll-snap-align: start;
-      scroll-snap-stop: always;
-    }
-    .deck-slide-frame > svg,
-    .deck-slide-frame > section,
-    .marpit > svg,
-    .marpit > section {
-      flex: none;
-      width: 1280px;
-      height: 720px;
-      box-shadow: 0 28px 72px rgba(0, 0, 0, .42);
-      transform: scale(var(--deck-scale));
-      transform-origin: center center;
-    }
-    .deck-hud {
-      position: fixed;
-      right: 18px;
-      bottom: 18px;
-      z-index: 20;
-      display: flex;
-      gap: 8px;
-      align-items: center;
-      padding: 7px;
-      border: 1px solid rgba(255, 255, 255, .16);
-      background: rgba(20, 20, 20, .74);
-      color: #ffffff;
-      backdrop-filter: blur(16px);
-    }
-    .deck-hud button {
-      min-width: 34px;
-      height: 32px;
-      border: 1px solid rgba(255, 255, 255, .22);
-      background: rgba(255, 255, 255, .08);
-      color: #ffffff;
-      font: inherit;
-      font-size: 13px;
-      cursor: pointer;
-    }
-    .deck-hud button:hover {
-      background: rgba(255, 255, 255, .18);
-    }
-    .deck-hud output {
-      min-width: 54px;
-      color: rgba(255, 255, 255, .84);
-      font-size: 12px;
-      text-align: center;
-    }
-    .deck-progress {
-      position: fixed;
-      left: 0;
-      bottom: 0;
-      z-index: 21;
-      width: var(--deck-progress);
-      height: 3px;
-      background: #0f82f5;
-      transition: width .18s ease;
-    }
-    @media print {
-      html,
-      body {
-        height: auto;
-        overflow: visible;
-        background: #ffffff;
-      }
-      .marpit {
-        height: auto;
-        overflow: visible;
-        scroll-snap-type: none;
-        background: #ffffff;
-      }
-      .deck-slide-frame {
-        min-height: auto;
-        display: block;
-        padding: 0;
-        overflow: visible;
-      }
-      .deck-slide-frame > svg,
-      .deck-slide-frame > section,
-      .marpit > svg,
-      .marpit > section {
-        box-shadow: none;
-        transform: none;
-      }
-      .deck-hud,
-      .deck-progress {
-        display: none;
-      }
-    }
-  </style>
+  <style>${bespokeCss}</style>
 </head>
 <body>
+${bespokeOsc()}
 ${html3}
-<script>
-${presentationScript()}
-</script>
+${renderNotes(comments)}
+<script>${bespokeJs}</script>
 </body>
 </html>
 `;
@@ -193215,118 +193125,26 @@ function resolveResourceUrls(source, resourcesDir = "resources") {
   const root2 = import_node_path2.default.resolve(resourcesDir);
   return source.replace(/resource:([^)"'<\s]+)/g, (full, resourcePath) => {
     const resolved = import_node_path2.default.resolve(root2, resourcePath);
-    if (!(0, import_node_fs.existsSync)(resolved)) return full;
+    if (!(0, import_node_fs2.existsSync)(resolved)) return full;
     return (0, import_node_url2.pathToFileURL)(resolved).href;
   });
 }
-function presentationScript() {
-  return `(() => {
-  const deck = document.querySelector('.marpit')
-  if (!deck) return
-
-  const slides = Array.from(deck.children).filter((element) => element.matches('svg[data-marpit-svg], section'))
-  if (!slides.length) return
-
-  slides.forEach((slide, index) => {
-    const frame = document.createElement('div')
-    frame.className = 'deck-slide-frame'
-    const innerSection = slide.matches('section') ? slide : slide.querySelector('section')
-    frame.id = innerSection?.id ? \`deck-frame-\${innerSection.id}\` : \`deck-frame-\${index + 1}\`
-    frame.dataset.slide = String(index + 1)
-    if (innerSection) innerSection.tabIndex = -1
-    deck.insertBefore(frame, slide)
-    frame.appendChild(slide)
-  })
-
-  const frames = Array.from(deck.querySelectorAll('.deck-slide-frame'))
-  let activeIndex = 0
-
-  const hud = document.createElement('nav')
-  hud.className = 'deck-hud'
-  hud.setAttribute('aria-label', 'Slide navigation')
-  hud.innerHTML = '<button type="button" data-prev aria-label="Previous slide">Prev</button><output></output><button type="button" data-next aria-label="Next slide">Next</button><button type="button" data-fullscreen aria-label="Toggle full screen">Full</button>'
-  document.body.appendChild(hud)
-
-  const progress = document.createElement('div')
-  progress.className = 'deck-progress'
-  document.body.appendChild(progress)
-
-  const output = hud.querySelector('output')
-  const prevButton = hud.querySelector('[data-prev]')
-  const nextButton = hud.querySelector('[data-next]')
-  const fullscreenButton = hud.querySelector('[data-fullscreen]')
-
-  function clamp(value) {
-    return Math.max(0, Math.min(frames.length - 1, value))
-  }
-
-  function updateScale() {
-    const firstSlide = frames[0].querySelector('svg[data-marpit-svg], section')
-    const viewBox = firstSlide?.viewBox?.baseVal
-    const slideWidth = viewBox?.width || firstSlide?.offsetWidth || 1280
-    const slideHeight = viewBox?.height || firstSlide?.offsetHeight || 720
-    const padX = Math.min(Math.max(window.innerWidth * 0.08, 36), 96)
-    const padY = Math.min(Math.max(window.innerHeight * 0.08, 36), 96)
-    const scale = Math.min(2, (window.innerWidth - padX) / slideWidth, (window.innerHeight - padY) / slideHeight)
-    document.documentElement.style.setProperty('--deck-scale', String(Math.max(0.1, scale)))
-  }
-
-  function updateHud(index = activeIndex) {
-    activeIndex = clamp(index)
-    output.value = \`\${activeIndex + 1} / \${frames.length}\`
-    prevButton.disabled = activeIndex === 0
-    nextButton.disabled = activeIndex === frames.length - 1
-    const percent = frames.length <= 1 ? 100 : ((activeIndex + 1) / frames.length) * 100
-    document.documentElement.style.setProperty('--deck-progress', \`\${percent}%\`)
-  }
-
-  function goTo(index) {
-    const nextIndex = clamp(index)
-    frames[nextIndex].scrollIntoView({ block: 'start', behavior: 'smooth' })
-    updateHud(nextIndex)
-  }
-
-  prevButton.addEventListener('click', () => goTo(activeIndex - 1))
-  nextButton.addEventListener('click', () => goTo(activeIndex + 1))
-  fullscreenButton.addEventListener('click', async () => {
-    if (document.fullscreenElement) {
-      await document.exitFullscreen()
-    } else {
-      await document.documentElement.requestFullscreen()
-    }
-  })
-
-  deck.addEventListener('scroll', () => {
-    const index = Math.round(deck.scrollTop / Math.max(1, deck.clientHeight))
-    updateHud(index)
-  }, { passive: true })
-
-  document.addEventListener('keydown', (event) => {
-    const target = event.target
-    if (target && (target.isContentEditable || ['INPUT', 'TEXTAREA', 'SELECT'].includes(target.tagName))) return
-
-    if (['ArrowRight', 'ArrowDown', 'PageDown', ' '].includes(event.key)) {
-      event.preventDefault()
-      goTo(activeIndex + 1)
-    } else if (['ArrowLeft', 'ArrowUp', 'PageUp', 'Backspace'].includes(event.key)) {
-      event.preventDefault()
-      goTo(activeIndex - 1)
-    } else if (event.key === 'Home') {
-      event.preventDefault()
-      goTo(0)
-    } else if (event.key === 'End') {
-      event.preventDefault()
-      goTo(frames.length - 1)
-    } else if (event.key.toLowerCase() === 'f') {
-      event.preventDefault()
-      fullscreenButton.click()
-    }
-  })
-
-  window.addEventListener('resize', updateScale)
-  updateScale()
-  updateHud(0)
-})()`;
+function bespokeOsc() {
+  return `<div class="bespoke-marp-osc">
+  <button data-bespoke-marp-osc="prev" tabindex="-1" title="Previous slide">Previous slide</button>
+  <span data-bespoke-marp-osc="page"></span>
+  <button data-bespoke-marp-osc="next" tabindex="-1" title="Next slide">Next slide</button>
+  <button data-bespoke-marp-osc="fullscreen" tabindex="-1" title="Toggle fullscreen (f)">Toggle fullscreen</button>
+  <button data-bespoke-marp-osc="overview" tabindex="-1" title="Toggle overview view (o)">Toggle overview view</button>
+  <button data-bespoke-marp-osc="presenter" tabindex="-1" title="Open presenter view (p)">Open presenter view</button>
+</div>`;
+}
+function renderNotes(comments = []) {
+  return comments.map((notes, index2) => {
+    if (!notes?.length) return "";
+    const paragraphs = notes.map((paragraph) => `<p>${escapeHtml2(paragraph)}</p>`).join("");
+    return `<div class="bespoke-marp-note" data-index="${index2}" tabindex="0">${paragraphs}</div>`;
+  }).join("\n");
 }
 function escapeHtml2(value) {
   return String(value).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#39;");
@@ -198653,7 +198471,7 @@ var PptxGenJS = class {
 };
 
 // src/pptx.js
-var import_node_fs2 = require("node:fs");
+var import_node_fs3 = require("node:fs");
 var import_node_buffer = require("node:buffer");
 var import_node_path3 = __toESM(require("node:path"), 1);
 async function writePptx({
@@ -199147,7 +198965,7 @@ function resolveResourcePath(value, resourcesDir) {
   if (!value || !resourcesDir) return "";
   const raw = value.startsWith("resource:") ? value.slice("resource:".length) : value;
   const candidate = import_node_path3.default.isAbsolute(raw) ? raw : import_node_path3.default.resolve(resourcesDir, raw);
-  return (0, import_node_fs2.existsSync)(candidate) ? candidate : "";
+  return (0, import_node_fs3.existsSync)(candidate) ? candidate : "";
 }
 function svgToDataUri(svg) {
   const normalized = ensureSvgNamespace(svg.trim());
