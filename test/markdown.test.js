@@ -47,7 +47,20 @@ test('adds Marp defaults while preserving deck frontmatter', async () => {
 
   assert.match(markdown, /marp: true/)
   assert.match(markdown, /theme: deckbuilder/)
+  assert.match(markdown, /paginate: false/)
   assert.match(markdown, /title: Marp Deckbuilder Demo/)
+})
+
+test('preserves explicit pagination when requested', () => {
+  const deck = parseDeckMarkdown(`---
+title: Numbered deck
+paginate: true
+---
+
+# Cover`)
+  const markdown = buildMarpMarkdown(deck, { themeName: 'deckbuilder' })
+
+  assert.match(markdown, /paginate: true/)
 })
 
 test('parses SVG visual components for rich HTML and PPTX image output', () => {

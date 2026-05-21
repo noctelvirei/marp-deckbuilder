@@ -18,7 +18,7 @@ async function main() {
 async function buildCommand(argv) {
   const [{ loadDefinitions }, { parseDeckMarkdown }] = await Promise.all([
     import("./chunks/brand-N2HHKH3N.mjs"),
-    import("./chunks/markdown-VHFSP6XB.mjs")
+    import("./chunks/markdown-R7Y7OMMJ.mjs")
   ]);
   const inputPath = path.resolve(argv.input);
   const projectRoot = process.cwd();
@@ -36,7 +36,7 @@ async function buildCommand(argv) {
   const htmlAssets = argv.htmlAssets || "inline";
   let rendered;
   if (wantsHtml) {
-    const { renderDeckHtml } = await import("./chunks/render-NQ4DAW2N.mjs");
+    const { renderDeckHtml } = await import("./chunks/render-DH6RWJOW.mjs");
     rendered = renderDeckHtml(deck, {
       resourcesDir,
       definitions,

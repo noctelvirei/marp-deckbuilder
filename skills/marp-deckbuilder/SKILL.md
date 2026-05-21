@@ -45,6 +45,7 @@ node scripts/build-deck.mjs deck.md --out-dir output
 - PPTX brand backgrounds and logos are controlled by optional `assets` entries in `tool/resources/definitions/brand.json`, not by `theme.css`.
 - Keep using `resource:` references for brand images. The renderer embeds them in HTML and inserts them into PPTX; do not paste brand SVG source into Markdown.
 - Keep the Markdown compact; the tool owns layout and branding.
+- Do not add `paginate: true` unless the user explicitly asks for visible slide numbers.
 
 See [REFERENCE.md](REFERENCE.md) for component syntax and examples.
 

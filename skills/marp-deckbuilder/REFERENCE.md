@@ -20,6 +20,9 @@ The generated HTML uses vendored Marp CLI/Bespoke presenter assets from
 `tool/resources/templates/`, including the on-screen controls, overview mode,
 presenter view, keyboard/touch/wheel navigation, and fullscreen behavior.
 
+Visible slide numbers are off by default. Add `paginate: true` to deck
+frontmatter only when the user explicitly wants pagination on every slide.
+
 When writing an HTML file, the renderer inlines every used `resource:` asset as a
 `data:` URL by default. The HTML is self-contained, which works best in Claude
 Desktop chats and artifact previews. Authors should still reference assets with

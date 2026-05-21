@@ -38,7 +38,7 @@ export function buildMarpMarkdown(deck, options = {}) {
     marp: true,
     theme: deck.frontmatter.theme || options.themeName,
     size: deck.frontmatter.size || '16:9',
-    paginate: deck.frontmatter.paginate ?? true,
+    paginate: deck.frontmatter.paginate ?? false,
   }
 
   const body = deck.slides.map((slide) => slide.source).join('\n\n---\n\n')
