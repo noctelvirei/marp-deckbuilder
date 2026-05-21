@@ -135994,11 +135994,12 @@ import { existsSync, readFileSync } from "node:fs";
 import path from "node:path";
 import { pathToFileURL } from "node:url";
 function renderDeckHtml(deck, options = {}) {
+  const definitions = options.definitions;
   const htmlDeck = {
     ...deck,
     slides: deck.slides.filter((slide) => !shouldSkipHtml(slide)).map((slide) => ({
       ...slide,
-      source: applyHtmlSlideClass(slide)
+      source: applyHtmlBranding(slide, options.definitions?.brand)
     }))
   };
   const marp = new import_marp_core.Marp({
@@ -136007,7 +136008,6 @@ function renderDeckHtml(deck, options = {}) {
     inlineSVG: true,
     slideContainer: []
   });
-  const definitions = options.definitions;
   const assetMap = options.collectResources ? /* @__PURE__ */ new Map() : null;
   const resolverOptions = {
     assetMap,
@@ -136015,7 +136015,7 @@ function renderDeckHtml(deck, options = {}) {
     assetUrlPrefix: options.assetUrlPrefix
   };
   const themeCss = resolveResourceUrls(
-    [definitions.themeCss, brandBackgroundCss(definitions.brand)].filter(Boolean).join("\n"),
+    [definitions.themeCss, brandBackgroundCss(definitions.brand), brandLogoCss(definitions.brand)].filter(Boolean).join("\n"),
     options.resourcesDir,
     resolverOptions
   );
@@ -136060,6 +136060,20 @@ function brandBackgroundCss(brand = {}) {
   ].filter(Boolean);
   return rules.length ? rules.join("\n") : "";
 }
+function brandLogoCss(brand = {}) {
+  if (!brand.assets?.logo) return "";
+  const logoBox = brand.layouts?.logo || { x: 828, y: 21, w: 98, h: 24 };
+  return `.deck-brand-logo {
+  position: absolute;
+  left: ${ptToPxCss(brand, logoBox.x)};
+  top: ${ptToPxCss(brand, logoBox.y)};
+  width: ${ptToPxCss(brand, logoBox.w)};
+  height: ${ptToPxCss(brand, logoBox.h)};
+  object-fit: contain;
+  z-index: 20;
+  pointer-events: none;
+}`;
+}
 function backgroundRule(selector, resource) {
   if (!resource) return "";
   return `${selector} {
@@ -136069,11 +136083,39 @@ function backgroundRule(selector, resource) {
   background-repeat: no-repeat;
 }`;
 }
+function applyHtmlBranding(slide, brand = {}) {
+  const source = applyHtmlSlideClass(slide);
+  const logo = brandLogoForKind(brand, slideKind(slide));
+  if (!logo || /class=["'][^"']*\bdeck-brand-logo\b/i.test(source)) return source;
+  return `${logoHtml(logo, `${brand.name || "Brand"} logo`)}
+${source}`;
+}
 function applyHtmlSlideClass(slide) {
   const className = htmlClassForLayout(slide.layout);
   if (!className || /<!--\s*_class\s*:/i.test(slide.source)) return slide.source;
   return `<!-- _class: ${className} -->
 ${slide.source}`;
+}
+function brandLogoForKind(brand = {}, kind = "content") {
+  const logo = brand.assets?.logo;
+  if (!logo) return "";
+  if (typeof logo === "string") return logo;
+  return logo[kind] || (kind === "divider" ? logo.cover : "") || (kind === "close" ? logo.cover : "") || logo.default || "";
+}
+function logoHtml(src, alt) {
+  return `<img class="deck-brand-logo" src="${escapeHtmlAttr(src)}" alt="${escapeHtmlAttr(alt)}">`;
+}
+function slideKind(slide) {
+  switch (slide.layout) {
+    case "cover":
+      return "cover";
+    case "divider":
+      return "divider";
+    case "close":
+      return "close";
+    default:
+      return "content";
+  }
 }
 function htmlClassForLayout(layout) {
   switch (layout) {
@@ -136170,6 +136212,14 @@ function normalizeResourcePath(value) {
 function escapeCssUrl(value) {
   return String(value).replace(/["\\\n\r\f]/g, "\\$&");
 }
+function escapeHtmlAttr(value) {
+  return String(value).replace(/&/g, "&amp;").replace(/"/g, "&quot;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+}
+function ptToPxCss(brand, value) {
+  const pxToPt = brand.slide?.pxToPt || 0.75;
+  const numeric = Number(value || 0);
+  return `${Number((numeric / pxToPt).toFixed(3))}px`;
+}
 function isTruthyDirective(value) {
   return ["true", "yes", "on", "1"].includes(normalizeDirective(value));
 }
@@ -136198,6 +136248,7 @@ function escapeHtml(value) {
 }
 export {
   brandBackgroundCss,
+  brandLogoCss,
   htmlDocument,
   renderDeckHtml,
   resolveResourceUrls,

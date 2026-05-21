@@ -331,6 +331,55 @@ Body copy
   assert.doesNotMatch(rendered.document, /resource:content-bg\.png/)
 })
 
+test('applies brand logo assets to self-contained HTML slides', async () => {
+  await rm(tmpDir, { recursive: true, force: true })
+  await mkdir(path.join(tmpDir, 'resources'), { recursive: true })
+  await writeFile(
+    path.join(tmpDir, 'resources', 'logo.svg'),
+    '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 24"><text x="0" y="18">Brand</text></svg>',
+  )
+
+  const baseDefinitions = await loadDefinitions(
+    new URL('../resources/definitions', import.meta.url),
+  )
+  const definitions = {
+    ...baseDefinitions,
+    brand: {
+      ...baseDefinitions.brand,
+      assets: {
+        logo: {
+          default: 'resource:logo.svg',
+        },
+      },
+      layouts: {
+        ...baseDefinitions.brand.layouts,
+        logo: { x: 828, y: 21, w: 98, h: 24 },
+      },
+    },
+  }
+  const deck = parseDeckMarkdown(`# Cover
+
+---
+
+<deck-divider title="Section" subtitle="Transition"></deck-divider>
+
+---
+
+# Content
+
+Body copy`)
+  const rendered = renderDeckHtml(deck, {
+    resourcesDir: path.join(tmpDir, 'resources'),
+    definitions,
+    inlineAssets: true,
+  })
+
+  assert.match(rendered.document, /deck-brand-logo/)
+  assert.match(rendered.document, /data:image\/svg\+xml;base64,/)
+  assert.match(rendered.document, /left:\s*1104px/)
+  assert.doesNotMatch(rendered.document, /resource:logo\.svg/)
+})
+
 test('splits premium HTML slides from editable PPTX fallback slides', async () => {
   await rm(tmpDir, { recursive: true, force: true })
   await mkdir(tmpDir, { recursive: true })

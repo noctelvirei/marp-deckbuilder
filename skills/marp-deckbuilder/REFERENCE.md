@@ -31,6 +31,8 @@ Desktop chats and artifact previews. Authors should still reference assets with
 If `tool/resources/definitions/brand.json` declares `assets.backgrounds`, those
 background images are applied to HTML automatically and embedded into the HTML
 as `data:` URLs. The same declarations drive PPTX slide backgrounds.
+If it declares `assets.logo`, the renderer positions that logo from
+`layouts.logo` and embeds it into HTML as a `data:` URL too.
 
 Use `--html-assets copy` only when you explicitly want a sibling `resources/`
 folder beside the HTML. That output shape looks like:
@@ -41,8 +43,8 @@ Documents/Presentations/2026-05-21/example-deck/
   deck.html
   deck.pptx
   resources/
-    lightico-logo-blue-white.svg
-    lightico-title-bg.png
+    brand-logo-light.svg
+    brand-title-bg.png
     icons/
       utility-analytics-chart.svg
 ```

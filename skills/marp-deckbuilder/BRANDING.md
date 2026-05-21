@@ -54,6 +54,7 @@ customization should live.
 Brand backgrounds and logos should be declared in `brand.json` when both HTML
 and PPTX should use image assets. HTML embeds those `resource:` assets into the
 generated file by default; PPTX inserts them into slides as native image media.
+The HTML renderer positions `assets.logo` using `layouts.logo`.
 
 ```json
 {
