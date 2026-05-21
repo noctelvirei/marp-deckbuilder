@@ -226,16 +226,11 @@ Use `deck-visual` when a rich SVG should also land in PPTX as a faithful visual.
 
 ## Branding Updates
 
-Replace files in `tool/resources/definitions/` to update the brand:
-
-- `brand.json`: slide geometry, colors, fonts, PPTX component layout
-- `theme.css`: HTML/Marp styling
-
-Do not edit `tool/resources/templates/` for brand changes. That folder contains
-the vendored Marp/Bespoke presenter shell.
-
-Do not edit `SKILL.md` for brand changes.
+Use `BRANDING.md` for the brand contract and branded-fork merge procedure.
+In short: replace `tool/resources/definitions/` for visual brand changes, and do
+not edit `tool/resources/templates/` because that folder contains the vendored
+Marp/Bespoke presenter shell.
 
 ## Branded Fork Updates
 
-When a branded copy has diverged, merge the public upstream implementation instead of asking Claude to recreate the renderer. Preserve the branded `tool/resources/definitions/` files, keep the upstream `tool/resources/templates/` presenter assets, copy in the updated bundled `tool/dist/deckbuilder.cjs`, then adjust `SKILL.md` only for branded workflow guidance.
+When a branded copy has diverged, merge the public upstream implementation instead of asking Claude to recreate the renderer. Follow `BRANDING.md`, preserve the branded `tool/resources/definitions/` files, keep the upstream `tool/resources/templates/` presenter assets, copy in the updated bundled `tool/dist/deckbuilder.cjs`, then adjust `SKILL.md` only for branded workflow guidance.

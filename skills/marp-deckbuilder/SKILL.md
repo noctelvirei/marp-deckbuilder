@@ -9,7 +9,7 @@ Use this skill to turn source material into a lightweight component Markdown dec
 
 ## Core Rule
 
-Do not hand-write PowerPoint code. Write `deck.md` using supported `deck-*` components, then run the bundled CLI. Brand rules, layout coordinates, colors, and fonts live in `tool/resources/definitions/`. The HTML presenter uses vendored Marp CLI/Bespoke assets in `tool/resources/templates/`; do not recreate or replace that presenter from prompts. The skill runs the bundled `tool/dist/deckbuilder.cjs` file and does not need `node_modules`, `npm install`, Marp CLI, LibreOffice, PowerPoint automation, Chromium, or other external executables.
+Do not hand-write PowerPoint code. Write `deck.md` using supported `deck-*` components, then run the bundled CLI. Brand rules, layout coordinates, colors, and fonts live in `tool/resources/definitions/`; see `BRANDING.md` only when updating a branded fork or brand contract. The HTML presenter uses vendored Marp CLI/Bespoke assets in `tool/resources/templates/`; do not recreate or replace that presenter from prompts. The skill runs the bundled `tool/dist/deckbuilder.cjs` file and does not need `node_modules`, `npm install`, Marp CLI, LibreOffice, PowerPoint automation, Chromium, or other external executables.
 
 ## Workflow
 
@@ -42,4 +42,4 @@ See [REFERENCE.md](REFERENCE.md) for component syntax and examples.
 
 ## Updating A Branded Fork
 
-If this skill has been branded separately, merge from the public upstream rather than rebuilding the tool from prompts. Keep the local brand files in `tool/resources/definitions/`, keep the upstream `tool/resources/templates/` Marp/Bespoke presenter assets, replace the bundled renderer with the upstream `tool/dist/deckbuilder.cjs`, then edit only the brand definitions and this `SKILL.md` guidance when the branded workflow needs different instructions.
+If this skill has been branded separately, follow `BRANDING.md`. Merge from the public upstream rather than rebuilding the tool from prompts. Preserve the local brand files in `tool/resources/definitions/`, keep the upstream `tool/resources/templates/` Marp/Bespoke presenter assets, and replace the bundled renderer with the upstream `tool/dist/deckbuilder.cjs`.

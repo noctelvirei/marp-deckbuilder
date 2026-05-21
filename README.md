@@ -195,7 +195,8 @@ Key options:
 The portable Claude skill lives in `skills/marp-deckbuilder/`.
 
 It includes a small `SKILL.md`, examples, a build wrapper, replaceable
-definitions, and a bundled single-file copy of the native renderer under
+definitions, a `BRANDING.md` contract for branded forks, and a bundled
+single-file copy of the native renderer under
 `tool/dist/`. The skill also vendors the Marp CLI/Bespoke HTML presenter assets
 under `tool/resources/templates/`, so the HTML deck behaves like a real Marp
 slideshow without needing Marp CLI at runtime. The skill can produce HTML and
@@ -219,5 +220,5 @@ For branded internal copies, merge public upstream changes rather than asking an
 agent to recreate the renderer. Preserve or reapply the branded files in
 `skills/marp-deckbuilder/tool/resources/definitions/`, keep the vendored
 `tool/resources/templates/` presenter assets from upstream, replace the bundled
-`tool/dist/deckbuilder.cjs`, and edit `SKILL.md` only when workflow guidance
-needs to differ.
+`tool/dist/deckbuilder.cjs`, and follow
+`skills/marp-deckbuilder/BRANDING.md` for what is allowed to diverge.
