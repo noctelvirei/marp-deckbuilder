@@ -15059,69 +15059,64 @@ var PptxGenJS = class {
   }
 };
 
-// src/pptx.js
-import { existsSync } from "node:fs";
+// src/pptx/helpers.js
 import { Buffer as Buffer2 } from "node:buffer";
+import { existsSync } from "node:fs";
 import path from "node:path";
-async function writePptx({
-  deck,
-  outputPath,
-  brand,
-  resourcesDir
-}) {
-  const pptx = new PptxGenJS();
-  pptx.author = `${brand.name} Marp`;
-  pptx.company = brand.name;
-  pptx.subject = deck.frontmatter.title || `${brand.name} deck`;
-  pptx.title = deck.frontmatter.title || `${brand.name} deck`;
-  pptx.lang = "en-GB";
-  pptx.defineLayout({
-    name: brand.themeName.toUpperCase(),
-    width: brand.slide.widthIn,
-    height: brand.slide.heightIn
+function addTextBox(slide, brand, text, box, options = {}) {
+  slide.addText(text || "", {
+    x: ptToIn(box.x),
+    y: ptToIn(box.y),
+    w: ptToIn(box.w),
+    h: ptToIn(box.h),
+    fontFace: font(brand, box.font || "regular"),
+    fontSize: box.size || 14,
+    color: color(brand, box.color || "dark"),
+    bold: false,
+    margin: box.margin ?? 0.03,
+    valign: "top",
+    align: box.align,
+    fit: box.fit,
+    ...options
   });
-  pptx.layout = brand.themeName.toUpperCase();
-  pptx.theme = {
-    headFontFace: font(brand, "regular"),
-    bodyFontFace: font(brand, "regular"),
-    lang: "en-GB"
-  };
-  for (const slideModel of deck.slides) {
-    const slide = pptx.addSlide();
-    addNativeSlide(pptx, slide, slideModel, deck.frontmatter, brand, resourcesDir);
-  }
-  await pptx.writeFile({ fileName: outputPath });
 }
-function addNativeSlide(pptx, slide, model, frontmatter, brand, resourcesDir) {
-  switch (model.layout) {
-    case "cover":
-      return addCover(slide, model, frontmatter, brand);
-    case "divider":
-      return addDivider(slide, model, brand);
-    case "three-stat":
-      return addThreeStat(slide, model, brand);
-    case "cards":
-      return addCards(slide, model, brand);
-    case "chart":
-      return addChartSlide(pptx, slide, model, brand);
-    case "visual":
-      return addVisual(slide, model, brand);
-    case "comparison":
-      return addComparison(slide, model, brand);
-    case "swimlane":
-      return addSwimlane(slide, model, brand);
-    case "proof":
-      return addProof(slide, model, brand, resourcesDir);
-    case "next-steps":
-      return addNextSteps(slide, model, brand);
-    case "logo-wall":
-      return addLogoWall(slide, model, brand, resourcesDir);
-    case "close":
-      return addClose(slide, model, frontmatter, brand);
-    default:
-      return addContent(slide, model, brand);
-  }
+function addCell(slide, brand, text, x, y, w, h, fill, textStyle) {
+  addRect(slide, brand, x, y, w, h, color(brand, fill), color(brand, "border"), 0.4);
+  addTextBox(slide, brand, text, {
+    ...textStyle,
+    x: x + 8,
+    y: y + 8,
+    w: w - 16,
+    h: h - 12,
+    fit: "shrink"
+  });
 }
+function addRect(slide, brand, x, y, w, h, fill, line, lineWidth) {
+  slide.addShape("rect", {
+    x: ptToIn(x),
+    y: ptToIn(y),
+    w: ptToIn(w),
+    h: ptToIn(h),
+    fill: { color: fill },
+    line: line ? { color: line, width: lineWidth || 0.5 } : { color: fill, transparency: 100 }
+  });
+}
+function resolveResourcePath(value, resourcesDir) {
+  if (!value || !resourcesDir) return "";
+  const raw = value.startsWith("resource:") ? value.slice("resource:".length) : value;
+  const candidate = path.isAbsolute(raw) ? raw : path.resolve(resourcesDir, raw);
+  return existsSync(candidate) ? candidate : "";
+}
+function svgToDataUri(svg) {
+  const normalized = ensureSvgNamespace(svg.trim());
+  return `image/svg+xml;base64,${Buffer2.from(normalized, "utf8").toString("base64")}`;
+}
+function ensureSvgNamespace(svg) {
+  if (!/^<svg\b/i.test(svg) || /\sxmlns=/.test(svg)) return svg;
+  return svg.replace(/^<svg\b/i, '<svg xmlns="http://www.w3.org/2000/svg"');
+}
+
+// src/pptx/renderers.js
 function addCover(slide, model, frontmatter, brand) {
   const layout = brand.layouts.cover;
   addRect(slide, brand, 0, 0, brand.slide.widthPt, brand.slide.heightPt, color(brand, "dark"));
@@ -15512,57 +15507,66 @@ function addTakeaway(slide, model, brand) {
     });
   }
 }
-function addTextBox(slide, brand, text, box, options = {}) {
-  slide.addText(text || "", {
-    x: ptToIn(box.x),
-    y: ptToIn(box.y),
-    w: ptToIn(box.w),
-    h: ptToIn(box.h),
-    fontFace: font(brand, box.font || "regular"),
-    fontSize: box.size || 14,
-    color: color(brand, box.color || "dark"),
-    bold: false,
-    margin: box.margin ?? 0.03,
-    valign: "top",
-    align: box.align,
-    fit: box.fit,
-    ...options
+
+// src/pptx.js
+async function writePptx({
+  deck,
+  outputPath,
+  brand,
+  resourcesDir
+}) {
+  const pptx = new PptxGenJS();
+  pptx.author = `${brand.name} Marp`;
+  pptx.company = brand.name;
+  pptx.subject = deck.frontmatter.title || `${brand.name} deck`;
+  pptx.title = deck.frontmatter.title || `${brand.name} deck`;
+  pptx.lang = "en-GB";
+  pptx.defineLayout({
+    name: brand.themeName.toUpperCase(),
+    width: brand.slide.widthIn,
+    height: brand.slide.heightIn
   });
+  pptx.layout = brand.themeName.toUpperCase();
+  pptx.theme = {
+    headFontFace: font(brand, "regular"),
+    bodyFontFace: font(brand, "regular"),
+    lang: "en-GB"
+  };
+  for (const slideModel of deck.slides) {
+    const slide = pptx.addSlide();
+    addNativeSlide(pptx, slide, slideModel, deck.frontmatter, brand, resourcesDir);
+  }
+  await pptx.writeFile({ fileName: outputPath });
 }
-function addCell(slide, brand, text, x, y, w, h, fill, textStyle) {
-  addRect(slide, brand, x, y, w, h, color(brand, fill), color(brand, "border"), 0.4);
-  addTextBox(slide, brand, text, {
-    ...textStyle,
-    x: x + 8,
-    y: y + 8,
-    w: w - 16,
-    h: h - 12,
-    fit: "shrink"
-  });
-}
-function addRect(slide, brand, x, y, w, h, fill, line, lineWidth) {
-  slide.addShape("rect", {
-    x: ptToIn(x),
-    y: ptToIn(y),
-    w: ptToIn(w),
-    h: ptToIn(h),
-    fill: { color: fill },
-    line: line ? { color: line, width: lineWidth || 0.5 } : { color: fill, transparency: 100 }
-  });
-}
-function resolveResourcePath(value, resourcesDir) {
-  if (!value || !resourcesDir) return "";
-  const raw = value.startsWith("resource:") ? value.slice("resource:".length) : value;
-  const candidate = path.isAbsolute(raw) ? raw : path.resolve(resourcesDir, raw);
-  return existsSync(candidate) ? candidate : "";
-}
-function svgToDataUri(svg) {
-  const normalized = ensureSvgNamespace(svg.trim());
-  return `image/svg+xml;base64,${Buffer2.from(normalized, "utf8").toString("base64")}`;
-}
-function ensureSvgNamespace(svg) {
-  if (!/^<svg\b/i.test(svg) || /\sxmlns=/.test(svg)) return svg;
-  return svg.replace(/^<svg\b/i, '<svg xmlns="http://www.w3.org/2000/svg"');
+function addNativeSlide(pptx, slide, model, frontmatter, brand, resourcesDir) {
+  switch (model.layout) {
+    case "cover":
+      return addCover(slide, model, frontmatter, brand);
+    case "divider":
+      return addDivider(slide, model, brand);
+    case "three-stat":
+      return addThreeStat(slide, model, brand);
+    case "cards":
+      return addCards(slide, model, brand);
+    case "chart":
+      return addChartSlide(pptx, slide, model, brand);
+    case "visual":
+      return addVisual(slide, model, brand);
+    case "comparison":
+      return addComparison(slide, model, brand);
+    case "swimlane":
+      return addSwimlane(slide, model, brand);
+    case "proof":
+      return addProof(slide, model, brand, resourcesDir);
+    case "next-steps":
+      return addNextSteps(slide, model, brand);
+    case "logo-wall":
+      return addLogoWall(slide, model, brand, resourcesDir);
+    case "close":
+      return addClose(slide, model, frontmatter, brand);
+    default:
+      return addContent(slide, model, brand);
+  }
 }
 export {
   writePptx
