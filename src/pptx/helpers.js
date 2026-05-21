@@ -1,5 +1,5 @@
 import { Buffer } from 'node:buffer'
-import { existsSync } from 'node:fs'
+import { existsSync, readFileSync } from 'node:fs'
 import path from 'node:path'
 
 import { color, font, ptToIn } from '../brand.js'
@@ -49,8 +49,12 @@ export function addResourceImage(slide, resource, resourcesDir, box, altText = '
   const imagePath = resolveResourcePath(resource, resourcesDir)
   if (!imagePath) return false
 
+  const image = path.extname(imagePath).toLowerCase() === '.svg'
+    ? { data: svgToDataUri(readFileSync(imagePath, 'utf8')) }
+    : { path: imagePath }
+
   slide.addImage({
-    path: imagePath,
+    ...image,
     x: ptToIn(box.x),
     y: ptToIn(box.y),
     w: ptToIn(box.w),

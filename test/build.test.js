@@ -81,7 +81,10 @@ test('writes configured brand backgrounds and logos into PPTX media', async () =
   )
   await writeFile(path.join(tmpDir, 'resources', 'title-bg.png'), tinyPng)
   await writeFile(path.join(tmpDir, 'resources', 'content-bg.png'), tinyPng)
-  await writeFile(path.join(tmpDir, 'resources', 'logo.png'), tinyPng)
+  await writeFile(
+    path.join(tmpDir, 'resources', 'logo.svg'),
+    '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 10 10"><rect width="10" height="10" fill="#0f82f5"/></svg>',
+  )
 
   const definitions = await loadDefinitions(new URL('../resources/definitions', import.meta.url))
   const brand = {
@@ -92,7 +95,7 @@ test('writes configured brand backgrounds and logos into PPTX media', async () =
         content: 'resource:content-bg.png',
       },
       logo: {
-        default: 'resource:logo.png',
+        default: 'resource:logo.svg',
       },
     },
     layouts: {
@@ -119,6 +122,7 @@ Body copy`)
   const archive = await JSZip.loadAsync(await readFile(out))
   const mediaNames = Object.keys(archive.files).filter((name) => name.startsWith('ppt/media/'))
   assert.ok(mediaNames.length >= 3)
+  assert.ok(mediaNames.some((name) => name.endsWith('.svg')))
 })
 
 test('renders multiline SVG visual components as live HTML SVG', async () => {

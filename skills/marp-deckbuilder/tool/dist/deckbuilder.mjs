@@ -51,7 +51,7 @@ async function buildCommand(argv) {
     if (rendered.assets?.length) console.log(`Resources written to ${htmlResourcesDir}`);
   }
   if (argv.pptx) {
-    const { writePptx } = await import("./chunks/pptx-YDKF5MRD.mjs");
+    const { writePptx } = await import("./chunks/pptx-6AN5VIPT.mjs");
     const pptxPath = path.resolve(argv.pptx);
     await mkdir(path.dirname(pptxPath), { recursive: true });
     await writePptx({
