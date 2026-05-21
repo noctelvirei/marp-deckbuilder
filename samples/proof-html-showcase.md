@@ -118,78 +118,74 @@ The HTML deck is the polished data story. The PPTX is the editable handoff.
 ---
 
 <style scoped>
-.impact-lab {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 28px;
-  margin-top: 8px;
+.impact-svg {
+  background: #ffffff;
 }
-.impact-panel {
-  padding: 26px;
-  border: 1px solid #dedede;
-  background: #fdfdfd;
+.bar-fill {
+  animation: bar-in 900ms ease-out both;
+  transform-box: fill-box;
+  transform-origin: left center;
 }
-.impact-panel h2 {
-  margin-bottom: 20px;
-  font-size: 24px;
-}
-.spark-row {
-  display: grid;
-  grid-template-columns: 120px 1fr 54px;
-  gap: 14px;
-  align-items: center;
-  margin: 18px 0;
-}
-.spark-track {
-  height: 16px;
-  background: #f1f1f1;
-}
-.spark-track span {
-  display: block;
-  height: 100%;
-  background: linear-gradient(90deg, #0f82f5, #59d6fd);
-}
-.radar {
-  width: 100%;
-  height: auto;
-}
-.radar polygon {
+.radar-fill {
   filter: drop-shadow(0 16px 18px rgba(15, 130, 245, .18));
+  animation: fade-up 900ms ease-out both;
+}
+@keyframes bar-in {
+  from { transform: scaleX(0); }
+  to { transform: scaleX(1); }
+}
+@keyframes fade-up {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 </style>
 
 <!-- eyebrow: REPORT MODE -->
-<!-- takeaway: Claude can update these values by editing Markdown; nobody has to drag shapes around by hand. -->
+<!-- takeaway: Rich SVG visuals stay high fidelity in HTML and are embedded into PPTX without asking the model to draw PowerPoint shapes. -->
 
 # The HTML version can behave like a mini report
 
-<div class="impact-lab">
-  <section class="impact-panel">
-    <h2>Workstream impact</h2>
-    <div class="spark-row"><span>Speed</span><div class="spark-track"><span style="width:84%"></span></div><strong>84</strong></div>
-    <div class="spark-row"><span>Control</span><div class="spark-track"><span style="width:76%"></span></div><strong>76</strong></div>
-    <div class="spark-row"><span>Effort</span><div class="spark-track"><span style="width:68%"></span></div><strong>68</strong></div>
-    <div class="spark-row"><span>Visibility</span><div class="spark-track"><span style="width:91%"></span></div><strong>91</strong></div>
-  </section>
-  <section class="impact-panel">
-    <h2>Operating balance</h2>
-    <svg class="radar" viewBox="0 0 420 300" role="img" aria-label="Radar chart">
+<deck-visual title="Scenario operating model" caption="The PPTX version embeds this SVG as a crisp visual; use deck-chart when every data point must remain editable in PowerPoint.">
+  <svg class="impact-svg" viewBox="0 0 920 360" role="img" aria-label="Combined workstream impact bars and radar chart">
+    <rect x="0" y="0" width="920" height="360" rx="0" fill="#ffffff"/>
+    <rect x="18" y="18" width="884" height="324" fill="#fdfdfd" stroke="#dedede"/>
+    <text x="50" y="64" fill="#090909" font-family="Poppins, Aptos, sans-serif" font-size="24" font-weight="500">Workstream impact</text>
+    <g font-family="Poppins, Aptos, sans-serif" font-size="15" fill="#090909">
+      <text x="50" y="120">Speed</text>
+      <rect x="178" y="104" width="250" height="18" fill="#eef6fe"/>
+      <rect class="bar-fill" x="178" y="104" width="210" height="18" fill="#0f82f5"/>
+      <text x="446" y="120" font-weight="500">84</text>
+      <text x="50" y="170">Control</text>
+      <rect x="178" y="154" width="250" height="18" fill="#eef6fe"/>
+      <rect class="bar-fill" x="178" y="154" width="190" height="18" fill="#5143d5"/>
+      <text x="446" y="170" font-weight="500">76</text>
+      <text x="50" y="220">Effort</text>
+      <rect x="178" y="204" width="250" height="18" fill="#eef6fe"/>
+      <rect class="bar-fill" x="178" y="204" width="170" height="18" fill="#66cc8e"/>
+      <text x="446" y="220" font-weight="500">68</text>
+      <text x="50" y="270">Visibility</text>
+      <rect x="178" y="254" width="250" height="18" fill="#eef6fe"/>
+      <rect class="bar-fill" x="178" y="254" width="228" height="18" fill="#59d6fd"/>
+      <text x="446" y="270" font-weight="500">91</text>
+    </g>
+    <text x="575" y="64" fill="#090909" font-family="Poppins, Aptos, sans-serif" font-size="24" font-weight="500">Operating balance</text>
+    <g transform="translate(535 42)">
       <g fill="none" stroke="#dedede">
-        <polygon points="210,28 366,118 306,260 114,260 54,118"/>
-        <polygon points="210,76 320,139 278,236 142,236 100,139"/>
-        <polygon points="210,124 274,160 250,212 170,212 146,160"/>
+        <polygon points="170,28 326,118 266,260 74,260 14,118"/>
+        <polygon points="170,76 280,139 238,236 102,236 60,139"/>
+        <polygon points="170,124 234,160 210,212 130,212 106,160"/>
       </g>
-      <polygon points="210,54 338,132 286,238 136,244 86,126" fill="rgba(15,130,245,.20)" stroke="#0f82f5" stroke-width="5"/>
+      <polygon class="radar-fill" points="170,54 298,132 246,238 96,244 46,126" fill="rgba(15,130,245,.20)" stroke="#0f82f5" stroke-width="5"/>
       <g fill="#090909" font-family="Poppins, Aptos, sans-serif" font-size="14" font-weight="500">
-        <text x="184" y="20">Speed</text>
-        <text x="342" y="110">Control</text>
-        <text x="286" y="286">Risk</text>
-        <text x="74" y="286">Effort</text>
-        <text x="10" y="110">Visibility</text>
+        <text x="144" y="20">Speed</text>
+        <text x="302" y="110">Control</text>
+        <text x="246" y="286">Risk</text>
+        <text x="34" y="286">Effort</text>
+        <text x="-30" y="110">Visibility</text>
       </g>
-    </svg>
-  </section>
-</div>
+    </g>
+  </svg>
+</deck-visual>
 
 ---
 

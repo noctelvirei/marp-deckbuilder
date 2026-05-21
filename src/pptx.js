@@ -1,5 +1,6 @@
 import pptxgen from 'pptxgenjs'
 import { existsSync } from 'node:fs'
+import { Buffer } from 'node:buffer'
 import path from 'node:path'
 
 import { color, font, ptToIn } from './brand.js'
@@ -48,6 +49,8 @@ function addNativeSlide(pptx, slide, model, frontmatter, brand, resourcesDir) {
       return addCards(slide, model, brand)
     case 'chart':
       return addChartSlide(pptx, slide, model, brand)
+    case 'visual':
+      return addVisual(slide, model, brand)
     case 'comparison':
       return addComparison(slide, model, brand)
     case 'swimlane':
@@ -217,6 +220,41 @@ function addChartSlide(pptx, slide, model, brand) {
     showCatAxis: true,
     showLeaderLines: false,
   })
+
+  addTakeaway(slide, model, brand)
+}
+
+function addVisual(slide, model, brand) {
+  const visual = model.visual
+  if (!visual?.svg) return addContent(slide, model, brand)
+
+  addBaseHeader(slide, model, brand)
+
+  const layout = brand.layouts.visual || {
+    x: 62,
+    y: 126,
+    w: 836,
+    h: 292,
+    caption: { x: 84, y: 418, w: 792, h: 20, font: 'regular', size: 8, color: 'muted' },
+  }
+  try {
+    slide.addImage({
+      data: svgToDataUri(visual.svg),
+      x: ptToIn(layout.x),
+      y: ptToIn(layout.y),
+      w: ptToIn(layout.w),
+      h: ptToIn(layout.h),
+      altText: visual.alt || visual.title || model.title,
+    })
+  } catch {
+    if (visual.fallback) {
+      addTextBox(slide, brand, visual.fallback, brand.layouts.body.paragraph, { breakLine: true, fit: 'shrink' })
+    }
+  }
+
+  if (visual.caption) {
+    addTextBox(slide, brand, visual.caption, layout.caption, { fit: 'shrink' })
+  }
 
   addTakeaway(slide, model, brand)
 }
@@ -513,4 +551,14 @@ function resolveResourcePath(value, resourcesDir) {
   const raw = value.startsWith('resource:') ? value.slice('resource:'.length) : value
   const candidate = path.isAbsolute(raw) ? raw : path.resolve(resourcesDir, raw)
   return existsSync(candidate) ? candidate : ''
+}
+
+function svgToDataUri(svg) {
+  const normalized = ensureSvgNamespace(svg.trim())
+  return `image/svg+xml;base64,${Buffer.from(normalized, 'utf8').toString('base64')}`
+}
+
+function ensureSvgNamespace(svg) {
+  if (!/^<svg\b/i.test(svg) || /\sxmlns=/.test(svg)) return svg
+  return svg.replace(/^<svg\b/i, '<svg xmlns="http://www.w3.org/2000/svg"')
 }

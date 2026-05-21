@@ -63,6 +63,13 @@ export function compileDeckComponents(source) {
     chart.replaceWith(renderChartHtml(model))
   })
 
+  root('deck-visual').each((_, element) => {
+    const visual = root(element)
+    const model = parseVisual(visual)
+    components.push(model)
+    visual.replaceWith(renderVisualHtml(model))
+  })
+
   root('deck-comparison').each((_, element) => {
     const comparison = root(element)
     const model = parseComparison(root, comparison)
@@ -149,6 +156,26 @@ export function parseChart(chart) {
     series,
     labels,
     values,
+  }
+}
+
+export function parseVisual(visual) {
+  const html = visual.html() || ''
+  const svg = firstMatch(html, /(<svg\b[\s\S]*?<\/svg>)/i)
+  const titleAttr = visual.attr('title') || ''
+  const title = titleAttr || cleanText(visual.find('h2,h3,figcaption').first().text())
+  const caption = visual.attr('caption') || ''
+  const fallback = visual.attr('fallback') || cleanText(visual.find('p').first().text() || visual.text())
+
+  return {
+    type: 'visual',
+    title,
+    showTitle: Boolean(titleAttr),
+    caption,
+    alt: visual.attr('alt') || title || fallback,
+    svg,
+    html: html.trim(),
+    fallback,
   }
 }
 
@@ -257,6 +284,16 @@ export function renderChartHtml(chart) {
 </figure>`
 }
 
+export function renderVisualHtml(visual) {
+  const body = visual.html || (visual.fallback ? `<p>${escapeHtml(visual.fallback)}</p>` : '')
+
+  return `<figure class="deck-visual">
+  ${visual.showTitle ? `<figcaption>${escapeHtml(visual.title)}</figcaption>` : ''}
+  <div class="deck-visual-stage">${body}</div>
+  ${visual.caption ? `<p class="deck-visual-caption">${escapeHtml(visual.caption)}</p>` : ''}
+</figure>`
+}
+
 export function renderComparisonHtml(comparison) {
   const rows = comparison.rows
     .map(
@@ -359,6 +396,11 @@ function splitCsv(value = '') {
     .split(',')
     .map((item) => item.trim())
     .filter(Boolean)
+}
+
+function firstMatch(source, pattern) {
+  const match = String(source || '').match(pattern)
+  return match?.[1] || ''
 }
 
 function cleanText(value) {

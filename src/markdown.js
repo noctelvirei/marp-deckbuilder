@@ -86,6 +86,7 @@ export function parseSlide(source, index, originalSource = source, components = 
     stats: firstComponent(components, 'stat-grid')?.stats || extractStats(source),
     cards: firstComponent(components, 'card-grid')?.cards || extractCards(source),
     chart: firstComponent(components, 'chart'),
+    visual: firstComponent(components, 'visual'),
     comparison: firstComponent(components, 'comparison'),
     swimlane: firstComponent(components, 'swimlane'),
     proof,
@@ -111,6 +112,7 @@ function inferLayout(source, index) {
   if (/<div[^>]+class=["'][^"']*stat-grid/i.test(source)) return 'three-stat'
   if (/<div[^>]+class=["'][^"']*card-grid/i.test(source)) return 'cards'
   if (/<figure[^>]+class=["'][^"']*deck-chart/i.test(source)) return 'chart'
+  if (/<figure[^>]+class=["'][^"']*deck-visual/i.test(source)) return 'visual'
   if (/<table[^>]+class=["'][^"']*deck-comparison/i.test(source)) return 'comparison'
   if (/<div[^>]+class=["'][^"']*deck-swimlane/i.test(source)) return 'swimlane'
   if (/<div[^>]+class=["'][^"']*deck-proof/i.test(source)) return 'proof'
@@ -130,6 +132,7 @@ function inferComponentLayout(components) {
     ['logo-wall', 'logo-wall'],
     ['divider', 'divider'],
     ['close', 'close'],
+    ['visual', 'visual'],
     ['chart', 'chart'],
     ['card-grid', 'cards'],
     ['stat-grid', 'three-stat'],

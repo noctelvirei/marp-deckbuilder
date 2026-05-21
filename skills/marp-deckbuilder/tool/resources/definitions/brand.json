@@ -88,6 +88,13 @@
       "valueAxis": { "font": "regular", "size": 8, "color": "body" },
       "gridLineColor": "E9E9E9"
     },
+    "visual": {
+      "x": 62,
+      "y": 126,
+      "w": 836,
+      "h": 292,
+      "caption": { "x": 84, "y": 418, "w": 792, "h": 20, "font": "regular", "size": 8, "color": "muted" }
+    },
     "comparison": {
       "x": 46,
       "y": 136,

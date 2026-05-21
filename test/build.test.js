@@ -3,6 +3,8 @@ import { mkdir, readFile, rm, stat } from 'node:fs/promises'
 import path from 'node:path'
 import { test } from 'node:test'
 
+import JSZip from 'jszip'
+
 import { loadDefinitions } from '../src/brand.js'
 import { parseDeckMarkdown } from '../src/markdown.js'
 import { renderDeckHtml } from '../src/render.js'
@@ -39,4 +41,31 @@ test('writes editable fallback PPTX', async () => {
   const info = await stat(out)
   assert.equal(info.isFile(), true)
   assert.ok(info.size > 1000)
+})
+
+test('writes SVG visual components as embedded PPTX media', async () => {
+  await rm(tmpDir, { recursive: true, force: true })
+  await mkdir(tmpDir, { recursive: true })
+
+  const source = `# Cover
+
+---
+
+# Visual report
+
+<deck-visual title="Operating model">
+  <svg viewBox="0 0 200 100" role="img" aria-label="Simple metric">
+    <rect x="10" y="10" width="180" height="80" fill="#eef6fe"/>
+    <text x="30" y="60">84%</text>
+  </svg>
+</deck-visual>`
+  const definitions = await loadDefinitions(new URL('../resources/definitions', import.meta.url))
+  const deck = parseDeckMarkdown(source)
+  const out = path.join(tmpDir, 'visual.pptx')
+
+  await writePptx({ deck, outputPath: out, brand: definitions.brand, mode: 'editable' })
+
+  const archive = await JSZip.loadAsync(await readFile(out))
+  const mediaNames = Object.keys(archive.files).filter((name) => name.startsWith('ppt/media/'))
+  assert.ok(mediaNames.some((name) => name.endsWith('.svg')))
 })

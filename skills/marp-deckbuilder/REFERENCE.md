@@ -58,6 +58,22 @@ The skill runs the bundled renderer and does not install dependencies.
 
 Supported chart types: `bar`, `line`.
 
+### Visual SVG
+
+Use `deck-visual` for rich charts, diagrams, maps, and report panels that should stay visually identical between HTML and PPTX without asking the agent to build hundreds of PowerPoint shapes. The HTML output keeps the SVG inline. The PPTX output embeds the SVG as a crisp visual image, so it is not shape-editable in PowerPoint; edit the source Markdown/SVG and rebuild. Put essential fills, strokes, fonts, labels, and dimensions inside the SVG because PPTX receives only the SVG content.
+
+```md
+<deck-visual title="Scenario operating model" caption="Embedded as SVG in PPTX.">
+  <svg viewBox="0 0 920 360" role="img" aria-label="Scenario operating model">
+    <rect x="18" y="18" width="884" height="324" fill="#fdfdfd" stroke="#dedede"/>
+    <text x="50" y="64" font-family="Poppins, Aptos, sans-serif" font-size="24" font-weight="500">Workstream impact</text>
+    <rect x="178" y="104" width="250" height="18" fill="#eef6fe"/>
+    <rect x="178" y="104" width="210" height="18" fill="#0f82f5"/>
+    <text x="446" y="120" font-family="Poppins, Aptos, sans-serif" font-size="15" font-weight="500">84</text>
+  </svg>
+</deck-visual>
+```
+
 ### Comparison
 
 ```md
@@ -128,7 +144,7 @@ Images resolve against `tool/resources/`. If an image is absent, the PPTX uses a
 
 HTML is the high-fidelity presentation format. Use raw HTML, inline SVG, and scoped CSS for slides that should feel more like a polished data story than a standard PowerPoint page. Keep the source compact enough that the user can ask Claude to change the data, labels, or emphasis.
 
-These patterns are best for HTML output. If PowerPoint editability matters, pair the rich HTML slide with a simpler `deck-*` summary slide.
+Use `deck-visual` when a rich SVG should also land in PPTX as a faithful visual. Use `deck-chart`, `deck-stat-grid`, `deck-card-grid`, or the other structured components when PowerPoint editability matters more than exact visual fidelity.
 
 ### SVG Metric Dashboard
 
@@ -212,3 +228,7 @@ Replace files in `tool/resources/definitions/` to update the brand:
 - `theme.css`: HTML/Marp styling
 
 Do not edit `SKILL.md` for brand changes.
+
+## Branded Fork Updates
+
+When a branded copy has diverged, merge the public upstream implementation instead of asking Claude to recreate the renderer. Preserve the branded `tool/resources/definitions/` files, copy in the updated bundled `tool/dist/deckbuilder.cjs`, then adjust `SKILL.md` only for branded workflow guidance.

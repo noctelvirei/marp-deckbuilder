@@ -49,3 +49,28 @@ test('adds Marp defaults while preserving deck frontmatter', async () => {
   assert.match(markdown, /theme: deckbuilder/)
   assert.match(markdown, /title: Marp Deckbuilder Demo/)
 })
+
+test('parses SVG visual components for rich HTML and PPTX image output', () => {
+  const source = `# Cover
+
+---
+
+<!-- takeaway: Use the source Markdown for edits. -->
+
+# Visual report
+
+<deck-visual title="Operating model" caption="Embedded as SVG in PPTX.">
+  <svg viewBox="0 0 200 100" role="img" aria-label="Simple metric">
+    <rect x="10" y="10" width="180" height="80" fill="#eef6fe"/>
+    <text x="30" y="60">84%</text>
+  </svg>
+</deck-visual>`
+
+  const deck = parseDeckMarkdown(source)
+
+  assert.equal(deck.slides[1].layout, 'visual')
+  assert.equal(deck.slides[1].visual.title, 'Operating model')
+  assert.equal(deck.slides[1].visual.caption, 'Embedded as SVG in PPTX.')
+  assert.match(deck.slides[1].visual.svg, /<svg/)
+  assert.match(deck.slides[1].source, /deck-visual-stage/)
+})

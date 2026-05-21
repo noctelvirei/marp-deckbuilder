@@ -181,6 +181,39 @@ li {
   text-align: right;
 }
 
+.deck-visual {
+  margin: 24px 0 0;
+}
+
+.deck-visual figcaption {
+  margin-bottom: 12px;
+  color: #090909;
+  font-size: 18px;
+  font-weight: 500;
+}
+
+.deck-visual-stage {
+  display: grid;
+  min-height: 380px;
+  place-items: center;
+  overflow: hidden;
+  border: 1px solid #dedede;
+  background: #fdfdfd;
+}
+
+.deck-visual-stage svg {
+  display: block;
+  width: 100%;
+  height: auto;
+  max-height: 390px;
+}
+
+.deck-visual-caption {
+  margin: 8px 0 0;
+  color: #888888;
+  font-size: 11px;
+}
+
 .takeaway {
   position: absolute;
   left: 0;

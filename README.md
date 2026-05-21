@@ -1,6 +1,6 @@
 # Marp Deckbuilder
 
-Marp Deckbuilder is a narrow, branded wrapper around Marp-style Markdown.
+Marp Deckbuilder is a narrow, brandable wrapper around Marp-style Markdown.
 
 It keeps the authoring experience close to Marp, renders rich HTML slides with
 brand styling, and builds editable PPTX from known deck components.
@@ -73,7 +73,7 @@ Optional slide comments guide the PPTX renderer:
 </deck-stat-grid>
 ```
 
-Known components render to both HTML and native PPTX objects:
+Known components render to both HTML and native PPTX output:
 
 ```md
 <deck-card-grid columns="3">
@@ -103,6 +103,7 @@ The native renderer only promises editability for known deck components:
 - `deck-stat-grid` becomes editable text and simple shapes.
 - `deck-card-grid` becomes editable cards, text, and borders.
 - `deck-chart` becomes a native PowerPoint chart.
+- `deck-visual` embeds inline SVG as crisp PPTX media while keeping the SVG inline in HTML. Essential styling should live inside the SVG.
 - `deck-comparison` becomes editable table-like shapes.
 - `deck-swimlane` becomes editable lane, step, and arrow objects.
 - `deck-proof` becomes editable stats, context, bridge, and optional logo area.
@@ -127,6 +128,13 @@ renderer will not infer editable PowerPoint structure from arbitrary CSS.
 </deck-card-grid>
 
 <deck-chart type="bar" title="Average completion time" labels="Digital, Branch" values="2.1, 3.8"></deck-chart>
+
+<deck-visual title="Scenario operating model" caption="Embedded as SVG in PPTX.">
+  <svg viewBox="0 0 920 360" role="img" aria-label="Scenario operating model">
+    <rect x="18" y="18" width="884" height="324" fill="#fdfdfd" stroke="#dedede"/>
+    <rect x="178" y="104" width="210" height="18" fill="#0f82f5"/>
+  </svg>
+</deck-visual>
 
 <deck-comparison left-title="Internal build" right-title="Deckbuilder">
   <deck-row label="Timeline" left="12-18 months" right="6-8 weeks"></deck-row>
@@ -201,3 +209,11 @@ npm run package:skill
 
 The package step rebuilds `tool/dist/deckbuilder.cjs`, excludes local output and
 cache folders, and fails if the uncompressed skill exceeds 30 MB.
+
+## Branded Forks
+
+For branded internal copies, merge public upstream changes rather than asking an
+agent to recreate the renderer. Preserve or reapply the branded files in
+`skills/marp-deckbuilder/tool/resources/definitions/`, replace the bundled
+`tool/dist/deckbuilder.cjs`, and edit `SKILL.md` only when workflow guidance
+needs to differ.
