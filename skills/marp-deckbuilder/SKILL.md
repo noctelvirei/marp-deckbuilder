@@ -1,79 +1,72 @@
 ---
 name: marp-deckbuilder
-description: Builds brandable decks from reports, research, CRM/sales notes, Confluence context, MCP outputs, or pasted briefing data. Use when the user asks for a Deckbuilder deck, editable PPTX, Marp-style slides, sales/report slides, customer briefing deck, executive summary deck, proof deck, or says to use marp-deckbuilder.
+description: Builds brandable presentation decks with rich HTML slides and editable PPTX output. Use when the user asks for a deck, presentation, slideshow, editable PowerPoint, executive briefing deck, proof deck, or Marp-style slides.
 ---
 
 # Marp Deckbuilder
 
-Use this skill to turn source material into a lightweight component Markdown deck, then build HTML and editable PPTX with the bundled native renderer. When the user asks for a report rather than a presentation, build a detailed long-form HTML report instead.
+Use this skill to turn source material into a lightweight component Markdown deck, then build rich HTML and editable PPTX with the bundled native renderer.
 
 ## Core Rule
 
-Do not hand-write PowerPoint code. For decks, write `deck.md` using supported `deck-*` components, then run the bundled CLI. For reports, write `report.md` as long-form Markdown and run the report wrapper. Brand rules, layout coordinates, colors, and fonts live in `tool/resources/definitions/`; see `BRANDING.md` only when updating a branded fork or brand contract. The HTML presenter uses vendored Marp CLI/Bespoke assets in `tool/resources/templates/`; do not recreate or replace that presenter from prompts. The skill runs the bundled `tool/dist/deckbuilder.mjs` runtime and does not need `node_modules`, `npm install`, Marp CLI, LibreOffice, PowerPoint automation, Chromium, or other external executables.
+Do not hand-write PowerPoint code. Write `deck.md` using supported `deck-*` components, then run the bundled CLI. Brand rules, layout coordinates, colors, fonts, logos, and backgrounds live in `tool/resources/definitions/`; see `BRANDING.md` only when updating a branded fork or brand contract.
+
+The HTML presenter uses vendored Marp CLI/Bespoke assets in `tool/resources/templates/`. Do not recreate or replace that presenter from prompts. The skill runs the bundled `tool/dist/deckbuilder.mjs` runtime and does not need `node_modules`, `npm install`, Marp CLI, LibreOffice, PowerPoint automation, Chromium, or other external executables.
+
+The build wrapper injects Chart.js, Observable Plot, and D3 into the generated HTML head from local vendor files, so browser-only slides using those libraries work offline after generation. Do not paste minified library source into Markdown.
 
 ## Workflow
 
-1. Read the user's source material and identify the deck purpose, audience, and desired output.
-2. Create one presentation folder for the request. Prefer
-   `Documents/Presentations/YYYY-MM-DD/<deck-title-slug>/` when the user has not
-   specified a location.
+1. Read the user's source material and identify the deck purpose, audience, narrative arc, and desired output.
+2. Create one presentation folder for the request. Prefer `Documents/Presentations/YYYY-MM-DD/<deck-title-slug>/` when the user has not specified a location.
 3. Draft `deck.md` in that folder using Marp-style slides separated by `---`.
-4. Use supported deck components for native PPTX output:
-   `deck-divider`, `deck-stat-grid`, `deck-card-grid`, `deck-chart`, `deck-visual`, `deck-comparison`, `deck-swimlane`, `deck-proof`, `deck-logo-wall`, `deck-next-steps`, `deck-close`.
-5. Build the deck:
+4. Use supported deck components for native PPTX output: `deck-divider`, `deck-stat-grid`, `deck-card-grid`, `deck-chart`, `deck-visual`, `deck-comparison`, `deck-swimlane`, `deck-proof`, `deck-logo-wall`, `deck-next-steps`, `deck-takeaway`, and `deck-close`.
+5. Build the deck from this skill folder:
 
 ```bash
-node scripts/build-deck.mjs deck.md --out-dir output
+node scripts/build-deck.mjs <output-folder>/deck.md --out-dir <output-folder>
 ```
 
-6. Return links/paths to the generated `.html`, `.pptx`, source `.md`, and
-   `resources/` folder if one was requested. By default the HTML is
-   self-contained because `resource:` assets are embedded as `data:` URLs.
-
-## Report Workflow
-
-Use this workflow when the user asks for a report, write-up, detailed analysis,
-research note, or briefing document rather than a slide deck.
-
-1. Create one report folder for the request. Prefer
-   `Documents/Presentations/YYYY-MM-DD/<report-title-slug>/` unless the user has
-   specified a location.
-2. Draft `report.md` as long-form Markdown, not slides. Use headings, narrative
-   sections, tables, bullet lists, blockquotes, and inline images where helpful.
-3. Do not use `deck-*` components in reports. Those are for slide/PPTX output.
-4. Build the report:
-
-```bash
-node scripts/build-report.mjs report.md --out-dir output
-```
-
-5. Return the generated `.html` and source `.md`. For PDF, tell the user to open
-   the HTML in a browser and use Print to PDF. Do not try to invoke Marp PDF,
-   Chromium, Playwright, PowerPoint, or an external converter from the skill.
+6. Return the generated `.html`, `.pptx`, source `.md`, and `resources/` folder if one was requested. By default the HTML is self-contained because `resource:` assets are embedded as `data:` URLs.
 
 ## Authoring Guidance
 
-- Prefer concise executive language over report prose.
+- Prefer concise executive slide language.
 - Treat HTML as the premium presentation format and PPTX as the editable business handoff.
-- If the user asks for a report, do not force it into slides. Build the long-form report HTML and make it print-friendly instead.
-- For reports, analytics, research summaries, and sales/customer briefings, create at least one premium HTML slide that is materially richer than the PPTX version: an annotated SVG dashboard, journey map, funnel, heatmap, process animation, interactive demo, or dense report-style data view.
-- Do not make HTML merely mirror the PPTX when the user wants impact. Use raw HTML, inline SVG, scoped CSS, layout grids, annotations, visual flows, and browser JavaScript for high-fidelity HTML slides.
-- Use supported `deck-*` components for slides or sections that must remain editable in PowerPoint. If a rich HTML slide is important but not PPTX-editable, pair it with a simpler editable fallback slide.
-- Mark premium browser slides with `<!-- pptx: skip -->`. Mark the paired editable fallback with `<!-- html: skip -->` or `<!-- pptx-only: true -->` so the HTML deck does not show duplicate fallback slides.
+- Use supported `deck-*` components when the slide must remain editable in PowerPoint.
+- Use `deck-visual` for rich inline SVG charts, maps, dashboards, and annotated diagrams. HTML keeps the SVG inline; PPTX embeds the SVG as a crisp visual image. Put essential fills, strokes, fonts, and labels inside the SVG because PPTX receives only the SVG.
+- Use browser-only HTML, scoped CSS, and JavaScript when the HTML slide needs richer behavior than PowerPoint can edit. Mark those slides with `<!-- pptx: skip -->` or `<!-- html-only: true -->`.
+- Pair each browser-only slide with a simpler editable fallback marked `<!-- html: skip -->`, `<!-- html-skip: true -->`, or `<!-- pptx-only: true -->` when the PPTX audience needs the same point.
+- Use Chart.js for standard bar, stacked bar, line, and doughnut slides.
+- Use Observable Plot for concise dot, area, heatmap, and small-multiple slides.
+- Use D3 for bespoke SVG visuals such as treemaps, custom arcs, Sankey-style flows, and force layouts.
 - Use `deck-divider` for sections, `deck-stat-grid` for headline metrics, `deck-card-grid` for recommendations, `deck-comparison` for option tradeoffs, `deck-proof` for customer/research proof, and `deck-next-steps` for close-out actions.
-- Do not label section dividers as `ACT 01`, `ACT 02`, or similar unless the user or source material explicitly uses an act/play structure. Prefer plain business labels such as `Context`, `Evidence`, `Recommendations`, `Implementation`, or omit the divider label entirely.
+- Do not label section dividers as `ACT 01`, `ACT 02`, or similar unless the user or source material explicitly uses an act/play structure. Prefer plain business labels such as `Context`, `Evidence`, `Recommendations`, or `Implementation`.
 - Use `icon="filename-stem"` on `deck-card` for icons from `tool/resources/icons/`. Do not put raw `<img>` tags inside cards unless you need to; `icon`, `image`, and `src` are the supported card media contract and work in both HTML and PPTX.
 - Reference assets by file name/path, not by asking the renderer to know product-specific names. `icon="face-scan"` resolves dynamically to `tool/resources/icons/face-scan.svg` or another supported image extension if present.
 - Use `deck-chart` only when the chart can be described with structured labels and values.
-- Use `deck-visual` for rich inline SVG charts, maps, dashboards, and annotated diagrams. HTML keeps the SVG inline; PPTX embeds the SVG as a crisp visual image. Put essential fills, strokes, fonts, and labels inside the SVG itself because PPTX receives only the SVG. The visual is not editable as PowerPoint shapes, but the source Markdown/SVG remains easy to edit and regenerate.
-- Arbitrary HTML, scoped CSS, and JavaScript may be used for premium HTML slides. Mark browser-only slides with `<!-- pptx: skip -->` or `<!-- html-only: true -->`; HTML keeps the slide, while native PPTX omits it cleanly.
-- Brand backgrounds and logos are controlled by optional `assets` entries in `tool/resources/definitions/brand.json`. HTML embeds those assets as self-contained data URLs; PPTX inserts them as slide images.
 - Keep using `resource:` references for brand images. The renderer embeds them in HTML and inserts them into PPTX; do not paste brand SVG source into Markdown.
 - The renderer fails loudly on invalid component Markdown or missing assets. If the build errors, fix the Markdown or add the referenced file under `tool/resources/`; do not work around it by leaving empty cards, broken images, or unsupported component shapes.
 - Keep the Markdown compact; the tool owns layout and branding.
 - Do not add `paginate: true` unless the user explicitly asks for visible slide numbers.
 
-See [REFERENCE.md](REFERENCE.md) for component syntax and examples.
+## Script Rules For Premium Slides
+
+1. Do not include CDN `<script src>` tags in `deck.md`. The build wrapper injects bundled vendor libraries into the final HTML head.
+2. Put chart containers on browser-only slides marked `<!-- pptx: skip -->`.
+3. Put init `<script>` blocks on the same browser-only slide as the chart container, after the chart container.
+4. Use `document.addEventListener('DOMContentLoaded', function() { ... })` for library initializers unless the script is visibly after the target DOM node and does not depend on layout timing.
+5. Never use em dashes or double-hyphen separators in JavaScript comments inside Markdown. Use simple comments such as `// Bar chart section`.
+
+## PPTX Fidelity
+
+PowerPoint cannot run browser JavaScript. For PPTX, use one of these patterns:
+
+- `deck-chart` for editable native bar or line charts.
+- `deck-visual` with inline SVG for a faithful raster/media visual in PPTX and inline SVG in HTML.
+- A browser-only JS slide paired with an editable fallback slide when interaction is valuable in HTML.
+
+See [REFERENCE.md](REFERENCE.md) for all component syntax, directives, and premium slide patterns.
 
 ## Updating A Branded Fork
 

@@ -6,38 +6,75 @@ import { spawn } from 'node:child_process'
 import { fileURLToPath } from 'node:url'
 
 const repoRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..')
-const skillRoot = resolve(repoRoot, 'skills', 'marp-deckbuilder')
 const smokeRoot = resolve(repoRoot, '.tmp', 'skill-smoke')
-const outputDir = join(smokeRoot, 'output')
-const htmlPath = join(outputDir, 'example.html')
-const pptxPath = join(outputDir, 'example.pptx')
 
 await rm(smokeRoot, { recursive: true, force: true })
 await mkdir(smokeRoot, { recursive: true })
-await cp(skillRoot, smokeRoot, {
-  recursive: true,
-  filter: (source) => !source.includes(`${resolve(skillRoot, 'output')}`),
-})
 
-if (existsSync(join(smokeRoot, 'node_modules'))) {
-  throw new Error('Skill smoke copy unexpectedly contains node_modules.')
-}
+await smokeDeckSkill()
+await smokeReportSkill()
 
-await run(process.execPath, [
-  'scripts/build-deck.mjs',
-  'examples/example.md',
-  '--out-dir',
-  'output',
-])
-
-await assertFile(htmlPath, 1000)
-await assertFile(pptxPath, 1000)
 console.log(`Skill smoke passed: ${smokeRoot}`)
 
-async function run(command, commandArgs) {
+async function smokeDeckSkill() {
+  const sourceRoot = resolve(repoRoot, 'skills', 'marp-deckbuilder')
+  const skillRoot = join(smokeRoot, 'marp-deckbuilder')
+  const outputDir = join(skillRoot, 'output')
+  await copySkill(sourceRoot, skillRoot)
+
+  await run(process.execPath, [
+    'scripts/build-deck.mjs',
+    'examples/example.md',
+    '--out-dir',
+    'output',
+  ], skillRoot)
+
+  await assertFile(join(outputDir, 'example.html'), 1000)
+  await assertFile(join(outputDir, 'example.pptx'), 1000)
+}
+
+async function smokeReportSkill() {
+  const sourceRoot = resolve(repoRoot, 'skills', 'marp-report')
+  const skillRoot = join(smokeRoot, 'marp-report')
+  const outputDir = join(skillRoot, 'output')
+  await copySkill(sourceRoot, skillRoot)
+
+  await run(process.execPath, [
+    'scripts/build-report.mjs',
+    'examples/example.md',
+    '--out-dir',
+    'output',
+  ], skillRoot)
+
+  const htmlPath = join(outputDir, 'example.html')
+  await assertFile(htmlPath, 1000)
+  const html = await stat(htmlPath)
+  if (html.size < 500000) {
+    throw new Error(`Expected report HTML to include offline vendor scripts: ${htmlPath}`)
+  }
+}
+
+async function copySkill(sourceRoot, targetRoot) {
+  await cp(sourceRoot, targetRoot, {
+    recursive: true,
+    filter: (source) => {
+      if (source.endsWith('.zip')) return false
+      if (source.includes(`${resolve(sourceRoot, 'output')}`)) return false
+      if (source.includes(`${resolve(sourceRoot, '.npm-cache')}`)) return false
+      if (source.includes(`${resolve(sourceRoot, '.tmp')}`)) return false
+      return true
+    },
+  })
+
+  if (existsSync(join(targetRoot, 'node_modules'))) {
+    throw new Error(`Skill smoke copy unexpectedly contains node_modules: ${targetRoot}`)
+  }
+}
+
+async function run(command, commandArgs, cwd) {
   await new Promise((resolvePromise, reject) => {
     const child = spawn(command, commandArgs, {
-      cwd: smokeRoot,
+      cwd,
       stdio: 'inherit',
       shell: false,
     })

@@ -8,30 +8,13 @@ From the skill folder:
 node scripts/build-deck.mjs examples/example.md --out-dir output
 ```
 
-For a detailed report instead of slides:
-
-```bash
-node scripts/build-report.mjs report.md --out-dir output
-```
-
 Equivalent direct CLI call:
 
 ```bash
 node tool/dist/deckbuilder.mjs build deck.md --html output/deck.html --pptx output/deck.pptx --mode native --resources tool/resources
 ```
 
-Equivalent direct report call:
-
-```bash
-node tool/dist/deckbuilder.mjs report report.md --html output/report.html --resources tool/resources
-```
-
 The skill runs the bundled renderer and does not install dependencies.
-
-PDF export is intentionally handled with browser Print to PDF. The skill does
-not bundle Chromium, Playwright, Marp CLI PDF export, LibreOffice, or another
-browser engine because that would make the package much larger. For a PDF copy,
-open the generated report HTML in a browser and use Print to PDF.
 
 The generated HTML uses vendored Marp CLI/Bespoke presenter assets from
 `tool/resources/templates/`, including the on-screen controls, overview mode,
@@ -68,44 +51,6 @@ Documents/Presentations/2026-05-21/example-deck/
 
 Keep the HTML file and its sibling `resources/` folder together when sharing or
 moving a deck generated with `--html-assets copy`.
-
-## Report Mode
-
-Report mode is for long-form written output, not presentations. Use it when the
-user asks for a report, detailed analysis, research note, briefing document, or
-write-up.
-
-Author `report.md` as normal Markdown:
-
-```md
----
-title: Client Usage Report
-subtitle: April overview
----
-
-# Executive summary
-
-The report can hold more detail than a slide deck.
-
-## Findings
-
-| Metric | Value |
-| --- | ---: |
-| Cases | 115,060 |
-
-![Journey chart](resource:images/journey-chart.svg)
-```
-
-Rules:
-
-- do not separate report content with slide delimiters;
-- do not use `deck-*` components in reports;
-- use headings, paragraphs, tables, lists, blockquotes, code blocks, inline SVG,
-  or Markdown images;
-- use `resource:` images or local image paths that exist under `tool/resources/`;
-- missing images fail the build;
-- generated report HTML is self-contained by default;
-- use browser Print to PDF for the PDF version.
 
 ## Fail-Fast Contract
 
@@ -342,7 +287,7 @@ Supported chart types: `bar`, `line`.
 
 ### Visual SVG
 
-Use `deck-visual` for rich charts, diagrams, maps, and report panels that should stay visually identical between HTML and PPTX without asking the agent to build hundreds of PowerPoint shapes. The HTML output keeps the SVG inline. The PPTX output embeds the SVG as a crisp visual image, so it is not shape-editable in PowerPoint; edit the source Markdown/SVG and rebuild. Put essential fills, strokes, fonts, labels, and dimensions inside the SVG because PPTX receives only the SVG content.
+Use `deck-visual` for rich charts, diagrams, maps, and dashboard panels that should stay visually identical between HTML and PPTX without asking the agent to build hundreds of PowerPoint shapes. The HTML output keeps the SVG inline. The PPTX output embeds the SVG as a crisp visual image, so it is not shape-editable in PowerPoint; edit the source Markdown/SVG and rebuild. Put essential fills, strokes, fonts, labels, and dimensions inside the SVG because PPTX receives only the SVG content.
 
 ```md
 <deck-visual title="Scenario operating model" caption="Embedded as SVG in PPTX.">
@@ -462,7 +407,15 @@ HTML is the high-fidelity presentation format. Use raw HTML, inline SVG, and sco
 
 Use `deck-visual` when a rich SVG should also land in PPTX as a faithful visual. Use `deck-chart`, `deck-stat-grid`, `deck-card-grid`, or the other structured components when PowerPoint editability matters more than exact visual fidelity.
 
-For analytics, reporting, research, and sales/customer decks, do not default to a lowest-common-denominator deck. Make the HTML version the premium presentation: at least one main insight should use a richer HTML/SVG/JS treatment than the editable PPTX fallback.
+For analytics, research, customer, and executive decks, do not default to a lowest-common-denominator slide. Make the HTML version the premium presentation: at least one main insight should use a richer HTML/SVG/JS treatment than the editable PPTX fallback.
+
+The build wrapper injects Chart.js, Observable Plot, and D3 into the generated HTML head from local vendor files. Do not include CDN `<script src>` tags and do not paste minified library source into Markdown.
+
+| Library | Use for |
+| --- | --- |
+| Chart.js | Bar, stacked bar, line, doughnut, and dashboard-style canvas charts |
+| Observable Plot | Dot plots, area charts, heatmaps, distributions, and small multiples |
+| D3 | Treemaps, custom arcs, force layouts, bespoke SVG charts |
 
 ### Split HTML/PPTX Slides
 
@@ -519,34 +472,73 @@ Use `<!-- pptx: skip -->` for slides that rely on browser JavaScript, animation 
 ```md
 <!-- pptx: skip -->
 
-# Live browser demo
+# Journey volume
 
 <style scoped>
-.console-demo { height:420px; padding:24px; background:#07101e; color:#e2e8f0; }
+.chart-layout { display:grid; grid-template-columns:1fr 2fr; gap:32px; align-items:center; }
+.stat-callout { padding:24px; border:1px solid #1e3a5f; background:#0d1d36; border-radius:6px; }
+.stat-callout strong { display:block; font-size:58px; font-weight:300; color:#0f82f5; line-height:1; }
+.stat-callout span { color:#8b9ab5; font-size:13px; }
 </style>
 
-<div class="console-demo" id="demo">Preparing report...</div>
+<div class="chart-layout">
+  <div class="stat-callout"><strong>77,951</strong><span>Total cases</span></div>
+  <div style="position:relative;height:320px">
+    <canvas id="journeyVol" role="img" aria-label="Cases by journey"></canvas>
+  </div>
+</div>
 
 <script>
-  const demo = document.getElementById('demo')
-  if (demo) {
-    setTimeout(() => {
-      demo.textContent = 'Report ready - opening in browser'
-    }, 800)
-  }
+document.addEventListener('DOMContentLoaded', function() {
+  new Chart(document.getElementById('journeyVol'), {
+    type: 'bar',
+    data: {
+      labels: ['J0107', 'J0106', 'J0101', 'J0116'],
+      datasets: [{
+        data: [52208, 11119, 8648, 3751],
+        backgroundColor: ['#0f82f5', '#59d6fd', '#5143d5', '#f99358'],
+        borderRadius: 4
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: { legend: { display: false } },
+      scales: {
+        x: { ticks: { color: '#8b9ab5' }, grid: { color: 'rgba(30,58,95,.5)' } },
+        y: { ticks: { color: '#8b9ab5', callback: v => v.toLocaleString() }, grid: { color: 'rgba(30,58,95,.5)' } }
+      }
+    }
+  });
+});
 </script>
 ```
 
 If the PowerPoint audience still needs context, add a normal editable summary slide immediately after the browser-only slide.
 
+```md
+<!-- html: skip -->
+
+# Journey volume
+
+<deck-chart
+  type="bar"
+  title="Cases by journey"
+  labels="J0107, J0106, J0101, J0116"
+  values="52208, 11119, 8648, 3751"
+></deck-chart>
+```
+
 ### SVG Metric Dashboard
 
 ```md
+<!-- pptx: skip -->
+
 <style scoped>
 .metric-board { display:grid; grid-template-columns:1fr 1fr; gap:28px; }
-.metric-card { padding:26px; border:1px solid #dedede; background:#fdfdfd; }
+.metric-card { padding:26px; border:1px solid #1e3a5f; background:#0d1d36; border-radius:6px; }
 .metric-card strong { display:block; color:#0f82f5; font-size:52px; line-height:1; }
-.metric-card span { color:#444444; font-size:16px; }
+.metric-card span { color:#c8d8f0; font-size:16px; }
 </style>
 
 # Operating signal
@@ -555,7 +547,7 @@ If the PowerPoint audience still needs context, add a normal editable summary sl
   <div class="metric-card"><strong>92%</strong><span>completed within SLA</span></div>
   <svg viewBox="0 0 520 220" role="img" aria-label="Weekly trend">
     <polyline fill="none" stroke="#0f82f5" stroke-width="8" points="24,170 130,142 236,151 342,96 496,54"/>
-    <g fill="#090909">
+    <g fill="#c8d8f0">
       <text x="24" y="204">W1</text><text x="130" y="204">W2</text><text x="236" y="204">W3</text><text x="342" y="204">W4</text><text x="472" y="204">W5</text>
     </g>
   </svg>
@@ -565,11 +557,14 @@ If the PowerPoint audience still needs context, add a normal editable summary sl
 ### Annotated Funnel
 
 ```md
+<!-- pptx: skip -->
+
 <style scoped>
 .funnel { display:grid; gap:12px; margin-top:24px; }
 .stage { display:grid; grid-template-columns:180px 1fr 90px; align-items:center; gap:16px; }
-.bar { height:34px; background:#eef6fe; }
+.bar { height:34px; background:rgba(30,58,95,.65); border-radius:4px; overflow:hidden; }
 .bar span { display:block; height:100%; background:#0f82f5; }
+.stage strong, .stage b { color:#c8d8f0; }
 </style>
 
 # Conversion funnel
@@ -584,10 +579,14 @@ If the PowerPoint audience still needs context, add a normal editable summary sl
 ### Journey Map
 
 ```md
+<!-- pptx: skip -->
+
 <style scoped>
 .journey { display:grid; grid-template-columns:repeat(5, 1fr); gap:14px; margin-top:34px; }
-.journey article { min-height:160px; padding:18px; border-top:5px solid #0f82f5; background:#fdfdfd; }
+.journey article { min-height:160px; padding:18px; border:1px solid #1e3a5f; border-top:5px solid #0f82f5; background:#0d1d36; border-radius:6px; }
 .journey small { color:#0f82f5; font-weight:500; }
+.journey h2 { color:#ffffff; }
+.journey p { color:#c8d8f0; }
 </style>
 
 # Customer journey
@@ -600,6 +599,87 @@ If the PowerPoint audience still needs context, add a normal editable summary sl
   <article><small>05</small><h2>Approve</h2><p>Close the case.</p></article>
 </div>
 ```
+
+### Observable Plot Heatmap
+
+```md
+<!-- pptx: skip -->
+
+# Activity heatmap
+
+<div id="activityHeatmap"></div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  const data = [];
+  const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'];
+  for (const day of days) {
+    for (let hour = 8; hour <= 18; hour += 1) {
+      data.push({ day, hour, volume: Math.round(40 + Math.random() * 120) });
+    }
+  }
+  const chart = Plot.plot({
+    width: 760,
+    height: 280,
+    style: { background: 'transparent', color: '#c8d8f0', fontFamily: 'Poppins,sans-serif' },
+    x: { label: 'Hour' },
+    y: { label: null, domain: days },
+    color: { scheme: 'blues' },
+    marks: [Plot.cell(data, { x: 'hour', y: 'day', fill: 'volume', inset: 1 })]
+  });
+  document.getElementById('activityHeatmap').append(chart);
+});
+</script>
+```
+
+### D3 Treemap
+
+```md
+<!-- pptx: skip -->
+
+# Portfolio treemap
+
+<div id="portfolioTreemap"></div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  const raw = [
+    { name: 'J0107', value: 52208 },
+    { name: 'J0106', value: 11119 },
+    { name: 'J0101', value: 8648 },
+    { name: 'J0116', value: 3751 }
+  ];
+  const colours = ['#0f82f5', '#59d6fd', '#5143d5', '#f99358'];
+  const width = 760;
+  const height = 320;
+  const root = d3.hierarchy({ children: raw }).sum(d => d.value);
+  d3.treemap().size([width, height]).padding(3)(root);
+  const svg = d3.select('#portfolioTreemap').append('svg').attr('width', width).attr('height', height);
+  const cell = svg.selectAll('g').data(root.leaves()).join('g')
+    .attr('transform', d => `translate(${d.x0},${d.y0})`);
+  cell.append('rect')
+    .attr('width', d => d.x1 - d.x0)
+    .attr('height', d => d.y1 - d.y0)
+    .attr('fill', (_, i) => colours[i % colours.length])
+    .attr('rx', 4);
+  cell.append('text')
+    .attr('x', 8)
+    .attr('y', 22)
+    .attr('fill', '#ffffff')
+    .attr('font-size', 14)
+    .attr('font-family', 'Poppins,sans-serif')
+    .text(d => d.data.name);
+});
+</script>
+```
+
+### Premium Slide Safety
+
+- Do not use CDN `<script src>` tags. The build wrapper injects bundled libraries.
+- Do not paste minified JS libraries into Markdown.
+- Do not use em dashes or double-hyphen separators in JavaScript comments.
+- Keep dark slides dark: avoid light SVG backgrounds and near-black chart text.
+- Keep a PPTX fallback when the point needs to survive outside the HTML deck.
 
 ## Recommended Deck Shape
 

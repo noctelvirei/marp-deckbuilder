@@ -1,54 +1,66 @@
 #!/usr/bin/env node
 import { mkdir, readdir, readFile, rm, stat, writeFile } from 'node:fs/promises'
-import { dirname, join, relative, resolve, sep } from 'node:path'
+import { join, relative, resolve, sep } from 'node:path'
 
 import JSZip from 'jszip'
 
-const skillRoot = resolve('skills', 'marp-deckbuilder')
-const outputPath = resolve('dist', 'marp-deckbuilder-skill.zip')
+const skills = [
+  { name: 'marp-deckbuilder', root: resolve('skills', 'marp-deckbuilder') },
+  { name: 'marp-report', root: resolve('skills', 'marp-report') },
+]
+
+const outputDir = resolve('dist')
 const maxUncompressedBytes = 30 * 1024 * 1024
 const excludedDirs = new Set(['node_modules', '.npm-cache', '.tmp'])
 const excludedDirPrefixes = ['output']
-const zip = new JSZip()
 
-let uncompressedBytes = 0
+await mkdir(outputDir, { recursive: true })
 
-await mkdir(dirname(outputPath), { recursive: true })
-await rm(outputPath, { force: true })
-await addDirectory(skillRoot)
-
-if (uncompressedBytes > maxUncompressedBytes) {
-  throw new Error(
-    `Skill is ${(uncompressedBytes / 1024 / 1024).toFixed(2)} MB uncompressed; max is 30 MB.`,
-  )
+for (const skill of skills) {
+  await packageSkill(skill)
 }
 
-const content = await zip.generateAsync({
-  type: 'nodebuffer',
-  compression: 'DEFLATE',
-  compressionOptions: { level: 9 },
-})
-await writeFile(outputPath, content)
+async function packageSkill(skill) {
+  const outputPath = resolve(outputDir, `${skill.name}-skill.zip`)
+  const zip = new JSZip()
+  let uncompressedBytes = 0
 
-const archive = await stat(outputPath)
-console.log(`Skill source: ${skillRoot}`)
-console.log(`Uncompressed: ${(uncompressedBytes / 1024 / 1024).toFixed(2)} MB`)
-console.log(`Zip: ${outputPath}`)
-console.log(`Zip size: ${(archive.size / 1024 / 1024).toFixed(2)} MB`)
+  await rm(outputPath, { force: true })
+  await addDirectory(skill.root)
 
-async function addDirectory(directory) {
-  for (const entry of await readdir(directory, { withFileTypes: true })) {
-    if (shouldExclude(entry)) continue
+  if (uncompressedBytes > maxUncompressedBytes) {
+    throw new Error(
+      `${skill.name} is ${(uncompressedBytes / 1024 / 1024).toFixed(2)} MB uncompressed; max is 30 MB.`,
+    )
+  }
 
-    const fullPath = join(directory, entry.name)
-    const zipPath = relative(skillRoot, fullPath).split(sep).join('/')
+  const content = await zip.generateAsync({
+    type: 'nodebuffer',
+    compression: 'DEFLATE',
+    compressionOptions: { level: 9 },
+  })
+  await writeFile(outputPath, content)
 
-    if (entry.isDirectory()) {
-      await addDirectory(fullPath)
-    } else if (entry.isFile()) {
-      const bytes = await readFile(fullPath)
-      uncompressedBytes += bytes.byteLength
-      zip.file(zipPath, bytes)
+  const archive = await stat(outputPath)
+  console.log(`Skill source: ${skill.root}`)
+  console.log(`Uncompressed: ${(uncompressedBytes / 1024 / 1024).toFixed(2)} MB`)
+  console.log(`Zip: ${outputPath}`)
+  console.log(`Zip size: ${(archive.size / 1024 / 1024).toFixed(2)} MB`)
+
+  async function addDirectory(directory) {
+    for (const entry of await readdir(directory, { withFileTypes: true })) {
+      if (shouldExclude(entry)) continue
+
+      const fullPath = join(directory, entry.name)
+      const zipPath = relative(skill.root, fullPath).split(sep).join('/')
+
+      if (entry.isDirectory()) {
+        await addDirectory(fullPath)
+      } else if (entry.isFile()) {
+        const bytes = await readFile(fullPath)
+        uncompressedBytes += bytes.byteLength
+        zip.file(zipPath, bytes)
+      }
     }
   }
 }

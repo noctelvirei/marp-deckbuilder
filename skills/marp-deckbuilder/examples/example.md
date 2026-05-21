@@ -16,7 +16,7 @@ Editable PPTX generated from compact component Markdown.
 <deck-divider
   act="ACT 01"
   title="The Opportunity."
-  subtitle="A concise story generated from report or customer context."
+  subtitle="A concise story generated from briefing or customer context."
 ></deck-divider>
 
 ---

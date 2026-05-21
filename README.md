@@ -54,15 +54,6 @@ npx marp-deckbuilder build samples/demo.md --html dist/demo.html --pptx dist/dem
 
 Native mode is the default because it produces editable PowerPoint objects.
 
-Render a detailed long-form HTML report:
-
-```powershell
-npx marp-deckbuilder report report.md --html dist/report.html
-```
-
-PDF export is intentionally not bundled because it requires a browser engine.
-Open the generated report HTML in a browser and use Print to PDF.
-
 ## Markdown Conventions
 
 Slides are separated with `---`, like Marp. Use normal Markdown and HTML.
@@ -121,17 +112,8 @@ The native renderer only promises editability for known deck components:
 - `deck-logo-wall` places real image assets when present, otherwise editable text tiles.
 - `deck-divider` and `deck-close` become editable dark section/close slides.
 
-Arbitrary HTML is still useful for HTML-only reports, but the native PPTX
-renderer will not infer editable PowerPoint structure from arbitrary CSS.
-
-## Report Mode
-
-When the output should be a report rather than a presentation, write normal
-long-form Markdown and use `report` mode. Report mode produces a self-contained,
-print-styled HTML document with brand colors, resource embedding, tables, code
-blocks, blockquotes, and images. It does not create PPTX.
-
-Use browser Print to PDF when the user needs a PDF copy.
+Arbitrary HTML is useful for browser-only presentation slides, but the native
+PPTX renderer will not infer editable PowerPoint structure from arbitrary CSS.
 
 ## Supported Components
 
@@ -210,7 +192,7 @@ Key options:
 
 ## Claude Skill
 
-The portable Claude skill lives in `skills/marp-deckbuilder/`.
+The portable deck Claude skill lives in `skills/marp-deckbuilder/`.
 
 It includes a small `SKILL.md`, examples, a build wrapper, replaceable
 definitions, a `BRANDING.md` contract for branded forks, and a bundled
@@ -229,9 +211,22 @@ as the distributable skill payload. Build a fresh uploadable zip with:
 npm run package:skill
 ```
 
-The package step rebuilds the modular `tool/dist/` runtime, runs an isolated
-copied-skill smoke test with no `node_modules`, excludes local output and cache
-folders, and fails if the uncompressed skill exceeds 30 MB.
+The package step rebuilds the modular `tool/dist/` runtime, runs isolated copied
+skill smoke tests with no `node_modules`, excludes local output and cache
+folders, and fails if either uncompressed skill exceeds 30 MB.
+
+## Marp Report Skill
+
+Long-form HTML reports are handled by the separate `skills/marp-report/` skill.
+It includes its own bundled runtime and report-only authoring docs: sticky
+sidebars, metric cards, rate bars, callouts, badges, Chart.js, Observable Plot,
+D3, inline SVG, and browser Print to PDF.
+
+Build a report through the report skill wrapper:
+
+```powershell
+node skills\marp-report\scripts\build-report.mjs skills\marp-report\examples\example.md --out-dir dist\sample-report
+```
 
 ## Branded Forks
 

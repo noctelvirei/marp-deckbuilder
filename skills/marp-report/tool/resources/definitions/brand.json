@@ -1,0 +1,175 @@
+{
+  "name": "Deckbuilder",
+  "themeName": "deckbuilder",
+  "slide": {
+    "widthPt": 960,
+    "heightPt": 540,
+    "widthPx": 1280,
+    "heightPx": 720,
+    "widthIn": 13.333333,
+    "heightIn": 7.5,
+    "pxToPt": 0.75
+  },
+  "colors": {
+    "dark": "090909",
+    "white": "FFFFFF",
+    "cardDark": "1D1E29",
+    "cardLight": "FDFDFD",
+    "blue": "0F82F5",
+    "purple": "5143D5",
+    "red": "FC5161",
+    "orange": "F9935B",
+    "yellow": "FBC546",
+    "lightBlue": "59D6FD",
+    "green": "66CC8E",
+    "primaryPurple": "803584",
+    "body": "444444",
+    "border": "DEDEDE",
+    "muted": "888888",
+    "footnote": "888888",
+    "takeawayFill": "F0F0F0"
+  },
+  "fonts": {
+    "regular": "Poppins",
+    "light": "Poppins Light",
+    "medium": "Poppins Medium",
+    "fallback": "Aptos"
+  },
+  "layouts": {
+    "cover": {
+      "title": { "x": 36, "y": 79, "w": 677, "h": 255, "font": "light", "size": 56, "color": "white" },
+      "subtitle": { "x": 36, "y": 344, "w": 677, "h": 72, "font": "regular", "size": 18, "color": "CCCCCC" },
+      "presenterName": { "x": 36, "y": 420, "w": 400, "h": 18, "font": "medium", "size": 12, "color": "white" },
+      "presenterRole": { "x": 36, "y": 440, "w": 500, "h": 14, "font": "regular", "size": 10, "color": "CCCCCC" }
+    },
+    "header": {
+      "eyebrow": { "x": 56, "y": 34, "w": 700, "h": 16, "font": "medium", "size": 9, "color": "blue" },
+      "title": { "x": 56, "y": 54, "w": 848, "h": 56, "font": "regular", "size": 28, "color": "dark" }
+    },
+    "body": {
+      "paragraph": { "x": 56, "y": 138, "w": 760, "h": 245, "font": "regular", "size": 14, "color": "body" }
+    },
+    "takeaway": {
+      "y": 445,
+      "footnoteY": 460,
+      "height": 32,
+      "accentWidth": 4,
+      "text": { "x": 10, "dy": 7, "w": 940, "h": 20, "font": "medium", "size": 10, "color": "dark" },
+      "footnote": { "x": 10, "dy": 34, "w": 940, "h": 12, "font": "regular", "size": 7, "color": "footnote" }
+    },
+    "stats": {
+      "x": [72, 380, 688],
+      "dividerOffset": 30,
+      "divider": { "y": 145, "w": 1, "h": 100, "color": "border" },
+      "value": { "y": 138, "w": 200, "h": 52, "font": "medium", "size": 38, "color": "blue" },
+      "label": { "dy": 55, "w": 200, "h": 38, "font": "regular", "size": 10, "color": "dark" },
+      "context": { "x": 120, "y": 318, "w": 720, "h": 58, "font": "regular", "size": 14, "color": "body" }
+    },
+    "cards": {
+      "yTop": 138,
+      "yBottom": 438,
+      "margin": 36,
+      "gap3": 14,
+      "gap4": 12,
+      "topBarHeight": 3,
+      "header3": { "dx": 14, "dy": 14, "h": 38, "font": "medium", "size": 13, "color": "dark" },
+      "body3": { "dx": 14, "dy": 56, "bottomPad": 70, "font": "regular", "size": 11, "color": "dark" },
+      "header4": { "dx": 10, "dy": 14, "h": 38, "font": "medium", "size": 11, "color": "dark" },
+      "body4": { "dx": 10, "dy": 56, "bottomPad": 70, "font": "regular", "size": 10, "color": "dark" }
+    },
+    "chart": {
+      "x": 82,
+      "y": 142,
+      "w": 796,
+      "h": 262,
+      "colors": ["blue", "purple", "green"],
+      "title": { "font": "medium", "size": 12, "color": "dark" },
+      "categoryAxis": { "font": "regular", "size": 9, "color": "dark" },
+      "valueAxis": { "font": "regular", "size": 8, "color": "body" },
+      "gridLineColor": "E9E9E9"
+    },
+    "visual": {
+      "x": 62,
+      "y": 126,
+      "w": 836,
+      "h": 292,
+      "caption": { "x": 84, "y": 418, "w": 792, "h": 20, "font": "regular", "size": 8, "color": "muted" }
+    },
+    "comparison": {
+      "x": 46,
+      "y": 136,
+      "w": 868,
+      "headerH": 34,
+      "rowH": 48,
+      "labelW": 244,
+      "leftW": 312,
+      "rightW": 312,
+      "headerFill": "dark",
+      "leftFill": "FFF0F0",
+      "rightFill": "EEF6FE",
+      "rowFill": "FDFDFD",
+      "leftText": "CC3333",
+      "rightText": "0A5FAB",
+      "headerText": { "font": "medium", "size": 10, "color": "white" },
+      "cellText": { "font": "regular", "size": 9, "color": "dark" },
+      "labelText": { "font": "medium", "size": 9, "color": "dark" }
+    },
+    "swimlane": {
+      "x": 54,
+      "laneW": 852,
+      "laneH": 132,
+      "laneY": [126, 286],
+      "label": { "x": 58, "dy": 10, "w": 220, "h": 18, "font": "medium", "size": 11, "color": "dark" },
+      "stepYDy": 38,
+      "stepH": 74,
+      "stepGap": 12,
+      "stepPad": 8,
+      "fills": { "blue": "E8F4FE", "purple": "F0EDFE", "green": "ECF9F1" },
+      "accents": { "blue": "blue", "purple": "purple", "green": "green" },
+      "stepTitle": { "font": "medium", "size": 8, "color": "dark" },
+      "stepBody": { "font": "regular", "size": 7, "color": "body" },
+      "arrow": { "font": "medium", "size": 13, "color": "muted" }
+    },
+    "proof": {
+      "logo": { "x": 736, "y": 126, "w": 168, "h": 70, "font": "medium", "size": 13, "color": "dark" },
+      "stats": {
+        "x": [68, 300, 532],
+        "value": { "y": 138, "w": 166, "h": 44, "font": "medium", "size": 31, "color": "blue" },
+        "label": { "dy": 45, "w": 166, "h": 30, "font": "regular", "size": 9, "color": "dark" }
+      },
+      "context": { "x": 84, "y": 292, "w": 792, "h": 64, "font": "regular", "size": 12, "color": "body" },
+      "bridge": { "x": 84, "y": 386, "w": 792, "h": 34, "font": "medium", "size": 11, "color": "dark" }
+    },
+    "nextSteps": {
+      "x": 56,
+      "y": 128,
+      "w": 848,
+      "rowH": 86,
+      "gap": 14,
+      "accentWidth": 3,
+      "badge": { "xDy": 16, "yDy": 21, "w": 32, "h": 32, "font": "medium", "size": 13, "color": "white" },
+      "title": { "xDy": 64, "yDy": 16, "w": 750, "h": 22, "font": "medium", "size": 12, "color": "dark" },
+      "body": { "xDy": 64, "yDy": 40, "w": 750, "h": 34, "font": "regular", "size": 10, "color": "body" }
+    },
+    "logoWall": {
+      "x": 74,
+      "y": 130,
+      "tileW": 190,
+      "tileH": 58,
+      "gapX": 16,
+      "gapY": 14,
+      "columns": 4,
+      "text": { "font": "medium", "size": 11, "color": "dark" }
+    },
+    "divider": {
+      "act": { "x": 36, "y": 57, "w": 400, "h": 18, "font": "medium", "size": 10, "color": "blue" },
+      "title": { "x": 36, "y": 170, "w": 760, "h": 100, "font": "light", "size": 56, "color": "white" },
+      "subtitle": { "x": 36, "y": 290, "w": 760, "h": 44, "font": "regular", "size": 13, "color": "white" }
+    },
+    "close": {
+      "title": { "x": 36, "y": 174, "w": 820, "h": 90, "font": "light", "size": 48, "color": "white" },
+      "name": { "x": 36, "y": 322, "w": 400, "h": 22, "font": "medium", "size": 14, "color": "white" },
+      "role": { "x": 36, "y": 348, "w": 500, "h": 18, "font": "regular", "size": 12, "color": "CCCCCC" }
+    }
+  }
+}
