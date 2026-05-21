@@ -9,7 +9,8 @@
   },
   "scripts": {
     "bundle:skill": "node scripts/bundle-skill.mjs",
-    "package:skill": "npm run bundle:skill && node scripts/package-skill.mjs",
+    "smoke:skill": "node scripts/smoke-skill.mjs",
+    "package:skill": "npm run bundle:skill && npm run smoke:skill && node scripts/package-skill.mjs",
     "check": "node --check src/cli.js && node --test",
     "test": "node --test"
   },

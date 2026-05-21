@@ -211,8 +211,9 @@ as the distributable skill payload. Build a fresh uploadable zip with:
 npm run package:skill
 ```
 
-The package step rebuilds the modular `tool/dist/` runtime, excludes local output
-and cache folders, and fails if the uncompressed skill exceeds 30 MB.
+The package step rebuilds the modular `tool/dist/` runtime, runs an isolated
+copied-skill smoke test with no `node_modules`, excludes local output and cache
+folders, and fails if the uncompressed skill exceeds 30 MB.
 
 ## Branded Forks
 
