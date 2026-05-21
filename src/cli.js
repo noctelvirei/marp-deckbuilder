@@ -3,11 +3,6 @@ import { mkdir, readFile, writeFile } from 'node:fs/promises'
 import path from 'node:path'
 import process from 'node:process'
 
-import { loadDefinitions } from './brand.js'
-import { parseDeckMarkdown } from './markdown.js'
-import { renderDeckHtml } from './render.js'
-import { writePptx } from './pptx.js'
-
 async function main() {
   const argv = parseArgs(process.argv.slice(2))
   if (argv.help || argv.command !== 'build' || !argv.input) {
@@ -20,6 +15,10 @@ async function main() {
 }
 
 async function buildCommand(argv) {
+  const [{ loadDefinitions }, { parseDeckMarkdown }] = await Promise.all([
+    import('./brand.js'),
+    import('./markdown.js'),
+  ])
   const inputPath = path.resolve(argv.input)
   const projectRoot = process.cwd()
   const resourcesDir = path.resolve(projectRoot, argv.resources)
@@ -30,9 +29,15 @@ async function buildCommand(argv) {
   const definitions = await loadDefinitions(definitionsDir)
   const markdown = await readFile(inputPath, 'utf8')
   const deck = parseDeckMarkdown(markdown)
-  const rendered = renderDeckHtml(deck, { resourcesDir, definitions })
+  const wantsHtml = Boolean(argv.html) || (!argv.html && !argv.pptx)
+  let rendered
 
-  if (argv.html) {
+  if (wantsHtml) {
+    const { renderDeckHtml } = await import('./render.js')
+    rendered = renderDeckHtml(deck, { resourcesDir, definitions })
+  }
+
+  if (argv.html && rendered) {
     const htmlPath = path.resolve(argv.html)
     await mkdir(path.dirname(htmlPath), { recursive: true })
     await writeFile(htmlPath, rendered.document, 'utf8')
@@ -40,6 +45,7 @@ async function buildCommand(argv) {
   }
 
   if (argv.pptx) {
+    const { writePptx } = await import('./pptx.js')
     const pptxPath = path.resolve(argv.pptx)
     await mkdir(path.dirname(pptxPath), { recursive: true })
 
@@ -53,7 +59,7 @@ async function buildCommand(argv) {
     console.log(`PPTX written to ${pptxPath}`)
   }
 
-  if (!argv.html && !argv.pptx) {
+  if (!argv.html && !argv.pptx && rendered) {
     console.log(rendered.document)
   }
 }

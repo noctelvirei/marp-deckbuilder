@@ -211,8 +211,8 @@ as the distributable skill payload. Build a fresh uploadable zip with:
 npm run package:skill
 ```
 
-The package step rebuilds `tool/dist/deckbuilder.cjs`, excludes local output and
-cache folders, and fails if the uncompressed skill exceeds 30 MB.
+The package step rebuilds the modular `tool/dist/` runtime, excludes local output
+and cache folders, and fails if the uncompressed skill exceeds 30 MB.
 
 ## Branded Forks
 
@@ -220,5 +220,5 @@ For branded internal copies, merge public upstream changes rather than asking an
 agent to recreate the renderer. Preserve or reapply the branded files in
 `skills/marp-deckbuilder/tool/resources/definitions/`, keep the vendored
 `tool/resources/templates/` presenter assets from upstream, replace the bundled
-`tool/dist/deckbuilder.cjs`, and follow
+`tool/dist/` runtime, and follow
 `skills/marp-deckbuilder/BRANDING.md` for what is allowed to diverge.

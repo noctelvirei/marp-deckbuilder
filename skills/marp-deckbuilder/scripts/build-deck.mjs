@@ -7,7 +7,7 @@ import { spawn } from 'node:child_process'
 
 const skillRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..')
 const toolRoot = join(skillRoot, 'tool')
-const bundledCli = join(toolRoot, 'dist', 'deckbuilder.cjs')
+const bundledCli = join(toolRoot, 'dist', 'deckbuilder.mjs')
 
 const args = process.argv.slice(2)
 const input = args.find((arg) => !arg.startsWith('-'))

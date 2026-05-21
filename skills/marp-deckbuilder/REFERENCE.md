@@ -11,7 +11,7 @@ node scripts/build-deck.mjs examples/example.md --out-dir output
 Equivalent direct CLI call:
 
 ```bash
-node tool/dist/deckbuilder.cjs build deck.md --html output/deck.html --pptx output/deck.pptx --mode native --resources tool/resources
+node tool/dist/deckbuilder.mjs build deck.md --html output/deck.html --pptx output/deck.pptx --mode native --resources tool/resources
 ```
 
 The skill runs the bundled renderer and does not install dependencies.
@@ -233,4 +233,4 @@ Marp/Bespoke presenter shell.
 
 ## Branded Fork Updates
 
-When a branded copy has diverged, merge the public upstream implementation instead of asking Claude to recreate the renderer. Follow `BRANDING.md`, preserve the branded `tool/resources/definitions/` files, keep the upstream `tool/resources/templates/` presenter assets, copy in the updated bundled `tool/dist/deckbuilder.cjs`, then adjust `SKILL.md` only for branded workflow guidance.
+When a branded copy has diverged, merge the public upstream implementation instead of asking Claude to recreate the renderer. Follow `BRANDING.md`, preserve the branded `tool/resources/definitions/` files, keep the upstream `tool/resources/templates/` presenter assets, copy in the updated bundled `tool/dist/` runtime, then adjust `SKILL.md` only for branded workflow guidance.

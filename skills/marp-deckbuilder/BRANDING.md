@@ -24,7 +24,7 @@ and asset files.
 
 Do not edit these files for brand changes:
 
-- `tool/dist/deckbuilder.cjs`
+- `tool/dist/`
 - `tool/resources/templates/`
 - `scripts/build-deck.mjs`
 - component names or syntax in `REFERENCE.md`
@@ -39,7 +39,7 @@ When pulling fixes from the public upstream into a branded fork:
 
 1. Preserve the branded `tool/resources/definitions/` folder and any branded
    assets already under `tool/resources/`.
-2. Import upstream runtime fixes, especially `tool/dist/deckbuilder.cjs`,
+2. Import upstream runtime fixes, especially `tool/dist/`,
    `tool/resources/templates/`, `scripts/`, examples, and documentation.
 3. Merge `SKILL.md` carefully: keep branded workflow notes, but keep upstream
    tool-usage instructions and component guidance.
