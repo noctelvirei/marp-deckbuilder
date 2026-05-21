@@ -9,7 +9,7 @@ default visual system. Normal deck authoring should use `SKILL.md` and
 Brand-specific changes belong in:
 
 - `tool/resources/definitions/brand.json`: slide size, colors, fonts, PPTX
-  geometry, and component layout values.
+  geometry, optional PPTX asset references, and component layout values.
 - `tool/resources/definitions/theme.css`: Marp theme CSS for HTML slides.
 - `tool/resources/`: logos, screenshots, customer logo exports, fonts, and
   reusable image assets.
@@ -48,3 +48,31 @@ When pulling fixes from the public upstream into a branded fork:
 
 Use `REFERENCE.md` for component syntax. Use this file only to decide where brand
 customization should live.
+
+## Optional PPTX Assets
+
+HTML branding is driven by `theme.css`. Native PPTX does not read CSS, so brand
+backgrounds and logos must be declared in `brand.json` when the PPTX should use
+image assets:
+
+```json
+{
+  "assets": {
+    "backgrounds": {
+      "cover": "resource:brand-title-bg.png",
+      "divider": "resource:brand-title-bg.png",
+      "close": "resource:brand-title-bg.png",
+      "content": "resource:brand-content-bg.png"
+    },
+    "logo": {
+      "default": "resource:brand-logo-light.svg"
+    }
+  },
+  "layouts": {
+    "logo": { "x": 828, "y": 21, "w": 98, "h": 24 }
+  }
+}
+```
+
+Asset paths resolve relative to `tool/resources/`. If an asset is missing, PPTX
+falls back to the configured solid colours.

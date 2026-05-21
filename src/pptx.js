@@ -70,30 +70,30 @@ function normalizeDirective(value) {
 function addNativeSlide(pptx, slide, model, frontmatter, brand, resourcesDir) {
   switch (model.layout) {
     case 'cover':
-      return addCover(slide, model, frontmatter, brand)
+      return addCover(slide, model, frontmatter, brand, resourcesDir)
     case 'divider':
-      return addDivider(slide, model, brand)
+      return addDivider(slide, model, brand, resourcesDir)
     case 'three-stat':
-      return addThreeStat(slide, model, brand)
+      return addThreeStat(slide, model, brand, resourcesDir)
     case 'cards':
-      return addCards(slide, model, brand)
+      return addCards(slide, model, brand, resourcesDir)
     case 'chart':
-      return addChartSlide(pptx, slide, model, brand)
+      return addChartSlide(pptx, slide, model, brand, resourcesDir)
     case 'visual':
-      return addVisual(slide, model, brand)
+      return addVisual(slide, model, brand, resourcesDir)
     case 'comparison':
-      return addComparison(slide, model, brand)
+      return addComparison(slide, model, brand, resourcesDir)
     case 'swimlane':
-      return addSwimlane(slide, model, brand)
+      return addSwimlane(slide, model, brand, resourcesDir)
     case 'proof':
       return addProof(slide, model, brand, resourcesDir)
     case 'next-steps':
-      return addNextSteps(slide, model, brand)
+      return addNextSteps(slide, model, brand, resourcesDir)
     case 'logo-wall':
       return addLogoWall(slide, model, brand, resourcesDir)
     case 'close':
-      return addClose(slide, model, frontmatter, brand)
+      return addClose(slide, model, frontmatter, brand, resourcesDir)
     default:
-      return addContent(slide, model, brand)
+      return addContent(slide, model, brand, resourcesDir)
   }
 }

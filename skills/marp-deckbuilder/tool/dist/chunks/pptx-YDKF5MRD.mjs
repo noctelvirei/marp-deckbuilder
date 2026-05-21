@@ -15101,6 +15101,19 @@ function addRect(slide, brand, x, y, w, h, fill, line, lineWidth) {
     line: line ? { color: line, width: lineWidth || 0.5 } : { color: fill, transparency: 100 }
   });
 }
+function addResourceImage(slide, resource, resourcesDir, box, altText = "") {
+  const imagePath = resolveResourcePath(resource, resourcesDir);
+  if (!imagePath) return false;
+  slide.addImage({
+    path: imagePath,
+    x: ptToIn(box.x),
+    y: ptToIn(box.y),
+    w: ptToIn(box.w),
+    h: ptToIn(box.h),
+    altText
+  });
+  return true;
+}
 function resolveResourcePath(value, resourcesDir) {
   if (!value || !resourcesDir) return "";
   const raw = value.startsWith("resource:") ? value.slice("resource:".length) : value;
@@ -15117,33 +15130,33 @@ function ensureSvgNamespace(svg) {
 }
 
 // src/pptx/renderers.js
-function addCover(slide, model, frontmatter, brand) {
+function addCover(slide, model, frontmatter, brand, resourcesDir) {
   const layout = brand.layouts.cover;
-  addRect(slide, brand, 0, 0, brand.slide.widthPt, brand.slide.heightPt, color(brand, "dark"));
+  addSlideChrome(slide, brand, resourcesDir, "cover", "dark");
   addTextBox(slide, brand, model.title, layout.title);
   if (model.subtitle) addTextBox(slide, brand, model.subtitle, layout.subtitle);
   const presenter = frontmatter.presenter || {};
   if (presenter.name) addTextBox(slide, brand, presenter.name, layout.presenterName);
   if (presenter.role) addTextBox(slide, brand, presenter.role, layout.presenterRole);
 }
-function addContent(slide, model, brand) {
-  addBaseHeader(slide, model, brand);
+function addContent(slide, model, brand, resourcesDir) {
+  addBaseHeader(slide, model, brand, resourcesDir);
   const body = model.paragraphs.join("\n\n");
   if (body) addTextBox(slide, brand, body, brand.layouts.body.paragraph, { breakLine: true });
   addTakeaway(slide, model, brand);
 }
-function addDivider(slide, model, brand) {
+function addDivider(slide, model, brand, resourcesDir) {
   const layout = brand.layouts.divider;
   const divider = model.divider || {};
-  addRect(slide, brand, 0, 0, brand.slide.widthPt, brand.slide.heightPt, color(brand, "dark"));
+  addSlideChrome(slide, brand, resourcesDir, "divider", "dark");
   if (divider.act) addTextBox(slide, brand, divider.act, layout.act);
   addTextBox(slide, brand, divider.title || model.title, layout.title, { fit: "shrink" });
   if (divider.subtitle || model.subtitle) {
     addTextBox(slide, brand, divider.subtitle || model.subtitle, layout.subtitle, { fit: "shrink" });
   }
 }
-function addThreeStat(slide, model, brand) {
-  addBaseHeader(slide, model, brand);
+function addThreeStat(slide, model, brand, resourcesDir) {
+  addBaseHeader(slide, model, brand, resourcesDir);
   const stats = model.stats.slice(0, 3);
   const layout = brand.layouts.stats;
   for (let i = 0; i < stats.length; i += 1) {
@@ -15172,8 +15185,8 @@ function addThreeStat(slide, model, brand) {
   if (context) addTextBox(slide, brand, context, { ...layout.context, align: "center" });
   addTakeaway(slide, model, brand);
 }
-function addCards(slide, model, brand) {
-  addBaseHeader(slide, model, brand);
+function addCards(slide, model, brand, resourcesDir) {
+  addBaseHeader(slide, model, brand, resourcesDir);
   const cards = model.cards.slice(0, 4);
   const count = cards.length <= 3 ? 3 : 4;
   const layout = brand.layouts.cards;
@@ -15214,9 +15227,9 @@ function addCards(slide, model, brand) {
   }
   addTakeaway(slide, model, brand);
 }
-function addChartSlide(pptx, slide, model, brand) {
-  addBaseHeader(slide, model, brand);
-  if (!model.chart) return addContent(slide, model, brand);
+function addChartSlide(pptx, slide, model, brand, resourcesDir) {
+  addBaseHeader(slide, model, brand, resourcesDir);
+  if (!model.chart) return addContent(slide, model, brand, resourcesDir);
   const layout = brand.layouts.chart;
   const chartType = model.chart.chartType === "line" ? pptx.ChartType.line : pptx.ChartType.bar;
   const chartData = [
@@ -15255,10 +15268,10 @@ function addChartSlide(pptx, slide, model, brand) {
   });
   addTakeaway(slide, model, brand);
 }
-function addVisual(slide, model, brand) {
+function addVisual(slide, model, brand, resourcesDir) {
   const visual = model.visual;
-  if (!visual?.svg) return addContent(slide, model, brand);
-  addBaseHeader(slide, model, brand);
+  if (!visual?.svg) return addContent(slide, model, brand, resourcesDir);
+  addBaseHeader(slide, model, brand, resourcesDir);
   const layout = brand.layouts.visual || {
     x: 62,
     y: 126,
@@ -15285,10 +15298,10 @@ function addVisual(slide, model, brand) {
   }
   addTakeaway(slide, model, brand);
 }
-function addComparison(slide, model, brand) {
-  addBaseHeader(slide, model, brand);
+function addComparison(slide, model, brand, resourcesDir) {
+  addBaseHeader(slide, model, brand, resourcesDir);
   const comparison = model.comparison;
-  if (!comparison) return addContent(slide, model, brand);
+  if (!comparison) return addContent(slide, model, brand, resourcesDir);
   const layout = brand.layouts.comparison;
   const x = layout.x;
   const y = layout.y;
@@ -15313,10 +15326,10 @@ function addComparison(slide, model, brand) {
   });
   addTakeaway(slide, model, brand);
 }
-function addSwimlane(slide, model, brand) {
-  addBaseHeader(slide, model, brand);
+function addSwimlane(slide, model, brand, resourcesDir) {
+  addBaseHeader(slide, model, brand, resourcesDir);
   const swimlane = model.swimlane;
-  if (!swimlane) return addContent(slide, model, brand);
+  if (!swimlane) return addContent(slide, model, brand, resourcesDir);
   const layout = brand.layouts.swimlane;
   swimlane.lanes.slice(0, 2).forEach((lane, laneIndex) => {
     const laneY = layout.laneY[laneIndex];
@@ -15364,9 +15377,9 @@ function addSwimlane(slide, model, brand) {
   addTakeaway(slide, model, brand);
 }
 function addProof(slide, model, brand, resourcesDir) {
-  addBaseHeader(slide, model, brand);
+  addBaseHeader(slide, model, brand, resourcesDir);
   const proof = model.proof;
-  if (!proof) return addContent(slide, model, brand);
+  if (!proof) return addContent(slide, model, brand, resourcesDir);
   const layout = brand.layouts.proof;
   const logoPath = resolveResourcePath(proof.logo, resourcesDir);
   if (logoPath) {
@@ -15396,10 +15409,10 @@ function addProof(slide, model, brand, resourcesDir) {
   if (proof.bridge) addTextBox(slide, brand, proof.bridge, { ...layout.bridge, fit: "shrink" });
   addTakeaway(slide, model, brand);
 }
-function addNextSteps(slide, model, brand) {
-  addBaseHeader(slide, model, brand);
+function addNextSteps(slide, model, brand, resourcesDir) {
+  addBaseHeader(slide, model, brand, resourcesDir);
   const nextSteps = model.nextSteps;
-  if (!nextSteps) return addContent(slide, model, brand);
+  if (!nextSteps) return addContent(slide, model, brand, resourcesDir);
   const layout = brand.layouts.nextSteps;
   nextSteps.steps.slice(0, 3).forEach((step, index) => {
     const rowY = layout.y + index * (layout.rowH + layout.gap);
@@ -15436,9 +15449,9 @@ function addNextSteps(slide, model, brand) {
   addTakeaway(slide, model, brand);
 }
 function addLogoWall(slide, model, brand, resourcesDir) {
-  addBaseHeader(slide, model, brand);
+  addBaseHeader(slide, model, brand, resourcesDir);
   const logoWall = model.logoWall;
-  if (!logoWall) return addContent(slide, model, brand);
+  if (!logoWall) return addContent(slide, model, brand, resourcesDir);
   const layout = brand.layouts.logoWall;
   logoWall.logos.slice(0, 12).forEach((logo, index) => {
     const col = index % layout.columns;
@@ -15469,23 +15482,38 @@ function addLogoWall(slide, model, brand, resourcesDir) {
   });
   addTakeaway(slide, model, brand);
 }
-function addClose(slide, model, frontmatter, brand) {
+function addClose(slide, model, frontmatter, brand, resourcesDir) {
   const layout = brand.layouts.close;
   const close = model.close || {};
   const presenter = frontmatter.presenter || {};
-  addRect(slide, brand, 0, 0, brand.slide.widthPt, brand.slide.heightPt, color(brand, "dark"));
+  addSlideChrome(slide, brand, resourcesDir, "close", "dark");
   addTextBox(slide, brand, close.title || model.title || "Thank you", layout.title, { fit: "shrink" });
   const name = close.name || presenter.name;
   const role = close.role || presenter.role;
   if (name) addTextBox(slide, brand, name, layout.name);
   if (role) addTextBox(slide, brand, role, layout.role);
 }
-function addBaseHeader(slide, model, brand) {
+function addBaseHeader(slide, model, brand, resourcesDir) {
+  addSlideChrome(slide, brand, resourcesDir, "content", "white");
   const layout = brand.layouts.header;
   if (model.eyebrow) {
     addTextBox(slide, brand, model.eyebrow.toUpperCase(), layout.eyebrow, { margin: 0 });
   }
   addTextBox(slide, brand, model.title, layout.title, { fit: "shrink" });
+}
+function addSlideChrome(slide, brand, resourcesDir, kind, fallbackColor) {
+  const background = brand.assets?.backgrounds?.[kind] || (kind === "divider" ? brand.assets?.backgrounds?.cover : "") || (kind === "close" ? brand.assets?.backgrounds?.cover : "") || brand.assets?.backgrounds?.default;
+  addRect(slide, brand, 0, 0, brand.slide.widthPt, brand.slide.heightPt, color(brand, fallbackColor));
+  addResourceImage(
+    slide,
+    background,
+    resourcesDir,
+    { x: 0, y: 0, w: brand.slide.widthPt, h: brand.slide.heightPt },
+    `${brand.name || "Deck"} ${kind} background`
+  );
+  const logo = brand.assets?.logo?.[kind] || (kind === "divider" ? brand.assets?.logo?.cover : "") || (kind === "close" ? brand.assets?.logo?.cover : "") || brand.assets?.logo?.default || brand.assets?.logo;
+  const logoBox = brand.layouts.logo || { x: 828, y: 21, w: 98, h: 24 };
+  addResourceImage(slide, logo, resourcesDir, logoBox, `${brand.name || "Brand"} logo`);
 }
 function addTakeaway(slide, model, brand) {
   if (!model.takeaway) return;
@@ -15556,31 +15584,31 @@ function normalizeDirective(value) {
 function addNativeSlide(pptx, slide, model, frontmatter, brand, resourcesDir) {
   switch (model.layout) {
     case "cover":
-      return addCover(slide, model, frontmatter, brand);
+      return addCover(slide, model, frontmatter, brand, resourcesDir);
     case "divider":
-      return addDivider(slide, model, brand);
+      return addDivider(slide, model, brand, resourcesDir);
     case "three-stat":
-      return addThreeStat(slide, model, brand);
+      return addThreeStat(slide, model, brand, resourcesDir);
     case "cards":
-      return addCards(slide, model, brand);
+      return addCards(slide, model, brand, resourcesDir);
     case "chart":
-      return addChartSlide(pptx, slide, model, brand);
+      return addChartSlide(pptx, slide, model, brand, resourcesDir);
     case "visual":
-      return addVisual(slide, model, brand);
+      return addVisual(slide, model, brand, resourcesDir);
     case "comparison":
-      return addComparison(slide, model, brand);
+      return addComparison(slide, model, brand, resourcesDir);
     case "swimlane":
-      return addSwimlane(slide, model, brand);
+      return addSwimlane(slide, model, brand, resourcesDir);
     case "proof":
       return addProof(slide, model, brand, resourcesDir);
     case "next-steps":
-      return addNextSteps(slide, model, brand);
+      return addNextSteps(slide, model, brand, resourcesDir);
     case "logo-wall":
       return addLogoWall(slide, model, brand, resourcesDir);
     case "close":
-      return addClose(slide, model, frontmatter, brand);
+      return addClose(slide, model, frontmatter, brand, resourcesDir);
     default:
-      return addContent(slide, model, brand);
+      return addContent(slide, model, brand, resourcesDir);
   }
 }
 export {

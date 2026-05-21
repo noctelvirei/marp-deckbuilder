@@ -45,6 +45,21 @@ export function addRect(slide, brand, x, y, w, h, fill, line, lineWidth) {
   })
 }
 
+export function addResourceImage(slide, resource, resourcesDir, box, altText = '') {
+  const imagePath = resolveResourcePath(resource, resourcesDir)
+  if (!imagePath) return false
+
+  slide.addImage({
+    path: imagePath,
+    x: ptToIn(box.x),
+    y: ptToIn(box.y),
+    w: ptToIn(box.w),
+    h: ptToIn(box.h),
+    altText,
+  })
+  return true
+}
+
 export function resolveResourcePath(value, resourcesDir) {
   if (!value || !resourcesDir) return ''
   const raw = value.startsWith('resource:') ? value.slice('resource:'.length) : value

@@ -71,6 +71,56 @@ test('writes SVG visual components as embedded PPTX media', async () => {
   assert.ok(mediaNames.some((name) => name.endsWith('.svg')))
 })
 
+test('writes configured brand backgrounds and logos into PPTX media', async () => {
+  await rm(tmpDir, { recursive: true, force: true })
+  await mkdir(path.join(tmpDir, 'resources'), { recursive: true })
+
+  const tinyPng = Buffer.from(
+    'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAFgwJ/l3sqqwAAAABJRU5ErkJggg==',
+    'base64',
+  )
+  await writeFile(path.join(tmpDir, 'resources', 'title-bg.png'), tinyPng)
+  await writeFile(path.join(tmpDir, 'resources', 'content-bg.png'), tinyPng)
+  await writeFile(path.join(tmpDir, 'resources', 'logo.png'), tinyPng)
+
+  const definitions = await loadDefinitions(new URL('../resources/definitions', import.meta.url))
+  const brand = {
+    ...definitions.brand,
+    assets: {
+      backgrounds: {
+        cover: 'resource:title-bg.png',
+        content: 'resource:content-bg.png',
+      },
+      logo: {
+        default: 'resource:logo.png',
+      },
+    },
+    layouts: {
+      ...definitions.brand.layouts,
+      logo: { x: 828, y: 21, w: 98, h: 24 },
+    },
+  }
+  const deck = parseDeckMarkdown(`# Cover
+
+---
+
+# Content
+
+Body copy`)
+  const out = path.join(tmpDir, 'brand-assets.pptx')
+
+  await writePptx({
+    deck,
+    outputPath: out,
+    brand,
+    resourcesDir: path.join(tmpDir, 'resources'),
+  })
+
+  const archive = await JSZip.loadAsync(await readFile(out))
+  const mediaNames = Object.keys(archive.files).filter((name) => name.startsWith('ppt/media/'))
+  assert.ok(mediaNames.length >= 3)
+})
+
 test('renders multiline SVG visual components as live HTML SVG', async () => {
   const source = `# Cover
 

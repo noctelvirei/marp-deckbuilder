@@ -40,6 +40,7 @@ node scripts/build-deck.mjs deck.md --out-dir output
 - Use `deck-chart` only when the chart can be described with structured labels and values.
 - Use `deck-visual` for rich inline SVG charts, maps, dashboards, and annotated diagrams. HTML keeps the SVG inline; PPTX embeds the SVG as a crisp visual image. Put essential fills, strokes, fonts, and labels inside the SVG itself because PPTX receives only the SVG. The visual is not editable as PowerPoint shapes, but the source Markdown/SVG remains easy to edit and regenerate.
 - Arbitrary HTML, scoped CSS, and JavaScript may be used for premium HTML slides. Mark browser-only slides with `<!-- pptx: skip -->` or `<!-- html-only: true -->`; HTML keeps the slide, while native PPTX omits it cleanly.
+- PPTX brand backgrounds and logos are controlled by optional `assets` entries in `tool/resources/definitions/brand.json`, not by `theme.css`.
 - Keep the Markdown compact; the tool owns layout and branding.
 
 See [REFERENCE.md](REFERENCE.md) for component syntax and examples.

@@ -2,14 +2,15 @@ import { color, font, ptToIn } from '../brand.js'
 import {
   addCell,
   addRect,
+  addResourceImage,
   addTextBox,
   resolveResourcePath,
   svgToDataUri,
 } from './helpers.js'
 
-export function addCover(slide, model, frontmatter, brand) {
+export function addCover(slide, model, frontmatter, brand, resourcesDir) {
   const layout = brand.layouts.cover
-  addRect(slide, brand, 0, 0, brand.slide.widthPt, brand.slide.heightPt, color(brand, 'dark'))
+  addSlideChrome(slide, brand, resourcesDir, 'cover', 'dark')
   addTextBox(slide, brand, model.title, layout.title)
 
   if (model.subtitle) addTextBox(slide, brand, model.subtitle, layout.subtitle)
@@ -19,17 +20,17 @@ export function addCover(slide, model, frontmatter, brand) {
   if (presenter.role) addTextBox(slide, brand, presenter.role, layout.presenterRole)
 }
 
-export function addContent(slide, model, brand) {
-  addBaseHeader(slide, model, brand)
+export function addContent(slide, model, brand, resourcesDir) {
+  addBaseHeader(slide, model, brand, resourcesDir)
   const body = model.paragraphs.join('\n\n')
   if (body) addTextBox(slide, brand, body, brand.layouts.body.paragraph, { breakLine: true })
   addTakeaway(slide, model, brand)
 }
 
-export function addDivider(slide, model, brand) {
+export function addDivider(slide, model, brand, resourcesDir) {
   const layout = brand.layouts.divider
   const divider = model.divider || {}
-  addRect(slide, brand, 0, 0, brand.slide.widthPt, brand.slide.heightPt, color(brand, 'dark'))
+  addSlideChrome(slide, brand, resourcesDir, 'divider', 'dark')
   if (divider.act) addTextBox(slide, brand, divider.act, layout.act)
   addTextBox(slide, brand, divider.title || model.title, layout.title, { fit: 'shrink' })
   if (divider.subtitle || model.subtitle) {
@@ -37,8 +38,8 @@ export function addDivider(slide, model, brand) {
   }
 }
 
-export function addThreeStat(slide, model, brand) {
-  addBaseHeader(slide, model, brand)
+export function addThreeStat(slide, model, brand, resourcesDir) {
+  addBaseHeader(slide, model, brand, resourcesDir)
   const stats = model.stats.slice(0, 3)
   const layout = brand.layouts.stats
 
@@ -71,8 +72,8 @@ export function addThreeStat(slide, model, brand) {
   addTakeaway(slide, model, brand)
 }
 
-export function addCards(slide, model, brand) {
-  addBaseHeader(slide, model, brand)
+export function addCards(slide, model, brand, resourcesDir) {
+  addBaseHeader(slide, model, brand, resourcesDir)
 
   const cards = model.cards.slice(0, 4)
   const count = cards.length <= 3 ? 3 : 4
@@ -117,10 +118,10 @@ export function addCards(slide, model, brand) {
   addTakeaway(slide, model, brand)
 }
 
-export function addChartSlide(pptx, slide, model, brand) {
-  addBaseHeader(slide, model, brand)
+export function addChartSlide(pptx, slide, model, brand, resourcesDir) {
+  addBaseHeader(slide, model, brand, resourcesDir)
 
-  if (!model.chart) return addContent(slide, model, brand)
+  if (!model.chart) return addContent(slide, model, brand, resourcesDir)
 
   const layout = brand.layouts.chart
   const chartType = model.chart.chartType === 'line' ? pptx.ChartType.line : pptx.ChartType.bar
@@ -163,11 +164,11 @@ export function addChartSlide(pptx, slide, model, brand) {
   addTakeaway(slide, model, brand)
 }
 
-export function addVisual(slide, model, brand) {
+export function addVisual(slide, model, brand, resourcesDir) {
   const visual = model.visual
-  if (!visual?.svg) return addContent(slide, model, brand)
+  if (!visual?.svg) return addContent(slide, model, brand, resourcesDir)
 
-  addBaseHeader(slide, model, brand)
+  addBaseHeader(slide, model, brand, resourcesDir)
 
   const layout = brand.layouts.visual || {
     x: 62,
@@ -198,10 +199,10 @@ export function addVisual(slide, model, brand) {
   addTakeaway(slide, model, brand)
 }
 
-export function addComparison(slide, model, brand) {
-  addBaseHeader(slide, model, brand)
+export function addComparison(slide, model, brand, resourcesDir) {
+  addBaseHeader(slide, model, brand, resourcesDir)
   const comparison = model.comparison
-  if (!comparison) return addContent(slide, model, brand)
+  if (!comparison) return addContent(slide, model, brand, resourcesDir)
 
   const layout = brand.layouts.comparison
   const x = layout.x
@@ -231,10 +232,10 @@ export function addComparison(slide, model, brand) {
   addTakeaway(slide, model, brand)
 }
 
-export function addSwimlane(slide, model, brand) {
-  addBaseHeader(slide, model, brand)
+export function addSwimlane(slide, model, brand, resourcesDir) {
+  addBaseHeader(slide, model, brand, resourcesDir)
   const swimlane = model.swimlane
-  if (!swimlane) return addContent(slide, model, brand)
+  if (!swimlane) return addContent(slide, model, brand, resourcesDir)
 
   const layout = brand.layouts.swimlane
   swimlane.lanes.slice(0, 2).forEach((lane, laneIndex) => {
@@ -286,9 +287,9 @@ export function addSwimlane(slide, model, brand) {
 }
 
 export function addProof(slide, model, brand, resourcesDir) {
-  addBaseHeader(slide, model, brand)
+  addBaseHeader(slide, model, brand, resourcesDir)
   const proof = model.proof
-  if (!proof) return addContent(slide, model, brand)
+  if (!proof) return addContent(slide, model, brand, resourcesDir)
 
   const layout = brand.layouts.proof
   const logoPath = resolveResourcePath(proof.logo, resourcesDir)
@@ -322,10 +323,10 @@ export function addProof(slide, model, brand, resourcesDir) {
   addTakeaway(slide, model, brand)
 }
 
-export function addNextSteps(slide, model, brand) {
-  addBaseHeader(slide, model, brand)
+export function addNextSteps(slide, model, brand, resourcesDir) {
+  addBaseHeader(slide, model, brand, resourcesDir)
   const nextSteps = model.nextSteps
-  if (!nextSteps) return addContent(slide, model, brand)
+  if (!nextSteps) return addContent(slide, model, brand, resourcesDir)
 
   const layout = brand.layouts.nextSteps
   nextSteps.steps.slice(0, 3).forEach((step, index) => {
@@ -365,9 +366,9 @@ export function addNextSteps(slide, model, brand) {
 }
 
 export function addLogoWall(slide, model, brand, resourcesDir) {
-  addBaseHeader(slide, model, brand)
+  addBaseHeader(slide, model, brand, resourcesDir)
   const logoWall = model.logoWall
-  if (!logoWall) return addContent(slide, model, brand)
+  if (!logoWall) return addContent(slide, model, brand, resourcesDir)
 
   const layout = brand.layouts.logoWall
   logoWall.logos.slice(0, 12).forEach((logo, index) => {
@@ -401,11 +402,11 @@ export function addLogoWall(slide, model, brand, resourcesDir) {
   addTakeaway(slide, model, brand)
 }
 
-export function addClose(slide, model, frontmatter, brand) {
+export function addClose(slide, model, frontmatter, brand, resourcesDir) {
   const layout = brand.layouts.close
   const close = model.close || {}
   const presenter = frontmatter.presenter || {}
-  addRect(slide, brand, 0, 0, brand.slide.widthPt, brand.slide.heightPt, color(brand, 'dark'))
+  addSlideChrome(slide, brand, resourcesDir, 'close', 'dark')
   addTextBox(slide, brand, close.title || model.title || 'Thank you', layout.title, { fit: 'shrink' })
   const name = close.name || presenter.name
   const role = close.role || presenter.role
@@ -413,12 +414,39 @@ export function addClose(slide, model, frontmatter, brand) {
   if (role) addTextBox(slide, brand, role, layout.role)
 }
 
-function addBaseHeader(slide, model, brand) {
+function addBaseHeader(slide, model, brand, resourcesDir) {
+  addSlideChrome(slide, brand, resourcesDir, 'content', 'white')
   const layout = brand.layouts.header
   if (model.eyebrow) {
     addTextBox(slide, brand, model.eyebrow.toUpperCase(), layout.eyebrow, { margin: 0 })
   }
   addTextBox(slide, brand, model.title, layout.title, { fit: 'shrink' })
+}
+
+function addSlideChrome(slide, brand, resourcesDir, kind, fallbackColor) {
+  const background =
+    brand.assets?.backgrounds?.[kind] ||
+    (kind === 'divider' ? brand.assets?.backgrounds?.cover : '') ||
+    (kind === 'close' ? brand.assets?.backgrounds?.cover : '') ||
+    brand.assets?.backgrounds?.default
+
+  addRect(slide, brand, 0, 0, brand.slide.widthPt, brand.slide.heightPt, color(brand, fallbackColor))
+  addResourceImage(
+    slide,
+    background,
+    resourcesDir,
+    { x: 0, y: 0, w: brand.slide.widthPt, h: brand.slide.heightPt },
+    `${brand.name || 'Deck'} ${kind} background`,
+  )
+
+  const logo =
+    brand.assets?.logo?.[kind] ||
+    (kind === 'divider' ? brand.assets?.logo?.cover : '') ||
+    (kind === 'close' ? brand.assets?.logo?.cover : '') ||
+    brand.assets?.logo?.default ||
+    brand.assets?.logo
+  const logoBox = brand.layouts.logo || { x: 828, y: 21, w: 98, h: 24 }
+  addResourceImage(slide, logo, resourcesDir, logoBox, `${brand.name || 'Brand'} logo`)
 }
 
 function addTakeaway(slide, model, brand) {
