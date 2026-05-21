@@ -38,8 +38,10 @@ export function parseVisual(visual) {
 }
 
 export function parseComparison(root, comparison) {
-  const leftTitle = comparison.attr('left-title') || comparison.attr('left') || 'Option A'
-  const rightTitle = comparison.attr('right-title') || comparison.attr('right') || 'Option B'
+  const columns = splitCsv(comparison.attr('columns'))
+  const leftTitle = comparison.attr('left-title') || comparison.attr('left') || columns[0] || 'Option A'
+  const rightTitle =
+    comparison.attr('right-title') || comparison.attr('right') || columns[1] || 'Option B'
   const rows = []
 
   comparison.find('deck-row').each((_, rowElement) => {
@@ -50,7 +52,26 @@ export function parseComparison(root, comparison) {
     if (label || left || right) rows.push({ label, left, right })
   })
 
+  rows.push(...parseInlineComparisonRows(comparison.attr('rows')))
+
   return { type: 'comparison', leftTitle, rightTitle, rows }
+}
+
+function parseInlineComparisonRows(value = '') {
+  return String(value || '')
+    .split(';')
+    .map((row) => row.trim())
+    .filter(Boolean)
+    .map((row) => {
+      const cells = row.split('|').map(cleanText)
+      if (cells.length === 2) return { label: '', left: cells[0], right: cells[1] }
+      return {
+        label: cells[0] || '',
+        left: cells[1] || '',
+        right: cells.slice(2).join(' | '),
+      }
+    })
+    .filter((row) => row.label || row.left || row.right)
 }
 
 export function parseSwimlane(root, swimlane) {

@@ -87,3 +87,23 @@ test('parses SVG visual components for rich HTML and PPTX image output', () => {
   assert.match(deck.slides[1].visual.svg, /<svg/)
   assert.match(deck.slides[1].source, /deck-visual-stage/)
 })
+
+test('parses compact comparison columns and rows attributes', () => {
+  const deck = parseDeckMarkdown(`# Comparison
+
+<deck-comparison
+  columns="Bad assumption,Correct workflow"
+  rows="Count status = created|Count cases first;Trust first result|Cross-check edge cases">
+</deck-comparison>`)
+
+  const comparison = deck.slides[0].comparison
+
+  assert.equal(comparison.leftTitle, 'Bad assumption')
+  assert.equal(comparison.rightTitle, 'Correct workflow')
+  assert.deepEqual(comparison.rows, [
+    { label: '', left: 'Count status = created', right: 'Count cases first' },
+    { label: '', left: 'Trust first result', right: 'Cross-check edge cases' },
+  ])
+  assert.doesNotMatch(deck.slides[0].source, /Option A/)
+  assert.doesNotMatch(deck.slides[0].source, /Option B/)
+})

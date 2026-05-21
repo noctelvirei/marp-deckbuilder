@@ -46795,8 +46795,9 @@ function parseVisual(visual) {
   };
 }
 function parseComparison(root2, comparison) {
-  const leftTitle = comparison.attr("left-title") || comparison.attr("left") || "Option A";
-  const rightTitle = comparison.attr("right-title") || comparison.attr("right") || "Option B";
+  const columns = splitCsv(comparison.attr("columns"));
+  const leftTitle = comparison.attr("left-title") || comparison.attr("left") || columns[0] || "Option A";
+  const rightTitle = comparison.attr("right-title") || comparison.attr("right") || columns[1] || "Option B";
   const rows = [];
   comparison.find("deck-row").each((_, rowElement) => {
     const row = root2(rowElement);
@@ -46805,7 +46806,19 @@ function parseComparison(root2, comparison) {
     const right = row.attr("right") || cleanText(row.find("right").text());
     if (label || left || right) rows.push({ label, left, right });
   });
+  rows.push(...parseInlineComparisonRows(comparison.attr("rows")));
   return { type: "comparison", leftTitle, rightTitle, rows };
+}
+function parseInlineComparisonRows(value = "") {
+  return String(value || "").split(";").map((row) => row.trim()).filter(Boolean).map((row) => {
+    const cells = row.split("|").map(cleanText);
+    if (cells.length === 2) return { label: "", left: cells[0], right: cells[1] };
+    return {
+      label: cells[0] || "",
+      left: cells[1] || "",
+      right: cells.slice(2).join(" | ")
+    };
+  }).filter((row) => row.label || row.left || row.right);
 }
 function parseSwimlane(root2, swimlane) {
   const lanes = [];

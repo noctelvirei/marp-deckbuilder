@@ -119,6 +119,15 @@ Use `deck-visual` for rich charts, diagrams, maps, and report panels that should
 </deck-comparison>
 ```
 
+Compact two-column syntax is also supported:
+
+```md
+<deck-comparison
+  columns="Bad assumption,Correct workflow"
+  rows="Count status = created|Count cases first;Trust first result|Cross-check edge cases">
+</deck-comparison>
+```
+
 ### Swimlane
 
 ```md
