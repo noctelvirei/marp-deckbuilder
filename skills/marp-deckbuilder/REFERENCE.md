@@ -173,11 +173,59 @@ HTML is the high-fidelity presentation format. Use raw HTML, inline SVG, and sco
 
 Use `deck-visual` when a rich SVG should also land in PPTX as a faithful visual. Use `deck-chart`, `deck-stat-grid`, `deck-card-grid`, or the other structured components when PowerPoint editability matters more than exact visual fidelity.
 
+For analytics, reporting, research, and sales/customer decks, do not default to a lowest-common-denominator deck. Make the HTML version the premium presentation: at least one main insight should use a richer HTML/SVG/JS treatment than the editable PPTX fallback.
+
+### Split HTML/PPTX Slides
+
+Use paired slides when the HTML version should be richer than PowerPoint can sensibly edit:
+
+- `<!-- pptx: skip -->` keeps a premium HTML/browser slide out of the PPTX.
+- `<!-- html: skip -->`, `<!-- html-skip: true -->`, or `<!-- pptx-only: true -->` keeps the editable fallback out of the HTML deck.
+
+```md
+<!-- pptx: skip -->
+
+# Portfolio concentration
+
+<style scoped>
+.signal { display:grid; grid-template-columns:1fr 1.2fr; gap:28px; align-items:center; }
+.callout { padding:24px; border:1px solid #1e3a5f; background:#0d1d36; }
+.callout strong { display:block; color:#0f82f5; font-size:58px; line-height:1; }
+</style>
+
+<div class="signal">
+  <div class="callout"><strong>97%</strong><span>from the top two clients</span></div>
+  <svg viewBox="0 0 560 280" role="img" aria-label="Annotated concentration chart">
+    <rect x="18" y="42" width="470" height="44" fill="#071228"/>
+    <rect x="18" y="42" width="305" height="44" fill="#0f82f5"/>
+    <text x="18" y="32" fill="#c8d8f0" font-size="18">TD</text>
+    <text x="338" y="71" fill="#ffffff" font-size="18">65%</text>
+    <rect x="18" y="124" width="470" height="44" fill="#071228"/>
+    <rect x="18" y="124" width="150" height="44" fill="#5143d5"/>
+    <text x="18" y="114" fill="#c8d8f0" font-size="18">HSBC-RBWM</text>
+    <text x="184" y="153" fill="#ffffff" font-size="18">32%</text>
+  </svg>
+</div>
+
+---
+
+<!-- html: skip -->
+
+# Portfolio concentration
+
+<deck-chart
+  type="bar"
+  title="Client volume split"
+  labels="TD, HSBC-RBWM, Other active"
+  values="77951, 38749, 3181"
+></deck-chart>
+```
+
 ### Browser-Only JavaScript
 
 Use `<!-- pptx: skip -->` for slides that rely on browser JavaScript, animation loops, DOM updates, embedded demos, or other behavior PowerPoint cannot run. The HTML output keeps the slide and script. The PPTX output omits the slide instead of attempting a low-quality static reconstruction.
 
-`<!-- html-only: true -->` and `<!-- pptx-skip: true -->` are accepted aliases.
+`<!-- html-only: true -->` and `<!-- pptx-skip: true -->` are accepted aliases for skipping PPTX output.
 
 ```md
 <!-- pptx: skip -->

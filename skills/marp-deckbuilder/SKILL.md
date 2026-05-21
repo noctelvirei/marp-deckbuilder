@@ -34,8 +34,10 @@ node scripts/build-deck.mjs deck.md --out-dir output
 
 - Prefer concise executive language over report prose.
 - Treat HTML as the premium presentation format and PPTX as the editable business handoff.
-- Do not make HTML merely mirror the PPTX when the user wants impact. Use rich HTML, inline SVG, scoped CSS, layout grids, annotations, visual flows, and report-style data views for high-fidelity HTML slides.
-- Use supported `deck-*` components for slides or sections that must remain editable in PowerPoint. If a rich HTML slide is important but not PPTX-editable, add a simpler editable component slide or summary immediately after it.
+- For reports, analytics, research summaries, and sales/customer briefings, create at least one premium HTML slide that is materially richer than the PPTX version: an annotated SVG dashboard, journey map, funnel, heatmap, process animation, interactive demo, or dense report-style data view.
+- Do not make HTML merely mirror the PPTX when the user wants impact. Use raw HTML, inline SVG, scoped CSS, layout grids, annotations, visual flows, and browser JavaScript for high-fidelity HTML slides.
+- Use supported `deck-*` components for slides or sections that must remain editable in PowerPoint. If a rich HTML slide is important but not PPTX-editable, pair it with a simpler editable fallback slide.
+- Mark premium browser slides with `<!-- pptx: skip -->`. Mark the paired editable fallback with `<!-- html: skip -->` or `<!-- pptx-only: true -->` so the HTML deck does not show duplicate fallback slides.
 - Use `deck-divider` for sections, `deck-stat-grid` for headline metrics, `deck-card-grid` for recommendations, `deck-comparison` for option tradeoffs, `deck-proof` for customer/research proof, and `deck-next-steps` for close-out actions.
 - Use `deck-chart` only when the chart can be described with structured labels and values.
 - Use `deck-visual` for rich inline SVG charts, maps, dashboards, and annotated diagrams. HTML keeps the SVG inline; PPTX embeds the SVG as a crisp visual image. Put essential fills, strokes, fonts, and labels inside the SVG itself because PPTX receives only the SVG. The visual is not editable as PowerPoint shapes, but the source Markdown/SVG remains easy to edit and regenerate.

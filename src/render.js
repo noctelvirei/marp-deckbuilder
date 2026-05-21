@@ -7,6 +7,10 @@ import { pathToFileURL } from 'node:url'
 import { buildMarpMarkdown } from './markdown.js'
 
 export function renderDeckHtml(deck, options = {}) {
+  const htmlDeck = {
+    ...deck,
+    slides: deck.slides.filter((slide) => !shouldSkipHtml(slide)),
+  }
   const marp = new Marp({
     html: true,
     container: new Element('div', { id: ':$p' }),
@@ -28,7 +32,7 @@ export function renderDeckHtml(deck, options = {}) {
   marp.themeSet.add(themeCss)
 
   const markdown = resolveResourceUrls(
-    buildMarpMarkdown(deck, { themeName: definitions.brand.themeName }),
+    buildMarpMarkdown(htmlDeck, { themeName: definitions.brand.themeName }),
     options.resourcesDir,
     resolverOptions,
   )
@@ -53,6 +57,15 @@ export function renderDeckHtml(deck, options = {}) {
         }))
       : [],
   }
+}
+
+export function shouldSkipHtml(slideModel) {
+  const directives = slideModel?.directives || {}
+  if (isTruthyDirective(directives['pptx-only'])) return true
+  if (isTruthyDirective(directives['html-skip'])) return true
+  return ['skip', 'omit', 'none', 'false', 'no', 'off'].includes(
+    normalizeDirective(directives.html),
+  )
 }
 
 export function htmlDocument({
@@ -133,6 +146,14 @@ function mimeType(filePath) {
 
 function normalizeResourcePath(value) {
   return value.replace(/\\/g, '/')
+}
+
+function isTruthyDirective(value) {
+  return ['true', 'yes', 'on', '1'].includes(normalizeDirective(value))
+}
+
+function normalizeDirective(value) {
+  return String(value || '').trim().toLowerCase()
 }
 
 function bespokeOsc() {

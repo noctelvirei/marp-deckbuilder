@@ -274,7 +274,7 @@ section.cover { background-image: url(resource:logo.svg); }`,
   assert.doesNotMatch(rendered.document, /file:\/\//)
 })
 
-test('keeps JavaScript in HTML-only slides and skips them in PPTX', async () => {
+test('splits premium HTML slides from editable PPTX fallback slides', async () => {
   await rm(tmpDir, { recursive: true, force: true })
   await mkdir(tmpDir, { recursive: true })
 
@@ -293,15 +293,19 @@ test('keeps JavaScript in HTML-only slides and skips them in PPTX', async () => 
 
 ---
 
-# Native summary
+<!-- html: skip -->
 
-This slide should appear in PowerPoint.`
+# Editable PowerPoint fallback
+
+<deck-chart title="Editable fallback chart" labels="A,B" values="10,20"></deck-chart>`
   const definitions = await loadDefinitions(new URL('../resources/definitions', import.meta.url))
   const deck = parseDeckMarkdown(source)
   const rendered = renderDeckHtml(deck, { resourcesDir: 'resources', definitions })
-  const out = path.join(tmpDir, 'html-only.pptx')
 
   assert.match(rendered.document, /window\.deckbuilderDemoRan = true/)
+  assert.doesNotMatch(rendered.document, /Editable PowerPoint fallback/)
+
+  const out = path.join(tmpDir, 'split-output.pptx')
 
   await writePptx({ deck, outputPath: out, brand: definitions.brand, mode: 'editable' })
 
