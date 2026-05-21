@@ -285,7 +285,11 @@ export function renderChartHtml(chart) {
 }
 
 export function renderVisualHtml(visual) {
-  const body = visual.html || (visual.fallback ? `<p>${escapeHtml(visual.fallback)}</p>` : '')
+  const body = visual.html
+    ? compactHtmlBlock(visual.html)
+    : visual.fallback
+      ? `<p>${escapeHtml(visual.fallback)}</p>`
+      : ''
 
   return `<figure class="deck-visual">
   ${visual.showTitle ? `<figcaption>${escapeHtml(visual.title)}</figcaption>` : ''}
@@ -421,4 +425,11 @@ function escapeAttr(value) {
 
 function formatNumber(value) {
   return Number.isInteger(value) ? String(value) : String(value)
+}
+
+function compactHtmlBlock(value) {
+  return String(value || '')
+    .split(/\r?\n/)
+    .filter((line) => line.trim().length > 0)
+    .join('\n')
 }

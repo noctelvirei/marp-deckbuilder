@@ -70,3 +70,27 @@ test('writes SVG visual components as embedded PPTX media', async () => {
   const mediaNames = Object.keys(archive.files).filter((name) => name.startsWith('ppt/media/'))
   assert.ok(mediaNames.some((name) => name.endsWith('.svg')))
 })
+
+test('renders multiline SVG visual components as live HTML SVG', async () => {
+  const source = `# Cover
+
+---
+
+# Visual report
+
+<deck-visual title="Operating model">
+  <svg viewBox="0 0 200 100" role="img" aria-label="Simple metric">
+    <rect x="10" y="10" width="180" height="80" fill="#eef6fe"/>
+
+    <circle cx="100" cy="50" r="20" fill="#0f82f5"/>
+    <text x="30" y="60">84%</text>
+  </svg>
+</deck-visual>`
+  const definitions = await loadDefinitions(new URL('../resources/definitions', import.meta.url))
+  const deck = parseDeckMarkdown(source)
+  const rendered = renderDeckHtml(deck, { resourcesDir: 'resources', definitions })
+
+  assert.match(rendered.document, /<circle cx="100"/)
+  assert.doesNotMatch(rendered.document, /&lt;circle/)
+  assert.doesNotMatch(rendered.document, /&lt;text/)
+})
