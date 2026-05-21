@@ -39,6 +39,7 @@ node scripts/build-deck.mjs deck.md --out-dir output
 - Use supported `deck-*` components for slides or sections that must remain editable in PowerPoint. If a rich HTML slide is important but not PPTX-editable, pair it with a simpler editable fallback slide.
 - Mark premium browser slides with `<!-- pptx: skip -->`. Mark the paired editable fallback with `<!-- html: skip -->` or `<!-- pptx-only: true -->` so the HTML deck does not show duplicate fallback slides.
 - Use `deck-divider` for sections, `deck-stat-grid` for headline metrics, `deck-card-grid` for recommendations, `deck-comparison` for option tradeoffs, `deck-proof` for customer/research proof, and `deck-next-steps` for close-out actions.
+- Do not label section dividers as `ACT 01`, `ACT 02`, or similar unless the user or source material explicitly uses an act/play structure. Prefer plain business labels such as `Context`, `Evidence`, `Recommendations`, `Implementation`, or omit the divider label entirely.
 - Use `icon="filename-stem"` on `deck-card` for icons from `tool/resources/icons/`. Do not put raw `<img>` tags inside cards unless you need to; `icon`, `image`, and `src` are the supported card media contract and work in both HTML and PPTX.
 - Reference assets by file name/path, not by asking the renderer to know product-specific names. `icon="face-scan"` resolves dynamically to `tool/resources/icons/face-scan.svg` or another supported image extension if present.
 - Use `deck-chart` only when the chart can be described with structured labels and values.

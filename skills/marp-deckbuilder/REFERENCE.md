@@ -208,8 +208,12 @@ field for the same thing.
 ### Divider
 
 ```md
-<deck-divider act="ACT 01" title="The Moment." subtitle="A short transition line."></deck-divider>
+<deck-divider label="Context" title="The Moment." subtitle="A short transition line."></deck-divider>
 ```
+
+Use `act="ACT 01"` only when the source material intentionally uses an act or
+play structure. For business decks, prefer `label` with a plain section name or
+omit the label.
 
 ### Stats
 
