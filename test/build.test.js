@@ -377,6 +377,8 @@ Body copy`)
   assert.match(rendered.document, /deck-brand-logo/)
   assert.match(rendered.document, /data:image\/svg\+xml;base64,/)
   assert.match(rendered.document, /left:\s*1104px/)
+  assert.match(rendered.document, /<h1[^>]*>Content<\/h1>/)
+  assert.doesNotMatch(rendered.document, /# Content/)
   assert.doesNotMatch(rendered.document, /resource:logo\.svg/)
 })
 

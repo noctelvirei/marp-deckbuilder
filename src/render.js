@@ -113,13 +113,24 @@ function applyHtmlBranding(slide, brand = {}) {
   const source = applyHtmlSlideClass(slide)
   const logo = brandLogoForKind(brand, slideKind(slide))
   if (!logo || /class=["'][^"']*\bdeck-brand-logo\b/i.test(source)) return source
-  return `${logoHtml(logo, `${brand.name || 'Brand'} logo`)}\n${source}`
+  return insertLogoHtml(source, logoHtml(logo, `${brand.name || 'Brand'} logo`))
 }
 
 function applyHtmlSlideClass(slide) {
   const className = htmlClassForLayout(slide.layout)
   if (!className || /<!--\s*_class\s*:/i.test(slide.source)) return slide.source
   return `<!-- _class: ${className} -->\n${slide.source}`
+}
+
+function insertLogoHtml(source, logo) {
+  const lines = source.split(/\r?\n/)
+  let insertAt = 0
+
+  while (/^\s*<!--[\s\S]*?-->\s*$/.test(lines[insertAt] || '')) {
+    insertAt += 1
+  }
+
+  return [...lines.slice(0, insertAt), logo, '', ...lines.slice(insertAt)].join('\n')
 }
 
 function brandLogoForKind(brand = {}, kind = 'content') {
