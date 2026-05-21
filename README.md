@@ -4,6 +4,8 @@ Marp Deckbuilder is a narrow, branded wrapper around Marp-style Markdown.
 
 It keeps the authoring experience close to Marp, renders rich HTML slides with
 brand styling, and builds editable PPTX from known deck components.
+HTML output opens as a full-viewport presentation with slide snapping,
+keyboard navigation, progress, and full-screen support.
 
 ## Why This Exists
 
@@ -159,6 +161,7 @@ The `samples/` folder includes proof decks that exercise the bundle-only skill p
 - `proof-executive-brief.md`: all core business deck components.
 - `proof-report-pack.md`: reporting charts, cards, comparison, and next steps.
 - `proof-rich-html.md`: raw HTML for the high-fidelity web deck plus editable PPTX components.
+- `proof-html-showcase.md`: premium HTML/SVG storytelling paired with editable PPTX fallback slides.
 
 Build one through the Claude skill wrapper:
 

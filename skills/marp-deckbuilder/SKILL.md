@@ -29,9 +29,12 @@ node scripts/build-deck.mjs deck.md --out-dir output
 ## Authoring Guidance
 
 - Prefer concise executive language over report prose.
+- Treat HTML as the premium presentation format and PPTX as the editable business handoff.
+- Do not make HTML merely mirror the PPTX when the user wants impact. Use rich HTML, inline SVG, scoped CSS, layout grids, annotations, visual flows, and report-style data views for high-fidelity HTML slides.
+- Use supported `deck-*` components for slides or sections that must remain editable in PowerPoint. If a rich HTML slide is important but not PPTX-editable, add a simpler editable component slide or summary immediately after it.
 - Use `deck-divider` for sections, `deck-stat-grid` for headline metrics, `deck-card-grid` for recommendations, `deck-comparison` for option tradeoffs, `deck-proof` for customer/research proof, and `deck-next-steps` for close-out actions.
 - Use `deck-chart` only when the chart can be described with structured labels and values.
-- Arbitrary HTML may be used for HTML-only slides, but it is not guaranteed editable in native PPTX.
+- Arbitrary HTML may be used for premium HTML slides, but it is not guaranteed editable in native PPTX.
 - Keep the Markdown compact; the tool owns layout and branding.
 
 See [REFERENCE.md](REFERENCE.md) for component syntax and examples.

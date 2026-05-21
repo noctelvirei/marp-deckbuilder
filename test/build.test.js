@@ -17,6 +17,10 @@ test('renders Marp Deckbuilder HTML', async () => {
   const rendered = renderDeckHtml(deck, { resourcesDir: 'resources', definitions })
 
   assert.match(rendered.document, /class="marpit"/)
+  assert.match(rendered.document, /deck-slide-frame/)
+  assert.match(rendered.document, /svg\[data-marpit-svg\], section/)
+  assert.match(rendered.document, /deck-hud/)
+  assert.match(rendered.document, /scroll-snap-type: y mandatory/)
   assert.match(rendered.document, /Marp Deckbuilder Demo/)
   assert.match(rendered.document, /@page/)
 })
