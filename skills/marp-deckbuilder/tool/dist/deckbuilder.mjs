@@ -33,7 +33,7 @@ async function buildCommand(argv) {
   const wantsHtml = Boolean(argv.html) || !argv.html && !argv.pptx;
   let rendered;
   if (wantsHtml) {
-    const { renderDeckHtml } = await import("./chunks/render-LHWM77PP.mjs");
+    const { renderDeckHtml } = await import("./chunks/render-O6JL2335.mjs");
     rendered = renderDeckHtml(deck, { resourcesDir, definitions });
   }
   if (argv.html && rendered) {

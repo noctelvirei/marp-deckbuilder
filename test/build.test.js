@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict'
-import { mkdir, readFile, rm, stat } from 'node:fs/promises'
+import { mkdir, readFile, rm, stat, writeFile } from 'node:fs/promises'
 import path from 'node:path'
 import { test } from 'node:test'
 
@@ -93,4 +93,27 @@ test('renders multiline SVG visual components as live HTML SVG', async () => {
   assert.match(rendered.document, /<circle cx="100"/)
   assert.doesNotMatch(rendered.document, /&lt;circle/)
   assert.doesNotMatch(rendered.document, /&lt;text/)
+})
+
+test('resolves resource URLs inside brand theme CSS', async () => {
+  await rm(tmpDir, { recursive: true, force: true })
+  await mkdir(path.join(tmpDir, 'resources'), { recursive: true })
+  await writeFile(path.join(tmpDir, 'resources', 'cover-bg.png'), 'fake image')
+
+  const baseDefinitions = await loadDefinitions(
+    new URL('../resources/definitions', import.meta.url),
+  )
+  const definitions = {
+    ...baseDefinitions,
+    themeCss: `${baseDefinitions.themeCss}
+section.cover { background-image: url(resource:cover-bg.png); }`,
+  }
+  const deck = parseDeckMarkdown('# Cover')
+  const rendered = renderDeckHtml(deck, {
+    resourcesDir: path.join(tmpDir, 'resources'),
+    definitions,
+  })
+
+  assert.match(rendered.document, /background-image:url\(file:\/\//)
+  assert.doesNotMatch(rendered.document, /resource:cover-bg\.png/)
 })

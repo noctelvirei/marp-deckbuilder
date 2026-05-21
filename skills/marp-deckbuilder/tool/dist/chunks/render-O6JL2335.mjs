@@ -136001,7 +136001,8 @@ function renderDeckHtml(deck, options = {}) {
     slideContainer: []
   });
   const definitions = options.definitions;
-  marp.themeSet.add(definitions.themeCss);
+  const themeCss = resolveResourceUrls(definitions.themeCss, options.resourcesDir);
+  marp.themeSet.add(themeCss);
   const markdown = resolveResourceUrls(
     buildMarpMarkdown(deck, { themeName: definitions.brand.themeName }),
     options.resourcesDir
