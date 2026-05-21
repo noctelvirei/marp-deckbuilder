@@ -2,7 +2,7 @@ import { createRequire as __deckbuilderCreateRequire } from "node:module";
 const require = __deckbuilderCreateRequire(import.meta.url);
 import {
   buildMarpMarkdown
-} from "./chunk-7DTMZMRF.mjs";
+} from "./chunk-7EDZ36WQ.mjs";
 import {
   require_node
 } from "./chunk-ZA7UPLW5.mjs";
@@ -135999,7 +135999,7 @@ function renderDeckHtml(deck, options = {}) {
     ...deck,
     slides: deck.slides.filter((slide) => !shouldSkipHtml(slide)).map((slide) => ({
       ...slide,
-      source: applyHtmlBranding(slide, options.definitions?.brand)
+      source: prepareHtmlSource(applyHtmlBranding(slide, options.definitions?.brand))
     }))
   };
   const marp = new import_marp_core.Marp({
@@ -136102,6 +136102,18 @@ function insertLogoHtml(source, logo) {
     insertAt += 1;
   }
   return [...lines.slice(0, insertAt), logo, "", ...lines.slice(insertAt)].join("\n");
+}
+function prepareHtmlSource(source) {
+  return compactRawSvgBlocks(source);
+}
+function compactRawSvgBlocks(source) {
+  return String(source || "").split(/(```[\s\S]*?```)/g).map((part) => {
+    if (part.startsWith("```")) return part;
+    return part.replace(
+      /<svg\b[\s\S]*?<\/svg>/gi,
+      (svg) => svg.split(/\r?\n/).filter((line) => line.trim().length > 0).join("\n")
+    );
+  }).join("");
 }
 function brandLogoForKind(brand = {}, kind = "content") {
   const logo = brand.assets?.logo;

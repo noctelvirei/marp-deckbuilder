@@ -167,6 +167,62 @@ test('writes branded chart area fills into PPTX charts', async () => {
   assert.match(chartXml, /C8D8F0/)
 })
 
+test('writes markdown subheadings and bullets into native PPTX content slides', async () => {
+  await rm(tmpDir, { recursive: true, force: true })
+  await mkdir(tmpDir, { recursive: true })
+
+  const definitions = await loadDefinitions(new URL('../resources/definitions', import.meta.url))
+  const deck = parseDeckMarkdown(`# Cover
+
+---
+
+# Practical Takeaways
+
+## What the group landed on
+
+- Claude can be safe and useful at work.
+- MCPs are the bridge between sandboxed AI and useful internal data.
+- Skills are repeatable workflows, not just prompts with a fancy name.`)
+  const out = path.join(tmpDir, 'bullets.pptx')
+
+  await writePptx({ deck, outputPath: out, brand: definitions.brand })
+
+  const archive = await JSZip.loadAsync(await readFile(out))
+  const slideXml = await archive.file('ppt/slides/slide2.xml').async('string')
+
+  assert.match(slideXml, /What the group landed on/)
+  assert.match(slideXml, /Claude can be safe and useful at work/)
+  assert.match(slideXml, /MCPs are the bridge/)
+  assert.match(slideXml, /Skills are repeatable workflows/)
+})
+
+test('spaces wrapped divider titles above subtitles in native PPTX', async () => {
+  await rm(tmpDir, { recursive: true, force: true })
+  await mkdir(tmpDir, { recursive: true })
+
+  const definitions = await loadDefinitions(new URL('../resources/definitions', import.meta.url))
+  const deck = parseDeckMarkdown(`# Cover
+
+---
+
+<deck-divider
+  act="THE ASK"
+  title="Find One Workflow Worth Automating"
+  subtitle="Not the biggest thing. The annoying thing you do often enough to resent.">
+</deck-divider>`)
+  const out = path.join(tmpDir, 'wrapped-divider.pptx')
+
+  await writePptx({ deck, outputPath: out, brand: definitions.brand })
+
+  const archive = await JSZip.loadAsync(await readFile(out))
+  const slideXml = await archive.file('ppt/slides/slide2.xml').async('string')
+
+  assert.match(slideXml, /Find One Workflow Worth Automating/)
+  assert.match(slideXml, /Not the biggest thing/)
+  assert.match(slideXml, /<a:spcPts val="\d+"/)
+  assert.match(slideXml, /<a:off x="457200" y="4013200"/)
+})
+
 test('renders multiline SVG visual components as live HTML SVG', async () => {
   const source = `# Cover
 
@@ -189,6 +245,35 @@ test('renders multiline SVG visual components as live HTML SVG', async () => {
   assert.match(rendered.document, /<circle cx="100"/)
   assert.doesNotMatch(rendered.document, /&lt;circle/)
   assert.doesNotMatch(rendered.document, /&lt;text/)
+})
+
+test('renders raw SVG blocks with blank lines as valid HTML SVG', async () => {
+  const source = `# Cover
+
+---
+
+# Raw SVG
+
+<svg viewBox="0 0 100 60" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Raw SVG">
+  <defs>
+    <linearGradient id="g" x1="0" x2="1">
+      <stop offset="0" stop-color="#0F82F5"/>
+      <stop offset="1" stop-color="#59D6FD"/>
+    </linearGradient>
+  </defs>
+
+  <rect x="10" y="10" width="80" height="40" fill="url(#g)"/>
+  <text x="50" y="35" text-anchor="middle">Claude</text>
+</svg>`
+  const definitions = await loadDefinitions(new URL('../resources/definitions', import.meta.url))
+  const deck = parseDeckMarkdown(source)
+  const rendered = renderDeckHtml(deck, { resourcesDir: 'resources', definitions })
+
+  assert.match(rendered.document, /<svg viewBox="0 0 100 60"/)
+  assert.match(rendered.document, /<rect x="10"/)
+  assert.match(rendered.document, /<text x="50"/)
+  assert.doesNotMatch(rendered.document, /<p><rect/)
+  assert.doesNotMatch(rendered.document, /<br \/>[\s\S]*<text x="50"/)
 })
 
 test('resolves resource URLs inside brand theme CSS', async () => {

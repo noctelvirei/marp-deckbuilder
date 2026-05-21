@@ -11,7 +11,7 @@ import {
 export function addCover(slide, model, frontmatter, brand, resourcesDir) {
   const layout = brand.layouts.cover
   addSlideChrome(slide, brand, resourcesDir, 'cover', 'dark')
-  addTextBox(slide, brand, model.title, layout.title)
+  addLargeTextBox(slide, brand, model.title, layout.title)
 
   if (model.subtitle) addTextBox(slide, brand, model.subtitle, layout.subtitle)
 
@@ -22,19 +22,39 @@ export function addCover(slide, model, frontmatter, brand, resourcesDir) {
 
 export function addContent(slide, model, brand, resourcesDir) {
   addBaseHeader(slide, model, brand, resourcesDir)
-  const body = model.paragraphs.join('\n\n')
-  if (body) addTextBox(slide, brand, body, brand.layouts.body.paragraph, { breakLine: true })
+  const body = contentBody(model)
+  if (body) {
+    addTextBox(slide, brand, body, brand.layouts.body.paragraph, {
+      breakLine: true,
+      fit: 'shrink',
+    })
+  }
   addTakeaway(slide, model, brand)
+}
+
+function contentBody(model) {
+  const parts = []
+  if (model.subtitle) parts.push(model.subtitle)
+  parts.push(...(model.paragraphs || []))
+  if (model.bullets?.length) {
+    parts.push(model.bullets.map((bullet) => `• ${bullet}`).join('\n'))
+  }
+  return parts.filter(Boolean).join('\n\n')
 }
 
 export function addDivider(slide, model, brand, resourcesDir) {
   const layout = brand.layouts.divider
   const divider = model.divider || {}
+  const title = divider.title || model.title
+  const subtitle = divider.subtitle || model.subtitle
+  const titleBox = expandedTitleBox(title, layout.title)
+  const subtitleBox = subtitle ? boxAfterTitle(titleBox, layout.subtitle) : layout.subtitle
+
   addSlideChrome(slide, brand, resourcesDir, 'divider', 'dark')
   if (divider.act) addTextBox(slide, brand, divider.act, layout.act)
-  addTextBox(slide, brand, divider.title || model.title, layout.title, { fit: 'shrink' })
-  if (divider.subtitle || model.subtitle) {
-    addTextBox(slide, brand, divider.subtitle || model.subtitle, layout.subtitle, { fit: 'shrink' })
+  addLargeTextBox(slide, brand, title, titleBox)
+  if (subtitle) {
+    addTextBox(slide, brand, subtitle, subtitleBox, { fit: 'shrink' })
   }
 }
 
@@ -419,11 +439,46 @@ export function addClose(slide, model, frontmatter, brand, resourcesDir) {
   const close = model.close || {}
   const presenter = frontmatter.presenter || {}
   addSlideChrome(slide, brand, resourcesDir, 'close', 'dark')
-  addTextBox(slide, brand, close.title || model.title || 'Thank you', layout.title, { fit: 'shrink' })
+  addLargeTextBox(slide, brand, close.title || model.title || 'Thank you', expandedTitleBox(close.title || model.title || 'Thank you', layout.title))
   const name = close.name || presenter.name
   const role = close.role || presenter.role
   if (name) addTextBox(slide, brand, name, layout.name)
   if (role) addTextBox(slide, brand, role, layout.role)
+}
+
+function addLargeTextBox(slide, brand, text, box, options = {}) {
+  const size = box.size || 48
+  addTextBox(slide, brand, text, box, {
+    breakLine: true,
+    fit: 'shrink',
+    lineSpacing: Math.ceil(size * 1.16),
+    paraSpaceAfter: 0,
+    ...options,
+  })
+}
+
+function expandedTitleBox(text, box) {
+  const lines = estimateWrappedLines(text, box)
+  const lineHeight = Math.ceil((box.size || 48) * 1.16)
+  return {
+    ...box,
+    h: Math.max(box.h, lines * lineHeight),
+  }
+}
+
+function boxAfterTitle(titleBox, box) {
+  return {
+    ...box,
+    y: Math.max(box.y, titleBox.y + titleBox.h + 16),
+  }
+}
+
+function estimateWrappedLines(text, box) {
+  const size = box.size || 48
+  const charsPerLine = Math.max(8, Math.floor((box.w || 760) / (size * 0.5)))
+  return String(text || '')
+    .split(/\r?\n/)
+    .reduce((count, line) => count + Math.max(1, Math.ceil(line.trim().length / charsPerLine)), 0)
 }
 
 function addBaseHeader(slide, model, brand, resourcesDir) {

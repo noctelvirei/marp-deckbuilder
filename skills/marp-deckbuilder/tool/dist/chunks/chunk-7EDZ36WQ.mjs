@@ -47197,7 +47197,8 @@ function parseSlide(source, index2, originalSource = source, components = []) {
     logoWall: firstComponent(components, "logo-wall"),
     divider: firstComponent(components, "divider"),
     close: firstComponent(components, "close"),
-    paragraphs: extractParagraphs(source, title)
+    paragraphs: extractParagraphs(source, title),
+    bullets: extractBullets(source)
   };
 }
 function extractDirectives(source) {
@@ -47253,6 +47254,8 @@ function extractTitle(source) {
   return "";
 }
 function extractSubtitle(source, title) {
+  const markdownSubheading = source.match(/^\s*##\s+(.+)$/m);
+  if (markdownSubheading) return stripInline(markdownSubheading[1]);
   const paragraphs = extractParagraphs(source, title);
   return paragraphs[0] || "";
 }
@@ -47281,8 +47284,17 @@ function extractCards(source) {
 function extractParagraphs(source, title) {
   const withoutComments = source.replace(/<!--[\s\S]*?-->/g, "");
   const htmlParagraphs = [...withoutComments.matchAll(/<p[^>]*>([\s\S]*?)<\/p>/gi)].map((match) => cleanText2(match[1])).filter(Boolean);
-  const markdownParagraphs = withoutComments.replace(/```[\s\S]*?```/g, "").split(/\r?\n{2,}/).map((block) => block.trim()).filter((block) => block && !block.startsWith("#") && !block.startsWith("<")).map(stripInline).filter(Boolean);
+  const markdownParagraphs = withoutComments.replace(/```[\s\S]*?```/g, "").split(/\r?\n{2,}/).map((block) => block.trim()).filter(
+    (block) => block && !block.startsWith("#") && !block.startsWith("<") && !isMarkdownListBlock(block)
+  ).map(stripInline).filter(Boolean);
   return [...htmlParagraphs, ...markdownParagraphs].filter((paragraph) => paragraph !== title).slice(0, 6);
+}
+function extractBullets(source) {
+  const withoutComments = source.replace(/<!--[\s\S]*?-->/g, "").replace(/```[\s\S]*?```/g, "").replace(/<[^>]+>[\s\S]*?<\/[^>]+>/g, "");
+  return withoutComments.split(/\r?\n/).map((line) => line.match(/^\s*[-*]\s+(.+)$/)?.[1]).filter(Boolean).map(stripInline);
+}
+function isMarkdownListBlock(block) {
+  return block.split(/\r?\n/).some((line) => /^\s*[-*]\s+/.test(line));
 }
 function firstMatch2(source, pattern) {
   const match = source.match(pattern);
@@ -47290,7 +47302,7 @@ function firstMatch2(source, pattern) {
 }
 function stripInline(value) {
   return cleanText2(
-    value.replace(/!\[[^\]]*]\([^)]+\)/g, "").replace(/\[([^\]]+)]\([^)]+\)/g, "$1").replace(/[*_`~]/g, "")
+    value.replace(/!\[[^\]]*]\([^)]+\)/g, "").replace(/\[([^\]]+)]\([^)]+\)/g, "$1").replace(/^>\s?/gm, "").replace(/[*_`~]/g, "")
   );
 }
 function cleanText2(value) {

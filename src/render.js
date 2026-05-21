@@ -14,7 +14,7 @@ export function renderDeckHtml(deck, options = {}) {
       .filter((slide) => !shouldSkipHtml(slide))
       .map((slide) => ({
         ...slide,
-        source: applyHtmlBranding(slide, options.definitions?.brand),
+        source: prepareHtmlSource(applyHtmlBranding(slide, options.definitions?.brand)),
       })),
   }
   const marp = new Marp({
@@ -131,6 +131,25 @@ function insertLogoHtml(source, logo) {
   }
 
   return [...lines.slice(0, insertAt), logo, '', ...lines.slice(insertAt)].join('\n')
+}
+
+function prepareHtmlSource(source) {
+  return compactRawSvgBlocks(source)
+}
+
+function compactRawSvgBlocks(source) {
+  return String(source || '')
+    .split(/(```[\s\S]*?```)/g)
+    .map((part) => {
+      if (part.startsWith('```')) return part
+      return part.replace(/<svg\b[\s\S]*?<\/svg>/gi, (svg) =>
+        svg
+          .split(/\r?\n/)
+          .filter((line) => line.trim().length > 0)
+          .join('\n'),
+      )
+    })
+    .join('')
 }
 
 function brandLogoForKind(brand = {}, kind = 'content') {

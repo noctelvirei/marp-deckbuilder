@@ -95,6 +95,7 @@ export function parseSlide(source, index, originalSource = source, components = 
     divider: firstComponent(components, 'divider'),
     close: firstComponent(components, 'close'),
     paragraphs: extractParagraphs(source, title),
+    bullets: extractBullets(source),
   }
 }
 
@@ -159,6 +160,9 @@ function extractTitle(source) {
 }
 
 function extractSubtitle(source, title) {
+  const markdownSubheading = source.match(/^\s*##\s+(.+)$/m)
+  if (markdownSubheading) return stripInline(markdownSubheading[1])
+
   const paragraphs = extractParagraphs(source, title)
   return paragraphs[0] || ''
 }
@@ -202,13 +206,36 @@ function extractParagraphs(source, title) {
     .replace(/```[\s\S]*?```/g, '')
     .split(/\r?\n{2,}/)
     .map((block) => block.trim())
-    .filter((block) => block && !block.startsWith('#') && !block.startsWith('<'))
+    .filter(
+      (block) =>
+        block &&
+        !block.startsWith('#') &&
+        !block.startsWith('<') &&
+        !isMarkdownListBlock(block),
+    )
     .map(stripInline)
     .filter(Boolean)
 
   return [...htmlParagraphs, ...markdownParagraphs]
     .filter((paragraph) => paragraph !== title)
     .slice(0, 6)
+}
+
+function extractBullets(source) {
+  const withoutComments = source
+    .replace(/<!--[\s\S]*?-->/g, '')
+    .replace(/```[\s\S]*?```/g, '')
+    .replace(/<[^>]+>[\s\S]*?<\/[^>]+>/g, '')
+
+  return withoutComments
+    .split(/\r?\n/)
+    .map((line) => line.match(/^\s*[-*]\s+(.+)$/)?.[1])
+    .filter(Boolean)
+    .map(stripInline)
+}
+
+function isMarkdownListBlock(block) {
+  return block.split(/\r?\n/).some((line) => /^\s*[-*]\s+/.test(line))
 }
 
 function firstMatch(source, pattern) {
@@ -221,6 +248,7 @@ function stripInline(value) {
     value
       .replace(/!\[[^\]]*]\([^)]+\)/g, '')
       .replace(/\[([^\]]+)]\([^)]+\)/g, '$1')
+      .replace(/^>\s?/gm, '')
       .replace(/[*_`~]/g, ''),
   )
 }

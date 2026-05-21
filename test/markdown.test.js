@@ -107,3 +107,21 @@ test('parses compact comparison columns and rows attributes', () => {
   assert.doesNotMatch(deck.slides[0].source, /Option A/)
   assert.doesNotMatch(deck.slides[0].source, /Option B/)
 })
+
+test('parses markdown subheadings and bullet lists for native PPTX content', () => {
+  const deck = parseDeckMarkdown(`# Practical Takeaways
+
+## What the group landed on
+
+- Claude can be safe and useful at work.
+- MCPs are the bridge between sandboxed AI and useful internal data.
+- Skills are repeatable workflows, not just prompts with a fancy name.`)
+
+  assert.equal(deck.slides[0].subtitle, 'What the group landed on')
+  assert.deepEqual(deck.slides[0].bullets, [
+    'Claude can be safe and useful at work.',
+    'MCPs are the bridge between sandboxed AI and useful internal data.',
+    'Skills are repeatable workflows, not just prompts with a fancy name.',
+  ])
+  assert.deepEqual(deck.slides[0].paragraphs, [])
+})
