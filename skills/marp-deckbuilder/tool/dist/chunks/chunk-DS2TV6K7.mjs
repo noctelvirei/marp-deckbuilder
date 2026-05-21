@@ -2,7 +2,7 @@ import { createRequire as __deckbuilderCreateRequire } from "node:module";
 const require = __deckbuilderCreateRequire(import.meta.url);
 import {
   buildMarpMarkdown
-} from "./chunk-YQOJ4CWB.mjs";
+} from "./chunk-SMAWY26Z.mjs";
 import {
   require_node
 } from "./chunk-ZA7UPLW5.mjs";
@@ -136251,13 +136251,15 @@ function renderNotes(comments = []) {
 function escapeHtml(value) {
   return String(value).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#39;");
 }
+
 export {
+  require_punycode,
+  renderDeckHtml,
   brandBackgroundCss,
   brandLogoCss,
+  shouldSkipHtml,
   htmlDocument,
-  renderDeckHtml,
-  resolveResourceUrls,
-  shouldSkipHtml
+  resolveResourceUrls
 };
 /*! Bundled license information:
 

@@ -5,11 +5,11 @@ description: Builds brandable decks from reports, research, CRM/sales notes, Con
 
 # Marp Deckbuilder
 
-Use this skill to turn source material into a lightweight component Markdown deck, then build HTML and editable PPTX with the bundled native renderer.
+Use this skill to turn source material into a lightweight component Markdown deck, then build HTML and editable PPTX with the bundled native renderer. When the user asks for a report rather than a presentation, build a detailed long-form HTML report instead.
 
 ## Core Rule
 
-Do not hand-write PowerPoint code. Write `deck.md` using supported `deck-*` components, then run the bundled CLI. Brand rules, layout coordinates, colors, and fonts live in `tool/resources/definitions/`; see `BRANDING.md` only when updating a branded fork or brand contract. The HTML presenter uses vendored Marp CLI/Bespoke assets in `tool/resources/templates/`; do not recreate or replace that presenter from prompts. The skill runs the bundled `tool/dist/deckbuilder.mjs` runtime and does not need `node_modules`, `npm install`, Marp CLI, LibreOffice, PowerPoint automation, Chromium, or other external executables.
+Do not hand-write PowerPoint code. For decks, write `deck.md` using supported `deck-*` components, then run the bundled CLI. For reports, write `report.md` as long-form Markdown and run the report wrapper. Brand rules, layout coordinates, colors, and fonts live in `tool/resources/definitions/`; see `BRANDING.md` only when updating a branded fork or brand contract. The HTML presenter uses vendored Marp CLI/Bespoke assets in `tool/resources/templates/`; do not recreate or replace that presenter from prompts. The skill runs the bundled `tool/dist/deckbuilder.mjs` runtime and does not need `node_modules`, `npm install`, Marp CLI, LibreOffice, PowerPoint automation, Chromium, or other external executables.
 
 ## Workflow
 
@@ -30,10 +30,32 @@ node scripts/build-deck.mjs deck.md --out-dir output
    `resources/` folder if one was requested. By default the HTML is
    self-contained because `resource:` assets are embedded as `data:` URLs.
 
+## Report Workflow
+
+Use this workflow when the user asks for a report, write-up, detailed analysis,
+research note, or briefing document rather than a slide deck.
+
+1. Create one report folder for the request. Prefer
+   `Documents/Presentations/YYYY-MM-DD/<report-title-slug>/` unless the user has
+   specified a location.
+2. Draft `report.md` as long-form Markdown, not slides. Use headings, narrative
+   sections, tables, bullet lists, blockquotes, and inline images where helpful.
+3. Do not use `deck-*` components in reports. Those are for slide/PPTX output.
+4. Build the report:
+
+```bash
+node scripts/build-report.mjs report.md --out-dir output
+```
+
+5. Return the generated `.html` and source `.md`. For PDF, tell the user to open
+   the HTML in a browser and use Print to PDF. Do not try to invoke Marp PDF,
+   Chromium, Playwright, PowerPoint, or an external converter from the skill.
+
 ## Authoring Guidance
 
 - Prefer concise executive language over report prose.
 - Treat HTML as the premium presentation format and PPTX as the editable business handoff.
+- If the user asks for a report, do not force it into slides. Build the long-form report HTML and make it print-friendly instead.
 - For reports, analytics, research summaries, and sales/customer briefings, create at least one premium HTML slide that is materially richer than the PPTX version: an annotated SVG dashboard, journey map, funnel, heatmap, process animation, interactive demo, or dense report-style data view.
 - Do not make HTML merely mirror the PPTX when the user wants impact. Use raw HTML, inline SVG, scoped CSS, layout grids, annotations, visual flows, and browser JavaScript for high-fidelity HTML slides.
 - Use supported `deck-*` components for slides or sections that must remain editable in PowerPoint. If a rich HTML slide is important but not PPTX-editable, pair it with a simpler editable fallback slide.

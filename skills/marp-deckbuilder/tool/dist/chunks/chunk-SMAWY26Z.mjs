@@ -33248,6 +33248,9 @@ function determineBranch(decodeTree, current, nodeIdx, char) {
 }
 var htmlDecoder = getDecoder(decode_data_html_default);
 var xmlDecoder = getDecoder(decode_data_xml_default);
+function decodeHTML(str2, mode = DecodingMode.Legacy) {
+  return htmlDecoder(str2, mode);
+}
 
 // node_modules/entities/lib/esm/generated/encode-html.js
 function restoreDiff(arr) {
@@ -47486,6 +47489,7 @@ function decodeHtml(value) {
 }
 
 export {
+  decodeHTML,
   parseDeckMarkdown,
   splitFrontmatter,
   buildMarpMarkdown,

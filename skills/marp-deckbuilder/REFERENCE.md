@@ -8,13 +8,30 @@ From the skill folder:
 node scripts/build-deck.mjs examples/example.md --out-dir output
 ```
 
+For a detailed report instead of slides:
+
+```bash
+node scripts/build-report.mjs report.md --out-dir output
+```
+
 Equivalent direct CLI call:
 
 ```bash
 node tool/dist/deckbuilder.mjs build deck.md --html output/deck.html --pptx output/deck.pptx --mode native --resources tool/resources
 ```
 
+Equivalent direct report call:
+
+```bash
+node tool/dist/deckbuilder.mjs report report.md --html output/report.html --resources tool/resources
+```
+
 The skill runs the bundled renderer and does not install dependencies.
+
+PDF export is intentionally handled with browser Print to PDF. The skill does
+not bundle Chromium, Playwright, Marp CLI PDF export, LibreOffice, or another
+browser engine because that would make the package much larger. For a PDF copy,
+open the generated report HTML in a browser and use Print to PDF.
 
 The generated HTML uses vendored Marp CLI/Bespoke presenter assets from
 `tool/resources/templates/`, including the on-screen controls, overview mode,
@@ -51,6 +68,44 @@ Documents/Presentations/2026-05-21/example-deck/
 
 Keep the HTML file and its sibling `resources/` folder together when sharing or
 moving a deck generated with `--html-assets copy`.
+
+## Report Mode
+
+Report mode is for long-form written output, not presentations. Use it when the
+user asks for a report, detailed analysis, research note, briefing document, or
+write-up.
+
+Author `report.md` as normal Markdown:
+
+```md
+---
+title: Client Usage Report
+subtitle: April overview
+---
+
+# Executive summary
+
+The report can hold more detail than a slide deck.
+
+## Findings
+
+| Metric | Value |
+| --- | ---: |
+| Cases | 115,060 |
+
+![Journey chart](resource:images/journey-chart.svg)
+```
+
+Rules:
+
+- do not separate report content with slide delimiters;
+- do not use `deck-*` components in reports;
+- use headings, paragraphs, tables, lists, blockquotes, code blocks, inline SVG,
+  or Markdown images;
+- use `resource:` images or local image paths that exist under `tool/resources/`;
+- missing images fail the build;
+- generated report HTML is self-contained by default;
+- use browser Print to PDF for the PDF version.
 
 ## Fail-Fast Contract
 

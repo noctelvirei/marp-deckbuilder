@@ -54,6 +54,15 @@ npx marp-deckbuilder build samples/demo.md --html dist/demo.html --pptx dist/dem
 
 Native mode is the default because it produces editable PowerPoint objects.
 
+Render a detailed long-form HTML report:
+
+```powershell
+npx marp-deckbuilder report report.md --html dist/report.html
+```
+
+PDF export is intentionally not bundled because it requires a browser engine.
+Open the generated report HTML in a browser and use Print to PDF.
+
 ## Markdown Conventions
 
 Slides are separated with `---`, like Marp. Use normal Markdown and HTML.
@@ -115,10 +124,19 @@ The native renderer only promises editability for known deck components:
 Arbitrary HTML is still useful for HTML-only reports, but the native PPTX
 renderer will not infer editable PowerPoint structure from arbitrary CSS.
 
+## Report Mode
+
+When the output should be a report rather than a presentation, write normal
+long-form Markdown and use `report` mode. Report mode produces a self-contained,
+print-styled HTML document with brand colors, resource embedding, tables, code
+blocks, blockquotes, and images. It does not create PPTX.
+
+Use browser Print to PDF when the user needs a PDF copy.
+
 ## Supported Components
 
 ```md
-<deck-divider act="ACT 01" title="The Moment." subtitle="A short transition line."></deck-divider>
+<deck-divider label="Context" title="The Moment." subtitle="A short transition line."></deck-divider>
 
 <deck-stat-grid>
   <deck-stat value="42%" label="manual handoffs"></deck-stat>
