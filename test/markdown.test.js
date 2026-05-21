@@ -108,6 +108,26 @@ test('parses compact comparison columns and rows attributes', () => {
   assert.doesNotMatch(deck.slides[0].source, /Option B/)
 })
 
+test('preserves deck-card icon and image references as card media', () => {
+  const deck = parseDeckMarkdown(`# Card icons
+
+<deck-card-grid columns="3">
+  <deck-card title="Face scan" icon="product-face-scan"><p>Capture identity.</p></deck-card>
+  <deck-card title="Document" image="icons/document-check.svg"><p>Check evidence.</p></deck-card>
+  <deck-card title="Child image"><img src="resource:icons/signed.svg" alt="Signed"><p>Sign the pack.</p></deck-card>
+</deck-card-grid>`)
+
+  assert.equal(deck.slides[0].cards.length, 3)
+  assert.deepEqual(deck.slides[0].cards.map((card) => card.media?.src), [
+    'resource:icons/product-face-scan',
+    'resource:icons/document-check.svg',
+    'resource:icons/signed.svg',
+  ])
+  assert.match(deck.slides[0].source, /deck-card-icon/)
+  assert.match(deck.slides[0].source, /deck-card-image/)
+  assert.doesNotMatch(deck.slides[0].source, /<p><\/p>/)
+})
+
 test('parses markdown subheadings and bullet lists for native PPTX content', () => {
   const deck = parseDeckMarkdown(`# Practical Takeaways
 
@@ -124,4 +144,33 @@ test('parses markdown subheadings and bullet lists for native PPTX content', () 
     'Skills are repeatable workflows, not just prompts with a fancy name.',
   ])
   assert.deepEqual(deck.slides[0].paragraphs, [])
+})
+
+test('fails loudly on invalid deck component Markdown', () => {
+  assert.throws(
+    () =>
+      parseDeckMarkdown(`# Broken
+
+<deck-card-grid columns="3">
+  <deck-card title="Oops"><p>Body</p>
+</deck-card-grid>`),
+    /Invalid deck Markdown in slide 1, line 5: Mismatched deck component tags/,
+  )
+
+  assert.throws(
+    () =>
+      parseDeckMarkdown(`# Broken
+
+<deck-card-grid columns="3">
+</deck-card-grid>`),
+    /deck-card-grid must include at least one deck-card/,
+  )
+
+  assert.throws(
+    () =>
+      parseDeckMarkdown(`# Broken
+
+<deck-chart title="Bad" labels="A,B" values="10"></deck-chart>`),
+    /deck-chart labels\/values length mismatch/,
+  )
 })

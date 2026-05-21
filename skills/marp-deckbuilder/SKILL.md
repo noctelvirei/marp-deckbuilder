@@ -39,11 +39,14 @@ node scripts/build-deck.mjs deck.md --out-dir output
 - Use supported `deck-*` components for slides or sections that must remain editable in PowerPoint. If a rich HTML slide is important but not PPTX-editable, pair it with a simpler editable fallback slide.
 - Mark premium browser slides with `<!-- pptx: skip -->`. Mark the paired editable fallback with `<!-- html: skip -->` or `<!-- pptx-only: true -->` so the HTML deck does not show duplicate fallback slides.
 - Use `deck-divider` for sections, `deck-stat-grid` for headline metrics, `deck-card-grid` for recommendations, `deck-comparison` for option tradeoffs, `deck-proof` for customer/research proof, and `deck-next-steps` for close-out actions.
+- Use `icon="filename-stem"` on `deck-card` for icons from `tool/resources/icons/`. Do not put raw `<img>` tags inside cards unless you need to; `icon`, `image`, and `src` are the supported card media contract and work in both HTML and PPTX.
+- Reference assets by file name/path, not by asking the renderer to know product-specific names. `icon="face-scan"` resolves dynamically to `tool/resources/icons/face-scan.svg` or another supported image extension if present.
 - Use `deck-chart` only when the chart can be described with structured labels and values.
 - Use `deck-visual` for rich inline SVG charts, maps, dashboards, and annotated diagrams. HTML keeps the SVG inline; PPTX embeds the SVG as a crisp visual image. Put essential fills, strokes, fonts, and labels inside the SVG itself because PPTX receives only the SVG. The visual is not editable as PowerPoint shapes, but the source Markdown/SVG remains easy to edit and regenerate.
 - Arbitrary HTML, scoped CSS, and JavaScript may be used for premium HTML slides. Mark browser-only slides with `<!-- pptx: skip -->` or `<!-- html-only: true -->`; HTML keeps the slide, while native PPTX omits it cleanly.
 - Brand backgrounds and logos are controlled by optional `assets` entries in `tool/resources/definitions/brand.json`. HTML embeds those assets as self-contained data URLs; PPTX inserts them as slide images.
 - Keep using `resource:` references for brand images. The renderer embeds them in HTML and inserts them into PPTX; do not paste brand SVG source into Markdown.
+- The renderer fails loudly on invalid component Markdown or missing assets. If the build errors, fix the Markdown or add the referenced file under `tool/resources/`; do not work around it by leaving empty cards, broken images, or unsupported component shapes.
 - Keep the Markdown compact; the tool owns layout and branding.
 - Do not add `paginate: true` unless the user explicitly asks for visible slide numbers.
 

@@ -1,8 +1,9 @@
 import { Buffer } from 'node:buffer'
-import { existsSync, readFileSync } from 'node:fs'
+import { readFileSync } from 'node:fs'
 import path from 'node:path'
 
 import { color, font, ptToIn } from '../brand.js'
+import { resolveResourceFile } from '../resources.js'
 
 export function addTextBox(slide, brand, text, box, options = {}) {
   slide.addText(text || '', {
@@ -66,9 +67,7 @@ export function addResourceImage(slide, resource, resourcesDir, box, altText = '
 
 export function resolveResourcePath(value, resourcesDir) {
   if (!value || !resourcesDir) return ''
-  const raw = value.startsWith('resource:') ? value.slice('resource:'.length) : value
-  const candidate = path.isAbsolute(raw) ? raw : path.resolve(resourcesDir, raw)
-  return existsSync(candidate) ? candidate : ''
+  return resolveResourceFile(value, resourcesDir).path
 }
 
 export function svgToDataUri(svg) {

@@ -2,10 +2,15 @@ import { createRequire as __deckbuilderCreateRequire } from "node:module";
 const require = __deckbuilderCreateRequire(import.meta.url);
 import {
   buildMarpMarkdown
-} from "./chunk-7EDZ36WQ.mjs";
+} from "./chunk-YQOJ4CWB.mjs";
 import {
   require_node
 } from "./chunk-ZA7UPLW5.mjs";
+import {
+  normalizeResourceReference,
+  resolveResourceFile,
+  resourceToDataUri
+} from "./chunk-QTC2235H.mjs";
 import {
   __commonJS,
   __require,
@@ -7364,27 +7369,27 @@ var require_util = __commonJS({
       };
     }
     var normalize = lruMemoize(function normalize2(aPath) {
-      var path2 = aPath;
+      var path = aPath;
       var url = urlParse(aPath);
       if (url) {
         if (!url.path) {
           return aPath;
         }
-        path2 = url.path;
+        path = url.path;
       }
-      var isAbsolute = exports.isAbsolute(path2);
+      var isAbsolute = exports.isAbsolute(path);
       var parts = [];
       var start = 0;
       var i = 0;
       while (true) {
         start = i;
-        i = path2.indexOf("/", start);
+        i = path.indexOf("/", start);
         if (i === -1) {
-          parts.push(path2.slice(start));
+          parts.push(path.slice(start));
           break;
         } else {
-          parts.push(path2.slice(start, i));
-          while (i < path2.length && path2[i] === "/") {
+          parts.push(path.slice(start, i));
+          while (i < path.length && path[i] === "/") {
             i++;
           }
         }
@@ -7405,15 +7410,15 @@ var require_util = __commonJS({
           }
         }
       }
-      path2 = parts.join("/");
-      if (path2 === "") {
-        path2 = isAbsolute ? "/" : ".";
+      path = parts.join("/");
+      if (path === "") {
+        path = isAbsolute ? "/" : ".";
       }
       if (url) {
-        url.path = path2;
+        url.path = path;
         return urlGenerate(url);
       }
-      return path2;
+      return path;
     });
     exports.normalize = normalize;
     function join(aRoot, aPath) {
@@ -9102,7 +9107,7 @@ var require_source_map = __commonJS({
 var require_previous_map = __commonJS({
   "node_modules/postcss/lib/previous-map.js"(exports, module) {
     "use strict";
-    var { existsSync: existsSync2, readFileSync: readFileSync2 } = __require("fs");
+    var { existsSync, readFileSync } = __require("fs");
     var { dirname, join } = __require("path");
     var { SourceMapConsumer, SourceMapGenerator } = require_source_map();
     function fromBase64(str) {
@@ -9165,16 +9170,16 @@ var require_previous_map = __commonJS({
           this.annotation = this.getAnnotationURL(css.substring(start, end));
         }
       }
-      loadFile(path2, cssFile, trusted) {
+      loadFile(path, cssFile, trusted) {
         if (!trusted && !this.unsafeMap) {
-          if (!/\.map$/i.test(path2)) {
+          if (!/\.map$/i.test(path)) {
             return void 0;
           }
         }
-        this.root = dirname(path2);
-        if (existsSync2(path2)) {
-          this.mapFile = path2;
-          return readFileSync2(path2, "utf-8").toString().trim();
+        this.root = dirname(path);
+        if (existsSync(path)) {
+          this.mapFile = path;
+          return readFileSync(path, "utf-8").toString().trim();
         }
       }
       loadMap(file, prev) {
@@ -9896,9 +9901,9 @@ var require_map_generator = __commonJS({
         if (typeof this.mapOpts.annotation === "string") {
           from = dirname(resolve(from, this.mapOpts.annotation));
         }
-        let path2 = relative(from, file);
-        this.memoizedPaths.set(file, path2);
-        return path2;
+        let path = relative(from, file);
+        this.memoizedPaths.set(file, path);
+        return path;
       }
       previous() {
         if (!this.previousMaps) {
@@ -9953,12 +9958,12 @@ var require_map_generator = __commonJS({
           return window.btoa(unescape(encodeURIComponent(str)));
         }
       }
-      toFileUrl(path2) {
-        let cached = this.memoizedFileURLs.get(path2);
+      toFileUrl(path) {
+        let cached = this.memoizedFileURLs.get(path);
         if (cached) return cached;
         if (pathToFileURL2) {
-          let fileURL = pathToFileURL2(path2).toString();
-          this.memoizedFileURLs.set(path2, fileURL);
+          let fileURL = pathToFileURL2(path).toString();
+          this.memoizedFileURLs.set(path, fileURL);
           return fileURL;
         } else {
           throw new Error(
@@ -9966,14 +9971,14 @@ var require_map_generator = __commonJS({
           );
         }
       }
-      toUrl(path2) {
-        let cached = this.memoizedURLs.get(path2);
+      toUrl(path) {
+        let cached = this.memoizedURLs.get(path);
         if (cached) return cached;
         if (sep === "\\") {
-          path2 = path2.replace(/\\/g, "/");
+          path = path.replace(/\\/g, "/");
         }
-        let url = encodeURI(path2).replace(/[#?]/g, encodeURIComponent);
-        this.memoizedURLs.set(path2, url);
+        let url = encodeURI(path).replace(/[#?]/g, encodeURIComponent);
+        this.memoizedURLs.set(path, url);
         return url;
       }
     };
@@ -25712,27 +25717,27 @@ var require_katex = __commonJS({
           };
           const sqrtPath = function(size, extraVinculum, viewBoxHeight) {
             extraVinculum = 1e3 * extraVinculum;
-            let path3 = "";
+            let path2 = "";
             switch (size) {
               case "sqrtMain":
-                path3 = sqrtMain(extraVinculum, hLinePad);
+                path2 = sqrtMain(extraVinculum, hLinePad);
                 break;
               case "sqrtSize1":
-                path3 = sqrtSize1(extraVinculum, hLinePad);
+                path2 = sqrtSize1(extraVinculum, hLinePad);
                 break;
               case "sqrtSize2":
-                path3 = sqrtSize2(extraVinculum, hLinePad);
+                path2 = sqrtSize2(extraVinculum, hLinePad);
                 break;
               case "sqrtSize3":
-                path3 = sqrtSize3(extraVinculum, hLinePad);
+                path2 = sqrtSize3(extraVinculum, hLinePad);
                 break;
               case "sqrtSize4":
-                path3 = sqrtSize4(extraVinculum, hLinePad);
+                path2 = sqrtSize4(extraVinculum, hLinePad);
                 break;
               case "sqrtTall":
-                path3 = sqrtTall(extraVinculum, hLinePad, viewBoxHeight);
+                path2 = sqrtTall(extraVinculum, hLinePad, viewBoxHeight);
             }
-            return path3;
+            return path2;
           };
           const innerPath = function(name, height) {
             switch (name) {
@@ -25758,7 +25763,7 @@ var require_katex = __commonJS({
                 return "";
             }
           };
-          const path2 = {
+          const path = {
             // The doubleleftarrow geometry is from glyph U+21D0 in the font KaTeX Main
             doubleleftarrow: "M262 157\nl10-10c34-36 62.7-77 86-123 3.3-8 5-13.3 5-16 0-5.3-6.7-8-20-8-7.3\n 0-12.2.5-14.5 1.5-2.3 1-4.8 4.5-7.5 10.5-49.3 97.3-121.7 169.3-217 216-28\n 14-57.3 25-88 33-6.7 2-11 3.8-13 5.5-2 1.7-3 4.2-3 7.5s1 5.8 3 7.5\nc2 1.7 6.3 3.5 13 5.5 68 17.3 128.2 47.8 180.5 91.5 52.3 43.7 93.8 96.2 124.5\n 157.5 9.3 8 15.3 12.3 18 13h6c12-.7 18-4 18-10 0-2-1.7-7-5-15-23.3-46-52-87\n-86-123l-10-10h399738v-40H218c328 0 0 0 0 0l-10-8c-26.7-20-65.7-43-117-69 2.7\n-2 6-3.7 10-5 36.7-16 72.3-37.3 107-64l10-8h399782v-40z\nm8 0v40h399730v-40zm0 194v40h399730v-40z",
             // doublerightarrow is from glyph U+21D2 in font KaTeX Main
@@ -26290,7 +26295,7 @@ var require_katex = __commonJS({
               if (this.alternate) {
                 node.setAttribute("d", this.alternate);
               } else {
-                node.setAttribute("d", path2[this.pathName]);
+                node.setAttribute("d", path[this.pathName]);
               }
               return node;
             }
@@ -26298,7 +26303,7 @@ var require_katex = __commonJS({
               if (this.alternate) {
                 return '<path d="' + utils_escape(this.alternate) + '"/>';
               } else {
-                return '<path d="' + utils_escape(path2[this.pathName]) + '"/>';
+                return '<path d="' + utils_escape(path[this.pathName]) + '"/>';
               }
             }
           }
@@ -29912,8 +29917,8 @@ var require_katex = __commonJS({
           };
           const staticSvg = function(value, options) {
             const [pathName, width, height] = svgData[value];
-            const path3 = new PathNode(pathName);
-            const svgNode = new SvgNode([path3], {
+            const path2 = new PathNode(pathName);
+            const svgNode = new SvgNode([path2], {
               "width": makeEm(width),
               "height": makeEm(height),
               // Override CSS rule `.katex svg { width: 100% }`
@@ -31095,8 +31100,8 @@ var require_katex = __commonJS({
                     pathName = "tilde" + imgIndex;
                   }
                 }
-                const path3 = new PathNode(pathName);
-                const svgNode = new SvgNode([path3], {
+                const path2 = new PathNode(pathName);
+                const svgNode = new SvgNode([path2], {
                   "width": "100%",
                   "height": makeEm(height2),
                   "viewBox": "0 0 " + viewBoxWidth + " " + viewBoxHeight,
@@ -31134,8 +31139,8 @@ var require_katex = __commonJS({
                   throw new Error("Correct katexImagesData or update code here to support\n                    " + numSvgChildren + " children.");
                 }
                 for (let i = 0; i < numSvgChildren; i++) {
-                  const path3 = new PathNode(paths[i]);
-                  const svgNode = new SvgNode([path3], {
+                  const path2 = new PathNode(paths[i]);
+                  const svgNode = new SvgNode([path2], {
                     "width": "400em",
                     "height": makeEm(height2),
                     "viewBox": "0 0 " + viewBoxWidth + " " + viewBoxHeight,
@@ -32406,8 +32411,8 @@ var require_katex = __commonJS({
           };
           const makeInner = function(ch, height, options) {
             const width = fontMetricsData["Size4-Regular"][ch.charCodeAt(0)] ? fontMetricsData["Size4-Regular"][ch.charCodeAt(0)][4] : fontMetricsData["Size1-Regular"][ch.charCodeAt(0)][4];
-            const path3 = new PathNode("inner", innerPath(ch, Math.round(1e3 * height)));
-            const svgNode = new SvgNode([path3], {
+            const path2 = new PathNode("inner", innerPath(ch, Math.round(1e3 * height)));
+            const svgNode = new SvgNode([path2], {
               "width": makeEm(width),
               "height": makeEm(height),
               // Override CSS rule `.katex svg { width: 100% }`
@@ -32576,10 +32581,10 @@ var require_katex = __commonJS({
               const midHeight = realHeightTotal - topHeightTotal - bottomHeightTotal;
               const viewBoxHeight = Math.round(realHeightTotal * 1e3);
               const pathStr = tallDelim(svgLabel, Math.round(midHeight * 1e3));
-              const path3 = new PathNode(svgLabel, pathStr);
+              const path2 = new PathNode(svgLabel, pathStr);
               const width = makeEm(viewBoxWidth / 1e3);
               const height = makeEm(viewBoxHeight / 1e3);
-              const svg = new SvgNode([path3], {
+              const svg = new SvgNode([path2], {
                 "width": width,
                 "height": height,
                 "viewBox": "0 0 " + viewBoxWidth + " " + viewBoxHeight
@@ -32620,8 +32625,8 @@ var require_katex = __commonJS({
           const vbPad = 80;
           const emPad = 0.08;
           const sqrtSvg = function(sqrtName, height, viewBoxHeight, extraVinculum, options) {
-            const path3 = sqrtPath(sqrtName, extraVinculum, viewBoxHeight);
-            const pathNode = new PathNode(sqrtName, path3);
+            const path2 = sqrtPath(sqrtName, extraVinculum, viewBoxHeight);
+            const pathNode = new PathNode(sqrtName, path2);
             const svg = new SvgNode([pathNode], {
               // Note: 1000:1 ratio of viewBox to document em width.
               "width": "400em",
@@ -33130,8 +33135,8 @@ var require_katex = __commonJS({
               const angleHeight = inner2.height + inner2.depth + lineWeight + clearance;
               inner2.style.paddingLeft = makeEm(angleHeight / 2 + lineWeight);
               const viewBoxHeight = Math.floor(1e3 * angleHeight * scale);
-              const path3 = phasePath(viewBoxHeight);
-              const svgNode = new SvgNode([new PathNode("phase", path3)], {
+              const path2 = phasePath(viewBoxHeight);
+              const svgNode = new SvgNode([new PathNode("phase", path2)], {
                 "width": "400em",
                 "height": makeEm(viewBoxHeight / 1e3),
                 "viewBox": "0 0 400000 " + viewBoxHeight,
@@ -70027,11 +70032,11 @@ var require_Wrapper3 = __commonJS({
             var i = _h.value;
             if (!width[i])
               continue;
-            var path2 = paths[i];
+            var path = paths[i];
             if (style[i] === "dashed" || style[i] === "dotted") {
-              this.addBorderBroken(path2, color[i], style[i], width[i], i);
+              this.addBorderBroken(path, color[i], style[i], width[i], i);
             } else {
-              this.addBorderSolid(path2, color[i], child);
+              this.addBorderSolid(path, color[i], child);
             }
           }
         } catch (e_3_1) {
@@ -70044,10 +70049,10 @@ var require_Wrapper3 = __commonJS({
           }
         }
       };
-      SVGWrapper2.prototype.addBorderSolid = function(path2, color, child) {
+      SVGWrapper2.prototype.addBorderSolid = function(path, color, child) {
         var _this = this;
         var border = this.svg("polygon", {
-          points: path2.map(function(_a) {
+          points: path.map(function(_a) {
             var _b = __read(_a, 2), x = _b[0], y = _b[1];
             return "".concat(_this.fixed(x - _this.dx), ",").concat(_this.fixed(y));
           }).join(" "),
@@ -70060,11 +70065,11 @@ var require_Wrapper3 = __commonJS({
           this.adaptor.append(this.element, border);
         }
       };
-      SVGWrapper2.prototype.addBorderBroken = function(path2, color, style, t, i) {
+      SVGWrapper2.prototype.addBorderBroken = function(path, color, style, t, i) {
         var dot = style === "dotted";
         var t2 = t / 2;
         var _a = __read([[t2, -t2, -t2, -t2], [-t2, t2, -t2, -t2], [t2, t2, -t2, t2], [t2, t2, t2, -t2]][i], 4), tx1 = _a[0], ty1 = _a[1], tx2 = _a[2], ty2 = _a[3];
-        var _b = __read(path2, 2), A = _b[0], B = _b[1];
+        var _b = __read(path, 2), A = _b[0], B = _b[1];
         var x1 = A[0] + tx1 - this.dx, y1 = A[1] + ty1;
         var x2 = B[0] + tx2 - this.dx, y2 = B[1] + ty2;
         var W = Math.abs(i % 2 ? y2 - y1 : x2 - x1);
@@ -70179,8 +70184,8 @@ var require_Wrapper3 = __commonJS({
         var C = n.toString(16).toUpperCase();
         var _b = __read(this.getVariantChar(variant, n), 4), w = _b[2], data = _b[3];
         if ("p" in data) {
-          var path2 = data.p ? "M" + data.p + "Z" : "";
-          this.place(x, y, this.adaptor.append(parent, this.charNode(variant, C, path2)));
+          var path = data.p ? "M" + data.p + "Z" : "";
+          this.place(x, y, this.adaptor.append(parent, this.charNode(variant, C, path)));
         } else if ("c" in data) {
           var g = this.adaptor.append(parent, this.svg("g", { "data-c": C }));
           this.place(x, y, g);
@@ -70207,16 +70212,16 @@ var require_Wrapper3 = __commonJS({
         }
         return w;
       };
-      SVGWrapper2.prototype.charNode = function(variant, C, path2) {
+      SVGWrapper2.prototype.charNode = function(variant, C, path) {
         var cache = this.jax.options.fontCache;
-        return cache !== "none" ? this.useNode(variant, C, path2) : this.pathNode(C, path2);
+        return cache !== "none" ? this.useNode(variant, C, path) : this.pathNode(C, path);
       };
-      SVGWrapper2.prototype.pathNode = function(C, path2) {
-        return this.svg("path", { "data-c": C, d: path2 });
+      SVGWrapper2.prototype.pathNode = function(C, path) {
+        return this.svg("path", { "data-c": C, d: path });
       };
-      SVGWrapper2.prototype.useNode = function(variant, C, path2) {
+      SVGWrapper2.prototype.useNode = function(variant, C, path) {
         var use = this.svg("use", { "data-c": C });
-        var id = "#" + this.jax.fontCache.cachePath(variant, C, path2);
+        var id = "#" + this.jax.fontCache.cachePath(variant, C, path);
         this.adaptor.setAttribute(use, "href", id, svg_js_1.XLINKNS);
         return use;
       };
@@ -83513,11 +83518,11 @@ var require_FontCache = __commonJS({
         this.nextID = 0;
         this.jax = jax;
       }
-      FontCache2.prototype.cachePath = function(variant, C, path2) {
+      FontCache2.prototype.cachePath = function(variant, C, path) {
         var id = "MJX-" + this.localID + (this.jax.font.getVariant(variant).cacheID || "") + "-" + C;
         if (!this.cache.has(id)) {
-          this.cache.set(id, path2);
-          this.jax.adaptor.append(this.defs, this.jax.svg("path", { id, d: path2 }));
+          this.cache.set(id, path);
+          this.jax.adaptor.append(this.defs, this.jax.svg("path", { id, d: path }));
         }
         return id;
       };
@@ -135990,8 +135995,6 @@ ${e2.before || ""}`), { emoji: t2 } = this.options;
 // src/render.js
 var import_marp_core = __toESM(require_marp(), 1);
 var import_marpit = __toESM(require_lib2(), 1);
-import { existsSync, readFileSync } from "node:fs";
-import path from "node:path";
 import { pathToFileURL } from "node:url";
 function renderDeckHtml(deck, options = {}) {
   const definitions = options.definitions;
@@ -136104,7 +136107,7 @@ function insertLogoHtml(source, logo) {
   return [...lines.slice(0, insertAt), logo, "", ...lines.slice(insertAt)].join("\n");
 }
 function prepareHtmlSource(source) {
-  return compactRawSvgBlocks(source);
+  return normalizeLocalImageSources(compactRawSvgBlocks(source));
 }
 function compactRawSvgBlocks(source) {
   return String(source || "").split(/(```[\s\S]*?```)/g).map((part) => {
@@ -136187,46 +136190,29 @@ ${renderNotes(comments)}
 `;
 }
 function resolveResourceUrls(source, resourcesDir = "resources", options = {}) {
-  const root = path.resolve(resourcesDir);
-  return source.replace(/resource:([^)"'<\s]+)/g, (full, resourcePath) => {
-    const resolved = path.resolve(root, resourcePath);
-    if (!existsSync(resolved)) return full;
-    const relativePath = normalizeResourcePath(path.relative(root, resolved));
-    if (relativePath.startsWith("../") || relativePath === "..") return full;
-    if (options.inlineAssets) return toDataUri(resolved);
+  const resolvedSource = source.replace(/resource:([^)"'<\s]+)/g, (full, resourcePath) => {
+    const resolved = resolveResourceFile(`resource:${resourcePath}`, resourcesDir);
+    if (options.inlineAssets) return resourceToDataUri(resolved.path);
     if (options.assetMap) {
-      options.assetMap.set(relativePath, resolved);
+      options.assetMap.set(resolved.relativePath, resolved.path);
       return encodeURI(
-        [options.assetUrlPrefix || "resources", relativePath].filter(Boolean).join("/")
+        [options.assetUrlPrefix || "resources", resolved.relativePath].filter(Boolean).join("/")
       );
     }
-    return pathToFileURL(resolved).href;
+    return pathToFileURL(resolved.path).href;
   });
-}
-function toDataUri(filePath) {
-  const bytes = readFileSync(filePath);
-  const mime = mimeType(filePath);
-  return `data:${mime};base64,${bytes.toString("base64")}`;
-}
-function mimeType(filePath) {
-  switch (path.extname(filePath).toLowerCase()) {
-    case ".svg":
-      return "image/svg+xml";
-    case ".png":
-      return "image/png";
-    case ".jpg":
-    case ".jpeg":
-      return "image/jpeg";
-    case ".gif":
-      return "image/gif";
-    case ".webp":
-      return "image/webp";
-    default:
-      return "application/octet-stream";
+  const unresolved = resolvedSource.match(/resource:[^)"'<\s]+/g);
+  if (unresolved?.length) {
+    throw new Error(`Unresolved resource reference(s): ${[...new Set(unresolved)].join(", ")}`);
   }
+  return resolvedSource;
 }
-function normalizeResourcePath(value) {
-  return value.replace(/\\/g, "/");
+function normalizeLocalImageSources(source) {
+  return String(source || "").replace(/<img\b[^>]*\bsrc=(["'])([^"']+)\1[^>]*>/gi, (tag, quote, src) => {
+    const normalized = normalizeResourceReference(src);
+    if (normalized === src) return tag;
+    return tag.replace(`src=${quote}${src}${quote}`, `src=${quote}${normalized}${quote}`);
+  });
 }
 function escapeCssUrl(value) {
   return String(value).replace(/["\\\n\r\f]/g, "\\$&");

@@ -1,6 +1,9 @@
 import { createRequire as __deckbuilderCreateRequire } from "node:module";
 const require = __deckbuilderCreateRequire(import.meta.url);
 import {
+  normalizeResourceReference
+} from "./chunk-QTC2235H.mjs";
+import {
   __commonJS,
   __export,
   __require,
@@ -46984,17 +46987,41 @@ function renderCloseHtml(close) {
 }
 
 // src/components.js
-function compileDeckComponents(source) {
+var knownDeckTags = /* @__PURE__ */ new Set([
+  "deck-card",
+  "deck-card-grid",
+  "deck-chart",
+  "deck-close",
+  "deck-comparison",
+  "deck-divider",
+  "deck-lane",
+  "deck-logo",
+  "deck-logo-wall",
+  "deck-next-steps",
+  "deck-proof",
+  "deck-row",
+  "deck-stat",
+  "deck-stat-grid",
+  "deck-step",
+  "deck-swimlane",
+  "deck-takeaway",
+  "deck-visual"
+]);
+function compileDeckComponents(source, options = {}) {
+  const context = componentContext(options);
+  validateDeckComponentSyntax(source, context);
   const root2 = load2(`<root>${source}</root>`, {
     decodeEntities: false,
     lowerCaseAttributeNames: true
   });
+  validateDeckComponentTree(root2, context);
   const components = [];
-  root2("deck-stat-grid").each((_, element) => compileStatGrid(root2, element, components));
-  root2("deck-card-grid").each((_, element) => compileCardGrid(root2, element, components));
+  root2("deck-stat-grid").each((_, element) => compileStatGrid(root2, element, components, context));
+  root2("deck-card-grid").each((_, element) => compileCardGrid(root2, element, components, context));
   root2("deck-chart").each((_, element) => {
     const chart = root2(element);
     const model = parseChart(chart);
+    validateChart(model, context);
     components.push(model);
     chart.replaceWith(renderChartHtml(model));
   });
@@ -47007,12 +47034,21 @@ function compileDeckComponents(source) {
   root2("deck-comparison").each((_, element) => {
     const comparison = root2(element);
     const model = parseComparison(root2, comparison);
+    if (model.rows.length === 0) {
+      fail('deck-comparison must include at least one deck-row child or rows="..." entry.', context);
+    }
     components.push(model);
     comparison.replaceWith(renderComparisonHtml(model));
   });
   root2("deck-swimlane").each((_, element) => {
     const swimlane = root2(element);
     const model = parseSwimlane(root2, swimlane);
+    if (model.lanes.length === 0) fail("deck-swimlane must include at least one deck-lane.", context);
+    for (const lane of model.lanes) {
+      if (lane.steps.length === 0) {
+        fail(`deck-lane "${lane.title}" must include at least one deck-step.`, context);
+      }
+    }
     components.push(model);
     swimlane.replaceWith(renderSwimlaneHtml(model));
   });
@@ -47025,16 +47061,18 @@ function compileDeckComponents(source) {
   root2("deck-next-steps").each((_, element) => {
     const nextSteps = root2(element);
     const model = parseNextSteps(root2, nextSteps);
+    if (model.steps.length === 0) fail("deck-next-steps must include at least one deck-step.", context);
     components.push(model);
     nextSteps.replaceWith(renderNextStepsHtml(model));
   });
   root2("deck-logo-wall").each((_, element) => {
     const logoWall = root2(element);
     const model = parseLogoWall(root2, logoWall);
+    if (model.logos.length === 0) fail("deck-logo-wall must include at least one deck-logo.", context);
     components.push(model);
     logoWall.replaceWith(renderLogoWallHtml(model));
   });
-  root2("deck-divider").each((_, element) => compileDivider(root2, element, components));
+  root2("deck-divider").each((_, element) => compileDivider(root2, element, components, context));
   root2("deck-close").each((_, element) => compileClose(root2, element, components));
   root2("deck-takeaway").each((_, element) => compileTakeaway(root2, element, components));
   return {
@@ -47042,32 +47080,39 @@ function compileDeckComponents(source) {
     components
   };
 }
-function compileStatGrid(root2, element, components) {
+function compileStatGrid(root2, element, components, context) {
   const grid = root2(element);
   const stats = [];
   grid.find("deck-stat").each((_, statElement) => {
     const stat = root2(statElement);
     const value = stat.attr("value") || cleanText(stat.find("value").text());
     const label = stat.attr("label") || cleanText(stat.find("label").text() || stat.text());
-    if (value || label) stats.push({ value, label });
+    if (!value && !label) fail("deck-stat must include value and/or label text.", context);
+    stats.push({ value, label });
   });
+  if (stats.length === 0) fail("deck-stat-grid must include at least one deck-stat.", context);
   components.push({ type: "stat-grid", stats });
   grid.replaceWith(renderStatGridHtml(stats));
 }
-function compileCardGrid(root2, element, components) {
+function compileCardGrid(root2, element, components, context) {
   const grid = root2(element);
   const columns = Number.parseInt(grid.attr("columns") || "3", 10);
   const cards = [];
   grid.find("deck-card").each((_, cardElement) => {
     const card = root2(cardElement);
     const header = card.attr("title") || card.attr("header") || cleanText(card.find("h2,h3").first().text());
+    const media = parseCardMedia(root2, card);
     const body = cleanText(card.find("p").first().text() || card.text());
-    if (header || body) cards.push({ header, body });
+    if (!header && !body && !media) {
+      fail("deck-card must include title/header, body text, icon, image, src, or an img child.", context);
+    }
+    cards.push({ header, body, media });
   });
+  if (cards.length === 0) fail("deck-card-grid must include at least one deck-card.", context);
   components.push({ type: "card-grid", columns, cards });
   grid.replaceWith(renderCardGridHtml(columns, cards));
 }
-function compileDivider(root2, element, components) {
+function compileDivider(root2, element, components, context) {
   const divider = root2(element);
   const model = {
     type: "divider",
@@ -47075,6 +47120,7 @@ function compileDivider(root2, element, components) {
     title: divider.attr("title") || cleanText(divider.find("h1").first().text()),
     subtitle: divider.attr("subtitle") || cleanText(divider.find("p").first().text())
   };
+  if (!model.title) fail("deck-divider requires a title attribute or h1 child.", context);
   components.push(model);
   divider.replaceWith(renderDividerHtml(model));
 }
@@ -47107,10 +47153,121 @@ function renderCardGridHtml(columns, cards) {
   const className = columns === 4 ? "four" : "three";
   return `<div class="card-grid ${className}">${cards.map(
     (card) => `<article>
+  ${renderCardMediaHtml(card)}
   <h2>${escapeHtml(card.header)}</h2>
-  <p>${escapeHtml(card.body)}</p>
+  ${card.body ? `<p>${escapeHtml(card.body)}</p>` : ""}
 </article>`
   ).join("\n")}</div>`;
+}
+function parseCardMedia(root2, card) {
+  const icon = card.attr("icon");
+  if (icon) {
+    return {
+      kind: "icon",
+      src: normalizeResourceReference(icon, { defaultFolder: "icons" }),
+      alt: card.attr("icon-alt") || card.attr("title") || ""
+    };
+  }
+  const image = card.attr("image") || card.attr("src");
+  if (image) {
+    return {
+      kind: "image",
+      src: normalizeResourceReference(image),
+      alt: card.attr("image-alt") || card.attr("alt") || card.attr("title") || ""
+    };
+  }
+  const img = card.find("img").first();
+  const imgSrc = img.attr("src");
+  if (!imgSrc) return null;
+  return {
+    kind: img.attr("data-kind") || "image",
+    src: normalizeResourceReference(imgSrc),
+    alt: img.attr("alt") || card.attr("title") || ""
+  };
+}
+function renderCardMediaHtml(card) {
+  if (!card.media?.src) return "";
+  const kind = card.media.kind === "icon" ? "icon" : "image";
+  return `<img class="deck-card-media deck-card-${kind}" src="${escapeHtml(card.media.src)}" alt="${escapeHtml(card.media.alt || card.header || "")}">`;
+}
+function validateDeckComponentSyntax(source, context) {
+  const stack = [];
+  const tagPattern = /<\/?\s*(deck-[a-z0-9-]+)\b[^>]*>/gi;
+  for (const match of source.matchAll(tagPattern)) {
+    const raw = match[0];
+    const tag = match[1].toLowerCase();
+    const line = lineNumberAt(source, match.index);
+    if (!knownDeckTags.has(tag)) fail(`Unknown deck component <${tag}>.`, context, line);
+    const isClosing = /^<\s*\//.test(raw);
+    const isSelfClosing = /\/\s*>$/.test(raw);
+    if (isClosing) {
+      const opened = stack.pop();
+      if (!opened) fail(`Closing </${tag}> has no matching opening tag.`, context, line);
+      if (opened.tag !== tag) {
+        fail(
+          `Mismatched deck component tags: opened <${opened.tag}> on line ${opened.line}, but found </${tag}>.`,
+          context,
+          line
+        );
+      }
+    } else if (!isSelfClosing) {
+      stack.push({ tag, line });
+    }
+  }
+  if (stack.length > 0) {
+    const opened = stack[stack.length - 1];
+    fail(`Unclosed deck component <${opened.tag}> opened on line ${opened.line}.`, context, opened.line);
+  }
+}
+function validateDeckComponentTree(root2, context) {
+  const parentRules = [
+    ["deck-card", "deck-card-grid"],
+    ["deck-row", "deck-comparison"],
+    ["deck-lane", "deck-swimlane"],
+    ["deck-logo", "deck-logo-wall"]
+  ];
+  for (const [childTag, parentTag] of parentRules) {
+    root2(childTag).each((_, element) => {
+      if (!root2(element).parent().is(parentTag)) {
+        fail(`<${childTag}> must be placed directly inside <${parentTag}>.`, context);
+      }
+    });
+  }
+  root2("deck-step").each((_, element) => {
+    const parent2 = root2(element).parent();
+    if (!parent2.is("deck-lane") && !parent2.is("deck-next-steps")) {
+      fail("<deck-step> must be placed directly inside <deck-lane> or <deck-next-steps>.", context);
+    }
+  });
+  root2("deck-stat").each((_, element) => {
+    const parent2 = root2(element).parent();
+    if (!parent2.is("deck-stat-grid") && !parent2.is("deck-proof")) {
+      fail("<deck-stat> must be placed directly inside <deck-stat-grid> or <deck-proof>.", context);
+    }
+  });
+}
+function validateChart(chart, context) {
+  if (chart.labels.length === 0 || chart.values.length === 0) {
+    fail("deck-chart requires non-empty labels and values attributes.", context);
+  }
+  if (chart.labels.length !== chart.values.length) {
+    fail(
+      `deck-chart labels/values length mismatch: ${chart.labels.length} label(s), ${chart.values.length} value(s).`,
+      context
+    );
+  }
+  if (chart.values.some((value) => !Number.isFinite(value))) {
+    fail("deck-chart values must all be numeric.", context);
+  }
+}
+function componentContext(options = {}) {
+  return options.slideNumber ? `slide ${options.slideNumber}` : "deck";
+}
+function lineNumberAt(source, index2 = 0) {
+  return String(source || "").slice(0, index2).split(/\r?\n/).length;
+}
+function fail(message, context = "deck", line = 0) {
+  throw new Error(`Invalid deck Markdown in ${context}${line ? `, line ${line}` : ""}: ${message}`);
 }
 
 // src/markdown.js
@@ -47118,7 +47275,7 @@ function parseDeckMarkdown(source) {
   const { frontmatter, body } = splitFrontmatter(source);
   const slideSources = splitSlides(body);
   const slides = slideSources.map((slideSource, index2) => {
-    const compiled = compileDeckComponents(slideSource);
+    const compiled = compileDeckComponents(slideSource, { slideNumber: index2 + 1 });
     return parseSlide(compiled.source, index2, slideSource, compiled.components);
   });
   return {
@@ -47277,7 +47434,8 @@ function extractCards(source) {
     const html3 = match[1];
     const header = cleanText2(firstMatch2(html3, /<h[2-4][^>]*>([\s\S]*?)<\/h[2-4]>/i));
     const body = cleanText2(firstMatch2(html3, /<p[^>]*>([\s\S]*?)<\/p>/i));
-    if (header || body) cards.push({ header, body });
+    const media = extractCardMedia(html3);
+    if (header || body || media) cards.push({ header, body, media });
   }
   return cards;
 }
@@ -47299,6 +47457,19 @@ function isMarkdownListBlock(block) {
 function firstMatch2(source, pattern) {
   const match = source.match(pattern);
   return match?.[1] || "";
+}
+function extractCardMedia(html3) {
+  const img = String(html3 || "").match(/<img\b([^>]*)>/i);
+  if (!img) return null;
+  const attrs = img[1];
+  const src = firstMatch2(attrs, /\bsrc=["']([^"']+)["']/i);
+  if (!src) return null;
+  const className = firstMatch2(attrs, /\bclass=["']([^"']+)["']/i);
+  return {
+    kind: /\bdeck-card-icon\b/.test(className) ? "icon" : "image",
+    src,
+    alt: firstMatch2(attrs, /\balt=["']([^"']*)["']/i)
+  };
 }
 function stripInline(value) {
   return cleanText2(

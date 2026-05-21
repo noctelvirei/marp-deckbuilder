@@ -1,10 +1,9 @@
 import { Marp } from '@marp-team/marp-core'
 import { Element } from '@marp-team/marpit'
-import { existsSync, readFileSync } from 'node:fs'
-import path from 'node:path'
 import { pathToFileURL } from 'node:url'
 
 import { buildMarpMarkdown } from './markdown.js'
+import { normalizeResourceReference, resolveResourceFile, resourceToDataUri } from './resources.js'
 
 export function renderDeckHtml(deck, options = {}) {
   const definitions = options.definitions
@@ -134,7 +133,7 @@ function insertLogoHtml(source, logo) {
 }
 
 function prepareHtmlSource(source) {
-  return compactRawSvgBlocks(source)
+  return normalizeLocalImageSources(compactRawSvgBlocks(source))
 }
 
 function compactRawSvgBlocks(source) {
@@ -236,52 +235,32 @@ ${renderNotes(comments)}
 }
 
 export function resolveResourceUrls(source, resourcesDir = 'resources', options = {}) {
-  const root = path.resolve(resourcesDir)
-
-  return source.replace(/resource:([^)"'<\s]+)/g, (full, resourcePath) => {
-    const resolved = path.resolve(root, resourcePath)
-    if (!existsSync(resolved)) return full
-    const relativePath = normalizeResourcePath(path.relative(root, resolved))
-    if (relativePath.startsWith('../') || relativePath === '..') return full
-    if (options.inlineAssets) return toDataUri(resolved)
+  const resolvedSource = source.replace(/resource:([^)"'<\s]+)/g, (full, resourcePath) => {
+    const resolved = resolveResourceFile(`resource:${resourcePath}`, resourcesDir)
+    if (options.inlineAssets) return resourceToDataUri(resolved.path)
     if (options.assetMap) {
-      options.assetMap.set(relativePath, resolved)
+      options.assetMap.set(resolved.relativePath, resolved.path)
       return encodeURI(
-        [options.assetUrlPrefix || 'resources', relativePath]
+        [options.assetUrlPrefix || 'resources', resolved.relativePath]
           .filter(Boolean)
           .join('/'),
       )
     }
-    return pathToFileURL(resolved).href
+    return pathToFileURL(resolved.path).href
   })
-}
-
-function toDataUri(filePath) {
-  const bytes = readFileSync(filePath)
-  const mime = mimeType(filePath)
-  return `data:${mime};base64,${bytes.toString('base64')}`
-}
-
-function mimeType(filePath) {
-  switch (path.extname(filePath).toLowerCase()) {
-    case '.svg':
-      return 'image/svg+xml'
-    case '.png':
-      return 'image/png'
-    case '.jpg':
-    case '.jpeg':
-      return 'image/jpeg'
-    case '.gif':
-      return 'image/gif'
-    case '.webp':
-      return 'image/webp'
-    default:
-      return 'application/octet-stream'
+  const unresolved = resolvedSource.match(/resource:[^)"'<\s]+/g)
+  if (unresolved?.length) {
+    throw new Error(`Unresolved resource reference(s): ${[...new Set(unresolved)].join(', ')}`)
   }
+  return resolvedSource
 }
 
-function normalizeResourcePath(value) {
-  return value.replace(/\\/g, '/')
+function normalizeLocalImageSources(source) {
+  return String(source || '').replace(/<img\b[^>]*\bsrc=(["'])([^"']+)\1[^>]*>/gi, (tag, quote, src) => {
+    const normalized = normalizeResourceReference(src)
+    if (normalized === src) return tag
+    return tag.replace(`src=${quote}${src}${quote}`, `src=${quote}${normalized}${quote}`)
+  })
 }
 
 function escapeCssUrl(value) {

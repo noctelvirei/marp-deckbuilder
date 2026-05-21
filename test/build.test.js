@@ -196,6 +196,93 @@ test('writes markdown subheadings and bullets into native PPTX content slides', 
   assert.match(slideXml, /Skills are repeatable workflows/)
 })
 
+test('inlines extensionless deck-card icons into HTML', async () => {
+  await rm(tmpDir, { recursive: true, force: true })
+  await mkdir(path.join(tmpDir, 'resources', 'icons'), { recursive: true })
+  await writeFile(
+    path.join(tmpDir, 'resources', 'icons', 'face-scan.svg'),
+    '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/></svg>',
+  )
+
+  const definitions = await loadDefinitions(new URL('../resources/definitions', import.meta.url))
+  const deck = parseDeckMarkdown(`# Cover
+
+---
+
+# Cards
+
+<deck-card-grid columns="3">
+  <deck-card title="Face scan" icon="face-scan"><p>Capture identity.</p></deck-card>
+</deck-card-grid>`)
+  const rendered = renderDeckHtml(deck, {
+    resourcesDir: path.join(tmpDir, 'resources'),
+    definitions,
+    inlineAssets: true,
+  })
+
+  assert.match(rendered.document, /deck-card-icon/)
+  assert.match(rendered.document, /data:image\/svg\+xml;base64,/)
+  assert.doesNotMatch(rendered.document, /resource:icons\/face-scan/)
+})
+
+test('throws when a referenced deck-card icon is missing', async () => {
+  await rm(tmpDir, { recursive: true, force: true })
+  await mkdir(path.join(tmpDir, 'resources'), { recursive: true })
+
+  const definitions = await loadDefinitions(new URL('../resources/definitions', import.meta.url))
+  const deck = parseDeckMarkdown(`# Cover
+
+---
+
+# Cards
+
+<deck-card-grid columns="3">
+  <deck-card title="Missing" icon="not-there"><p>Should fail loudly.</p></deck-card>
+</deck-card-grid>`)
+
+  assert.throws(
+    () =>
+      renderDeckHtml(deck, {
+        resourcesDir: path.join(tmpDir, 'resources'),
+        definitions,
+        inlineAssets: true,
+      }),
+    /Resource not found: resource:icons\/not-there/,
+  )
+})
+
+test('writes deck-card icons into PPTX media', async () => {
+  await rm(tmpDir, { recursive: true, force: true })
+  await mkdir(path.join(tmpDir, 'resources', 'icons'), { recursive: true })
+  await writeFile(
+    path.join(tmpDir, 'resources', 'icons', 'face-scan.svg'),
+    '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/></svg>',
+  )
+
+  const definitions = await loadDefinitions(new URL('../resources/definitions', import.meta.url))
+  const deck = parseDeckMarkdown(`# Cover
+
+---
+
+# Cards
+
+<deck-card-grid columns="3">
+  <deck-card title="Face scan" icon="face-scan"><p>Capture identity.</p></deck-card>
+</deck-card-grid>`)
+  const out = path.join(tmpDir, 'card-icon.pptx')
+
+  await writePptx({
+    deck,
+    outputPath: out,
+    brand: definitions.brand,
+    resourcesDir: path.join(tmpDir, 'resources'),
+  })
+
+  const archive = await JSZip.loadAsync(await readFile(out))
+  const mediaNames = Object.keys(archive.files).filter((name) => name.startsWith('ppt/media/'))
+  assert.ok(mediaNames.some((name) => name.endsWith('.svg')))
+})
+
 test('spaces wrapped divider titles above subtitles in native PPTX', async () => {
   await rm(tmpDir, { recursive: true, force: true })
   await mkdir(tmpDir, { recursive: true })

@@ -9,6 +9,9 @@ import {
   require_node
 } from "./chunk-ZA7UPLW5.mjs";
 import {
+  resolveResourceFile
+} from "./chunk-QTC2235H.mjs";
+import {
   __commonJS,
   __require,
   __toESM
@@ -15061,7 +15064,7 @@ var PptxGenJS = class {
 
 // src/pptx/helpers.js
 import { Buffer as Buffer2 } from "node:buffer";
-import { existsSync, readFileSync } from "node:fs";
+import { readFileSync } from "node:fs";
 import path from "node:path";
 function addTextBox(slide, brand, text, box, options = {}) {
   slide.addText(text || "", {
@@ -15117,9 +15120,7 @@ function addResourceImage(slide, resource, resourcesDir, box, altText = "") {
 }
 function resolveResourcePath(value, resourcesDir) {
   if (!value || !resourcesDir) return "";
-  const raw = value.startsWith("resource:") ? value.slice("resource:".length) : value;
-  const candidate = path.isAbsolute(raw) ? raw : path.resolve(resourcesDir, raw);
-  return existsSync(candidate) ? candidate : "";
+  return resolveResourceFile(value, resourcesDir).path;
 }
 function svgToDataUri(svg) {
   const normalized = ensureSvgNamespace(svg.trim());
@@ -15228,11 +15229,16 @@ function addCards(slide, model, brand, resourcesDir) {
       0.5
     );
     addRect(slide, brand, x, layout.yTop, cardW, layout.topBarHeight, color(brand, "blue"));
+    const mediaBox = cardMediaBox(cards[i], x, layout.yTop, header);
+    if (mediaBox) {
+      addResourceImage(slide, cards[i].media.src, resourcesDir, mediaBox, cards[i].media.alt || cards[i].header);
+    }
+    const headerXOffset = mediaBox ? mediaBox.w + 9 : 0;
     addTextBox(slide, brand, cards[i].header, {
       ...header,
-      x: x + header.dx,
+      x: x + header.dx + headerXOffset,
       y: layout.yTop + header.dy,
-      w: cardW - header.dx * 2,
+      w: cardW - header.dx * 2 - headerXOffset,
       fit: "shrink"
     });
     addTextBox(slide, brand, cards[i].body, {
@@ -15245,6 +15251,17 @@ function addCards(slide, model, brand, resourcesDir) {
     });
   }
   addTakeaway(slide, model, brand);
+}
+function cardMediaBox(card, x, y, header) {
+  if (!card?.media?.src) return null;
+  const isIcon = card.media.kind === "icon";
+  const size = isIcon ? 28 : 34;
+  return {
+    x: x + header.dx,
+    y: y + header.dy + 1,
+    w: size,
+    h: size
+  };
 }
 function addChartSlide(pptx, slide, model, brand, resourcesDir) {
   addBaseHeader(slide, model, brand, resourcesDir);

@@ -52,6 +52,157 @@ Documents/Presentations/2026-05-21/example-deck/
 Keep the HTML file and its sibling `resources/` folder together when sharing or
 moving a deck generated with `--html-assets copy`.
 
+## Fail-Fast Contract
+
+The renderer validates the Markdown before it writes output. It should never
+quietly strip a component, leave an empty card, or ignore a missing file. A bad
+deck should fail with an error the agent can fix.
+
+Builds fail for:
+
+- unknown `deck-*` tags, such as `<deck-cardd>`;
+- mismatched or unclosed `deck-*` tags;
+- child components in the wrong parent;
+- empty structured components, such as `deck-card-grid` without `deck-card`;
+- invalid charts, including missing labels/values, non-numeric values, or a
+  labels/values count mismatch;
+- any referenced image/resource that cannot be found under `tool/resources/`;
+- any referenced image/resource that tries to resolve outside `tool/resources/`.
+
+The error includes the slide number for component syntax errors. Resource errors
+include the missing reference and the candidate file paths the renderer checked.
+
+## Resource And Image Resolution
+
+All deck assets are resolved dynamically from `tool/resources/`; the renderer has
+no hardcoded list of approved image names.
+
+Supported image extensions for extensionless lookup:
+
+- `.svg`
+- `.png`
+- `.jpg`
+- `.jpeg`
+- `.webp`
+- `.gif`
+
+Supported reference forms:
+
+```md
+resource:logos/customer.svg
+logos/customer.svg
+icons/face-scan.svg
+```
+
+For card icons, this shorthand is preferred:
+
+```md
+<deck-card title="Face scan" icon="face-scan">
+  Capture identity evidence.
+</deck-card>
+```
+
+`icon="face-scan"` resolves as `resource:icons/face-scan`, then the renderer
+looks for `face-scan.svg`, `face-scan.png`, `face-scan.jpg`, and the other
+supported extensions in `tool/resources/icons/`.
+
+For non-card images, use an explicit resource path:
+
+```md
+<img src="resource:screenshots/workflow.png" alt="Workflow screenshot">
+<deck-logo name="Example Bank" image="resource:logos/example-bank.svg"></deck-logo>
+<deck-proof logo="resource:logos/example-bank.svg" customer="Example Bank"></deck-proof>
+```
+
+Raw HTML `<img>` tags with local paths are normalized into resources before
+rendering. For example, `<img src="screenshots/demo.png">` resolves against
+`tool/resources/screenshots/demo.png`. Remote HTTP images and arbitrary local
+file URLs are not supported because the generated HTML/PPTX should be portable
+and self-contained.
+
+When writing HTML, used resources are embedded as `data:` URLs by default. When
+writing PPTX, supported SVG/PNG/JPEG/WEBP/GIF files are inserted into the slide
+deck. If a referenced file is absent, the build fails.
+
+## Component Contract
+
+Use only these structured components when you need native PPTX output:
+
+| Component | Required shape | Optional fields | Output |
+| --- | --- | --- | --- |
+| `deck-divider` | `title` attribute or `h1` child | `act`, `label`, `subtitle` | Full divider slide |
+| `deck-stat-grid` | one or more direct `deck-stat` children | each stat can use `value`/`label` attributes or text children | 3-up KPI row |
+| `deck-card-grid` | one or more direct `deck-card` children | `columns="3"` or `columns="4"` | 3/4 card layout |
+| `deck-card` | title/body/media | `title`, `header`, `icon`, `icon-alt`, `image`, `src`, `image-alt`, `alt` | Card in grid |
+| `deck-chart` | matching `labels` and `values` attributes | `title`, `series`, `type="bar"` or `type="line"` | Editable PPTX chart and HTML chart |
+| `deck-visual` | inline SVG or fallback text | `title`, `caption`, `alt`, `fallback` | Inline SVG in HTML, embedded SVG image in PPTX |
+| `deck-comparison` | `rows="left|right;..."` or direct `deck-row` children | `columns`, `left-title`, `right-title`, `left`, `right`, `title` | Comparison table |
+| `deck-row` | inside `deck-comparison` | `label`, `left`, `right` | Comparison row |
+| `deck-swimlane` | one or more direct `deck-lane` children | | Swimlane slide |
+| `deck-lane` | inside `deck-swimlane`, one or more direct `deck-step` children | `title`, `label`, `color="blue|purple|green"` | Swimlane lane |
+| `deck-next-steps` | one or more direct `deck-step` children | | Numbered action list |
+| `deck-step` | inside `deck-lane` or `deck-next-steps` | `title`, body text | Step/action item |
+| `deck-proof` | one or more `deck-stat` children or proof text | `customer`, `logo`, `logo-name`, `bridge`, `source` | Proof slide |
+| `deck-logo-wall` | one or more direct `deck-logo` children | `title` | Logo grid |
+| `deck-logo` | inside `deck-logo-wall` | `name`, `image`, `src` | Logo tile, or text tile if no image is supplied |
+| `deck-takeaway` | `text` attribute or text body | | Takeaway bar |
+| `deck-close` | `title` attribute or `h1` child | `name`, `role` | Closing slide |
+
+Native PPTX rendering intentionally caps some repeated content so slides remain
+usable:
+
+- `deck-stat-grid`: first 3 stats.
+- `deck-card-grid`: first 4 cards; `columns="3"` and `columns="4"` are the supported layouts.
+- `deck-comparison`: first 6 rows.
+- `deck-swimlane`: first 2 lanes, first 5 steps per lane; lane colors are `blue`, `purple`, and `green`.
+- `deck-proof`: first 3 stats.
+- `deck-next-steps`: first 3 steps.
+- `deck-logo-wall`: first 12 logos.
+
+The HTML output can visually carry more in some layouts, but authors should stay
+inside those limits when the PPTX handoff matters.
+
+Parent/child rules are strict:
+
+- `deck-card` must be directly inside `deck-card-grid`.
+- `deck-stat` must be directly inside `deck-stat-grid` or `deck-proof`.
+- `deck-row` must be directly inside `deck-comparison`.
+- `deck-lane` must be directly inside `deck-swimlane`.
+- `deck-step` must be directly inside `deck-lane` or `deck-next-steps`.
+- `deck-logo` must be directly inside `deck-logo-wall`.
+
+## Slide Directives
+
+Supported HTML/PPTX split directives:
+
+```md
+<!-- pptx: skip -->
+<!-- pptx-skip: true -->
+<!-- html-only: true -->
+
+<!-- html: skip -->
+<!-- html-skip: true -->
+<!-- pptx-only: true -->
+```
+
+Use the first group for browser-only slides, usually JavaScript, complex HTML, or
+interactive demos. Use the second group for simple editable PPTX fallback slides
+that should not appear in the HTML presentation.
+
+Other supported directives:
+
+```md
+<!-- _class: cover -->
+<!-- title: Override title -->
+<!-- subtitle: Override subtitle -->
+<!-- eyebrow: Section label -->
+<!-- takeaway: Bottom bar text -->
+<!-- footnote: Footnote text -->
+```
+
+Prefer component attributes over directives when a component has an explicit
+field for the same thing.
+
 ## Component Syntax
 
 ### Divider
@@ -74,10 +225,46 @@ moving a deck generated with `--html-assets copy`.
 
 ```md
 <deck-card-grid columns="3">
-  <deck-card title="Intake"><p>Standardize required data capture.</p></deck-card>
+  <deck-card title="Intake" icon="utility-intake"><p>Standardize required data capture.</p></deck-card>
   <deck-card title="Evidence"><p>Replace attachment loops.</p></deck-card>
   <deck-card title="Approval"><p>Route decisions through a visible flow.</p></deck-card>
 </deck-card-grid>
+```
+
+Cards can reference images without raw HTML. `icon="face-scan"` resolves to
+`tool/resources/icons/face-scan.svg` (or another supported image extension if
+present). `image="diagrams/process.png"` and `src="resource:diagrams/process.png"`
+resolve against `tool/resources/`. Missing referenced files fail the build with
+an explicit error instead of producing empty cards or broken images.
+
+Supported card media combinations:
+
+```md
+<!-- Preferred icon shorthand: resolves tool/resources/icons/product-face-scan.svg -->
+<deck-card title="Face Scan" icon="product-face-scan">
+  Capture identity evidence.
+</deck-card>
+
+<!-- Icon with explicit alt text -->
+<deck-card title="Face Scan" icon="product-face-scan" icon-alt="Face scan icon">
+  Capture identity evidence.
+</deck-card>
+
+<!-- Full image path under tool/resources/ -->
+<deck-card title="Dashboard" image="screenshots/dashboard.png">
+  Show the operating view.
+</deck-card>
+
+<!-- Explicit resource URL, useful when the path contains a folder -->
+<deck-card title="Evidence" src="resource:icons/evidence-check.svg">
+  Replace attachment loops.
+</deck-card>
+
+<!-- Raw img child is accepted, but attributes are preferred -->
+<deck-card title="Signed pack">
+  <img src="resource:icons/signed-pack.svg" alt="Signed pack">
+  Complete the pack in-session.
+</deck-card>
 ```
 
 ### Chart
@@ -167,7 +354,32 @@ Compact two-column syntax is also supported:
 </deck-logo-wall>
 ```
 
-Images resolve against `tool/resources/`. If an image is absent, the PPTX uses an editable text tile.
+Images resolve against `tool/resources/`. If `image`/`src` is supplied and the
+file is missing, the build fails. If no image is supplied, the logo tile renders
+as editable text using `name`.
+
+## Generated HTML Classes
+
+The component compiler emits these stable CSS classes for theme authors:
+
+| Component | Generated classes |
+| --- | --- |
+| `deck-stat-grid` | `stat-grid`, `stat-card` |
+| `deck-card-grid` | `card-grid`, `three`, `four`, `deck-card-media`, `deck-card-icon`, `deck-card-image` |
+| `deck-chart` | `deck-chart`, `deck-chart-bar`, `deck-chart-line`, `deck-chart-row`, `deck-chart-label`, `deck-chart-track`, `deck-chart-fill` |
+| `deck-visual` | `deck-visual`, `deck-visual-stage`, `deck-visual-caption` |
+| `deck-comparison` | `deck-comparison`, `negative`, `positive` |
+| `deck-swimlane` | `deck-swimlane`, `deck-lane`, `deck-lane-blue`, `deck-lane-purple`, `deck-lane-green`, `deck-lane-steps`, `deck-arrow` |
+| `deck-proof` | `deck-proof`, `deck-proof-logo`, `deck-proof-context`, `deck-proof-bridge`, `deck-proof-source` |
+| `deck-next-steps` | `deck-next-steps` |
+| `deck-logo-wall` | `deck-logo-wall`, `deck-logo-grid`, `deck-logo-tile` |
+| `deck-divider` | `deck-divider`, plus slide class `deck-divider-slide` |
+| `deck-close` | `deck-close`, plus slide class `deck-close-slide` |
+| `deck-takeaway` | `takeaway` |
+
+Theme CSS may style these classes. Deck Markdown should normally use the
+components, not hand-authored generated class names, unless building a premium
+HTML-only slide.
 
 ### Next Steps
 

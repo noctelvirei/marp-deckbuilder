@@ -132,6 +132,23 @@ li {
   font-size: 19px;
 }
 
+.deck-card-media {
+  display: block;
+  width: 36px;
+  height: 36px;
+  margin: 0 0 14px;
+  object-fit: contain;
+}
+
+.deck-card-icon {
+  width: 32px;
+  height: 32px;
+}
+
+.card-grid article:has(.deck-card-media) h2 {
+  margin-top: 0;
+}
+
 .card-grid p {
   font-size: 16px;
 }

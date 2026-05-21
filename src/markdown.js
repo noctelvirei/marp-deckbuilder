@@ -6,7 +6,7 @@ export function parseDeckMarkdown(source) {
   const { frontmatter, body } = splitFrontmatter(source)
   const slideSources = splitSlides(body)
   const slides = slideSources.map((slideSource, index) => {
-    const compiled = compileDeckComponents(slideSource)
+    const compiled = compileDeckComponents(slideSource, { slideNumber: index + 1 })
     return parseSlide(compiled.source, index, slideSource, compiled.components)
   })
 
@@ -190,7 +190,8 @@ function extractCards(source) {
     const html = match[1]
     const header = cleanText(firstMatch(html, /<h[2-4][^>]*>([\s\S]*?)<\/h[2-4]>/i))
     const body = cleanText(firstMatch(html, /<p[^>]*>([\s\S]*?)<\/p>/i))
-    if (header || body) cards.push({ header, body })
+    const media = extractCardMedia(html)
+    if (header || body || media) cards.push({ header, body, media })
   }
 
   return cards
@@ -241,6 +242,20 @@ function isMarkdownListBlock(block) {
 function firstMatch(source, pattern) {
   const match = source.match(pattern)
   return match?.[1] || ''
+}
+
+function extractCardMedia(html) {
+  const img = String(html || '').match(/<img\b([^>]*)>/i)
+  if (!img) return null
+  const attrs = img[1]
+  const src = firstMatch(attrs, /\bsrc=["']([^"']+)["']/i)
+  if (!src) return null
+  const className = firstMatch(attrs, /\bclass=["']([^"']+)["']/i)
+  return {
+    kind: /\bdeck-card-icon\b/.test(className) ? 'icon' : 'image',
+    src,
+    alt: firstMatch(attrs, /\balt=["']([^"']*)["']/i),
+  }
 }
 
 function stripInline(value) {
