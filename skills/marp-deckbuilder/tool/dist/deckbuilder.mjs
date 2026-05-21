@@ -43,7 +43,7 @@ async function buildCommand(argv) {
     console.log(`HTML written to ${htmlPath}`);
   }
   if (argv.pptx) {
-    const { writePptx } = await import("./chunks/pptx-D6XGCRR4.mjs");
+    const { writePptx } = await import("./chunks/pptx-LBJJORGS.mjs");
     const pptxPath = path.resolve(argv.pptx);
     await mkdir(path.dirname(pptxPath), { recursive: true });
     await writePptx({

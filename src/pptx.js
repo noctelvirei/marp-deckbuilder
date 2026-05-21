@@ -42,11 +42,29 @@ export async function writePptx({
   }
 
   for (const slideModel of deck.slides) {
+    if (shouldSkipPptx(slideModel)) continue
     const slide = pptx.addSlide()
     addNativeSlide(pptx, slide, slideModel, deck.frontmatter, brand, resourcesDir)
   }
 
   await pptx.writeFile({ fileName: outputPath })
+}
+
+export function shouldSkipPptx(slideModel) {
+  const directives = slideModel?.directives || {}
+  if (isTruthyDirective(directives['html-only'])) return true
+  if (isTruthyDirective(directives['pptx-skip'])) return true
+  return ['skip', 'omit', 'none', 'false', 'no', 'off'].includes(
+    normalizeDirective(directives.pptx),
+  )
+}
+
+function isTruthyDirective(value) {
+  return ['true', 'yes', 'on', '1'].includes(normalizeDirective(value))
+}
+
+function normalizeDirective(value) {
+  return String(value || '').trim().toLowerCase()
 }
 
 function addNativeSlide(pptx, slide, model, frontmatter, brand, resourcesDir) {

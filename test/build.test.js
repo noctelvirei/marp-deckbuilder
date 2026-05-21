@@ -117,3 +117,42 @@ section.cover { background-image: url(resource:cover-bg.png); }`,
   assert.match(rendered.document, /background-image:url\(file:\/\//)
   assert.doesNotMatch(rendered.document, /resource:cover-bg\.png/)
 })
+
+test('keeps JavaScript in HTML-only slides and skips them in PPTX', async () => {
+  await rm(tmpDir, { recursive: true, force: true })
+  await mkdir(tmpDir, { recursive: true })
+
+  const source = `# Cover
+
+---
+
+<!-- pptx: skip -->
+
+# Browser-only animation
+
+<div id="animated-demo"></div>
+<script>
+  window.deckbuilderDemoRan = true
+</script>
+
+---
+
+# Native summary
+
+This slide should appear in PowerPoint.`
+  const definitions = await loadDefinitions(new URL('../resources/definitions', import.meta.url))
+  const deck = parseDeckMarkdown(source)
+  const rendered = renderDeckHtml(deck, { resourcesDir: 'resources', definitions })
+  const out = path.join(tmpDir, 'html-only.pptx')
+
+  assert.match(rendered.document, /window\.deckbuilderDemoRan = true/)
+
+  await writePptx({ deck, outputPath: out, brand: definitions.brand, mode: 'editable' })
+
+  const archive = await JSZip.loadAsync(await readFile(out))
+  const slideNames = Object.keys(archive.files).filter((name) =>
+    /^ppt\/slides\/slide\d+\.xml$/.test(name),
+  )
+
+  assert.equal(slideNames.length, 2)
+})

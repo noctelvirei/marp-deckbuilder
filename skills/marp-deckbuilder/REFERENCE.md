@@ -150,6 +150,35 @@ HTML is the high-fidelity presentation format. Use raw HTML, inline SVG, and sco
 
 Use `deck-visual` when a rich SVG should also land in PPTX as a faithful visual. Use `deck-chart`, `deck-stat-grid`, `deck-card-grid`, or the other structured components when PowerPoint editability matters more than exact visual fidelity.
 
+### Browser-Only JavaScript
+
+Use `<!-- pptx: skip -->` for slides that rely on browser JavaScript, animation loops, DOM updates, embedded demos, or other behavior PowerPoint cannot run. The HTML output keeps the slide and script. The PPTX output omits the slide instead of attempting a low-quality static reconstruction.
+
+`<!-- html-only: true -->` and `<!-- pptx-skip: true -->` are accepted aliases.
+
+```md
+<!-- pptx: skip -->
+
+# Live browser demo
+
+<style scoped>
+.console-demo { height:420px; padding:24px; background:#07101e; color:#e2e8f0; }
+</style>
+
+<div class="console-demo" id="demo">Preparing report...</div>
+
+<script>
+  const demo = document.getElementById('demo')
+  if (demo) {
+    setTimeout(() => {
+      demo.textContent = 'Report ready - opening in browser'
+    }, 800)
+  }
+</script>
+```
+
+If the PowerPoint audience still needs context, add a normal editable summary slide immediately after the browser-only slide.
+
 ### SVG Metric Dashboard
 
 ```md
