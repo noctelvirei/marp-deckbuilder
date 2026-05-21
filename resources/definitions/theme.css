@@ -182,7 +182,7 @@ li {
 }
 
 .deck-visual {
-  margin: 24px 0 0;
+  margin: 18px 0 0;
 }
 
 .deck-visual figcaption {
@@ -194,18 +194,19 @@ li {
 
 .deck-visual-stage {
   display: grid;
-  min-height: 380px;
+  height: 400px;
+  min-height: 0;
   place-items: center;
-  overflow: hidden;
-  border: 1px solid #dedede;
-  background: #fdfdfd;
+  overflow: visible;
+  border: 0;
+  background: transparent;
 }
 
 .deck-visual-stage svg {
   display: block;
   width: 100%;
-  height: auto;
-  max-height: 390px;
+  height: 100%;
+  max-height: none;
 }
 
 .deck-visual-caption {
@@ -354,7 +355,8 @@ li {
 .deck-next-steps li {
   counter-increment: steps;
   display: grid;
-  grid-template-columns: 42px 1fr;
+  grid-template-columns: 42px minmax(0, 1fr);
+  grid-template-rows: auto auto;
   gap: 16px;
   min-height: 92px;
   margin-bottom: 14px;
@@ -366,6 +368,8 @@ li {
 
 .deck-next-steps li::before {
   content: counter(steps);
+  grid-column: 1;
+  grid-row: 1 / span 2;
   display: grid;
   width: 32px;
   height: 32px;
@@ -376,13 +380,19 @@ li {
 }
 
 .deck-next-steps strong {
+  grid-column: 2;
+  grid-row: 1;
   display: block;
+  min-width: 0;
   color: #090909;
   font-size: 16px;
 }
 
 .deck-next-steps span {
+  grid-column: 2;
+  grid-row: 2;
   display: block;
+  min-width: 0;
   margin-top: 5px;
   color: #444444;
   font-size: 14px;
