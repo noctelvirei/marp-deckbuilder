@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 import { existsSync } from 'node:fs'
-import { cp, mkdir, rm, stat } from 'node:fs/promises'
+import { cp, mkdir, readFile, rm, stat } from 'node:fs/promises'
 import { dirname, join, resolve } from 'node:path'
 import { spawn } from 'node:child_process'
 import { fileURLToPath } from 'node:url'
@@ -31,6 +31,7 @@ async function smokeDeckSkill() {
 
   await assertFile(join(outputDir, 'example.html'), 1000)
   await assertFile(join(outputDir, 'example.pptx'), 1000)
+  await assertVendorInjection(join(outputDir, 'example.html'), 'data-marp-deckbuilder-vendor')
 }
 
 async function smokeReportSkill() {
@@ -52,6 +53,7 @@ async function smokeReportSkill() {
   if (html.size < 500000) {
     throw new Error(`Expected report HTML to include offline vendor scripts: ${htmlPath}`)
   }
+  await assertVendorInjection(htmlPath, 'data-marp-report-vendor')
 }
 
 async function copySkill(sourceRoot, targetRoot) {
@@ -90,5 +92,28 @@ async function assertFile(path, minBytes) {
   const info = await stat(path)
   if (!info.isFile() || info.size < minBytes) {
     throw new Error(`Expected smoke output ${path} to be a file larger than ${minBytes} bytes.`)
+  }
+}
+
+async function assertVendorInjection(path, markerAttribute) {
+  const html = await readFile(path, 'utf8')
+  const lower = html.toLowerCase()
+  const headClose = lower.lastIndexOf('</head>')
+  const d3 = html.indexOf(`${markerAttribute}="d3"`)
+  const plot = html.indexOf(`${markerAttribute}="observable-plot"`)
+  const chart = html.indexOf(`${markerAttribute}="chart.js"`)
+
+  if (headClose < 0) throw new Error(`Expected ${path} to include a closing </head> tag.`)
+  if (d3 < 0 || plot < 0 || chart < 0) {
+    throw new Error(`Expected ${path} to include d3, observable-plot, and chart.js vendor scripts.`)
+  }
+  if (!(d3 < plot && plot < chart)) {
+    throw new Error(`Expected vendor injection order d3 -> observable-plot -> chart.js in ${path}.`)
+  }
+  if (!(chart < headClose)) {
+    throw new Error(`Expected all vendor scripts to be injected before the structural </head> in ${path}.`)
+  }
+  if (/cdn\.jsdelivr\.net|<script\s+src=/i.test(html)) {
+    throw new Error(`Expected ${path} to be offline-safe with no CDN script tags.`)
   }
 }

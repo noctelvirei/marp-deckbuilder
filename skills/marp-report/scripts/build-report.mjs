@@ -58,9 +58,9 @@ async function injectVendorScripts(htmlFile) {
 
   const vendorDir = join(toolRoot, 'resources', 'vendor')
   const vendors = [
-    { file: 'chart.min.js', label: 'chart.js' },
-    { file: 'plot.min.js', label: 'observable-plot' },
     { file: 'd3.min.js', label: 'd3' },
+    { file: 'plot.min.js', label: 'observable-plot' },
+    { file: 'chart.min.js', label: 'chart.js' },
   ]
 
   const scripts = []
@@ -74,9 +74,14 @@ async function injectVendorScripts(htmlFile) {
 
   if (scripts.length === 0) return
   const injection = `${scripts.join('\n')}\n`
-  if (html.includes('</head>')) html = html.replace('</head>', `${injection}</head>`)
-  else html = `${injection}${html}`
+  html = injectBeforeClosingHead(html, injection)
   await writeFile(htmlFile, html, 'utf8')
+}
+
+function injectBeforeClosingHead(html, injection) {
+  const headCloseIndex = html.toLowerCase().lastIndexOf('</head>')
+  if (headCloseIndex < 0) return `${injection}${html}`
+  return `${html.slice(0, headCloseIndex)}${injection}${html.slice(headCloseIndex)}`
 }
 
 function stripKnownCdnTags(html) {
