@@ -15242,11 +15242,16 @@ function addCards(slide, model, brand, resourcesDir) {
       fit: "shrink"
     });
     addTextBox(slide, brand, cards[i].body, {
-      ...surfaceBox(brand, model, body, "body"),
-      x: x + body.dx,
-      y: layout.yTop + body.dy,
-      w: cardW - body.dx * 2,
-      h: cardH - body.bottomPad,
+      ...fitBoxInsideBottom(
+        {
+          ...surfaceBox(brand, model, body, "body"),
+          x: x + body.dx,
+          y: layout.yTop + body.dy,
+          w: cardW - body.dx * 2
+        },
+        layout.yTop + cardH,
+        body.bottomPad ?? 14
+      ),
       fit: "shrink"
     });
   }
@@ -15399,20 +15404,32 @@ function addSwimlane(slide, model, brand, resourcesDir) {
       addRect(slide, brand, stepX, stepY, stepW, layout.stepH, fill, color(brand, "border"), 0.4);
       addRect(slide, brand, stepX, stepY, 4, layout.stepH, accent);
       addTextBox(slide, brand, step.title, {
-        ...surfaceBox(brand, model, layout.stepTitle, "heading"),
-        x: stepX + layout.stepPad,
-        y: stepY + 9,
-        w: stepW - layout.stepPad * 2,
-        h: 18,
+        ...fitBoxInsideBottom(
+          {
+            ...surfaceBox(brand, model, layout.stepTitle, "heading"),
+            x: stepX + layout.stepPad,
+            y: stepY + 9,
+            w: stepW - layout.stepPad * 2,
+            h: 18
+          },
+          stepY + layout.stepH,
+          8
+        ),
         fit: "shrink"
       });
       if (step.body) {
         addTextBox(slide, brand, step.body, {
-          ...surfaceBox(brand, model, layout.stepBody, "body"),
-          x: stepX + layout.stepPad,
-          y: stepY + 31,
-          w: stepW - layout.stepPad * 2,
-          h: 34,
+          ...fitBoxInsideBottom(
+            {
+              ...surfaceBox(brand, model, layout.stepBody, "body"),
+              x: stepX + layout.stepPad,
+              y: stepY + 31,
+              w: stepW - layout.stepPad * 2,
+              h: 34
+            },
+            stepY + layout.stepH,
+            8
+          ),
           fit: "shrink"
         });
       }
@@ -15488,15 +15505,27 @@ function addNextSteps(slide, model, brand, resourcesDir) {
       align: "center"
     });
     addTextBox(slide, brand, step.title, {
-      ...surfaceBox(brand, model, layout.title, "heading"),
-      x: layout.x + layout.title.xDy,
-      y: rowY + layout.title.yDy,
+      ...fitBoxInsideBottom(
+        {
+          ...surfaceBox(brand, model, layout.title, "heading"),
+          x: layout.x + layout.title.xDy,
+          y: rowY + layout.title.yDy
+        },
+        rowY + layout.rowH,
+        8
+      ),
       fit: "shrink"
     });
     addTextBox(slide, brand, step.body, {
-      ...surfaceBox(brand, model, layout.body, "body"),
-      x: layout.x + layout.body.xDy,
-      y: rowY + layout.body.yDy,
+      ...fitBoxInsideBottom(
+        {
+          ...surfaceBox(brand, model, layout.body, "body"),
+          x: layout.x + layout.body.xDy,
+          y: rowY + layout.body.yDy
+        },
+        rowY + layout.rowH,
+        8
+      ),
       fit: "shrink"
     });
   });
@@ -15600,29 +15629,57 @@ function addSlideChrome(slide, brand, resourcesDir, kind, fallbackColor, model =
   addResourceImage(slide, logo, resourcesDir, logoBox, `${brand.name || "Brand"} logo`);
   if (model.customerLogo?.src) {
     const customerLogoBox = brand.layouts.customerLogo || { x: 828, y: 21, w: 98, h: 24 };
+    if (surface === "dark") {
+      const backplate = logoBackplateBox(customerLogoBox);
+      addRect(slide, brand, backplate.x, backplate.y, backplate.w, backplate.h, color(brand, "white"));
+    }
     addResourceImage(slide, model.customerLogo.src, resourcesDir, customerLogoBox, model.customerLogo.alt || "Customer logo");
   }
 }
 function isLightSurface(model) {
   return model?.surface === "light";
 }
+function fitBoxInsideBottom(box, bottom, bottomPad = 8, minHeight = 10) {
+  const maxHeight = Math.max(minHeight, bottom - box.y - bottomPad);
+  return {
+    ...box,
+    h: Math.max(minHeight, Math.min(box.h ?? maxHeight, maxHeight))
+  };
+}
+function logoBackplateBox(box, padX = 6, padY = 3) {
+  return {
+    x: box.x - padX,
+    y: box.y - padY,
+    w: box.w + padX * 2,
+    h: box.h + padY * 2
+  };
+}
 function lightToken(brand, key, fallback) {
   return brand.colors?.[key] ? key : fallback;
 }
 function surfaceTextToken(brand, model, current, role = "body") {
-  if (!isLightSurface(model)) return current;
   const key = String(current || "").toLowerCase();
   if (["blue", "cyan", "purple", "green", "red", "orange", "yellow", "lightblue", "primarypurple"].includes(key)) {
     return current;
   }
+  if (isLightSurface(model)) {
+    if (role === "accent") return current || "blue";
+    if (role === "muted" || key === "muted" || key === "footnote") {
+      return lightToken(brand, "mutedLight", "666666");
+    }
+    if (role === "heading" || isLightColor(color(brand, current))) {
+      return lightToken(brand, "headingLight", "090909");
+    }
+    return lightToken(brand, "bodyLight", "444444");
+  }
   if (role === "accent") return current || "blue";
   if (role === "muted" || key === "muted" || key === "footnote") {
-    return lightToken(brand, "mutedLight", "666666");
+    return readableDarkSurfaceToken(brand, current, "muted", "C8D8F0");
   }
-  if (role === "heading" || key === "white" || key === "dark") {
-    return lightToken(brand, "headingLight", "090909");
+  if (role === "heading") {
+    return readableDarkSurfaceToken(brand, current, "white", "FFFFFF");
   }
-  return lightToken(brand, "bodyLight", "444444");
+  return readableDarkSurfaceToken(brand, current, "body", "C8D8F0");
 }
 function surfaceTextColor(brand, model, current, role = "body") {
   return color(brand, surfaceTextToken(brand, model, current, role));
@@ -15681,6 +15738,40 @@ function swimlaneFill(brand, model, layout, laneColor = "blue") {
 function swimlaneAccent(brand, layout, laneColor = "blue") {
   const configured = layout.accents?.[laneColor] || (brand.colors?.[laneColor] ? laneColor : "") || layout.accents?.blue || "blue";
   return color(brand, configured);
+}
+function readableDarkSurfaceToken(brand, current, preferredToken, fallbackHex) {
+  if (!current || isDarkColor(color(brand, current))) {
+    const preferred = brand.colors?.[preferredToken] ? preferredToken : fallbackHex;
+    return isDarkColor(color(brand, preferred)) ? fallbackHex : preferred;
+  }
+  return current;
+}
+function isDarkColor(value) {
+  const rgb = hexRgb(value);
+  if (!rgb) return false;
+  return relativeLuminance(rgb) < 0.35;
+}
+function isLightColor(value) {
+  const rgb = hexRgb(value);
+  if (!rgb) return false;
+  return relativeLuminance(rgb) > 0.72;
+}
+function hexRgb(value) {
+  const match = String(value || "").match(/^#?([0-9a-f]{6})$/i);
+  if (!match) return null;
+  const hex = match[1];
+  return [
+    Number.parseInt(hex.slice(0, 2), 16),
+    Number.parseInt(hex.slice(2, 4), 16),
+    Number.parseInt(hex.slice(4, 6), 16)
+  ];
+}
+function relativeLuminance([r, g, b]) {
+  const [rs, gs, bs] = [r, g, b].map((channel) => {
+    const value = channel / 255;
+    return value <= 0.03928 ? value / 12.92 : ((value + 0.055) / 1.055) ** 2.4;
+  });
+  return 0.2126 * rs + 0.7152 * gs + 0.0722 * bs;
 }
 function addTakeaway(slide, model, brand) {
   if (!model.takeaway) return;

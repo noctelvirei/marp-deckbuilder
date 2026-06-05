@@ -29,7 +29,12 @@ export function renderDeckHtml(deck, options = {}) {
     assetUrlPrefix: options.assetUrlPrefix,
   }
   const themeCss = resolveResourceUrls(
-    [definitions.themeCss, brandBackgroundCss(definitions.brand), brandLogoCss(definitions.brand)]
+    [
+      definitions.themeCss,
+      brandBackgroundCss(definitions.brand),
+      brandSurfaceCss(definitions.brand),
+      brandLogoCss(definitions.brand),
+    ]
       .filter(Boolean)
       .join('\n'),
     options.resourcesDir,
@@ -99,15 +104,117 @@ export function brandLogoCss(brand = {}) {
   pointer-events: none;
 }
 
-.deck-customer-logo {
+.deck-customer-logo-frame {
   position: absolute;
   left: ${ptToPxCss(brand, customerBox.x)};
   top: ${ptToPxCss(brand, customerBox.y)};
   width: ${ptToPxCss(brand, customerBox.w)};
   height: ${ptToPxCss(brand, customerBox.h)};
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
   object-fit: contain;
   z-index: 20;
   pointer-events: none;
+}
+
+.deck-customer-logo-frame.deck-logo-on-dark {
+  padding: 4px 8px;
+  background: rgba(255, 255, 255, 0.92);
+  border-radius: 4px;
+}
+
+.deck-customer-logo {
+  display: block;
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+}`
+}
+
+export function brandSurfaceCss(brand = {}) {
+  const darkText = readableDarkCssColor(brand, 'body', 'C8D8F0')
+  const darkMuted = readableDarkCssColor(brand, 'muted', '8B9AB5')
+  const darkHeading = readableDarkCssColor(brand, 'white', 'FFFFFF')
+  const darkCard = cssColor(brand, 'cardDark', cssColor(brand, 'cardLight', '0D1D36'))
+  const darkBorder = cssColor(brand, 'border', '1E3A5F')
+  const lightHeading = cssColor(brand, 'headingLight', '090909')
+  const lightText = cssColor(brand, 'bodyLight', '444444')
+  const lightMuted = cssColor(brand, 'mutedLight', '666666')
+  const lightCard = cssColor(brand, 'cardFillLight', 'FDFDFD')
+  const lightBorder = cssColor(brand, 'borderLight', 'DEDEDE')
+
+  return `section.dark {
+  color: ${darkText};
+}
+
+section.dark h1,
+section.dark h2,
+section.dark h3,
+section.dark .card-grid h2,
+section.dark .deck-lane h2,
+section.dark .deck-lane-steps h3,
+section.dark .deck-chart figcaption {
+  color: ${darkHeading};
+}
+
+section.dark p,
+section.dark li,
+section.dark .card-grid p,
+section.dark .deck-lane-steps p,
+section.dark .deck-chart-label,
+section.dark .deck-chart-value {
+  color: ${darkText};
+}
+
+section.dark .deck-visual-caption,
+section.dark .deck-arrow {
+  color: ${darkMuted};
+}
+
+section.dark .card-grid article,
+section.dark .deck-chart,
+section.dark .deck-lane,
+section.dark .deck-lane-steps article,
+section.dark .deck-proof,
+section.dark .deck-logo-tile {
+  background: ${darkCard};
+  border-color: ${darkBorder};
+}
+
+section.light h1,
+section.light h2,
+section.light h3,
+section.light .card-grid h2,
+section.light .deck-lane h2,
+section.light .deck-lane-steps h3,
+section.light .deck-chart figcaption {
+  color: ${lightHeading};
+}
+
+section.light p,
+section.light li,
+section.light .card-grid p,
+section.light .deck-lane-steps p,
+section.light .deck-chart-label,
+section.light .deck-chart-value {
+  color: ${lightText};
+}
+
+section.light .deck-visual-caption,
+section.light .deck-arrow {
+  color: ${lightMuted};
+}
+
+section.light .card-grid article,
+section.light .deck-chart,
+section.light .deck-lane,
+section.light .deck-lane-steps article,
+section.light .deck-proof,
+section.light .deck-logo-tile {
+  background: ${lightCard};
+  border-color: ${lightBorder};
 }`
 }
 
@@ -139,7 +246,7 @@ function applyHtmlBranding(slide, brand = {}) {
     logos.push(logoHtml(companyLogo, `${brand.name || 'Brand'} logo`, 'deck-brand-logo deck-company-logo'))
   }
   if (slide.customerLogo?.src) {
-    logos.push(logoHtml(slide.customerLogo.src, slide.customerLogo.alt || 'Customer logo', 'deck-customer-logo'))
+    logos.push(customerLogoHtml(slide.customerLogo.src, slide.customerLogo.alt || 'Customer logo', slide.surface))
   }
   return logos.length ? insertLogoHtml(source, logos.join('\n')) : source
 }
@@ -215,6 +322,11 @@ function brandLogoForSlide(brand = {}, kind = 'content', surface = 'light') {
 
 function logoHtml(src, alt, className) {
   return `<img class="${escapeHtmlAttr(className)}" src="${escapeHtmlAttr(src)}" alt="${escapeHtmlAttr(alt)}">`
+}
+
+function customerLogoHtml(src, alt, surface = 'light') {
+  const surfaceClass = surface === 'dark' ? 'deck-logo-on-dark' : 'deck-logo-on-light'
+  return `<span class="deck-customer-logo-frame ${surfaceClass}">${logoHtml(src, alt, 'deck-customer-logo')}</span>`
 }
 
 function slideKind(slide) {
@@ -318,6 +430,43 @@ function normalizeLocalImageSources(source) {
 
 function escapeCssUrl(value) {
   return String(value).replace(/["\\\n\r\f]/g, '\\$&')
+}
+
+function cssColor(brand, keyOrHex, fallback = '') {
+  const raw = brand.colors?.[keyOrHex] || keyOrHex || fallback
+  const value = /^#?[0-9a-f]{6}$/i.test(String(raw)) ? raw : fallback
+  if (!value) return ''
+  return /^#/.test(String(value)) ? String(value) : `#${value}`
+}
+
+function readableDarkCssColor(brand, token, fallback) {
+  const value = cssColor(brand, token, fallback)
+  return isDarkCssColor(value) ? `#${fallback}` : value
+}
+
+function isDarkCssColor(value) {
+  const rgb = hexRgb(value)
+  if (!rgb) return false
+  return relativeLuminance(rgb) < 0.35
+}
+
+function hexRgb(value) {
+  const match = String(value || '').match(/^#?([0-9a-f]{6})$/i)
+  if (!match) return null
+  const hex = match[1]
+  return [
+    Number.parseInt(hex.slice(0, 2), 16),
+    Number.parseInt(hex.slice(2, 4), 16),
+    Number.parseInt(hex.slice(4, 6), 16),
+  ]
+}
+
+function relativeLuminance([r, g, b]) {
+  const [rs, gs, bs] = [r, g, b].map((channel) => {
+    const value = channel / 255
+    return value <= 0.03928 ? value / 12.92 : ((value + 0.055) / 1.055) ** 2.4
+  })
+  return 0.2126 * rs + 0.7152 * gs + 0.0722 * bs
 }
 
 function escapeHtmlAttr(value) {

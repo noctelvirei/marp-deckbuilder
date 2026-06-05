@@ -56,6 +56,8 @@ and PPTX should use image assets. HTML embeds those `resource:` assets into the
 generated file by default; PPTX inserts them into slides as native image media.
 The renderer positions the company logo using `layouts.companyLogo` (or legacy
 `layouts.logo`) and the customer logo using `layouts.customerLogo`.
+Customer logos receive a white chip/backplate automatically on dark slides so
+transparent customer SVGs remain readable without CSS filter inversion.
 
 ```json
 {
@@ -87,6 +89,10 @@ Cover, divider, and close slides are dark by default. Content/component slides
 are light by default. Authors may use `<!-- _class: dark -->` or
 `<!-- _class: light -->` to override a specific slide, but ordinary deck
 Markdown should not set global theme names or hand-position logos.
+
+Avoid theme CSS rules that invert `.deck-customer-logo`; customer logos should
+keep their original brand colours. The renderer handles dark-surface contrast by
+placing the customer logo on a white chip/backplate.
 
 Recommended optional colour tokens for light content pages:
 

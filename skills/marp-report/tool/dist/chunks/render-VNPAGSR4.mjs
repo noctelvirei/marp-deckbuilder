@@ -3,11 +3,12 @@ const require = __deckbuilderCreateRequire(import.meta.url);
 import {
   brandBackgroundCss,
   brandLogoCss,
+  brandSurfaceCss,
   htmlDocument,
   renderDeckHtml,
   resolveResourceUrls,
   shouldSkipHtml
-} from "./chunk-VVXR3DER.mjs";
+} from "./chunk-6SOBZHHS.mjs";
 import "./chunk-DWIQUIIF.mjs";
 import "./chunk-ZA7UPLW5.mjs";
 import "./chunk-QTC2235H.mjs";
@@ -15,6 +16,7 @@ import "./chunk-IDDWZGZI.mjs";
 export {
   brandBackgroundCss,
   brandLogoCss,
+  brandSurfaceCss,
   htmlDocument,
   renderDeckHtml,
   resolveResourceUrls,

@@ -612,6 +612,9 @@ Body copy`)
 
   assert.match(rendered.document, /deck-brand-logo deck-company-logo/)
   assert.match(rendered.document, /<section[^>]*class="light"/)
+  assert.match(rendered.document, /deck-customer-logo-frame deck-logo-on-dark/)
+  assert.match(rendered.document, /deck-customer-logo-frame deck-logo-on-light/)
+  assert.match(rendered.document, /background:\s*rgba\(255,\s*255,\s*255,\s*0\.92\)/)
   assert.match(rendered.document, /left:\s*48px/)
   assert.match(rendered.document, /left:\s*1104px/)
   assert.equal((rendered.document.match(/<img class="deck-customer-logo"/g) || []).length, 2)
@@ -681,13 +684,57 @@ customerLogo: resource:logos/customer.svg
   })
 
   const archive = await JSZip.loadAsync(await readFile(out))
+  const coverXml = await archive.file('ppt/slides/slide1.xml').async('string')
   const slideXml = await archive.file('ppt/slides/slide2.xml').async('string')
   const slideRels = await archive.file('ppt/slides/_rels/slide2.xml.rels').async('string')
 
+  assert.match(coverXml, /FFFFFF/)
   assert.match(slideXml, /FDFDFD/)
   assert.match(slideXml, /DEDEDE/)
   assert.doesNotMatch(slideXml, /1D1E29/)
   assert.ok((slideRels.match(/image/g) || []).length >= 2)
+})
+
+test('PPTX text boxes are clamped inside their filled card shapes', async () => {
+  await rm(tmpDir, { recursive: true, force: true })
+  await mkdir(tmpDir, { recursive: true })
+
+  const definitions = await loadDefinitions(new URL('../resources/definitions', import.meta.url))
+  const brand = {
+    ...definitions.brand,
+    layouts: {
+      ...definitions.brand.layouts,
+      cards: {
+        ...definitions.brand.layouts.cards,
+        yTop: 120,
+        yBottom: 240,
+        body3: {
+          ...definitions.brand.layouts.cards.body3,
+          dy: 90,
+          bottomPad: 20,
+        },
+      },
+    },
+  }
+  const deck = parseDeckMarkdown(`# Cover
+
+---
+
+# Cards
+
+<deck-card-grid columns="3">
+  <deck-card title="Aligned"><p>Text that should stay inside the filled card shape.</p></deck-card>
+</deck-card-grid>`)
+  const out = path.join(tmpDir, 'card-text-clamp.pptx')
+
+  await writePptx({ deck, outputPath: out, brand })
+
+  const archive = await JSZip.loadAsync(await readFile(out))
+  const slideXml = await archive.file('ppt/slides/slide2.xml').async('string')
+
+  assert.match(slideXml, /Text that should stay inside/)
+  assert.match(slideXml, /cy="127000"/)
+  assert.doesNotMatch(slideXml, /cy="1270000"/)
 })
 
 test('splits premium HTML slides from editable PPTX fallback slides', async () => {

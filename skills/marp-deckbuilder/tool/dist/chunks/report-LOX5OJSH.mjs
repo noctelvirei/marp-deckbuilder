@@ -3,7 +3,7 @@ const require = __deckbuilderCreateRequire(import.meta.url);
 import {
   require_punycode,
   resolveResourceUrls
-} from "./chunk-VVXR3DER.mjs";
+} from "./chunk-6SOBZHHS.mjs";
 import {
   decodeHTML,
   splitFrontmatter

@@ -167,6 +167,11 @@ PPTX output. For compatibility, the parser can extract
 `<img class="deck-customer-logo" ...>` from a slide, but new decks should prefer
 frontmatter metadata so the logo is not repeated on every slide.
 
+Customer logos are arbitrary third-party assets. On dark slides, the renderer
+places them on a white chip/backplate so transparent SVG/PNG logos remain
+visible without changing the customer's brand colours. Do not use CSS inversion
+filters for customer logos.
+
 Recommended brand asset contract:
 
 ```json
@@ -232,6 +237,10 @@ usable:
 
 The HTML output can visually carry more in some layouts, but authors should stay
 inside those limits when the PPTX handoff matters.
+
+The PPTX renderer clamps component text boxes inside their filled shapes. If
+copy still feels crowded, that is a deck-design signal: shorten the copy, split
+the finding across multiple cards/slides, or move detail into speaker notes.
 
 Parent/child rules are strict:
 
