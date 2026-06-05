@@ -69,6 +69,7 @@ export function brandBackgroundCss(brand = {}) {
   const backgrounds = brand.assets?.backgrounds || {}
   const rules = [
     backgroundRule('section', backgrounds.content || backgrounds.default),
+    lightBackgroundRule(backgrounds.light || backgrounds.contentLight),
     backgroundRule('section.cover', backgrounds.cover),
     backgroundRule(
       'section.deck-divider-slide, section:has(.deck-divider), .deck-divider',
@@ -84,14 +85,26 @@ export function brandBackgroundCss(brand = {}) {
 }
 
 export function brandLogoCss(brand = {}) {
-  if (!brand.assets?.logo) return ''
-  const logoBox = brand.layouts?.logo || { x: 828, y: 21, w: 98, h: 24 }
-  return `.deck-brand-logo {
+  const companyBox = brand.layouts?.companyLogo || brand.layouts?.logo || { x: 36, y: 21, w: 98, h: 24 }
+  const customerBox = brand.layouts?.customerLogo || { x: 828, y: 21, w: 98, h: 24 }
+  return `.deck-brand-logo,
+.deck-company-logo {
   position: absolute;
-  left: ${ptToPxCss(brand, logoBox.x)};
-  top: ${ptToPxCss(brand, logoBox.y)};
-  width: ${ptToPxCss(brand, logoBox.w)};
-  height: ${ptToPxCss(brand, logoBox.h)};
+  left: ${ptToPxCss(brand, companyBox.x)};
+  top: ${ptToPxCss(brand, companyBox.y)};
+  width: ${ptToPxCss(brand, companyBox.w)};
+  height: ${ptToPxCss(brand, companyBox.h)};
+  object-fit: contain;
+  z-index: 20;
+  pointer-events: none;
+}
+
+.deck-customer-logo {
+  position: absolute;
+  left: ${ptToPxCss(brand, customerBox.x)};
+  top: ${ptToPxCss(brand, customerBox.y)};
+  width: ${ptToPxCss(brand, customerBox.w)};
+  height: ${ptToPxCss(brand, customerBox.h)};
   object-fit: contain;
   z-index: 20;
   pointer-events: none;
@@ -108,15 +121,31 @@ function backgroundRule(selector, resource) {
 }`
 }
 
+function lightBackgroundRule(resource) {
+  if (resource) {
+    return backgroundRule('section.light', resource)
+  }
+  return `section.light {
+  background-color: #ffffff;
+  background-image: none;
+}`
+}
+
 function applyHtmlBranding(slide, brand = {}) {
-  const source = applyHtmlSlideClass(slide)
-  const logo = brandLogoForKind(brand, slideKind(slide))
-  if (!logo || /class=["'][^"']*\bdeck-brand-logo\b/i.test(source)) return source
-  return insertLogoHtml(source, logoHtml(logo, `${brand.name || 'Brand'} logo`))
+  const source = stripCustomerLogoHtml(applyHtmlSlideClass(slide))
+  const logos = []
+  const companyLogo = brandLogoForSlide(brand, slideKind(slide), slide.surface)
+  if (companyLogo && !/class=["'][^"']*\bdeck-brand-logo\b/i.test(source)) {
+    logos.push(logoHtml(companyLogo, `${brand.name || 'Brand'} logo`, 'deck-brand-logo deck-company-logo'))
+  }
+  if (slide.customerLogo?.src) {
+    logos.push(logoHtml(slide.customerLogo.src, slide.customerLogo.alt || 'Customer logo', 'deck-customer-logo'))
+  }
+  return logos.length ? insertLogoHtml(source, logos.join('\n')) : source
 }
 
 function applyHtmlSlideClass(slide) {
-  const className = htmlClassForLayout(slide.layout)
+  const className = htmlClassForSlide(slide)
   if (!className || /<!--\s*_class\s*:/i.test(slide.source)) return slide.source
   return `<!-- _class: ${className} -->\n${slide.source}`
 }
@@ -136,6 +165,13 @@ function prepareHtmlSource(source) {
   return normalizeLocalImageSources(compactRawSvgBlocks(source))
 }
 
+function stripCustomerLogoHtml(source) {
+  return String(source || '').replace(
+    /<img\b[^>]*\bclass=["'][^"']*\bdeck-customer-logo\b[^"']*["'][^>]*>\s*/gi,
+    '',
+  )
+}
+
 function compactRawSvgBlocks(source) {
   return String(source || '')
     .split(/(```[\s\S]*?```)/g)
@@ -151,11 +187,24 @@ function compactRawSvgBlocks(source) {
     .join('')
 }
 
-function brandLogoForKind(brand = {}, kind = 'content') {
+function brandLogoForSlide(brand = {}, kind = 'content', surface = 'light') {
   const logo = brand.assets?.logo
   if (!logo) return ''
   if (typeof logo === 'string') return logo
+  if (surface === 'light') {
+    return (
+      logo.companyLight ||
+      logo.contentLight ||
+      logo.light ||
+      logo[kind] ||
+      logo.content ||
+      logo.default ||
+      ''
+    )
+  }
   return (
+    logo.companyDark ||
+    logo.dark ||
     logo[kind] ||
     (kind === 'divider' ? logo.cover : '') ||
     (kind === 'close' ? logo.cover : '') ||
@@ -164,8 +213,8 @@ function brandLogoForKind(brand = {}, kind = 'content') {
   )
 }
 
-function logoHtml(src, alt) {
-  return `<img class="deck-brand-logo" src="${escapeHtmlAttr(src)}" alt="${escapeHtmlAttr(alt)}">`
+function logoHtml(src, alt, className) {
+  return `<img class="${escapeHtmlAttr(className)}" src="${escapeHtmlAttr(src)}" alt="${escapeHtmlAttr(alt)}">`
 }
 
 function slideKind(slide) {
@@ -192,6 +241,10 @@ function htmlClassForLayout(layout) {
     default:
       return ''
   }
+}
+
+function htmlClassForSlide(slide) {
+  return htmlClassForLayout(slide.layout) || slide.surface || ''
 }
 
 export function shouldSkipHtml(slideModel) {

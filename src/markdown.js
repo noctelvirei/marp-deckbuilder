@@ -7,7 +7,7 @@ export function parseDeckMarkdown(source) {
   const slideSources = splitSlides(body)
   const slides = slideSources.map((slideSource, index) => {
     const compiled = compileDeckComponents(slideSource, { slideNumber: index + 1 })
-    return parseSlide(compiled.source, index, slideSource, compiled.components)
+    return parseSlide(compiled.source, index, slideSource, compiled.components, frontmatter)
   })
 
   return {
@@ -36,7 +36,7 @@ export function buildMarpMarkdown(deck, options = {}) {
   const marpFrontmatter = {
     ...deck.frontmatter,
     marp: true,
-    theme: deck.frontmatter.theme || options.themeName,
+    theme: options.themeName || deck.frontmatter.theme,
     size: deck.frontmatter.size || '16:9',
     paginate: deck.frontmatter.paginate ?? false,
   }
@@ -62,7 +62,7 @@ export function splitSlides(body) {
   return slides.filter((slide) => slide.length > 0)
 }
 
-export function parseSlide(source, index, originalSource = source, components = []) {
+export function parseSlide(source, index, originalSource = source, components = [], frontmatter = {}) {
   const directives = extractDirectives(source)
   const titleComponent = firstComponent(components, 'divider') || firstComponent(components, 'close')
   const title = directives.title || titleComponent?.title || extractTitle(source) || `Slide ${index + 1}`
@@ -70,6 +70,8 @@ export function parseSlide(source, index, originalSource = source, components = 
   const layout = directives.layout || inferComponentLayout(components) || inferLayout(source, index)
   const componentTakeaway = components.find((component) => component.type === 'takeaway')
   const proof = firstComponent(components, 'proof')
+  const customerLogo = extractCustomerLogo(source) || frontmatterCustomerLogo(frontmatter)
+  const surface = inferSurface(layout, directives)
 
   return {
     index,
@@ -78,6 +80,7 @@ export function parseSlide(source, index, originalSource = source, components = 
     components,
     directives,
     layout,
+    surface,
     title,
     subtitle,
     eyebrow: directives.eyebrow,
@@ -94,6 +97,7 @@ export function parseSlide(source, index, originalSource = source, components = 
     logoWall: firstComponent(components, 'logo-wall'),
     divider: firstComponent(components, 'divider'),
     close: firstComponent(components, 'close'),
+    customerLogo,
     paragraphs: extractParagraphs(source, title),
     bullets: extractBullets(source),
   }
@@ -143,6 +147,14 @@ function inferComponentLayout(components) {
     if (layoutComponents.has(component.type)) return layoutComponents.get(component.type)
   }
   return ''
+}
+
+function inferSurface(layout, directives = {}) {
+  const classDirective = String(directives._class || directives.class || '').toLowerCase()
+  if (/\blight\b/.test(classDirective)) return 'light'
+  if (/\bdark\b/.test(classDirective)) return 'dark'
+  if (['cover', 'divider', 'close'].includes(layout)) return 'dark'
+  return 'light'
 }
 
 function firstComponent(components, type) {
@@ -195,6 +207,27 @@ function extractCards(source) {
   }
 
   return cards
+}
+
+function extractCustomerLogo(source) {
+  const img = String(source || '').match(/<img\b([^>]*\bclass=["'][^"']*\bdeck-customer-logo\b[^"']*["'][^>]*)>/i)
+  if (!img) return null
+  const attrs = img[1]
+  const src = firstMatch(attrs, /\bsrc=["']([^"']+)["']/i)
+  if (!src) return null
+  return {
+    src,
+    alt: firstMatch(attrs, /\balt=["']([^"']*)["']/i) || 'Customer logo',
+  }
+}
+
+function frontmatterCustomerLogo(frontmatter = {}) {
+  const value = frontmatter.customerLogo || frontmatter.customer?.logo || frontmatter.customer?.logoSrc
+  if (!value) return null
+  return {
+    src: String(value),
+    alt: frontmatter.customerName || frontmatter.customer?.name || 'Customer logo',
+  }
 }
 
 function extractParagraphs(source, title) {

@@ -51,6 +51,19 @@ test('adds Marp defaults while preserving deck frontmatter', async () => {
   assert.match(markdown, /title: Marp Deckbuilder Demo/)
 })
 
+test('configured brand theme wins over stale authored theme frontmatter', () => {
+  const deck = parseDeckMarkdown(`---
+title: Branded deck
+theme: old-lightico-name
+---
+
+# Cover`)
+  const markdown = buildMarpMarkdown(deck, { themeName: 'lightico-deck' })
+
+  assert.match(markdown, /theme: lightico-deck/)
+  assert.doesNotMatch(markdown, /old-lightico-name/)
+})
+
 test('preserves explicit pagination when requested', () => {
   const deck = parseDeckMarkdown(`---
 title: Numbered deck
@@ -61,6 +74,33 @@ paginate: true
   const markdown = buildMarpMarkdown(deck, { themeName: 'deckbuilder' })
 
   assert.match(markdown, /paginate: true/)
+})
+
+test('infers slide surfaces and customer logo chrome metadata', () => {
+  const deck = parseDeckMarkdown(`---
+customer:
+  name: HSBC
+  logo: resource:logos/hsbc.svg
+---
+
+# Cover
+
+---
+
+<!-- _class: light -->
+
+# Content
+
+<img class="deck-customer-logo" src="resource:logos/inline.svg" alt="Inline customer">
+
+Body copy`)
+
+  assert.equal(deck.slides[0].surface, 'dark')
+  assert.equal(deck.slides[0].customerLogo.src, 'resource:logos/hsbc.svg')
+  assert.equal(deck.slides[0].customerLogo.alt, 'HSBC')
+  assert.equal(deck.slides[1].surface, 'light')
+  assert.equal(deck.slides[1].customerLogo.src, 'resource:logos/inline.svg')
+  assert.equal(deck.slides[1].customerLogo.alt, 'Inline customer')
 })
 
 test('parses SVG visual components for rich HTML and PPTX image output', () => {

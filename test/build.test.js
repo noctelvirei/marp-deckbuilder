@@ -152,6 +152,8 @@ test('writes branded chart area fills into PPTX charts', async () => {
 
 ---
 
+<!-- _class: dark -->
+
 # Chart
 
 <deck-chart title="Volume" labels="A,B" values="10,20"></deck-chart>`)
@@ -552,6 +554,140 @@ Body copy`)
   assert.match(rendered.document, /<h1[^>]*>Content<\/h1>/)
   assert.doesNotMatch(rendered.document, /# Content/)
   assert.doesNotMatch(rendered.document, /resource:logo\.svg/)
+})
+
+test('HTML branding owns company and customer logo chrome', async () => {
+  await rm(tmpDir, { recursive: true, force: true })
+  await mkdir(path.join(tmpDir, 'resources', 'logos'), { recursive: true })
+  await writeFile(
+    path.join(tmpDir, 'resources', 'logos', 'company-dark.svg'),
+    '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 24"><text x="0" y="18">Dark</text></svg>',
+  )
+  await writeFile(
+    path.join(tmpDir, 'resources', 'logos', 'company-light.svg'),
+    '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 24"><text x="0" y="18">Light</text></svg>',
+  )
+  await writeFile(
+    path.join(tmpDir, 'resources', 'logos', 'customer.svg'),
+    '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 24"><text x="0" y="18">Customer</text></svg>',
+  )
+
+  const baseDefinitions = await loadDefinitions(new URL('../resources/definitions', import.meta.url))
+  const definitions = {
+    ...baseDefinitions,
+    brand: {
+      ...baseDefinitions.brand,
+      assets: {
+        logo: {
+          dark: 'resource:logos/company-dark.svg',
+          light: 'resource:logos/company-light.svg',
+        },
+      },
+      layouts: {
+        ...baseDefinitions.brand.layouts,
+        companyLogo: { x: 36, y: 21, w: 98, h: 24 },
+        customerLogo: { x: 828, y: 21, w: 98, h: 24 },
+      },
+    },
+  }
+  const deck = parseDeckMarkdown(`---
+customerLogo: resource:logos/customer.svg
+customerName: HSBC
+---
+
+# Cover
+
+---
+
+# Content
+
+<img class="deck-customer-logo" src="resource:logos/customer.svg" alt="HSBC">
+
+Body copy`)
+  const rendered = renderDeckHtml(deck, {
+    resourcesDir: path.join(tmpDir, 'resources'),
+    definitions,
+    inlineAssets: true,
+  })
+
+  assert.match(rendered.document, /deck-brand-logo deck-company-logo/)
+  assert.match(rendered.document, /<section[^>]*class="light"/)
+  assert.match(rendered.document, /left:\s*48px/)
+  assert.match(rendered.document, /left:\s*1104px/)
+  assert.equal((rendered.document.match(/<img class="deck-customer-logo"/g) || []).length, 2)
+  assert.doesNotMatch(rendered.document, /<p>\s*<img class="deck-customer-logo"/)
+  assert.doesNotMatch(rendered.document, /resource:logos\/customer\.svg/)
+})
+
+test('PPTX light content slides use light fills and both logo slots', async () => {
+  await rm(tmpDir, { recursive: true, force: true })
+  await mkdir(path.join(tmpDir, 'resources', 'logos'), { recursive: true })
+  await writeFile(
+    path.join(tmpDir, 'resources', 'logos', 'company-dark.svg'),
+    '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 24"><text x="0" y="18">Dark</text></svg>',
+  )
+  await writeFile(
+    path.join(tmpDir, 'resources', 'logos', 'company-light.svg'),
+    '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 24"><text x="0" y="18">Light</text></svg>',
+  )
+  await writeFile(
+    path.join(tmpDir, 'resources', 'logos', 'customer.svg'),
+    '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 24"><text x="0" y="18">Customer</text></svg>',
+  )
+
+  const definitions = await loadDefinitions(new URL('../resources/definitions', import.meta.url))
+  const brand = {
+    ...definitions.brand,
+    colors: {
+      ...definitions.brand.colors,
+      cardLight: '1D1E29',
+      border: '1E3A5F',
+      body: 'C8D8F0',
+    },
+    assets: {
+      logo: {
+        dark: 'resource:logos/company-dark.svg',
+        light: 'resource:logos/company-light.svg',
+      },
+    },
+    layouts: {
+      ...definitions.brand.layouts,
+      companyLogo: { x: 36, y: 21, w: 98, h: 24 },
+      customerLogo: { x: 828, y: 21, w: 98, h: 24 },
+    },
+  }
+  const deck = parseDeckMarkdown(`---
+customerLogo: resource:logos/customer.svg
+---
+
+# Cover
+
+---
+
+<!-- _class: light -->
+
+# Content
+
+<deck-card-grid columns="3">
+  <deck-card title="Readable"><p>White page content should not inherit navy card fills.</p></deck-card>
+</deck-card-grid>`)
+  const out = path.join(tmpDir, 'light-branding.pptx')
+
+  await writePptx({
+    deck,
+    outputPath: out,
+    brand,
+    resourcesDir: path.join(tmpDir, 'resources'),
+  })
+
+  const archive = await JSZip.loadAsync(await readFile(out))
+  const slideXml = await archive.file('ppt/slides/slide2.xml').async('string')
+  const slideRels = await archive.file('ppt/slides/_rels/slide2.xml.rels').async('string')
+
+  assert.match(slideXml, /FDFDFD/)
+  assert.match(slideXml, /DEDEDE/)
+  assert.doesNotMatch(slideXml, /1D1E29/)
+  assert.ok((slideRels.match(/image/g) || []).length >= 2)
 })
 
 test('splits premium HTML slides from editable PPTX fallback slides', async () => {

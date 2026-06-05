@@ -47279,7 +47279,7 @@ function parseDeckMarkdown(source) {
   const slideSources = splitSlides(body);
   const slides = slideSources.map((slideSource, index2) => {
     const compiled = compileDeckComponents(slideSource, { slideNumber: index2 + 1 });
-    return parseSlide(compiled.source, index2, slideSource, compiled.components);
+    return parseSlide(compiled.source, index2, slideSource, compiled.components, frontmatter);
   });
   return {
     frontmatter,
@@ -47303,7 +47303,7 @@ function buildMarpMarkdown(deck, options = {}) {
   const marpFrontmatter = {
     ...deck.frontmatter,
     marp: true,
-    theme: deck.frontmatter.theme || options.themeName,
+    theme: options.themeName || deck.frontmatter.theme,
     size: deck.frontmatter.size || "16:9",
     paginate: deck.frontmatter.paginate ?? false
   };
@@ -47326,7 +47326,7 @@ function splitSlides(body) {
   slides.push(current.join("\n").trim());
   return slides.filter((slide) => slide.length > 0);
 }
-function parseSlide(source, index2, originalSource = source, components = []) {
+function parseSlide(source, index2, originalSource = source, components = [], frontmatter = {}) {
   const directives = extractDirectives(source);
   const titleComponent = firstComponent(components, "divider") || firstComponent(components, "close");
   const title = directives.title || titleComponent?.title || extractTitle(source) || `Slide ${index2 + 1}`;
@@ -47334,6 +47334,8 @@ function parseSlide(source, index2, originalSource = source, components = []) {
   const layout = directives.layout || inferComponentLayout(components) || inferLayout(source, index2);
   const componentTakeaway = components.find((component) => component.type === "takeaway");
   const proof = firstComponent(components, "proof");
+  const customerLogo = extractCustomerLogo(source) || frontmatterCustomerLogo(frontmatter);
+  const surface = inferSurface(layout, directives);
   return {
     index: index2,
     source,
@@ -47341,6 +47343,7 @@ function parseSlide(source, index2, originalSource = source, components = []) {
     components,
     directives,
     layout,
+    surface,
     title,
     subtitle,
     eyebrow: directives.eyebrow,
@@ -47357,6 +47360,7 @@ function parseSlide(source, index2, originalSource = source, components = []) {
     logoWall: firstComponent(components, "logo-wall"),
     divider: firstComponent(components, "divider"),
     close: firstComponent(components, "close"),
+    customerLogo,
     paragraphs: extractParagraphs(source, title),
     bullets: extractBullets(source)
   };
@@ -47403,6 +47407,13 @@ function inferComponentLayout(components) {
   }
   return "";
 }
+function inferSurface(layout, directives = {}) {
+  const classDirective = String(directives._class || directives.class || "").toLowerCase();
+  if (/\blight\b/.test(classDirective)) return "light";
+  if (/\bdark\b/.test(classDirective)) return "dark";
+  if (["cover", "divider", "close"].includes(layout)) return "dark";
+  return "light";
+}
 function firstComponent(components, type2) {
   return components.find((component) => component.type === type2);
 }
@@ -47441,6 +47452,25 @@ function extractCards(source) {
     if (header || body || media) cards.push({ header, body, media });
   }
   return cards;
+}
+function extractCustomerLogo(source) {
+  const img = String(source || "").match(/<img\b([^>]*\bclass=["'][^"']*\bdeck-customer-logo\b[^"']*["'][^>]*)>/i);
+  if (!img) return null;
+  const attrs = img[1];
+  const src = firstMatch2(attrs, /\bsrc=["']([^"']+)["']/i);
+  if (!src) return null;
+  return {
+    src,
+    alt: firstMatch2(attrs, /\balt=["']([^"']*)["']/i) || "Customer logo"
+  };
+}
+function frontmatterCustomerLogo(frontmatter = {}) {
+  const value = frontmatter.customerLogo || frontmatter.customer?.logo || frontmatter.customer?.logoSrc;
+  if (!value) return null;
+  return {
+    src: String(value),
+    alt: frontmatter.customerName || frontmatter.customer?.name || "Customer logo"
+  };
 }
 function extractParagraphs(source, title) {
   const withoutComments = source.replace(/<!--[\s\S]*?-->/g, "");

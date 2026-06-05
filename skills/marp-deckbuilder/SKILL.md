@@ -46,6 +46,9 @@ node scripts/build-deck.mjs <output-folder>/deck.md --out-dir <output-folder>
 - Reference assets by file name/path, not by asking the renderer to know product-specific names. `icon="face-scan"` resolves dynamically to `tool/resources/icons/face-scan.svg` or another supported image extension if present.
 - Use `deck-chart` only when the chart can be described with structured labels and values.
 - Keep using `resource:` references for brand images. The renderer embeds them in HTML and inserts them into PPTX; do not paste brand SVG source into Markdown.
+- Let the renderer own brand chrome. Do not set `marp`, `theme`, or raw company-logo HTML in `deck.md`; the build uses `brand.themeName`, `brand.assets`, and `brand.layouts`.
+- Cover, divider, and close slides are dark surfaces by default. Content slides are light surfaces by default. Use `<!-- _class: dark -->` or `<!-- _class: light -->` only when a slide intentionally breaks that default.
+- Put customer logo metadata in frontmatter (`customerLogo` plus optional `customerName`, or `customer.logo` plus `customer.name`). The renderer places the company logo top left and customer logo top right in both HTML and PPTX.
 - The renderer fails loudly on invalid component Markdown or missing assets. If the build errors, fix the Markdown or add the referenced file under `tool/resources/`; do not work around it by leaving empty cards, broken images, or unsupported component shapes.
 - Keep the Markdown compact; the tool owns layout and branding.
 - Do not add `paginate: true` unless the user explicitly asks for visible slide numbers.

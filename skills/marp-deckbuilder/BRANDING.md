@@ -54,7 +54,8 @@ customization should live.
 Brand backgrounds and logos should be declared in `brand.json` when both HTML
 and PPTX should use image assets. HTML embeds those `resource:` assets into the
 generated file by default; PPTX inserts them into slides as native image media.
-The HTML renderer positions `assets.logo` using `layouts.logo`.
+The renderer positions the company logo using `layouts.companyLogo` (or legacy
+`layouts.logo`) and the customer logo using `layouts.customerLogo`.
 
 ```json
 {
@@ -66,14 +67,43 @@ The HTML renderer positions `assets.logo` using `layouts.logo`.
       "content": "resource:brand-content-bg.png"
     },
     "logo": {
-      "default": "resource:brand-logo-light.svg"
+      "dark": "resource:brand-logo-light.svg",
+      "light": "resource:brand-logo-dark.svg"
     }
   },
   "layouts": {
-    "logo": { "x": 828, "y": 21, "w": 98, "h": 24 }
+    "companyLogo": { "x": 36, "y": 21, "w": 98, "h": 24 },
+    "customerLogo": { "x": 828, "y": 21, "w": 98, "h": 24 }
   }
 }
 ```
 
 Asset paths resolve relative to `tool/resources/`. If an asset is missing, the
 renderer falls back to the configured solid colours.
+
+## Slide Surface Contract
+
+Cover, divider, and close slides are dark by default. Content/component slides
+are light by default. Authors may use `<!-- _class: dark -->` or
+`<!-- _class: light -->` to override a specific slide, but ordinary deck
+Markdown should not set global theme names or hand-position logos.
+
+Recommended optional colour tokens for light content pages:
+
+```json
+{
+  "colors": {
+    "backgroundLight": "FFFFFF",
+    "headingLight": "090909",
+    "bodyLight": "444444",
+    "mutedLight": "666666",
+    "cardFillLight": "FDFDFD",
+    "borderLight": "DEDEDE",
+    "takeawayFillLight": "F0F4FA"
+  }
+}
+```
+
+If these tokens are absent, the renderer uses readable white-page fallbacks for
+PPTX content slides. Keep dark-page tokens such as `dark`, `body`, `muted`,
+`cardLight`, and `border` for dark surfaces.

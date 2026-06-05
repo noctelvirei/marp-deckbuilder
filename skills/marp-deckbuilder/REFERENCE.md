@@ -31,8 +31,10 @@ Desktop chats and artifact previews. Authors should still reference assets with
 If `tool/resources/definitions/brand.json` declares `assets.backgrounds`, those
 background images are applied to HTML automatically and embedded into the HTML
 as `data:` URLs. The same declarations drive PPTX slide backgrounds.
-If it declares `assets.logo`, the renderer positions that logo from
-`layouts.logo` and embeds it into HTML as a `data:` URL too.
+If it declares `assets.logo`, the renderer positions the company logo from
+`layouts.companyLogo` (or legacy `layouts.logo`) and embeds it into HTML/PPTX.
+Customer logos come from deck frontmatter and are positioned from
+`layouts.customerLogo`.
 
 Use `--html-assets copy` only when you explicitly want a sibling `resources/`
 folder beside the HTML. That output shape looks like:
@@ -124,6 +126,75 @@ When writing HTML, used resources are embedded as `data:` URLs by default. When
 writing PPTX, supported SVG/PNG/JPEG/WEBP/GIF files are inserted into the slide
 deck. If a referenced file is absent, the build fails.
 
+## Brand Chrome And Slide Surfaces
+
+The renderer owns theme, backgrounds, and logo placement. Do not hand-write
+company logos, customer logo positioning, global Marp theme names, or background
+CSS in `deck.md`.
+
+Surface defaults:
+
+- cover, divider, and close slides are dark;
+- content/component slides are light;
+- `<!-- _class: dark -->` and `<!-- _class: light -->` override the default when needed.
+
+The configured brand theme wins over any stale `theme:` value in deck
+frontmatter. Authors should usually omit `marp:` and `theme:` entirely.
+
+Customer logo frontmatter:
+
+```yaml
+---
+title: Partnership update
+customerLogo: resource:logos/hsbc.svg
+customerName: HSBC
+---
+```
+
+Nested customer metadata is also accepted:
+
+```yaml
+---
+customer:
+  name: HSBC
+  logo: resource:logos/hsbc.svg
+---
+```
+
+The company logo is always the brand logo and is placed top left. The customer
+logo, when present, is placed top right. These slots are applied to both HTML and
+PPTX output. For compatibility, the parser can extract
+`<img class="deck-customer-logo" ...>` from a slide, but new decks should prefer
+frontmatter metadata so the logo is not repeated on every slide.
+
+Recommended brand asset contract:
+
+```json
+{
+  "assets": {
+    "backgrounds": {
+      "cover": "resource:brand-title-bg.png",
+      "divider": "resource:brand-title-bg.png",
+      "close": "resource:brand-title-bg.png",
+      "content": "resource:brand-content-bg.png",
+      "light": "resource:brand-light-bg.png"
+    },
+    "logo": {
+      "dark": "resource:brand-logo-blue-white.svg",
+      "light": "resource:brand-logo-blue-black.svg"
+    }
+  },
+  "layouts": {
+    "companyLogo": { "x": 36, "y": 21, "w": 98, "h": 24 },
+    "customerLogo": { "x": 828, "y": 21, "w": 98, "h": 24 }
+  }
+}
+```
+
+If a branded fork only has the legacy `assets.logo.default` and `layouts.logo`,
+the renderer still uses those values. Add `logo.light` and `logo.dark` when the
+brand needs different wordmarks on white vs dark pages.
+
 ## Component Contract
 
 Use only these structured components when you need native PPTX output:
@@ -139,7 +210,7 @@ Use only these structured components when you need native PPTX output:
 | `deck-comparison` | `rows="left|right;..."` or direct `deck-row` children | `columns`, `left-title`, `right-title`, `left`, `right`, `title` | Comparison table |
 | `deck-row` | inside `deck-comparison` | `label`, `left`, `right` | Comparison row |
 | `deck-swimlane` | one or more direct `deck-lane` children | | Swimlane slide |
-| `deck-lane` | inside `deck-swimlane`, one or more direct `deck-step` children | `title`, `label`, `color="blue|purple|green"` | Swimlane lane |
+| `deck-lane` | inside `deck-swimlane`, one or more direct `deck-step` children | `title`, `label`, `color="blue|cyan|purple|green|red|orange"` | Swimlane lane |
 | `deck-next-steps` | one or more direct `deck-step` children | | Numbered action list |
 | `deck-step` | inside `deck-lane` or `deck-next-steps` | `title`, body text | Step/action item |
 | `deck-proof` | one or more `deck-stat` children or proof text | `customer`, `logo`, `logo-name`, `bridge`, `source` | Proof slide |
@@ -154,7 +225,7 @@ usable:
 - `deck-stat-grid`: first 3 stats.
 - `deck-card-grid`: first 4 cards; `columns="3"` and `columns="4"` are the supported layouts.
 - `deck-comparison`: first 6 rows.
-- `deck-swimlane`: first 2 lanes, first 5 steps per lane; lane colors are `blue`, `purple`, and `green`.
+- `deck-swimlane`: first lanes that fit the brand layout (usually 2, or 3 when `layouts.swimlane.laneY` has 3 entries), first 5 steps per lane; lane colors are `blue`, `cyan`, `purple`, `green`, `red`, and `orange`.
 - `deck-proof`: first 3 stats.
 - `deck-next-steps`: first 3 steps.
 - `deck-logo-wall`: first 12 logos.
@@ -193,6 +264,8 @@ Other supported directives:
 
 ```md
 <!-- _class: cover -->
+<!-- _class: light -->
+<!-- _class: dark -->
 <!-- title: Override title -->
 <!-- subtitle: Override subtitle -->
 <!-- eyebrow: Section label -->
@@ -373,7 +446,7 @@ The component compiler emits these stable CSS classes for theme authors:
 | `deck-chart` | `deck-chart`, `deck-chart-bar`, `deck-chart-line`, `deck-chart-row`, `deck-chart-label`, `deck-chart-track`, `deck-chart-fill` |
 | `deck-visual` | `deck-visual`, `deck-visual-stage`, `deck-visual-caption` |
 | `deck-comparison` | `deck-comparison`, `negative`, `positive` |
-| `deck-swimlane` | `deck-swimlane`, `deck-lane`, `deck-lane-blue`, `deck-lane-purple`, `deck-lane-green`, `deck-lane-steps`, `deck-arrow` |
+| `deck-swimlane` | `deck-swimlane`, `deck-lane`, `deck-lane-<color>`, `deck-lane-steps`, `deck-arrow` |
 | `deck-proof` | `deck-proof`, `deck-proof-logo`, `deck-proof-context`, `deck-proof-bridge`, `deck-proof-source` |
 | `deck-next-steps` | `deck-next-steps` |
 | `deck-logo-wall` | `deck-logo-wall`, `deck-logo-grid`, `deck-logo-tile` |

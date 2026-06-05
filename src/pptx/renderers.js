@@ -10,7 +10,7 @@ import {
 
 export function addCover(slide, model, frontmatter, brand, resourcesDir) {
   const layout = brand.layouts.cover
-  addSlideChrome(slide, brand, resourcesDir, 'cover', 'dark')
+  addSlideChrome(slide, brand, resourcesDir, 'cover', 'dark', model)
   addLargeTextBox(slide, brand, model.title, layout.title)
 
   if (model.subtitle) addTextBox(slide, brand, model.subtitle, layout.subtitle)
@@ -24,7 +24,7 @@ export function addContent(slide, model, brand, resourcesDir) {
   addBaseHeader(slide, model, brand, resourcesDir)
   const body = contentBody(model)
   if (body) {
-    addTextBox(slide, brand, body, brand.layouts.body.paragraph, {
+    addTextBox(slide, brand, body, surfaceBox(brand, model, brand.layouts.body.paragraph, 'body'), {
       breakLine: true,
       fit: 'shrink',
     })
@@ -50,7 +50,7 @@ export function addDivider(slide, model, brand, resourcesDir) {
   const titleBox = expandedTitleBox(title, layout.title)
   const subtitleBox = subtitle ? boxAfterTitle(titleBox, layout.subtitle) : layout.subtitle
 
-  addSlideChrome(slide, brand, resourcesDir, 'divider', 'dark')
+  addSlideChrome(slide, brand, resourcesDir, 'divider', 'dark', model)
   if (divider.act) addTextBox(slide, brand, divider.act, layout.act)
   addLargeTextBox(slide, brand, title, titleBox)
   if (subtitle) {
@@ -77,9 +77,9 @@ export function addThreeStat(slide, model, brand, resourcesDir) {
       )
     }
 
-    addTextBox(slide, brand, stats[i].value, { ...layout.value, x, align: 'center' })
+    addTextBox(slide, brand, stats[i].value, surfaceBox(brand, model, { ...layout.value, x, align: 'center' }, 'accent'))
     addTextBox(slide, brand, stats[i].label, {
-      ...layout.label,
+      ...surfaceBox(brand, model, layout.label, 'body'),
       x,
       y: layout.value.y + layout.label.dy,
       align: 'center',
@@ -88,7 +88,7 @@ export function addThreeStat(slide, model, brand, resourcesDir) {
   }
 
   const context = model.paragraphs[0]
-  if (context) addTextBox(slide, brand, context, { ...layout.context, align: 'center' })
+  if (context) addTextBox(slide, brand, context, surfaceBox(brand, model, { ...layout.context, align: 'center' }, 'body'))
   addTakeaway(slide, model, brand)
 }
 
@@ -113,8 +113,8 @@ export function addCards(slide, model, brand, resourcesDir) {
       layout.yTop,
       cardW,
       cardH,
-      color(brand, 'cardLight'),
-      color(brand, 'border'),
+      surfaceCardFill(brand, model),
+      surfaceBorder(brand, model),
       0.5,
     )
     addRect(slide, brand, x, layout.yTop, cardW, layout.topBarHeight, color(brand, 'blue'))
@@ -124,14 +124,14 @@ export function addCards(slide, model, brand, resourcesDir) {
     }
     const headerXOffset = mediaBox ? mediaBox.w + 9 : 0
     addTextBox(slide, brand, cards[i].header, {
-      ...header,
+      ...surfaceBox(brand, model, header, 'heading'),
       x: x + header.dx + headerXOffset,
       y: layout.yTop + header.dy,
       w: cardW - header.dx * 2 - headerXOffset,
       fit: 'shrink',
     })
     addTextBox(slide, brand, cards[i].body, {
-      ...body,
+      ...surfaceBox(brand, model, body, 'body'),
       x: x + body.dx,
       y: layout.yTop + body.dy,
       w: cardW - body.dx * 2,
@@ -179,18 +179,18 @@ export function addChartSlide(pptx, slide, model, brand, resourcesDir) {
     title: model.chart.title,
     titleFontFace: font(brand, layout.title.font),
     titleFontSize: layout.title.size,
-    titleColor: color(brand, layout.title.color),
+    titleColor: surfaceTextColor(brand, model, layout.title.color, 'heading'),
     chartArea: {
-      fill: { color: color(brand, layout.chartAreaFill || 'cardLight') },
-      border: { color: color(brand, layout.chartAreaBorder || 'border'), pt: 0.5 },
+      fill: { color: surfaceFill(brand, model, layout.chartAreaFill || 'cardLight') },
+      border: { color: surfaceLine(brand, model, layout.chartAreaBorder || 'border'), pt: 0.5 },
       roundedCorners: false,
     },
     plotArea: {
-      fill: { color: color(brand, layout.plotAreaFill || layout.chartAreaFill || 'cardLight') },
-      border: { color: color(brand, layout.plotAreaBorder || 'border'), pt: 0.25 },
+      fill: { color: surfaceFill(brand, model, layout.plotAreaFill || layout.chartAreaFill || 'cardLight') },
+      border: { color: surfaceLine(brand, model, layout.plotAreaBorder || 'border'), pt: 0.25 },
     },
     chartColors: layout.colors.map((chartColor) => color(brand, chartColor)),
-    dataLabelColor: color(brand, layout.dataLabel?.color || layout.valueAxis.color),
+    dataLabelColor: surfaceTextColor(brand, model, layout.dataLabel?.color || layout.valueAxis.color, 'body'),
     dataLabelFontFace: font(brand, layout.dataLabel?.font || layout.valueAxis.font),
     dataLabelFontSize: layout.dataLabel?.size || layout.valueAxis.size,
     showLegend: false,
@@ -198,11 +198,11 @@ export function addChartSlide(pptx, slide, model, brand, resourcesDir) {
     showCategoryName: true,
     catAxisLabelFontFace: font(brand, layout.categoryAxis.font),
     catAxisLabelFontSize: layout.categoryAxis.size,
-    catAxisLabelColor: color(brand, layout.categoryAxis.color),
+    catAxisLabelColor: surfaceTextColor(brand, model, layout.categoryAxis.color, 'body'),
     valAxisLabelFontFace: font(brand, layout.valueAxis.font),
     valAxisLabelFontSize: layout.valueAxis.size,
-    valAxisLabelColor: color(brand, layout.valueAxis.color),
-    valGridLine: { color: color(brand, layout.gridLineColor), transparency: 0 },
+    valAxisLabelColor: surfaceTextColor(brand, model, layout.valueAxis.color, 'muted'),
+    valGridLine: { color: surfaceLine(brand, model, layout.gridLineColor), transparency: 0 },
     catGridLine: { color: 'FFFFFF', transparency: 100 },
     showCatName: true,
     showValAxis: true,
@@ -237,12 +237,12 @@ export function addVisual(slide, model, brand, resourcesDir) {
     })
   } catch {
     if (visual.fallback) {
-      addTextBox(slide, brand, visual.fallback, brand.layouts.body.paragraph, { breakLine: true, fit: 'shrink' })
+      addTextBox(slide, brand, visual.fallback, surfaceBox(brand, model, brand.layouts.body.paragraph, 'body'), { breakLine: true, fit: 'shrink' })
     }
   }
 
   if (visual.caption) {
-    addTextBox(slide, brand, visual.caption, layout.caption, { fit: 'shrink' })
+    addTextBox(slide, brand, visual.caption, surfaceBox(brand, model, layout.caption, 'muted'), { fit: 'shrink' })
   }
 
   addTakeaway(slide, model, brand)
@@ -260,6 +260,11 @@ export function addComparison(slide, model, brand, resourcesDir) {
   const rowH = layout.rowH
   const colX = [x, x + layout.labelW, x + layout.labelW + layout.leftW]
   const colW = [layout.labelW, layout.leftW, layout.rightW]
+  const rowFill = isLightSurface(model) ? lightToken(brand, 'rowFillLight', 'FDFDFD') : layout.rowFill
+  const leftFill = isLightSurface(model) ? lightToken(brand, 'leftFillLight', 'FFF0F0') : layout.leftFill
+  const rightFill = isLightSurface(model) ? lightToken(brand, 'rightFillLight', 'EEF6FE') : layout.rightFill
+  const leftText = isLightSurface(model) ? lightToken(brand, 'leftTextLight', 'CC3333') : layout.leftText
+  const rightText = isLightSurface(model) ? lightToken(brand, 'rightTextLight', '0A5FAB') : layout.rightText
 
   addCell(slide, brand, '', colX[0], y, colW[0], headerH, layout.headerFill, layout.headerText)
   addCell(slide, brand, comparison.leftTitle, colX[1], y, colW[1], headerH, layout.headerFill, layout.headerText)
@@ -267,14 +272,14 @@ export function addComparison(slide, model, brand, resourcesDir) {
 
   comparison.rows.slice(0, 6).forEach((row, index) => {
     const rowY = y + headerH + index * rowH
-    addCell(slide, brand, row.label, colX[0], rowY, colW[0], rowH, layout.rowFill, layout.labelText)
-    addCell(slide, brand, row.left, colX[1], rowY, colW[1], rowH, layout.leftFill, {
-      ...layout.cellText,
-      color: layout.leftText,
+    addCell(slide, brand, row.label, colX[0], rowY, colW[0], rowH, rowFill, surfaceBox(brand, model, layout.labelText, 'heading'))
+    addCell(slide, brand, row.left, colX[1], rowY, colW[1], rowH, leftFill, {
+      ...surfaceBox(brand, model, layout.cellText, 'body'),
+      color: leftText,
     })
-    addCell(slide, brand, row.right, colX[2], rowY, colW[2], rowH, layout.rightFill, {
-      ...layout.cellText,
-      color: layout.rightText,
+    addCell(slide, brand, row.right, colX[2], rowY, colW[2], rowH, rightFill, {
+      ...surfaceBox(brand, model, layout.cellText, 'body'),
+      color: rightText,
     })
   })
 
@@ -287,12 +292,13 @@ export function addSwimlane(slide, model, brand, resourcesDir) {
   if (!swimlane) return addContent(slide, model, brand, resourcesDir)
 
   const layout = brand.layouts.swimlane
-  swimlane.lanes.slice(0, 2).forEach((lane, laneIndex) => {
+  const laneCount = Math.min(swimlane.lanes.length, layout.laneY?.length || 2)
+  swimlane.lanes.slice(0, laneCount).forEach((lane, laneIndex) => {
     const laneY = layout.laneY[laneIndex]
-    const fill = color(brand, layout.fills[lane.color] || layout.fills.blue)
-    const accent = color(brand, layout.accents[lane.color] || layout.accents.blue)
-    addRect(slide, brand, layout.x, laneY, layout.laneW, layout.laneH, 'FDFDFD', color(brand, 'border'), 0.5)
-    addTextBox(slide, brand, lane.title, { ...layout.label, y: laneY + layout.label.dy })
+    const fill = swimlaneFill(brand, model, layout, lane.color)
+    const accent = swimlaneAccent(brand, layout, lane.color)
+    addRect(slide, brand, layout.x, laneY, layout.laneW, layout.laneH, surfaceCardFill(brand, model), surfaceBorder(brand, model), 0.5)
+    addTextBox(slide, brand, lane.title, surfaceBox(brand, model, { ...layout.label, y: laneY + layout.label.dy }, 'heading'))
 
     const steps = lane.steps.slice(0, 5)
     const stepW = (layout.laneW - layout.stepGap * 4 - 24) / 5
@@ -302,7 +308,7 @@ export function addSwimlane(slide, model, brand, resourcesDir) {
       addRect(slide, brand, stepX, stepY, stepW, layout.stepH, fill, color(brand, 'border'), 0.4)
       addRect(slide, brand, stepX, stepY, 4, layout.stepH, accent)
       addTextBox(slide, brand, step.title, {
-        ...layout.stepTitle,
+        ...surfaceBox(brand, model, layout.stepTitle, 'heading'),
         x: stepX + layout.stepPad,
         y: stepY + 9,
         w: stepW - layout.stepPad * 2,
@@ -311,7 +317,7 @@ export function addSwimlane(slide, model, brand, resourcesDir) {
       })
       if (step.body) {
         addTextBox(slide, brand, step.body, {
-          ...layout.stepBody,
+          ...surfaceBox(brand, model, layout.stepBody, 'body'),
           x: stepX + layout.stepPad,
           y: stepY + 31,
           w: stepW - layout.stepPad * 2,
@@ -321,7 +327,7 @@ export function addSwimlane(slide, model, brand, resourcesDir) {
       }
       if (stepIndex < steps.length - 1) {
         addTextBox(slide, brand, '>', {
-          ...layout.arrow,
+          ...surfaceBox(brand, model, layout.arrow, 'muted'),
           x: stepX + stepW + 1,
           y: stepY + 25,
           w: layout.stepGap,
@@ -351,15 +357,15 @@ export function addProof(slide, model, brand, resourcesDir) {
       h: ptToIn(layout.logo.h),
     })
   } else if (proof.logoName) {
-    addRect(slide, brand, layout.logo.x, layout.logo.y, layout.logo.w, layout.logo.h, color(brand, 'cardLight'), color(brand, 'border'), 0.5)
-    addTextBox(slide, brand, proof.logoName, { ...layout.logo, align: 'center', fit: 'shrink' })
+    addRect(slide, brand, layout.logo.x, layout.logo.y, layout.logo.w, layout.logo.h, surfaceCardFill(brand, model), surfaceBorder(brand, model), 0.5)
+    addTextBox(slide, brand, proof.logoName, surfaceBox(brand, model, { ...layout.logo, align: 'center', fit: 'shrink' }, 'heading'))
   }
 
   proof.stats.slice(0, 3).forEach((stat, index) => {
     const x = layout.stats.x[index]
-    addTextBox(slide, brand, stat.value, { ...layout.stats.value, x, align: 'center' })
+    addTextBox(slide, brand, stat.value, surfaceBox(brand, model, { ...layout.stats.value, x, align: 'center' }, 'accent'))
     addTextBox(slide, brand, stat.label, {
-      ...layout.stats.label,
+      ...surfaceBox(brand, model, layout.stats.label, 'body'),
       x,
       y: layout.stats.value.y + layout.stats.label.dy,
       align: 'center',
@@ -367,8 +373,8 @@ export function addProof(slide, model, brand, resourcesDir) {
     })
   })
 
-  if (proof.context) addTextBox(slide, brand, proof.context, { ...layout.context, fit: 'shrink' })
-  if (proof.bridge) addTextBox(slide, brand, proof.bridge, { ...layout.bridge, fit: 'shrink' })
+  if (proof.context) addTextBox(slide, brand, proof.context, surfaceBox(brand, model, { ...layout.context, fit: 'shrink' }, 'body'))
+  if (proof.bridge) addTextBox(slide, brand, proof.bridge, surfaceBox(brand, model, { ...layout.bridge, fit: 'shrink' }, 'body'))
   addTakeaway(slide, model, brand)
 }
 
@@ -380,7 +386,7 @@ export function addNextSteps(slide, model, brand, resourcesDir) {
   const layout = brand.layouts.nextSteps
   nextSteps.steps.slice(0, 3).forEach((step, index) => {
     const rowY = layout.y + index * (layout.rowH + layout.gap)
-    addRect(slide, brand, layout.x, rowY, layout.w, layout.rowH, color(brand, 'cardLight'), color(brand, 'border'), 0.5)
+    addRect(slide, brand, layout.x, rowY, layout.w, layout.rowH, surfaceCardFill(brand, model), surfaceBorder(brand, model), 0.5)
     addRect(slide, brand, layout.x, rowY, layout.accentWidth, layout.rowH, color(brand, 'blue'))
     addRect(
       slide,
@@ -398,13 +404,13 @@ export function addNextSteps(slide, model, brand, resourcesDir) {
       align: 'center',
     })
     addTextBox(slide, brand, step.title, {
-      ...layout.title,
+      ...surfaceBox(brand, model, layout.title, 'heading'),
       x: layout.x + layout.title.xDy,
       y: rowY + layout.title.yDy,
       fit: 'shrink',
     })
     addTextBox(slide, brand, step.body, {
-      ...layout.body,
+      ...surfaceBox(brand, model, layout.body, 'body'),
       x: layout.x + layout.body.xDy,
       y: rowY + layout.body.yDy,
       fit: 'shrink',
@@ -425,7 +431,7 @@ export function addLogoWall(slide, model, brand, resourcesDir) {
     const row = Math.floor(index / layout.columns)
     const x = layout.x + col * (layout.tileW + layout.gapX)
     const y = layout.y + row * (layout.tileH + layout.gapY)
-    addRect(slide, brand, x, y, layout.tileW, layout.tileH, color(brand, 'cardLight'), color(brand, 'border'), 0.5)
+    addRect(slide, brand, x, y, layout.tileW, layout.tileH, surfaceCardFill(brand, model), surfaceBorder(brand, model), 0.5)
     const logoPath = resolveResourcePath(logo.image, resourcesDir)
     if (logoPath) {
       slide.addImage({
@@ -437,7 +443,7 @@ export function addLogoWall(slide, model, brand, resourcesDir) {
       })
     } else {
       addTextBox(slide, brand, logo.name, {
-        ...layout.text,
+        ...surfaceBox(brand, model, layout.text, 'heading'),
         x: x + 12,
         y: y + 18,
         w: layout.tileW - 24,
@@ -455,7 +461,7 @@ export function addClose(slide, model, frontmatter, brand, resourcesDir) {
   const layout = brand.layouts.close
   const close = model.close || {}
   const presenter = frontmatter.presenter || {}
-  addSlideChrome(slide, brand, resourcesDir, 'close', 'dark')
+  addSlideChrome(slide, brand, resourcesDir, 'close', 'dark', model)
   addLargeTextBox(slide, brand, close.title || model.title || 'Thank you', expandedTitleBox(close.title || model.title || 'Thank you', layout.title))
   const name = close.name || presenter.name
   const role = close.role || presenter.role
@@ -499,22 +505,19 @@ function estimateWrappedLines(text, box) {
 }
 
 function addBaseHeader(slide, model, brand, resourcesDir) {
-  addSlideChrome(slide, brand, resourcesDir, 'content', 'white')
+  addSlideChrome(slide, brand, resourcesDir, 'content', isLightSurface(model) ? 'white' : 'dark', model)
   const layout = brand.layouts.header
   if (model.eyebrow) {
-    addTextBox(slide, brand, model.eyebrow.toUpperCase(), layout.eyebrow, { margin: 0 })
+    addTextBox(slide, brand, model.eyebrow.toUpperCase(), surfaceBox(brand, model, layout.eyebrow, 'accent'), { margin: 0 })
   }
-  addTextBox(slide, brand, model.title, layout.title, { fit: 'shrink' })
+  addTextBox(slide, brand, model.title, surfaceBox(brand, model, layout.title, 'heading'), { fit: 'shrink' })
 }
 
-function addSlideChrome(slide, brand, resourcesDir, kind, fallbackColor) {
-  const background =
-    brand.assets?.backgrounds?.[kind] ||
-    (kind === 'divider' ? brand.assets?.backgrounds?.cover : '') ||
-    (kind === 'close' ? brand.assets?.backgrounds?.cover : '') ||
-    brand.assets?.backgrounds?.default
+function addSlideChrome(slide, brand, resourcesDir, kind, fallbackColor, model = {}) {
+  const surface = model.surface || (['cover', 'divider', 'close'].includes(kind) ? 'dark' : 'light')
+  const background = backgroundForSurface(brand, kind, surface)
 
-  addRect(slide, brand, 0, 0, brand.slide.widthPt, brand.slide.heightPt, color(brand, fallbackColor))
+  addRect(slide, brand, 0, 0, brand.slide.widthPt, brand.slide.heightPt, surfaceBackgroundColor(brand, surface, fallbackColor))
   addResourceImage(
     slide,
     background,
@@ -523,14 +526,122 @@ function addSlideChrome(slide, brand, resourcesDir, kind, fallbackColor) {
     `${brand.name || 'Deck'} ${kind} background`,
   )
 
-  const logo =
-    brand.assets?.logo?.[kind] ||
-    (kind === 'divider' ? brand.assets?.logo?.cover : '') ||
-    (kind === 'close' ? brand.assets?.logo?.cover : '') ||
-    brand.assets?.logo?.default ||
-    brand.assets?.logo
-  const logoBox = brand.layouts.logo || { x: 828, y: 21, w: 98, h: 24 }
+  const logo = brandLogoForSurface(brand, kind, surface)
+  const logoBox = brand.layouts.companyLogo || brand.layouts.logo || { x: 36, y: 21, w: 98, h: 24 }
   addResourceImage(slide, logo, resourcesDir, logoBox, `${brand.name || 'Brand'} logo`)
+
+  if (model.customerLogo?.src) {
+    const customerLogoBox = brand.layouts.customerLogo || { x: 828, y: 21, w: 98, h: 24 }
+    addResourceImage(slide, model.customerLogo.src, resourcesDir, customerLogoBox, model.customerLogo.alt || 'Customer logo')
+  }
+}
+
+function isLightSurface(model) {
+  return model?.surface === 'light'
+}
+
+function lightToken(brand, key, fallback) {
+  return brand.colors?.[key] ? key : fallback
+}
+
+function surfaceTextToken(brand, model, current, role = 'body') {
+  if (!isLightSurface(model)) return current
+  const key = String(current || '').toLowerCase()
+  if (['blue', 'cyan', 'purple', 'green', 'red', 'orange', 'yellow', 'lightblue', 'primarypurple'].includes(key)) {
+    return current
+  }
+  if (role === 'accent') return current || 'blue'
+  if (role === 'muted' || key === 'muted' || key === 'footnote') {
+    return lightToken(brand, 'mutedLight', '666666')
+  }
+  if (role === 'heading' || key === 'white' || key === 'dark') {
+    return lightToken(brand, 'headingLight', '090909')
+  }
+  return lightToken(brand, 'bodyLight', '444444')
+}
+
+function surfaceTextColor(brand, model, current, role = 'body') {
+  return color(brand, surfaceTextToken(brand, model, current, role))
+}
+
+function surfaceBox(brand, model, box = {}, role = 'body') {
+  if (!isLightSurface(model)) return box
+  return {
+    ...box,
+    color: surfaceTextToken(brand, model, box.color, role),
+  }
+}
+
+function surfaceFillToken(brand, model, current, key = 'cardFillLight', fallback = 'FDFDFD') {
+  if (!isLightSurface(model)) return current
+  const token = String(current || '').toLowerCase()
+  if (['blue', 'cyan', 'purple', 'green', 'red', 'orange', 'yellow', 'lightblue', 'primarypurple'].includes(token)) {
+    return current
+  }
+  return lightToken(brand, key, fallback)
+}
+
+function surfaceFill(brand, model, current) {
+  return color(brand, surfaceFillToken(brand, model, current))
+}
+
+function surfaceLine(brand, model, current) {
+  if (!isLightSurface(model)) return color(brand, current)
+  return color(brand, lightToken(brand, 'borderLight', 'DEDEDE'))
+}
+
+function surfaceCardFill(brand, model) {
+  return color(brand, surfaceFillToken(brand, model, 'cardLight', 'cardFillLight', 'FDFDFD'))
+}
+
+function surfaceBorder(brand, model) {
+  return surfaceLine(brand, model, 'border')
+}
+
+function surfaceBackgroundColor(brand, surface, fallbackColor) {
+  if (surface === 'light') return color(brand, lightToken(brand, 'backgroundLight', 'FFFFFF'))
+  return color(brand, fallbackColor)
+}
+
+function backgroundForSurface(brand, kind, surface) {
+  const backgrounds = brand.assets?.backgrounds || {}
+  if (surface === 'light') return backgrounds.light || backgrounds.contentLight || ''
+  return (
+    backgrounds[kind] ||
+    (kind === 'divider' ? backgrounds.cover : '') ||
+    (kind === 'close' ? backgrounds.cover : '') ||
+    backgrounds.default ||
+    ''
+  )
+}
+
+function brandLogoForSurface(brand, kind, surface) {
+  const logo = brand.assets?.logo
+  if (!logo) return ''
+  if (typeof logo === 'string') return logo
+  if (surface === 'light') {
+    return logo.companyLight || logo.contentLight || logo.light || logo[kind] || logo.content || logo.default || ''
+  }
+  return (
+    logo.companyDark ||
+    logo.dark ||
+    logo[kind] ||
+    (kind === 'divider' ? logo.cover : '') ||
+    (kind === 'close' ? logo.cover : '') ||
+    logo.default ||
+    ''
+  )
+}
+
+function swimlaneFill(brand, model, layout, laneColor = 'blue') {
+  const configured = layout.fills?.[laneColor] || (brand.colors?.[laneColor] ? laneColor : '')
+  if (configured) return color(brand, configured)
+  return surfaceCardFill(brand, model)
+}
+
+function swimlaneAccent(brand, layout, laneColor = 'blue') {
+  const configured = layout.accents?.[laneColor] || (brand.colors?.[laneColor] ? laneColor : '') || layout.accents?.blue || 'blue'
+  return color(brand, configured)
 }
 
 function addTakeaway(slide, model, brand) {
@@ -538,10 +649,11 @@ function addTakeaway(slide, model, brand) {
 
   const layout = brand.layouts.takeaway
   const y = model.footnote ? layout.footnoteY : layout.y
-  addRect(slide, brand, 0, y, brand.slide.widthPt, layout.height, color(brand, 'takeawayFill'))
+  const takeawayFill = isLightSurface(model) ? lightToken(brand, 'takeawayFillLight', 'F0F4FA') : 'takeawayFill'
+  addRect(slide, brand, 0, y, brand.slide.widthPt, layout.height, color(brand, takeawayFill))
   addRect(slide, brand, 0, y, layout.accentWidth, layout.height, color(brand, 'blue'))
   addTextBox(slide, brand, model.takeaway, {
-    ...layout.text,
+    ...surfaceBox(brand, model, layout.text, 'heading'),
     y: y + layout.text.dy,
     margin: 0,
     fit: 'shrink',
@@ -549,7 +661,7 @@ function addTakeaway(slide, model, brand) {
 
   if (model.footnote) {
     addTextBox(slide, brand, model.footnote, {
-      ...layout.footnote,
+      ...surfaceBox(brand, model, layout.footnote, 'muted'),
       y: y + layout.footnote.dy,
       margin: 0,
     })
