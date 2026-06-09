@@ -43,6 +43,18 @@ function resolveResourceFile(value, resourcesDir = "resources") {
     relativePath: normalizeResourcePath(path.relative(root, resolved))
   };
 }
+function resolveSurfaceResourceFile(value, resourcesDir = "resources", surface = "") {
+  const rawValue = String(value || "").trim();
+  if (!rawValue || !surface) return resolveResourceFile(value, resourcesDir);
+  const variant = surfaceResourceCandidates(rawValue, surface);
+  for (const candidate of variant) {
+    try {
+      return resolveResourceFile(candidate, resourcesDir);
+    } catch {
+    }
+  }
+  return resolveResourceFile(value, resourcesDir);
+}
 function resourceToDataUri(filePath) {
   const bytes = readFileSync(filePath);
   return `data:${mimeType(filePath)};base64,${bytes.toString("base64")}`;
@@ -53,6 +65,25 @@ function normalizeResourcePath(value) {
 function candidatePaths(basePath) {
   if (path.extname(basePath)) return [basePath];
   return imageExtensions.map((extension) => `${basePath}${extension}`);
+}
+function surfaceResourceCandidates(value, surface) {
+  const token = String(surface || "").trim().toLowerCase();
+  if (token !== "dark" && token !== "light") return [];
+  const prefix = value.startsWith("resource:") ? "resource:" : "";
+  const resourcePath = prefix ? value.slice(prefix.length) : value;
+  const extension = path.extname(resourcePath);
+  const withoutExtension = extension ? resourcePath.slice(0, -extension.length) : resourcePath;
+  const suffixes = token === "dark" ? [".dark", "-dark", ".on-dark", "-on-dark"] : [".light", "-light", ".on-light", "-on-light"];
+  if (!extension) {
+    return suffixes.map((suffix) => `${prefix}${withoutExtension}${suffix}`);
+  }
+  const extensions = [
+    extension,
+    ...imageExtensions.filter((candidate) => candidate !== extension.toLowerCase())
+  ];
+  return suffixes.flatMap(
+    (suffix) => extensions.map((candidateExtension) => `${prefix}${withoutExtension}${suffix}${candidateExtension}`)
+  );
 }
 function missingResourceError(value, candidates) {
   return new Error(
@@ -85,5 +116,6 @@ function mimeType(filePath) {
 export {
   normalizeResourceReference,
   resolveResourceFile,
+  resolveSurfaceResourceFile,
   resourceToDataUri
 };

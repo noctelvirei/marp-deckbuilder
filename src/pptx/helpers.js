@@ -3,7 +3,7 @@ import { readFileSync } from 'node:fs'
 import path from 'node:path'
 
 import { color, font, ptToIn } from '../brand.js'
-import { resolveResourceFile } from '../resources.js'
+import { resolveResourceFile, resolveSurfaceResourceFile } from '../resources.js'
 
 export function addTextBox(slide, brand, text, box, options = {}) {
   slide.addText(text || '', {
@@ -65,9 +65,33 @@ export function addResourceImage(slide, resource, resourcesDir, box, altText = '
   return true
 }
 
+export function addSurfaceResourceImage(slide, resource, resourcesDir, surface, box, altText = '') {
+  const imagePath = resolveSurfaceResourcePath(resource, resourcesDir, surface)
+  if (!imagePath) return false
+
+  const image = path.extname(imagePath).toLowerCase() === '.svg'
+    ? { data: svgToDataUri(readFileSync(imagePath, 'utf8')) }
+    : { path: imagePath }
+
+  slide.addImage({
+    ...image,
+    x: ptToIn(box.x),
+    y: ptToIn(box.y),
+    w: ptToIn(box.w),
+    h: ptToIn(box.h),
+    altText,
+  })
+  return true
+}
+
 export function resolveResourcePath(value, resourcesDir) {
   if (!value || !resourcesDir) return ''
   return resolveResourceFile(value, resourcesDir).path
+}
+
+export function resolveSurfaceResourcePath(value, resourcesDir, surface = '') {
+  if (!value || !resourcesDir) return ''
+  return resolveSurfaceResourceFile(value, resourcesDir, surface).path
 }
 
 export function svgToDataUri(svg) {

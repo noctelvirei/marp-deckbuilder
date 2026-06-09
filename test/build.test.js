@@ -8,6 +8,7 @@ import JSZip from 'jszip'
 import { loadDefinitions } from '../src/brand.js'
 import { parseDeckMarkdown } from '../src/markdown.js'
 import { renderDeckHtml } from '../src/render.js'
+import { resolveSurfaceResourceFile } from '../src/resources.js'
 import { writePptx } from '../src/pptx.js'
 
 const tmpDir = path.resolve('.tmp', 'tests')
@@ -614,12 +615,183 @@ Body copy`)
   assert.match(rendered.document, /<section[^>]*class="light"/)
   assert.match(rendered.document, /deck-customer-logo-frame deck-logo-on-dark/)
   assert.match(rendered.document, /deck-customer-logo-frame deck-logo-on-light/)
-  assert.match(rendered.document, /background:\s*rgba\(255,\s*255,\s*255,\s*0\.92\)/)
+  assert.doesNotMatch(rendered.document, /deck-customer-logo-frame\.deck-logo-on-dark\s*\{[^}]*background:\s*rgba\(255,\s*255,\s*255,\s*0\.92\)/)
   assert.match(rendered.document, /left:\s*48px/)
   assert.match(rendered.document, /left:\s*1104px/)
   assert.equal((rendered.document.match(/<img class="deck-customer-logo"/g) || []).length, 2)
   assert.doesNotMatch(rendered.document, /<p>\s*<img class="deck-customer-logo"/)
   assert.doesNotMatch(rendered.document, /resource:logos\/customer\.svg/)
+})
+
+test('customer logo backplate is opt-in for legacy assets', async () => {
+  await rm(tmpDir, { recursive: true, force: true })
+  await mkdir(path.join(tmpDir, 'resources', 'logos'), { recursive: true })
+  await writeFile(
+    path.join(tmpDir, 'resources', 'logos', 'company-dark.svg'),
+    '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 24"><text x="0" y="18">Dark</text></svg>',
+  )
+  await writeFile(
+    path.join(tmpDir, 'resources', 'logos', 'customer.svg'),
+    '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 24"><text x="0" y="18">Legacy</text></svg>',
+  )
+
+  const baseDefinitions = await loadDefinitions(new URL('../resources/definitions', import.meta.url))
+  const definitions = {
+    ...baseDefinitions,
+    brand: {
+      ...baseDefinitions.brand,
+      customerLogoBackplate: true,
+      assets: {
+        logo: {
+          dark: 'resource:logos/company-dark.svg',
+        },
+      },
+      layouts: {
+        ...baseDefinitions.brand.layouts,
+        customerLogo: { x: 828, y: 21, w: 98, h: 24 },
+      },
+    },
+  }
+  const deck = parseDeckMarkdown(`---
+customerLogo: resource:logos/customer.svg
+---
+
+# Cover`)
+  const rendered = renderDeckHtml(deck, {
+    resourcesDir: path.join(tmpDir, 'resources'),
+    definitions,
+    inlineAssets: true,
+  })
+
+  assert.match(rendered.document, /deck-customer-logo-frame\.deck-logo-on-dark\s*\{[^}]*background:\s*rgba\(255,\s*255,\s*255,\s*0\.92\)/)
+})
+
+test('surface resource resolver prefers matching logo variants across extensions', async () => {
+  await rm(tmpDir, { recursive: true, force: true })
+  await mkdir(path.join(tmpDir, 'resources', 'logos'), { recursive: true })
+  await writeFile(
+    path.join(tmpDir, 'resources', 'logos', 'customer.svg'),
+    '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 24"><text x="0" y="18">Light</text></svg>',
+  )
+  await writeFile(
+    path.join(tmpDir, 'resources', 'logos', 'customer.dark.png'),
+    'fake png content',
+  )
+
+  const resolved = resolveSurfaceResourceFile(
+    'resource:logos/customer.svg',
+    path.join(tmpDir, 'resources'),
+    'dark',
+  )
+
+  assert.equal(resolved.relativePath, 'logos/customer.dark.png')
+})
+
+test('HTML customer logo uses surface-specific sibling variants when present', async () => {
+  await rm(tmpDir, { recursive: true, force: true })
+  await mkdir(path.join(tmpDir, 'resources', 'logos'), { recursive: true })
+  await writeFile(
+    path.join(tmpDir, 'resources', 'logos', 'company-dark.svg'),
+    '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 24"><text x="0" y="18">Dark</text></svg>',
+  )
+  await writeFile(
+    path.join(tmpDir, 'resources', 'logos', 'company-light.svg'),
+    '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 24"><text x="0" y="18">Light</text></svg>',
+  )
+  await writeFile(
+    path.join(tmpDir, 'resources', 'logos', 'customer.svg'),
+    '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 24"><text x="0" y="18">Black wordmark</text></svg>',
+  )
+  await writeFile(
+    path.join(tmpDir, 'resources', 'logos', 'customer.dark.svg'),
+    '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 24"><text x="0" y="18">White wordmark</text></svg>',
+  )
+
+  const baseDefinitions = await loadDefinitions(new URL('../resources/definitions', import.meta.url))
+  const definitions = {
+    ...baseDefinitions,
+    brand: {
+      ...baseDefinitions.brand,
+      assets: {
+        logo: {
+          dark: 'resource:logos/company-dark.svg',
+          light: 'resource:logos/company-light.svg',
+        },
+      },
+      layouts: {
+        ...baseDefinitions.brand.layouts,
+        companyLogo: { x: 36, y: 21, w: 98, h: 24 },
+        customerLogo: { x: 828, y: 21, w: 98, h: 24 },
+      },
+    },
+  }
+  const deck = parseDeckMarkdown(`---
+customerLogo: resource:logos/customer.svg
+---
+
+# Dark cover
+
+---
+
+# Light content`)
+  const rendered = renderDeckHtml(deck, {
+    resourcesDir: path.join(tmpDir, 'resources'),
+    definitions,
+    inlineAssets: false,
+  })
+
+  assert.match(rendered.document, /customer\.dark\.svg/)
+  assert.match(rendered.document, /customer\.svg/)
+  assert.equal((rendered.document.match(/<span class="deck-customer-logo-frame/g) || []).length, 2)
+})
+
+test('HTML logo walls use surface-specific sibling variants when present', async () => {
+  await rm(tmpDir, { recursive: true, force: true })
+  await mkdir(path.join(tmpDir, 'resources', 'logos'), { recursive: true })
+  await writeFile(
+    path.join(tmpDir, 'resources', 'logos', 'company-dark.svg'),
+    '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 24"><text x="0" y="18">Dark</text></svg>',
+  )
+  await writeFile(
+    path.join(tmpDir, 'resources', 'logos', 'partner.svg'),
+    '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 24"><text x="0" y="18">Dark text</text></svg>',
+  )
+  await writeFile(
+    path.join(tmpDir, 'resources', 'logos', 'partner.dark.svg'),
+    '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 24"><text x="0" y="18">Light text</text></svg>',
+  )
+
+  const baseDefinitions = await loadDefinitions(new URL('../resources/definitions', import.meta.url))
+  const definitions = {
+    ...baseDefinitions,
+    brand: {
+      ...baseDefinitions.brand,
+      assets: {
+        logo: {
+          dark: 'resource:logos/company-dark.svg',
+        },
+      },
+      layouts: {
+        ...baseDefinitions.brand.layouts,
+        companyLogo: { x: 36, y: 21, w: 98, h: 24 },
+      },
+    },
+  }
+  const deck = parseDeckMarkdown(`<!-- surface: dark -->
+
+# Trusted logos
+
+<deck-logo-wall title="Trusted by enterprise leaders">
+  <deck-logo name="Partner" image="resource:logos/partner.svg"></deck-logo>
+</deck-logo-wall>`)
+  const rendered = renderDeckHtml(deck, {
+    resourcesDir: path.join(tmpDir, 'resources'),
+    definitions,
+    inlineAssets: false,
+  })
+
+  assert.match(rendered.document, /partner\.dark\.svg/)
+  assert.doesNotMatch(rendered.document, /partner\.svg["')]/)
 })
 
 test('PPTX light content slides use light fills and both logo slots', async () => {

@@ -172,10 +172,27 @@ PPTX output. For compatibility, the parser can extract
 `<img class="deck-customer-logo" ...>` from a slide, but new decks should prefer
 frontmatter metadata so the logo is not repeated on every slide.
 
-Customer logos are arbitrary third-party assets. On dark slides, the renderer
-places them on a white chip/backplate so transparent SVG/PNG logos remain
-visible without changing the customer's brand colours. Do not use CSS inversion
-filters for customer logos.
+Customer logos should be supplied as transparent PNG assets prepared for the
+chosen surface. For dark executive decks, use logo exports with light/white
+wordmark text and no white rectangle behind the logo. The renderer preserves
+customer brand colours and does not add a white chip/backplate by default. Do not
+use CSS inversion filters for customer logos. Branded forks may set
+`customerLogoBackplate: true` only for legacy assets that cannot be prepared as
+transparent PNGs.
+
+Authors should still reference one logical logo in deck frontmatter and
+`deck-logo-wall` items. If the frontmatter says
+`customerLogo: resource:logos/hsbc.png`, or a logo wall item uses that same
+resource, the renderer automatically prefers sibling surface variants when they
+exist:
+
+- dark slides: `hsbc.dark.png`, `hsbc-dark.png`, `hsbc.on-dark.png`, `hsbc-on-dark.png`
+- light slides: `hsbc.light.png`, `hsbc-light.png`, `hsbc.on-light.png`, `hsbc-on-light.png`
+
+Surface variants may use a different image extension from the canonical
+reference. For example, `resource:logos/hsbc.svg` may resolve to
+`resource:logos/hsbc.dark.png` on a dark slide. If no surface variant exists, the
+renderer falls back to the referenced asset.
 
 Recommended brand asset contract:
 

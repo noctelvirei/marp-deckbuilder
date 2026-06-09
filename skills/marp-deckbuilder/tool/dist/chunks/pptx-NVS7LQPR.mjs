@@ -9,8 +9,9 @@ import {
   require_node
 } from "./chunk-ZA7UPLW5.mjs";
 import {
-  resolveResourceFile
-} from "./chunk-QTC2235H.mjs";
+  resolveResourceFile,
+  resolveSurfaceResourceFile
+} from "./chunk-YFTCHU5C.mjs";
 import {
   __commonJS,
   __require,
@@ -15118,9 +15119,27 @@ function addResourceImage(slide, resource, resourcesDir, box, altText = "") {
   });
   return true;
 }
+function addSurfaceResourceImage(slide, resource, resourcesDir, surface, box, altText = "") {
+  const imagePath = resolveSurfaceResourcePath(resource, resourcesDir, surface);
+  if (!imagePath) return false;
+  const image = path.extname(imagePath).toLowerCase() === ".svg" ? { data: svgToDataUri(readFileSync(imagePath, "utf8")) } : { path: imagePath };
+  slide.addImage({
+    ...image,
+    x: ptToIn(box.x),
+    y: ptToIn(box.y),
+    w: ptToIn(box.w),
+    h: ptToIn(box.h),
+    altText
+  });
+  return true;
+}
 function resolveResourcePath(value, resourcesDir) {
   if (!value || !resourcesDir) return "";
   return resolveResourceFile(value, resourcesDir).path;
+}
+function resolveSurfaceResourcePath(value, resourcesDir, surface = "") {
+  if (!value || !resourcesDir) return "";
+  return resolveSurfaceResourceFile(value, resourcesDir, surface).path;
 }
 function svgToDataUri(svg) {
   const normalized = ensureSvgNamespace(svg.trim());
@@ -15542,7 +15561,7 @@ function addLogoWall(slide, model, brand, resourcesDir) {
     const x = layout.x + col * (layout.tileW + layout.gapX);
     const y = layout.y + row * (layout.tileH + layout.gapY);
     addRect(slide, brand, x, y, layout.tileW, layout.tileH, surfaceCardFill(brand, model), surfaceBorder(brand, model), 0.5);
-    const logoPath = resolveResourcePath(logo.image, resourcesDir);
+    const logoPath = resolveSurfaceResourcePath(logo.image, resourcesDir, model.surface);
     if (logoPath) {
       slide.addImage({
         path: logoPath,
@@ -15871,11 +15890,11 @@ function addSlideChrome(slide, brand, resourcesDir, kind, fallbackColor, model =
   addResourceImage(slide, logo, resourcesDir, logoBox, `${brand.name || "Brand"} logo`);
   if (model.customerLogo?.src) {
     const customerLogoBox = brand.layouts.customerLogo || { x: 828, y: 21, w: 98, h: 24 };
-    if (surface === "dark") {
+    if (surface === "dark" && customerLogoBackplateEnabled(brand)) {
       const backplate = logoBackplateBox(customerLogoBox);
       addRect(slide, brand, backplate.x, backplate.y, backplate.w, backplate.h, color(brand, "white"));
     }
-    addResourceImage(slide, model.customerLogo.src, resourcesDir, customerLogoBox, model.customerLogo.alt || "Customer logo");
+    addSurfaceResourceImage(slide, model.customerLogo.src, resourcesDir, surface, customerLogoBox, model.customerLogo.alt || "Customer logo");
   }
 }
 function isLightSurface(model) {
@@ -15895,6 +15914,12 @@ function logoBackplateBox(box, padX = 6, padY = 3) {
     w: box.w + padX * 2,
     h: box.h + padY * 2
   };
+}
+function customerLogoBackplateEnabled(brand = {}) {
+  const value = brand.customerLogoBackplate ?? brand.assets?.customerLogoBackplate ?? false;
+  return value === true || ["true", "yes", "on", "1", "chip", "backplate"].includes(
+    String(value || "").trim().toLowerCase()
+  );
 }
 function lightToken(brand, key, fallback) {
   return brand.colors?.[key] ? key : fallback;

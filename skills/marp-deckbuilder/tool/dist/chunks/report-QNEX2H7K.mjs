@@ -3,15 +3,15 @@ const require = __deckbuilderCreateRequire(import.meta.url);
 import {
   require_punycode,
   resolveResourceUrls
-} from "./chunk-N3JPSCJV.mjs";
+} from "./chunk-4N3BM5FX.mjs";
 import {
   decodeHTML,
   splitFrontmatter
-} from "./chunk-LOUXBCF6.mjs";
+} from "./chunk-YDXX2O6H.mjs";
 import "./chunk-ZA7UPLW5.mjs";
 import {
   normalizeResourceReference
-} from "./chunk-QTC2235H.mjs";
+} from "./chunk-YFTCHU5C.mjs";
 import {
   __export,
   __toESM

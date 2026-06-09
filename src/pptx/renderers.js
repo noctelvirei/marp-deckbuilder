@@ -3,8 +3,10 @@ import {
   addCell,
   addRect,
   addResourceImage,
+  addSurfaceResourceImage,
   addTextBox,
   resolveResourcePath,
+  resolveSurfaceResourcePath,
   svgToDataUri,
 } from './helpers.js'
 
@@ -461,7 +463,7 @@ export function addLogoWall(slide, model, brand, resourcesDir) {
     const x = layout.x + col * (layout.tileW + layout.gapX)
     const y = layout.y + row * (layout.tileH + layout.gapY)
     addRect(slide, brand, x, y, layout.tileW, layout.tileH, surfaceCardFill(brand, model), surfaceBorder(brand, model), 0.5)
-    const logoPath = resolveResourcePath(logo.image, resourcesDir)
+    const logoPath = resolveSurfaceResourcePath(logo.image, resourcesDir, model.surface)
     if (logoPath) {
       slide.addImage({
         path: logoPath,
@@ -833,11 +835,11 @@ function addSlideChrome(slide, brand, resourcesDir, kind, fallbackColor, model =
 
   if (model.customerLogo?.src) {
     const customerLogoBox = brand.layouts.customerLogo || { x: 828, y: 21, w: 98, h: 24 }
-    if (surface === 'dark') {
+    if (surface === 'dark' && customerLogoBackplateEnabled(brand)) {
       const backplate = logoBackplateBox(customerLogoBox)
       addRect(slide, brand, backplate.x, backplate.y, backplate.w, backplate.h, color(brand, 'white'))
     }
-    addResourceImage(slide, model.customerLogo.src, resourcesDir, customerLogoBox, model.customerLogo.alt || 'Customer logo')
+    addSurfaceResourceImage(slide, model.customerLogo.src, resourcesDir, surface, customerLogoBox, model.customerLogo.alt || 'Customer logo')
   }
 }
 
@@ -860,6 +862,13 @@ function logoBackplateBox(box, padX = 6, padY = 3) {
     w: box.w + padX * 2,
     h: box.h + padY * 2,
   }
+}
+
+function customerLogoBackplateEnabled(brand = {}) {
+  const value = brand.customerLogoBackplate ?? brand.assets?.customerLogoBackplate ?? false
+  return value === true || ['true', 'yes', 'on', '1', 'chip', 'backplate'].includes(
+    String(value || '').trim().toLowerCase(),
+  )
 }
 
 function lightToken(brand, key, fallback) {

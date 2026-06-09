@@ -2,7 +2,7 @@ import { createRequire as __deckbuilderCreateRequire } from "node:module";
 const require = __deckbuilderCreateRequire(import.meta.url);
 import {
   normalizeResourceReference
-} from "./chunk-QTC2235H.mjs";
+} from "./chunk-YFTCHU5C.mjs";
 import {
   __commonJS,
   __export,
