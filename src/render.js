@@ -3,7 +3,12 @@ import { Element } from '@marp-team/marpit'
 import { pathToFileURL } from 'node:url'
 
 import { buildMarpMarkdown } from './markdown.js'
-import { normalizeResourceReference, resolveResourceFile, resourceToDataUri } from './resources.js'
+import {
+  normalizeResourceReference,
+  resolveResourceFile,
+  resolveSurfaceResourceFile,
+  resourceToDataUri,
+} from './resources.js'
 
 export function renderDeckHtml(deck, options = {}) {
   const definitions = options.definitions
@@ -13,7 +18,7 @@ export function renderDeckHtml(deck, options = {}) {
       .filter((slide) => !shouldSkipHtml(slide))
       .map((slide) => ({
         ...slide,
-        source: prepareHtmlSource(applyHtmlBranding(slide, options.definitions?.brand)),
+        source: prepareHtmlSource(applyHtmlBranding(slide, options.definitions?.brand, options.resourcesDir)),
       })),
   }
   const marp = new Marp({
@@ -119,11 +124,11 @@ export function brandLogoCss(brand = {}) {
   pointer-events: none;
 }
 
-.deck-customer-logo-frame.deck-logo-on-dark {
+${customerLogoBackplateEnabled(brand) ? `.deck-customer-logo-frame.deck-logo-on-dark {
   padding: 4px 8px;
   background: rgba(255, 255, 255, 0.92);
   border-radius: 4px;
-}
+}` : ''}
 
 .deck-customer-logo {
   display: block;
@@ -238,15 +243,23 @@ function lightBackgroundRule(resource) {
 }`
 }
 
-function applyHtmlBranding(slide, brand = {}) {
-  const source = stripCustomerLogoHtml(applyHtmlSlideClass(slide))
+function applyHtmlBranding(slide, brand = {}, resourcesDir = 'resources') {
+  const source = rewriteSurfaceLogoImages(
+    stripCustomerLogoHtml(applyHtmlSlideClass(slide)),
+    resourcesDir,
+    slide.surface,
+  )
   const logos = []
   const companyLogo = brandLogoForSlide(brand, slideKind(slide), slide.surface)
   if (companyLogo && !/class=["'][^"']*\bdeck-brand-logo\b/i.test(source)) {
     logos.push(logoHtml(companyLogo, `${brand.name || 'Brand'} logo`, 'deck-brand-logo deck-company-logo'))
   }
   if (slide.customerLogo?.src) {
-    logos.push(customerLogoHtml(slide.customerLogo.src, slide.customerLogo.alt || 'Customer logo', slide.surface))
+    logos.push(customerLogoHtml(
+      surfaceResourceReference(slide.customerLogo.src, resourcesDir, slide.surface),
+      slide.customerLogo.alt || 'Customer logo',
+      slide.surface,
+    ))
   }
   return logos.length ? insertLogoHtml(source, logos.join('\n')) : source
 }
@@ -329,6 +342,21 @@ function customerLogoHtml(src, alt, surface = 'light') {
   return `<span class="deck-customer-logo-frame ${surfaceClass}">${logoHtml(src, alt, 'deck-customer-logo')}</span>`
 }
 
+function rewriteSurfaceLogoImages(source, resourcesDir, surface) {
+  return String(source || '').replace(
+    /(<div\b[^>]*\bclass=["'][^"']*\bdeck-logo-tile\b[^"']*["'][^>]*>\s*<img\b[^>]*\bsrc=)(["'])([^"']+)\2/gi,
+    (match, prefix, quote, src) => `${prefix}${quote}${surfaceResourceReference(src, resourcesDir, surface)}${quote}`,
+  )
+}
+
+function surfaceResourceReference(src, resourcesDir, surface) {
+  try {
+    return `resource:${resolveSurfaceResourceFile(src, resourcesDir, surface).relativePath}`
+  } catch {
+    return src
+  }
+}
+
 function slideKind(slide) {
   switch (slide.layout) {
     case 'cover':
@@ -357,6 +385,13 @@ function htmlClassForLayout(layout) {
 
 function htmlClassForSlide(slide) {
   return htmlClassForLayout(slide.layout) || slide.surface || ''
+}
+
+function customerLogoBackplateEnabled(brand = {}) {
+  const value = brand.customerLogoBackplate ?? brand.assets?.customerLogoBackplate ?? false
+  return value === true || ['true', 'yes', 'on', '1', 'chip', 'backplate'].includes(
+    String(value || '').trim().toLowerCase(),
+  )
 }
 
 export function shouldSkipHtml(slideModel) {

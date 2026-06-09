@@ -63,8 +63,23 @@ and PPTX should use image assets. HTML embeds those `resource:` assets into the
 generated file by default; PPTX inserts them into slides as native image media.
 The renderer positions the company logo using `layouts.companyLogo` (or legacy
 `layouts.logo`) and the customer logo using `layouts.customerLogo`.
-Customer logos receive a white chip/backplate automatically on dark slides so
-transparent customer SVGs remain readable without CSS filter inversion.
+Customer logos should be supplied as transparent PNGs prepared for the chosen
+surface. For dark slides, export the customer logo with light/white wordmark text
+and no white rectangle behind it. A branded fork may set
+`customerLogoBackplate: true` only for legacy assets that cannot be prepared this
+way.
+
+Deck authors still reference a single logical customer logo or logo-wall asset.
+If `customerLogo` or a `deck-logo-wall` item points to
+`resource:logos/customer.png`, the renderer checks for surface-specific siblings
+first:
+
+- dark slides: `customer.dark.png`, `customer-dark.png`, `customer.on-dark.png`, `customer-on-dark.png`
+- light slides: `customer.light.png`, `customer-light.png`, `customer.on-light.png`, `customer-on-light.png`
+
+Surface variants may use a different extension, so `customer.svg` can resolve to
+`customer.dark.png` when marketing supplies a PNG variant. If no variant exists,
+the original file is used.
 
 ```json
 {
@@ -102,8 +117,9 @@ attributes such as `surface="dark"` to choose a surface. Ordinary deck Markdown
 should not set global theme names or hand-position logos.
 
 Avoid theme CSS rules that invert `.deck-customer-logo`; customer logos should
-keep their original brand colours. The renderer handles dark-surface contrast by
-placing the customer logo on a white chip/backplate.
+keep their original brand colours. Prefer transparent PNG customer logo exports
+prepared for the target surface. The renderer does not add a white chip/backplate
+by default.
 
 Recommended optional colour tokens for light surfaces:
 

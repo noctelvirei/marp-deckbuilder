@@ -254,7 +254,12 @@ Important logo behaviour:
 - Use different company logo assets for dark and light surfaces when needed.
 - Use `assets.logo.dark` for dark surfaces and `assets.logo.light` for light surfaces.
 - Customer logos should keep their original brand colours.
-- Transparent customer SVGs on dark slides should sit on a white chip/backplate. Do not rely on CSS filter inversion.
+- Customer logos should be supplied as transparent PNGs prepared for the chosen surface.
+- For dark executive decks, use customer logo PNG exports with light/white wordmark text and no white rectangle behind the logo.
+- Authors still reference one logical logo in Markdown. This applies to `customerLogo` frontmatter and `deck-logo-wall` images. If the reference is `resource:customers/hsbc.png`, the renderer automatically prefers `customers/hsbc.dark.png`, `customers/hsbc-dark.png`, `customers/hsbc.on-dark.png`, or `customers/hsbc-on-dark.png` on dark slides when present. On light slides it similarly prefers `.light`, `-light`, `.on-light`, or `-on-light` siblings. If no surface variant exists, it falls back to the original asset.
+- Surface variants may use a different image extension from the canonical reference, so `resource:customers/hsbc.svg` can resolve to `customers/hsbc.dark.png` when marketing supplies that file.
+- Do not rely on CSS filter inversion.
+- Use `customerLogoBackplate: true` only as a legacy fallback when a customer asset cannot be prepared as a transparent PNG.
 
 Important background behaviour:
 
@@ -407,7 +412,7 @@ Avoid these:
 - Manually placing company or customer logos in normal deck Markdown.
 - Assuming every header slide must be dark and every content slide must be white.
 - Using black text on dark backgrounds or pale text on white backgrounds.
-- Using transparent customer SVGs directly on dark slides without a contrast chip/backplate.
+- Using customer logo assets that were exported for the wrong surface.
 - Using arbitrary HTML when the user needs editable PPTX.
 - Editing `tool/dist/` by hand.
 - Editing generated skill bundles instead of source files.
@@ -440,7 +445,8 @@ Customer logo missing or unreadable:
 - Check frontmatter customer logo path.
 - Check `resource:` asset exists.
 - Check `layouts.customerLogo`.
-- On dark slides, ensure renderer/customer-logo chip behaviour is active.
+- On dark slides, ensure the customer logo is a transparent PNG prepared for dark backgrounds, or add a sibling variant such as `customer.dark.png` / `customer-on-dark.png` next to the referenced asset.
+- Use `customerLogoBackplate: true` only for legacy assets that cannot be prepared cleanly.
 
 Wrong background:
 
