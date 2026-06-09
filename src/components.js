@@ -3,6 +3,11 @@ import * as cheerio from 'cheerio'
 import {
   parseChart,
   parseComparison,
+  parseExecCards,
+  parseExecMetrics,
+  parseExecRows,
+  parseExecTimeline,
+  parseExecTitle,
   parseLogoWall,
   parseNextSteps,
   parseProof,
@@ -14,6 +19,11 @@ import {
   renderCloseHtml,
   renderComparisonHtml,
   renderDividerHtml,
+  renderExecCardsHtml,
+  renderExecMetricsHtml,
+  renderExecRowsHtml,
+  renderExecTimelineHtml,
+  renderExecTitleHtml,
   renderLogoWallHtml,
   renderNextStepsHtml,
   renderProofHtml,
@@ -30,6 +40,16 @@ const knownDeckTags = new Set([
   'deck-close',
   'deck-comparison',
   'deck-divider',
+  'deck-exec-card',
+  'deck-exec-cards',
+  'deck-exec-metric',
+  'deck-exec-metrics',
+  'deck-exec-milestone',
+  'deck-exec-panel',
+  'deck-exec-row',
+  'deck-exec-rows',
+  'deck-exec-timeline',
+  'deck-exec-title',
   'deck-lane',
   'deck-logo',
   'deck-logo-wall',
@@ -47,6 +67,11 @@ const knownDeckTags = new Set([
 export {
   parseChart,
   parseComparison,
+  parseExecCards,
+  parseExecMetrics,
+  parseExecRows,
+  parseExecTimeline,
+  parseExecTitle,
   parseLogoWall,
   parseNextSteps,
   parseProof,
@@ -56,6 +81,11 @@ export {
   renderCloseHtml,
   renderComparisonHtml,
   renderDividerHtml,
+  renderExecCardsHtml,
+  renderExecMetricsHtml,
+  renderExecRowsHtml,
+  renderExecTimelineHtml,
+  renderExecTitleHtml,
   renderLogoWallHtml,
   renderNextStepsHtml,
   renderProofHtml,
@@ -128,6 +158,43 @@ export function compileDeckComponents(source, options = {}) {
     if (model.logos.length === 0) fail('deck-logo-wall must include at least one deck-logo.', context)
     components.push(model)
     logoWall.replaceWith(renderLogoWallHtml(model))
+  })
+  root('deck-exec-title').each((_, element) => {
+    const execTitle = root(element)
+    const model = parseExecTitle(execTitle)
+    if (!model.title) fail('deck-exec-title requires a title attribute or h1 child.', context)
+    components.push(model)
+    execTitle.replaceWith(renderExecTitleHtml(model))
+  })
+  root('deck-exec-rows').each((_, element) => {
+    const execRows = root(element)
+    const model = parseExecRows(root, execRows)
+    if (model.rows.length === 0) fail('deck-exec-rows must include at least one deck-exec-row.', context)
+    components.push(model)
+    execRows.replaceWith(renderExecRowsHtml(model))
+  })
+  root('deck-exec-cards').each((_, element) => {
+    const execCards = root(element)
+    const model = parseExecCards(root, execCards)
+    if (model.cards.length === 0) fail('deck-exec-cards must include at least one deck-exec-card.', context)
+    components.push(model)
+    execCards.replaceWith(renderExecCardsHtml(model))
+  })
+  root('deck-exec-timeline').each((_, element) => {
+    const execTimeline = root(element)
+    const model = parseExecTimeline(root, execTimeline)
+    if (model.items.length === 0) fail('deck-exec-timeline must include at least one deck-exec-milestone.', context)
+    components.push(model)
+    execTimeline.replaceWith(renderExecTimelineHtml(model))
+  })
+  root('deck-exec-metrics').each((_, element) => {
+    const execMetrics = root(element)
+    const model = parseExecMetrics(root, execMetrics)
+    if (model.metrics.length === 0 && model.panels.length === 0) {
+      fail('deck-exec-metrics must include at least one deck-exec-metric or deck-exec-panel.', context)
+    }
+    components.push(model)
+    execMetrics.replaceWith(renderExecMetricsHtml(model))
   })
   root('deck-divider').each((_, element) => compileDivider(root, element, components, context))
   root('deck-close').each((_, element) => compileClose(root, element, components))
@@ -306,6 +373,11 @@ function validateDeckComponentTree(root, context) {
     ['deck-row', 'deck-comparison'],
     ['deck-lane', 'deck-swimlane'],
     ['deck-logo', 'deck-logo-wall'],
+    ['deck-exec-row', 'deck-exec-rows'],
+    ['deck-exec-card', 'deck-exec-cards'],
+    ['deck-exec-milestone', 'deck-exec-timeline'],
+    ['deck-exec-metric', 'deck-exec-metrics'],
+    ['deck-exec-panel', 'deck-exec-metrics'],
   ]
 
   for (const [childTag, parentTag] of parentRules) {

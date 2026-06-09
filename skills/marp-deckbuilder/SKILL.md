@@ -20,7 +20,7 @@ The build wrapper injects Chart.js, Observable Plot, and D3 into the generated H
 1. Read the user's source material and identify the deck purpose, audience, narrative arc, and desired output.
 2. Create one presentation folder for the request. Prefer `Documents/Presentations/YYYY-MM-DD/<deck-title-slug>/` when the user has not specified a location.
 3. Draft `deck.md` in that folder using Marp-style slides separated by `---`.
-4. Use supported deck components for native PPTX output: `deck-divider`, `deck-stat-grid`, `deck-card-grid`, `deck-chart`, `deck-visual`, `deck-comparison`, `deck-swimlane`, `deck-proof`, `deck-logo-wall`, `deck-next-steps`, `deck-takeaway`, and `deck-close`.
+4. Use supported deck components for native PPTX output: `deck-divider`, `deck-stat-grid`, `deck-card-grid`, `deck-chart`, `deck-visual`, `deck-comparison`, `deck-swimlane`, `deck-proof`, `deck-logo-wall`, `deck-next-steps`, `deck-takeaway`, `deck-close`, and the executive layout components (`deck-exec-title`, `deck-exec-rows`, `deck-exec-cards`, `deck-exec-timeline`, `deck-exec-metrics`).
 5. Build the deck from this skill folder:
 
 ```bash
@@ -47,7 +47,8 @@ node scripts/build-deck.mjs <output-folder>/deck.md --out-dir <output-folder>
 - Use `deck-chart` only when the chart can be described with structured labels and values.
 - Keep using `resource:` references for brand images. The renderer embeds them in HTML and inserts them into PPTX; do not paste brand SVG source into Markdown.
 - Let the renderer own brand chrome. Do not set `marp`, `theme`, or raw company-logo HTML in `deck.md`; the build uses `brand.themeName`, `brand.assets`, and `brand.layouts`.
-- Cover, divider, and close slides are dark surfaces by default. Content slides are light surfaces by default. Use `<!-- _class: dark -->` or `<!-- _class: light -->` only when a slide intentionally breaks that default.
+- Treat slide surface as a design choice, not a layout rule. Cover, divider, and close slides default dark for compatibility; other slides default light unless frontmatter or a directive says otherwise. Use `defaultSurface: dark|light` for a whole deck, `<!-- surface: dark|light -->` for a slide, or `surface="dark|light"` on an executive component. Do not assume executive headers are dark or content pages are white.
+- Use executive layout components for CEO-style large-format slides: oversized titles, wide row stacks, large metric cards, timeline rows, side callouts, and takeaway bars. They support both dark and light surfaces with the same geometry.
 - Put customer logo metadata in frontmatter (`customerLogo` plus optional `customerName`, or `customer.logo` plus `customer.name`). The renderer places the company logo top left and customer logo top right in both HTML and PPTX.
 - Customer logos on dark surfaces get a white backplate/chip automatically. Do not try to invert customer logos with CSS filters; that breaks brand colours.
 - Keep card, swimlane, comparison, and next-step copy concise. The PPTX renderer clamps text boxes inside their filled shapes, but dense copy is still a deck-design problem and should move to a follow-up slide or speaker notes.

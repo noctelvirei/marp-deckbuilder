@@ -737,6 +737,36 @@ test('PPTX text boxes are clamped inside their filled card shapes', async () => 
   assert.doesNotMatch(slideXml, /cy="1270000"/)
 })
 
+test('writes executive layouts with independent light and dark surfaces in PPTX', async () => {
+  await rm(tmpDir, { recursive: true, force: true })
+  await mkdir(tmpDir, { recursive: true })
+
+  const definitions = await loadDefinitions(new URL('../resources/definitions', import.meta.url))
+  const deck = parseDeckMarkdown(`<deck-exec-rows surface="light" takeaway="Light surface takeaway">
+  <deck-exec-row title="Light executive row" body="Readable copy on a light card."></deck-exec-row>
+</deck-exec-rows>
+
+---
+
+<deck-exec-rows surface="dark" takeaway="Dark surface takeaway">
+  <deck-exec-row title="Dark executive row" body="Readable copy on a dark card."></deck-exec-row>
+</deck-exec-rows>`)
+  const out = path.join(tmpDir, 'exec-surfaces.pptx')
+
+  await writePptx({ deck, outputPath: out, brand: definitions.brand })
+
+  const archive = await JSZip.loadAsync(await readFile(out))
+  const lightSlideXml = await archive.file('ppt/slides/slide1.xml').async('string')
+  const darkSlideXml = await archive.file('ppt/slides/slide2.xml').async('string')
+  const lightCardFill = definitions.brand.colors.execCardLight || definitions.brand.colors.cardFillLight || 'FDFDFD'
+  const darkCardFill = definitions.brand.colors.execCard || definitions.brand.colors.execCardDark || definitions.brand.colors.cardDark || '13213D'
+
+  assert.match(lightSlideXml, new RegExp(lightCardFill))
+  assert.match(lightSlideXml, /090909/)
+  assert.match(darkSlideXml, new RegExp(darkCardFill))
+  assert.match(darkSlideXml, /FFFFFF/)
+})
+
 test('splits premium HTML slides from editable PPTX fallback slides', async () => {
   await rm(tmpDir, { recursive: true, force: true })
   await mkdir(tmpDir, { recursive: true })
