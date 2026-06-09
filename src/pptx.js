@@ -8,6 +8,11 @@ import {
   addContent,
   addCover,
   addDivider,
+  addExecCards,
+  addExecMetrics,
+  addExecRows,
+  addExecTimeline,
+  addExecTitle,
   addLogoWall,
   addNextSteps,
   addProof,
@@ -91,6 +96,16 @@ function addNativeSlide(pptx, slide, model, frontmatter, brand, resourcesDir) {
       return addNextSteps(slide, model, brand, resourcesDir)
     case 'logo-wall':
       return addLogoWall(slide, model, brand, resourcesDir)
+    case 'exec-title':
+      return addExecTitle(slide, model, brand, resourcesDir)
+    case 'exec-rows':
+      return addExecRows(slide, model, brand, resourcesDir)
+    case 'exec-cards':
+      return addExecCards(slide, model, brand, resourcesDir)
+    case 'exec-timeline':
+      return addExecTimeline(slide, model, brand, resourcesDir)
+    case 'exec-metrics':
+      return addExecMetrics(slide, model, brand, resourcesDir)
     case 'close':
       return addClose(slide, model, frontmatter, brand, resourcesDir)
     default:

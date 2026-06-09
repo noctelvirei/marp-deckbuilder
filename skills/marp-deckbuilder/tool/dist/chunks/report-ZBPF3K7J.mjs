@@ -3,11 +3,11 @@ const require = __deckbuilderCreateRequire(import.meta.url);
 import {
   require_punycode,
   resolveResourceUrls
-} from "./chunk-6SOBZHHS.mjs";
+} from "./chunk-N3JPSCJV.mjs";
 import {
   decodeHTML,
   splitFrontmatter
-} from "./chunk-DWIQUIIF.mjs";
+} from "./chunk-LOUXBCF6.mjs";
 import "./chunk-ZA7UPLW5.mjs";
 import {
   normalizeResourceReference

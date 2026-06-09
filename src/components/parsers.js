@@ -143,6 +143,188 @@ export function parseLogoWall(root, logoWall) {
   }
 }
 
+export function parseExecTitle(execTitle) {
+  return {
+    type: 'exec-title',
+    surface: normalizeSurface(execTitle.attr('surface')),
+    eyebrow: execTitle.attr('eyebrow') || execTitle.attr('kicker') || '',
+    title: execTitle.attr('title') || cleanText(execTitle.find('h1').first().text()),
+    subtitle: execTitle.attr('subtitle') || cleanText(execTitle.find('p').first().text()),
+    accent: normalizeAccent(execTitle.attr('accent') || 'pink'),
+  }
+}
+
+export function parseExecRows(root, execRows) {
+  const rows = []
+  execRows.find('deck-exec-row').each((_, rowElement) => {
+    const row = root(rowElement)
+    const title = row.attr('title') || cleanText(row.find('h3,h4').first().text())
+    const body = row.attr('body') || cleanText(row.find('p').first().text() || row.text())
+    if (title || body) {
+      rows.push({
+        label: row.attr('label') || String(rows.length + 1).padStart(2, '0'),
+        kicker: row.attr('kicker') || row.attr('eyebrow') || '',
+        title,
+        body,
+        note: row.attr('note') || '',
+        accent: normalizeAccent(row.attr('accent') || (rows.length === 0 ? 'yellow' : 'blue')),
+      })
+    }
+  })
+
+  const side = parseExecSideCallout(execRows)
+
+  return {
+    type: 'exec-rows',
+    surface: normalizeSurface(execRows.attr('surface')),
+    rows,
+    side,
+    takeaway: execRows.attr('takeaway') || '',
+    takeawayAccent: normalizeAccent(execRows.attr('takeaway-accent') || side?.accent || 'blue'),
+  }
+}
+
+export function parseExecCards(root, execCards) {
+  const cards = []
+  execCards.find('deck-exec-card').each((_, cardElement) => {
+    const card = root(cardElement)
+    const title = card.attr('title') || cleanText(card.find('h3,h4').first().text())
+    const body = card.attr('body') || cleanText(card.find('p').first().text() || card.text())
+    const metric = card.attr('metric') || card.attr('value') || ''
+    if (title || body || metric) {
+      cards.push({
+        label: card.attr('label') || String(cards.length + 1).padStart(2, '0'),
+        title,
+        metric,
+        subtitle: card.attr('subtitle') || card.attr('label-text') || '',
+        body,
+        accent: normalizeAccent(card.attr('accent') || (cards.length === 0 ? 'blue' : 'blue')),
+      })
+    }
+  })
+
+  return {
+    type: 'exec-cards',
+    surface: normalizeSurface(execCards.attr('surface')),
+    columns: clampInt(execCards.attr('columns'), 2, 4, 3),
+    variant: execCards.attr('variant') || 'cards',
+    cards,
+    intro: execCards.attr('intro') || '',
+    loopCaption: execCards.attr('loop-caption') || '',
+    target: execCards.attr('target') || '',
+    targetAccent: normalizeAccent(execCards.attr('target-accent') || 'yellow'),
+    takeaway: execCards.attr('takeaway') || '',
+    takeawayAccent: normalizeAccent(execCards.attr('takeaway-accent') || 'yellow'),
+  }
+}
+
+export function parseExecTimeline(root, execTimeline) {
+  const items = []
+  execTimeline.find('deck-exec-milestone').each((_, itemElement) => {
+    const item = root(itemElement)
+    const year = item.attr('year') || item.attr('label') || ''
+    const title = item.attr('title') || cleanText(item.find('h3,h4').first().text())
+    const body = item.attr('body') || cleanText(item.find('p').first().text() || item.text())
+    if (year || title || body) {
+      items.push({
+        year,
+        title,
+        body,
+        accent: normalizeAccent(item.attr('accent') || (items.length === 2 ? 'yellow' : 'blue')),
+      })
+    }
+  })
+
+  return {
+    type: 'exec-timeline',
+    surface: normalizeSurface(execTimeline.attr('surface')),
+    items,
+    takeaway: execTimeline.attr('takeaway') || '',
+    takeawayAccent: normalizeAccent(execTimeline.attr('takeaway-accent') || 'yellow'),
+  }
+}
+
+export function parseExecMetrics(root, execMetrics) {
+  const metrics = []
+  execMetrics.find('deck-exec-metric').each((_, metricElement) => {
+    const metric = root(metricElement)
+    const value = metric.attr('value') || cleanText(metric.find('value,strong').first().text())
+    const label = metric.attr('label') || cleanText(metric.find('label,span').first().text() || metric.text())
+    if (value || label) {
+      metrics.push({
+        value,
+        label,
+        accent: normalizeAccent(metric.attr('accent') || (metrics.length === 2 ? 'yellow' : 'blue')),
+      })
+    }
+  })
+
+  const panels = []
+  execMetrics.find('deck-exec-panel').each((_, panelElement) => {
+    const panel = root(panelElement)
+    const title = panel.attr('title') || cleanText(panel.find('h3,h4').first().text())
+    const body = panel.attr('body') || cleanText(panel.find('p').first().text() || panel.text())
+    const value = panel.attr('value') || panel.attr('metric') || ''
+    if (title || body || value) {
+      panels.push({
+        value,
+        title,
+        body,
+        note: panel.attr('note') || '',
+        accent: normalizeAccent(panel.attr('accent') || (panels.length === 1 ? 'yellow' : 'blue')),
+      })
+    }
+  })
+
+  return {
+    type: 'exec-metrics',
+    surface: normalizeSurface(execMetrics.attr('surface')),
+    metrics,
+    panels,
+    sectionTitle: execMetrics.attr('section-title') || '',
+    takeaway: execMetrics.attr('takeaway') || '',
+    takeawayAccent: normalizeAccent(execMetrics.attr('takeaway-accent') || 'blue'),
+  }
+}
+
+function parseExecSideCallout(execRows) {
+  const hasSide =
+    execRows.attr('side-title') ||
+    execRows.attr('side-value') ||
+    execRows.attr('side-body')
+  if (!hasSide) return null
+  return {
+    title: execRows.attr('side-title') || '',
+    value: execRows.attr('side-value') || '',
+    body: execRows.attr('side-body') || '',
+    accent: normalizeAccent(execRows.attr('side-accent') || 'yellow'),
+  }
+}
+
+function normalizeAccent(value = 'blue') {
+  const token = String(value || 'blue').trim()
+  const aliases = {
+    lightblue: 'lightBlue',
+    cyan: 'lightBlue',
+    pink: 'red',
+    magenta: 'red',
+  }
+  return aliases[token.toLowerCase()] || token
+}
+
+function normalizeSurface(value = '') {
+  const token = String(value || '').trim().toLowerCase()
+  if (token === 'light' || token === 'white') return 'light'
+  if (token === 'dark' || token === 'navy' || token === 'black') return 'dark'
+  return ''
+}
+
+function clampInt(value, min, max, fallback) {
+  const numeric = Number.parseInt(value || fallback, 10)
+  if (!Number.isFinite(numeric)) return fallback
+  return Math.min(max, Math.max(min, numeric))
+}
+
 function normalizeChartType(value) {
   if (value === 'line') return 'line'
   if (value === 'column') return 'bar'

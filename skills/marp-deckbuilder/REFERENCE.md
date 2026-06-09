@@ -132,11 +132,16 @@ The renderer owns theme, backgrounds, and logo placement. Do not hand-write
 company logos, customer logo positioning, global Marp theme names, or background
 CSS in `deck.md`.
 
-Surface defaults:
+Surface is independent of layout. Choose it deliberately:
 
 - cover, divider, and close slides are dark;
-- content/component slides are light;
-- `<!-- _class: dark -->` and `<!-- _class: light -->` override the default when needed.
+- content/component slides are light by default for backward compatibility;
+- `defaultSurface: dark` or `defaultSurface: light` in frontmatter sets the deck-wide default for non-cover slides;
+- `<!-- surface: dark -->` and `<!-- surface: light -->` override one slide;
+- `surface="dark"` or `surface="light"` on an executive component controls that slide.
+
+Do not encode a rule such as "dark headers, white content." The executive style
+has both dark and light versions; use the surface that matches the deck.
 
 The configured brand theme wins over any stale `theme:` value in deck
 frontmatter. Authors should usually omit `marp:` and `theme:` entirely.
@@ -221,6 +226,16 @@ Use only these structured components when you need native PPTX output:
 | `deck-proof` | one or more `deck-stat` children or proof text | `customer`, `logo`, `logo-name`, `bridge`, `source` | Proof slide |
 | `deck-logo-wall` | one or more direct `deck-logo` children | `title` | Logo grid |
 | `deck-logo` | inside `deck-logo-wall` | `name`, `image`, `src` | Logo tile, or text tile if no image is supplied |
+| `deck-exec-title` | `title` attribute or `h1` child | `eyebrow`, `subtitle`, `accent`, `surface="dark|light"` | Executive chapter/title slide |
+| `deck-exec-rows` | one or more direct `deck-exec-row` children | `side-title`, `side-value`, `side-body`, `takeaway`, `surface="dark|light"` | CEO-style row stack with optional side callout |
+| `deck-exec-row` | inside `deck-exec-rows` | `label`, `kicker`, `title`, `body`, `note`, `accent` | Large row item |
+| `deck-exec-cards` | one or more direct `deck-exec-card` children | `columns="2|3|4"`, `variant`, `intro`, `target`, `takeaway`, `surface="dark|light"` | Large card/grid/vector slide |
+| `deck-exec-card` | inside `deck-exec-cards` | `label`, `title`, `metric`, `subtitle`, `body`, `accent` | Large executive card |
+| `deck-exec-timeline` | one or more direct `deck-exec-milestone` children | `takeaway`, `surface="dark|light"` | Three-milestone timeline |
+| `deck-exec-milestone` | inside `deck-exec-timeline` | `year`, `title`, `body`, `accent` | Timeline milestone |
+| `deck-exec-metrics` | direct `deck-exec-metric` and/or `deck-exec-panel` children | `section-title`, `takeaway`, `surface="dark|light"` | Metric row plus optional panels |
+| `deck-exec-metric` | inside `deck-exec-metrics` | `value`, `label`, `accent` | Large metric tile |
+| `deck-exec-panel` | inside `deck-exec-metrics` | `value`, `title`, `body`, `note`, `accent` | Large detail panel |
 | `deck-takeaway` | `text` attribute or text body | | Takeaway bar |
 | `deck-close` | `title` attribute or `h1` child | `name`, `role` | Closing slide |
 
@@ -250,6 +265,10 @@ Parent/child rules are strict:
 - `deck-lane` must be directly inside `deck-swimlane`.
 - `deck-step` must be directly inside `deck-lane` or `deck-next-steps`.
 - `deck-logo` must be directly inside `deck-logo-wall`.
+- `deck-exec-row` must be directly inside `deck-exec-rows`.
+- `deck-exec-card` must be directly inside `deck-exec-cards`.
+- `deck-exec-milestone` must be directly inside `deck-exec-timeline`.
+- `deck-exec-metric` and `deck-exec-panel` must be directly inside `deck-exec-metrics`.
 
 ## Slide Directives
 
@@ -275,6 +294,8 @@ Other supported directives:
 <!-- _class: cover -->
 <!-- _class: light -->
 <!-- _class: dark -->
+<!-- surface: light -->
+<!-- surface: dark -->
 <!-- title: Override title -->
 <!-- subtitle: Override subtitle -->
 <!-- eyebrow: Section label -->
@@ -444,6 +465,103 @@ Images resolve against `tool/resources/`. If `image`/`src` is supplied and the
 file is missing, the build fails. If no image is supplied, the logo tile renders
 as editable text using `name`.
 
+### Executive Title
+
+Use for CEO-style chapter openers with oversized type. Set the surface
+deliberately; dark and light use the same geometry.
+
+```md
+<!-- surface: dark -->
+
+<deck-exec-title
+  eyebrow="What's next"
+  title="From momentum to plan."
+  subtitle="The growth vectors, the investment plan"
+  accent="red"
+></deck-exec-title>
+```
+
+Light version:
+
+```md
+<deck-exec-title
+  surface="light"
+  eyebrow="Investor update"
+  title="Scaling with precision."
+  subtitle="Building the AI runtime for enterprise customer journeys."
+></deck-exec-title>
+```
+
+### Executive Rows
+
+Use for the wide row-stack pattern with optional side callout and takeaway.
+Good for strategy shifts, layers, product architecture, and go-to-market
+motions.
+
+```md
+<deck-exec-rows
+  surface="dark"
+  side-title="Why now"
+  side-value="3"
+  side-body="Compounding shifts moving the company from product vendor to enterprise infrastructure."
+  takeaway="Each shift compounds the others — focus enables value, value justifies the runtime."
+  takeaway-accent="red"
+>
+  <deck-exec-row label="01" kicker="Focus" title="Enterprise-only" body="Concentrated on Tier-1 banks, telcos, and global insurers." accent="yellow" note="→ p.8"></deck-exec-row>
+  <deck-exec-row label="02" kicker="Value" title="Measurable ROI" body="Selling outcomes — completion, conversion, time-to-revenue — not seats or features." accent="yellow" note="→ p.9"></deck-exec-row>
+  <deck-exec-row label="03" kicker="Architecture" title="Runtime infrastructure" body="From point tooling to the always-on layer powering enterprise customer journeys." accent="yellow" note="→ p.10"></deck-exec-row>
+</deck-exec-rows>
+```
+
+### Executive Cards
+
+Use for three/four large cards, capability loops, and growth-vector cards. Use
+`columns="4"` for value loops, `columns="3"` for vector cards, and `columns="2"`
+for 2×2 grids.
+
+```md
+<deck-exec-cards
+  surface="light"
+  columns="3"
+  target="[Target ARR] · 2027"
+  target-accent="yellow"
+>
+  <deck-exec-card label="01" title="Expansion" metric="[NRR%]" subtitle="Net Revenue Retention" body="Existing enterprise base expands faster than churn."></deck-exec-card>
+  <deck-exec-card label="02" title="New Logos" metric="[New-logo ARR target]" body="Tier-1 wins in financial services, telco, and auto financial."></deck-exec-card>
+  <deck-exec-card label="03" title="AI Premium" metric="2×" subtitle="Price per transaction" body="AI-tier SKUs price at 2× standard Lightico."></deck-exec-card>
+</deck-exec-cards>
+```
+
+### Executive Timeline
+
+```md
+<deck-exec-timeline
+  surface="dark"
+  takeaway="Three consecutive years of disciplined growth — now compounding into AI-led acceleration."
+>
+  <deck-exec-milestone year="2023" title="Foundation" body="Strategic acquisition; shifted to enterprise-only." accent="blue"></deck-exec-milestone>
+  <deck-exec-milestone year="2024" title="Expansion" body="Created a sharp, focused enterprise program." accent="blue"></deck-exec-milestone>
+  <deck-exec-milestone year="2025" title="AI Inflection" body="Launched first AI-native solutions for risk management and fraud prevention." accent="yellow"></deck-exec-milestone>
+</deck-exec-timeline>
+```
+
+### Executive Metrics
+
+Use for top metric rows with supporting panels.
+
+```md
+<deck-exec-metrics
+  surface="dark"
+  section-title="Allocation"
+  takeaway="All four signals point to a step-change — not incremental growth."
+>
+  <deck-exec-metric value="[Deal Size Growth]" label="Average Deal Size"></deck-exec-metric>
+  <deck-exec-metric value="[2×]" label="AI Price per Transaction"></deck-exec-metric>
+  <deck-exec-panel value="[GM%]" title="Gross Margin (2026)" body="Software economics holding through AI scale-up."></deck-exec-panel>
+  <deck-exec-panel value="[AI ARR%]" title="AI Share of ARR" body="AI-tier transactions drive higher revenue per deal." accent="yellow"></deck-exec-panel>
+</deck-exec-metrics>
+```
+
 ## Generated HTML Classes
 
 The component compiler emits these stable CSS classes for theme authors:
@@ -459,6 +577,11 @@ The component compiler emits these stable CSS classes for theme authors:
 | `deck-proof` | `deck-proof`, `deck-proof-logo`, `deck-proof-context`, `deck-proof-bridge`, `deck-proof-source` |
 | `deck-next-steps` | `deck-next-steps` |
 | `deck-logo-wall` | `deck-logo-wall`, `deck-logo-grid`, `deck-logo-tile` |
+| `deck-exec-title` | `deck-exec`, `deck-exec-title`, `deck-exec-eyebrow`, `deck-exec-subtitle`, optional `deck-exec-surface-light` |
+| `deck-exec-rows` | `deck-exec`, `deck-exec-rows`, `deck-exec-row-stack`, `deck-exec-row`, `deck-exec-side`, `deck-exec-takeaway` |
+| `deck-exec-cards` | `deck-exec`, `deck-exec-cards`, `deck-exec-card-grid`, `deck-exec-card`, `deck-exec-target`, `deck-exec-takeaway` |
+| `deck-exec-timeline` | `deck-exec`, `deck-exec-timeline`, `deck-exec-timeline-line`, `deck-exec-timeline-item`, `deck-exec-takeaway` |
+| `deck-exec-metrics` | `deck-exec`, `deck-exec-metrics`, `deck-exec-metric-row`, `deck-exec-metric`, `deck-exec-panel-grid`, `deck-exec-panel`, `deck-exec-takeaway` |
 | `deck-divider` | `deck-divider`, plus slide class `deck-divider-slide` |
 | `deck-close` | `deck-close`, plus slide class `deck-close-slide` |
 | `deck-takeaway` | `takeaway` |

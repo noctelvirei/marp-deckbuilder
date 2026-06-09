@@ -49,6 +49,13 @@ When pulling fixes from the public upstream into a branded fork:
 Use `REFERENCE.md` for component syntax. Use this file only to decide where brand
 customization should live.
 
+After importing upstream changes, ask the local agent to rewrite the branded
+fork's own branding/import documentation from the upstream `README.md` and this
+`BRANDING.md`, while preserving all private business-specific requirements,
+brand names, colours, client workflow notes, and internal distribution steps.
+This keeps the branded fork aligned with the upstream renderer contract without
+overwriting private brand context.
+
 ## Optional Assets
 
 Brand backgrounds and logos should be declared in `brand.json` when both HTML
@@ -85,16 +92,20 @@ renderer falls back to the configured solid colours.
 
 ## Slide Surface Contract
 
-Cover, divider, and close slides are dark by default. Content/component slides
-are light by default. Authors may use `<!-- _class: dark -->` or
-`<!-- _class: light -->` to override a specific slide, but ordinary deck
-Markdown should not set global theme names or hand-position logos.
+Surface is a design choice, not a fixed layout rule. Branded forks should
+provide readable dark and light variants for the main deck styles, especially
+executive layouts. Cover, divider, and close slides may default dark for
+compatibility, but content/component slides can be dark or light depending on
+the story and audience. Authors may use `defaultSurface: dark|light`,
+`<!-- surface: dark|light -->`, `<!-- _class: dark|light -->`, or component
+attributes such as `surface="dark"` to choose a surface. Ordinary deck Markdown
+should not set global theme names or hand-position logos.
 
 Avoid theme CSS rules that invert `.deck-customer-logo`; customer logos should
 keep their original brand colours. The renderer handles dark-surface contrast by
 placing the customer logo on a white chip/backplate.
 
-Recommended optional colour tokens for light content pages:
+Recommended optional colour tokens for light surfaces:
 
 ```json
 {
@@ -110,6 +121,6 @@ Recommended optional colour tokens for light content pages:
 }
 ```
 
-If these tokens are absent, the renderer uses readable white-page fallbacks for
-PPTX content slides. Keep dark-page tokens such as `dark`, `body`, `muted`,
-`cardLight`, and `border` for dark surfaces.
+If these tokens are absent, the renderer uses readable white-page fallbacks.
+Keep dark-surface tokens such as `dark`, `body`, `muted`, `cardLight`, and
+`border` for dark surfaces.

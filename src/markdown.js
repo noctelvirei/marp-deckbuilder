@@ -64,14 +64,18 @@ export function splitSlides(body) {
 
 export function parseSlide(source, index, originalSource = source, components = [], frontmatter = {}) {
   const directives = extractDirectives(source)
-  const titleComponent = firstComponent(components, 'divider') || firstComponent(components, 'close')
+  const titleComponent =
+    firstComponent(components, 'divider') ||
+    firstComponent(components, 'close') ||
+    firstComponent(components, 'exec-title')
   const title = directives.title || titleComponent?.title || extractTitle(source) || `Slide ${index + 1}`
   const subtitle = directives.subtitle || titleComponent?.subtitle || extractSubtitle(source, title)
   const layout = directives.layout || inferComponentLayout(components) || inferLayout(source, index)
   const componentTakeaway = components.find((component) => component.type === 'takeaway')
   const proof = firstComponent(components, 'proof')
   const customerLogo = extractCustomerLogo(source) || frontmatterCustomerLogo(frontmatter)
-  const surface = inferSurface(layout, directives)
+  const layoutComponent = firstComponent(components, layout)
+  const surface = inferSurface(layout, directives, frontmatter, layoutComponent?.surface)
 
   return {
     index,
@@ -95,6 +99,11 @@ export function parseSlide(source, index, originalSource = source, components = 
     proof,
     nextSteps: firstComponent(components, 'next-steps'),
     logoWall: firstComponent(components, 'logo-wall'),
+    execTitle: firstComponent(components, 'exec-title'),
+    execRows: firstComponent(components, 'exec-rows'),
+    execCards: firstComponent(components, 'exec-cards'),
+    execTimeline: firstComponent(components, 'exec-timeline'),
+    execMetrics: firstComponent(components, 'exec-metrics'),
     divider: firstComponent(components, 'divider'),
     close: firstComponent(components, 'close'),
     customerLogo,
@@ -123,6 +132,11 @@ function inferLayout(source, index) {
   if (/<div[^>]+class=["'][^"']*deck-proof/i.test(source)) return 'proof'
   if (/<ol[^>]+class=["'][^"']*deck-next-steps/i.test(source)) return 'next-steps'
   if (/<div[^>]+class=["'][^"']*deck-logo-wall/i.test(source)) return 'logo-wall'
+  if (/<section[^>]+class=["'][^"']*deck-exec-title/i.test(source)) return 'exec-title'
+  if (/<div[^>]+class=["'][^"']*deck-exec-rows/i.test(source)) return 'exec-rows'
+  if (/<div[^>]+class=["'][^"']*deck-exec-cards/i.test(source)) return 'exec-cards'
+  if (/<div[^>]+class=["'][^"']*deck-exec-timeline/i.test(source)) return 'exec-timeline'
+  if (/<div[^>]+class=["'][^"']*deck-exec-metrics/i.test(source)) return 'exec-metrics'
   if (/<div[^>]+class=["'][^"']*deck-divider/i.test(source)) return 'divider'
   if (/<div[^>]+class=["'][^"']*deck-close/i.test(source)) return 'close'
   return 'content'
@@ -135,6 +149,11 @@ function inferComponentLayout(components) {
     ['proof', 'proof'],
     ['next-steps', 'next-steps'],
     ['logo-wall', 'logo-wall'],
+    ['exec-title', 'exec-title'],
+    ['exec-rows', 'exec-rows'],
+    ['exec-cards', 'exec-cards'],
+    ['exec-timeline', 'exec-timeline'],
+    ['exec-metrics', 'exec-metrics'],
     ['divider', 'divider'],
     ['close', 'close'],
     ['visual', 'visual'],
@@ -149,12 +168,31 @@ function inferComponentLayout(components) {
   return ''
 }
 
-function inferSurface(layout, directives = {}) {
+function inferSurface(layout, directives = {}, frontmatter = {}, componentSurface = '') {
+  const explicitSurface = normalizeSurface(directives.surface || directives.mode || componentSurface)
+  if (explicitSurface) return explicitSurface
+
   const classDirective = String(directives._class || directives.class || '').toLowerCase()
   if (/\blight\b/.test(classDirective)) return 'light'
   if (/\bdark\b/.test(classDirective)) return 'dark'
+
+  const defaultSurface = normalizeSurface(
+    frontmatter.defaultSurface ||
+      frontmatter.deckSurface ||
+      frontmatter.surface ||
+      frontmatter.themeSurface,
+  )
+  if (defaultSurface) return defaultSurface
+
   if (['cover', 'divider', 'close'].includes(layout)) return 'dark'
   return 'light'
+}
+
+function normalizeSurface(value = '') {
+  const token = String(value || '').trim().toLowerCase()
+  if (token === 'light' || token === 'white') return 'light'
+  if (token === 'dark' || token === 'navy' || token === 'black') return 'dark'
+  return ''
 }
 
 function firstComponent(components, type) {

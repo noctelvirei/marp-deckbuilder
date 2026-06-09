@@ -46887,6 +46887,170 @@ function parseLogoWall(root2, logoWall) {
     logos
   };
 }
+function parseExecTitle(execTitle) {
+  return {
+    type: "exec-title",
+    surface: normalizeSurface(execTitle.attr("surface")),
+    eyebrow: execTitle.attr("eyebrow") || execTitle.attr("kicker") || "",
+    title: execTitle.attr("title") || cleanText(execTitle.find("h1").first().text()),
+    subtitle: execTitle.attr("subtitle") || cleanText(execTitle.find("p").first().text()),
+    accent: normalizeAccent(execTitle.attr("accent") || "pink")
+  };
+}
+function parseExecRows(root2, execRows) {
+  const rows = [];
+  execRows.find("deck-exec-row").each((_, rowElement) => {
+    const row = root2(rowElement);
+    const title = row.attr("title") || cleanText(row.find("h3,h4").first().text());
+    const body = row.attr("body") || cleanText(row.find("p").first().text() || row.text());
+    if (title || body) {
+      rows.push({
+        label: row.attr("label") || String(rows.length + 1).padStart(2, "0"),
+        kicker: row.attr("kicker") || row.attr("eyebrow") || "",
+        title,
+        body,
+        note: row.attr("note") || "",
+        accent: normalizeAccent(row.attr("accent") || (rows.length === 0 ? "yellow" : "blue"))
+      });
+    }
+  });
+  const side = parseExecSideCallout(execRows);
+  return {
+    type: "exec-rows",
+    surface: normalizeSurface(execRows.attr("surface")),
+    rows,
+    side,
+    takeaway: execRows.attr("takeaway") || "",
+    takeawayAccent: normalizeAccent(execRows.attr("takeaway-accent") || side?.accent || "blue")
+  };
+}
+function parseExecCards(root2, execCards) {
+  const cards = [];
+  execCards.find("deck-exec-card").each((_, cardElement) => {
+    const card = root2(cardElement);
+    const title = card.attr("title") || cleanText(card.find("h3,h4").first().text());
+    const body = card.attr("body") || cleanText(card.find("p").first().text() || card.text());
+    const metric = card.attr("metric") || card.attr("value") || "";
+    if (title || body || metric) {
+      cards.push({
+        label: card.attr("label") || String(cards.length + 1).padStart(2, "0"),
+        title,
+        metric,
+        subtitle: card.attr("subtitle") || card.attr("label-text") || "",
+        body,
+        accent: normalizeAccent(card.attr("accent") || (cards.length === 0 ? "blue" : "blue"))
+      });
+    }
+  });
+  return {
+    type: "exec-cards",
+    surface: normalizeSurface(execCards.attr("surface")),
+    columns: clampInt(execCards.attr("columns"), 2, 4, 3),
+    variant: execCards.attr("variant") || "cards",
+    cards,
+    intro: execCards.attr("intro") || "",
+    loopCaption: execCards.attr("loop-caption") || "",
+    target: execCards.attr("target") || "",
+    targetAccent: normalizeAccent(execCards.attr("target-accent") || "yellow"),
+    takeaway: execCards.attr("takeaway") || "",
+    takeawayAccent: normalizeAccent(execCards.attr("takeaway-accent") || "yellow")
+  };
+}
+function parseExecTimeline(root2, execTimeline) {
+  const items = [];
+  execTimeline.find("deck-exec-milestone").each((_, itemElement) => {
+    const item = root2(itemElement);
+    const year = item.attr("year") || item.attr("label") || "";
+    const title = item.attr("title") || cleanText(item.find("h3,h4").first().text());
+    const body = item.attr("body") || cleanText(item.find("p").first().text() || item.text());
+    if (year || title || body) {
+      items.push({
+        year,
+        title,
+        body,
+        accent: normalizeAccent(item.attr("accent") || (items.length === 2 ? "yellow" : "blue"))
+      });
+    }
+  });
+  return {
+    type: "exec-timeline",
+    surface: normalizeSurface(execTimeline.attr("surface")),
+    items,
+    takeaway: execTimeline.attr("takeaway") || "",
+    takeawayAccent: normalizeAccent(execTimeline.attr("takeaway-accent") || "yellow")
+  };
+}
+function parseExecMetrics(root2, execMetrics) {
+  const metrics = [];
+  execMetrics.find("deck-exec-metric").each((_, metricElement) => {
+    const metric = root2(metricElement);
+    const value = metric.attr("value") || cleanText(metric.find("value,strong").first().text());
+    const label = metric.attr("label") || cleanText(metric.find("label,span").first().text() || metric.text());
+    if (value || label) {
+      metrics.push({
+        value,
+        label,
+        accent: normalizeAccent(metric.attr("accent") || (metrics.length === 2 ? "yellow" : "blue"))
+      });
+    }
+  });
+  const panels = [];
+  execMetrics.find("deck-exec-panel").each((_, panelElement) => {
+    const panel = root2(panelElement);
+    const title = panel.attr("title") || cleanText(panel.find("h3,h4").first().text());
+    const body = panel.attr("body") || cleanText(panel.find("p").first().text() || panel.text());
+    const value = panel.attr("value") || panel.attr("metric") || "";
+    if (title || body || value) {
+      panels.push({
+        value,
+        title,
+        body,
+        note: panel.attr("note") || "",
+        accent: normalizeAccent(panel.attr("accent") || (panels.length === 1 ? "yellow" : "blue"))
+      });
+    }
+  });
+  return {
+    type: "exec-metrics",
+    surface: normalizeSurface(execMetrics.attr("surface")),
+    metrics,
+    panels,
+    sectionTitle: execMetrics.attr("section-title") || "",
+    takeaway: execMetrics.attr("takeaway") || "",
+    takeawayAccent: normalizeAccent(execMetrics.attr("takeaway-accent") || "blue")
+  };
+}
+function parseExecSideCallout(execRows) {
+  const hasSide = execRows.attr("side-title") || execRows.attr("side-value") || execRows.attr("side-body");
+  if (!hasSide) return null;
+  return {
+    title: execRows.attr("side-title") || "",
+    value: execRows.attr("side-value") || "",
+    body: execRows.attr("side-body") || "",
+    accent: normalizeAccent(execRows.attr("side-accent") || "yellow")
+  };
+}
+function normalizeAccent(value = "blue") {
+  const token = String(value || "blue").trim();
+  const aliases2 = {
+    lightblue: "lightBlue",
+    cyan: "lightBlue",
+    pink: "red",
+    magenta: "red"
+  };
+  return aliases2[token.toLowerCase()] || token;
+}
+function normalizeSurface(value = "") {
+  const token = String(value || "").trim().toLowerCase();
+  if (token === "light" || token === "white") return "light";
+  if (token === "dark" || token === "navy" || token === "black") return "dark";
+  return "";
+}
+function clampInt(value, min, max, fallback) {
+  const numeric = Number.parseInt(value || fallback, 10);
+  if (!Number.isFinite(numeric)) return fallback;
+  return Math.min(max, Math.max(min, numeric));
+}
 function normalizeChartType(value) {
   if (value === "line") return "line";
   if (value === "column") return "bar";
@@ -46988,6 +47152,94 @@ function renderCloseHtml(close) {
   ${close.name ? `<p><strong>${escapeHtml(close.name)}</strong>${close.role ? `<br><span>${escapeHtml(close.role)}</span>` : ""}</p>` : ""}
 </div>`;
 }
+function renderExecTitleHtml(execTitle) {
+  return `<section class="deck-exec deck-exec-title ${surfaceClass(execTitle)} deck-exec-accent-${escapeAttr(execTitle.accent)}">
+  ${execTitle.eyebrow ? `<p class="deck-exec-eyebrow">${escapeHtml(execTitle.eyebrow)}</p>` : ""}
+  <h1>${escapeHtml(execTitle.title)}</h1>
+  ${execTitle.subtitle ? `<p class="deck-exec-subtitle">${escapeHtml(execTitle.subtitle)}</p>` : ""}
+</section>`;
+}
+function renderExecRowsHtml(execRows) {
+  const side = execRows.side ? `<aside class="deck-exec-side deck-exec-accent-${escapeAttr(execRows.side.accent)}">
+    ${execRows.side.title ? `<h3>${escapeHtml(execRows.side.title)}</h3>` : ""}
+    ${execRows.side.value ? `<strong>${escapeHtml(execRows.side.value)}</strong>` : ""}
+    ${execRows.side.body ? `<p>${escapeHtml(execRows.side.body)}</p>` : ""}
+  </aside>` : "";
+  return `<div class="deck-exec deck-exec-rows ${surfaceClass(execRows)}${side ? " has-side" : ""}">
+  <div class="deck-exec-row-stack">${execRows.rows.map(
+    (row) => `<article class="deck-exec-row deck-exec-accent-${escapeAttr(row.accent)}">
+    <div class="deck-exec-row-label">
+      <strong>${escapeHtml(row.label)}</strong>
+      ${row.kicker ? `<span>${escapeHtml(row.kicker)}</span>` : ""}
+    </div>
+    <div class="deck-exec-row-copy">
+      <h3>${escapeHtml(row.title)}</h3>
+      ${row.body ? `<p>${escapeHtml(row.body)}</p>` : ""}
+    </div>
+    ${row.note ? `<em>${escapeHtml(row.note)}</em>` : ""}
+  </article>`
+  ).join("\n")}</div>
+  ${side}
+  ${renderExecTakeawayHtml(execRows.takeaway, execRows.takeawayAccent)}
+</div>`;
+}
+function renderExecCardsHtml(execCards) {
+  return `<div class="deck-exec deck-exec-cards ${surfaceClass(execCards)} deck-exec-cards-${execCards.columns} deck-exec-cards-${escapeAttr(execCards.variant)}">
+  ${execCards.intro ? `<p class="deck-exec-intro">${escapeHtml(execCards.intro)}</p>` : ""}
+  <div class="deck-exec-card-grid">${execCards.cards.map(
+    (card) => `<article class="deck-exec-card deck-exec-accent-${escapeAttr(card.accent)}">
+    <strong class="deck-exec-card-label">${escapeHtml(card.label)}</strong>
+    ${card.title ? `<h3>${escapeHtml(card.title)}</h3>` : ""}
+    ${card.metric ? `<div class="deck-exec-card-metric">${escapeHtml(card.metric)}</div>` : ""}
+    ${card.subtitle ? `<span class="deck-exec-card-subtitle">${escapeHtml(card.subtitle)}</span>` : ""}
+    ${card.body ? `<p>${escapeHtml(card.body)}</p>` : ""}
+  </article>`
+  ).join("\n")}</div>
+  ${execCards.loopCaption ? `<p class="deck-exec-loop-caption">${escapeHtml(execCards.loopCaption)}</p>` : ""}
+  ${execCards.target ? `<div class="deck-exec-target deck-exec-accent-${escapeAttr(execCards.targetAccent)}">${escapeHtml(execCards.target)}</div>` : ""}
+  ${renderExecTakeawayHtml(execCards.takeaway, execCards.takeawayAccent)}
+</div>`;
+}
+function renderExecTimelineHtml(execTimeline) {
+  return `<div class="deck-exec deck-exec-timeline ${surfaceClass(execTimeline)}">
+  <div class="deck-exec-timeline-line"></div>
+  <div class="deck-exec-timeline-items">${execTimeline.items.map(
+    (item) => `<article class="deck-exec-timeline-item deck-exec-accent-${escapeAttr(item.accent)}">
+    <strong>${escapeHtml(item.year)}</strong>
+    <span></span>
+    <h3>${escapeHtml(item.title)}</h3>
+    ${item.body ? `<p>${escapeHtml(item.body)}</p>` : ""}
+  </article>`
+  ).join("\n")}</div>
+  ${renderExecTakeawayHtml(execTimeline.takeaway, execTimeline.takeawayAccent)}
+</div>`;
+}
+function renderExecMetricsHtml(execMetrics) {
+  return `<div class="deck-exec deck-exec-metrics ${surfaceClass(execMetrics)}">
+  <div class="deck-exec-metric-row">${execMetrics.metrics.map(
+    (metric) => `<article class="deck-exec-metric deck-exec-accent-${escapeAttr(metric.accent)}">
+    <strong>${escapeHtml(metric.value)}</strong>
+    <span>${escapeHtml(metric.label)}</span>
+  </article>`
+  ).join("\n")}</div>
+  ${execMetrics.sectionTitle ? `<h2>${escapeHtml(execMetrics.sectionTitle)}</h2>` : ""}
+  ${execMetrics.panels.length ? `<div class="deck-exec-panel-grid">${execMetrics.panels.map(
+    (panel) => `<article class="deck-exec-panel deck-exec-accent-${escapeAttr(panel.accent)}">
+    ${panel.value ? `<strong>${escapeHtml(panel.value)}</strong>` : ""}
+    ${panel.title ? `<h3>${escapeHtml(panel.title)}</h3>` : ""}
+    ${panel.body ? `<p>${escapeHtml(panel.body)}</p>` : ""}
+    ${panel.note ? `<em>${escapeHtml(panel.note)}</em>` : ""}
+  </article>`
+  ).join("\n")}</div>` : ""}
+  ${renderExecTakeawayHtml(execMetrics.takeaway, execMetrics.takeawayAccent)}
+</div>`;
+}
+function renderExecTakeawayHtml(text3, accent = "blue") {
+  return text3 ? `<div class="deck-exec-takeaway deck-exec-accent-${escapeAttr(accent)}">${escapeHtml(text3)}</div>` : "";
+}
+function surfaceClass(model) {
+  return model.surface ? `deck-exec-surface-${escapeAttr(model.surface)}` : "";
+}
 
 // src/components.js
 var knownDeckTags = /* @__PURE__ */ new Set([
@@ -46997,6 +47249,16 @@ var knownDeckTags = /* @__PURE__ */ new Set([
   "deck-close",
   "deck-comparison",
   "deck-divider",
+  "deck-exec-card",
+  "deck-exec-cards",
+  "deck-exec-metric",
+  "deck-exec-metrics",
+  "deck-exec-milestone",
+  "deck-exec-panel",
+  "deck-exec-row",
+  "deck-exec-rows",
+  "deck-exec-timeline",
+  "deck-exec-title",
   "deck-lane",
   "deck-logo",
   "deck-logo-wall",
@@ -47074,6 +47336,43 @@ function compileDeckComponents(source, options = {}) {
     if (model.logos.length === 0) fail("deck-logo-wall must include at least one deck-logo.", context);
     components.push(model);
     logoWall.replaceWith(renderLogoWallHtml(model));
+  });
+  root2("deck-exec-title").each((_, element) => {
+    const execTitle = root2(element);
+    const model = parseExecTitle(execTitle);
+    if (!model.title) fail("deck-exec-title requires a title attribute or h1 child.", context);
+    components.push(model);
+    execTitle.replaceWith(renderExecTitleHtml(model));
+  });
+  root2("deck-exec-rows").each((_, element) => {
+    const execRows = root2(element);
+    const model = parseExecRows(root2, execRows);
+    if (model.rows.length === 0) fail("deck-exec-rows must include at least one deck-exec-row.", context);
+    components.push(model);
+    execRows.replaceWith(renderExecRowsHtml(model));
+  });
+  root2("deck-exec-cards").each((_, element) => {
+    const execCards = root2(element);
+    const model = parseExecCards(root2, execCards);
+    if (model.cards.length === 0) fail("deck-exec-cards must include at least one deck-exec-card.", context);
+    components.push(model);
+    execCards.replaceWith(renderExecCardsHtml(model));
+  });
+  root2("deck-exec-timeline").each((_, element) => {
+    const execTimeline = root2(element);
+    const model = parseExecTimeline(root2, execTimeline);
+    if (model.items.length === 0) fail("deck-exec-timeline must include at least one deck-exec-milestone.", context);
+    components.push(model);
+    execTimeline.replaceWith(renderExecTimelineHtml(model));
+  });
+  root2("deck-exec-metrics").each((_, element) => {
+    const execMetrics = root2(element);
+    const model = parseExecMetrics(root2, execMetrics);
+    if (model.metrics.length === 0 && model.panels.length === 0) {
+      fail("deck-exec-metrics must include at least one deck-exec-metric or deck-exec-panel.", context);
+    }
+    components.push(model);
+    execMetrics.replaceWith(renderExecMetricsHtml(model));
   });
   root2("deck-divider").each((_, element) => compileDivider(root2, element, components, context));
   root2("deck-close").each((_, element) => compileClose(root2, element, components));
@@ -47227,7 +47526,12 @@ function validateDeckComponentTree(root2, context) {
     ["deck-card", "deck-card-grid"],
     ["deck-row", "deck-comparison"],
     ["deck-lane", "deck-swimlane"],
-    ["deck-logo", "deck-logo-wall"]
+    ["deck-logo", "deck-logo-wall"],
+    ["deck-exec-row", "deck-exec-rows"],
+    ["deck-exec-card", "deck-exec-cards"],
+    ["deck-exec-milestone", "deck-exec-timeline"],
+    ["deck-exec-metric", "deck-exec-metrics"],
+    ["deck-exec-panel", "deck-exec-metrics"]
   ];
   for (const [childTag, parentTag] of parentRules) {
     root2(childTag).each((_, element) => {
@@ -47328,14 +47632,15 @@ function splitSlides(body) {
 }
 function parseSlide(source, index2, originalSource = source, components = [], frontmatter = {}) {
   const directives = extractDirectives(source);
-  const titleComponent = firstComponent(components, "divider") || firstComponent(components, "close");
+  const titleComponent = firstComponent(components, "divider") || firstComponent(components, "close") || firstComponent(components, "exec-title");
   const title = directives.title || titleComponent?.title || extractTitle(source) || `Slide ${index2 + 1}`;
   const subtitle = directives.subtitle || titleComponent?.subtitle || extractSubtitle(source, title);
   const layout = directives.layout || inferComponentLayout(components) || inferLayout(source, index2);
   const componentTakeaway = components.find((component) => component.type === "takeaway");
   const proof = firstComponent(components, "proof");
   const customerLogo = extractCustomerLogo(source) || frontmatterCustomerLogo(frontmatter);
-  const surface = inferSurface(layout, directives);
+  const layoutComponent = firstComponent(components, layout);
+  const surface = inferSurface(layout, directives, frontmatter, layoutComponent?.surface);
   return {
     index: index2,
     source,
@@ -47358,6 +47663,11 @@ function parseSlide(source, index2, originalSource = source, components = [], fr
     proof,
     nextSteps: firstComponent(components, "next-steps"),
     logoWall: firstComponent(components, "logo-wall"),
+    execTitle: firstComponent(components, "exec-title"),
+    execRows: firstComponent(components, "exec-rows"),
+    execCards: firstComponent(components, "exec-cards"),
+    execTimeline: firstComponent(components, "exec-timeline"),
+    execMetrics: firstComponent(components, "exec-metrics"),
     divider: firstComponent(components, "divider"),
     close: firstComponent(components, "close"),
     customerLogo,
@@ -47384,6 +47694,11 @@ function inferLayout(source, index2) {
   if (/<div[^>]+class=["'][^"']*deck-proof/i.test(source)) return "proof";
   if (/<ol[^>]+class=["'][^"']*deck-next-steps/i.test(source)) return "next-steps";
   if (/<div[^>]+class=["'][^"']*deck-logo-wall/i.test(source)) return "logo-wall";
+  if (/<section[^>]+class=["'][^"']*deck-exec-title/i.test(source)) return "exec-title";
+  if (/<div[^>]+class=["'][^"']*deck-exec-rows/i.test(source)) return "exec-rows";
+  if (/<div[^>]+class=["'][^"']*deck-exec-cards/i.test(source)) return "exec-cards";
+  if (/<div[^>]+class=["'][^"']*deck-exec-timeline/i.test(source)) return "exec-timeline";
+  if (/<div[^>]+class=["'][^"']*deck-exec-metrics/i.test(source)) return "exec-metrics";
   if (/<div[^>]+class=["'][^"']*deck-divider/i.test(source)) return "divider";
   if (/<div[^>]+class=["'][^"']*deck-close/i.test(source)) return "close";
   return "content";
@@ -47395,6 +47710,11 @@ function inferComponentLayout(components) {
     ["proof", "proof"],
     ["next-steps", "next-steps"],
     ["logo-wall", "logo-wall"],
+    ["exec-title", "exec-title"],
+    ["exec-rows", "exec-rows"],
+    ["exec-cards", "exec-cards"],
+    ["exec-timeline", "exec-timeline"],
+    ["exec-metrics", "exec-metrics"],
     ["divider", "divider"],
     ["close", "close"],
     ["visual", "visual"],
@@ -47407,12 +47727,24 @@ function inferComponentLayout(components) {
   }
   return "";
 }
-function inferSurface(layout, directives = {}) {
+function inferSurface(layout, directives = {}, frontmatter = {}, componentSurface = "") {
+  const explicitSurface = normalizeSurface2(directives.surface || directives.mode || componentSurface);
+  if (explicitSurface) return explicitSurface;
   const classDirective = String(directives._class || directives.class || "").toLowerCase();
   if (/\blight\b/.test(classDirective)) return "light";
   if (/\bdark\b/.test(classDirective)) return "dark";
+  const defaultSurface = normalizeSurface2(
+    frontmatter.defaultSurface || frontmatter.deckSurface || frontmatter.surface || frontmatter.themeSurface
+  );
+  if (defaultSurface) return defaultSurface;
   if (["cover", "divider", "close"].includes(layout)) return "dark";
   return "light";
+}
+function normalizeSurface2(value = "") {
+  const token = String(value || "").trim().toLowerCase();
+  if (token === "light" || token === "white") return "light";
+  if (token === "dark" || token === "navy" || token === "black") return "dark";
+  return "";
 }
 function firstComponent(components, type2) {
   return components.find((component) => component.type === type2);
