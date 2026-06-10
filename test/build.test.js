@@ -954,6 +954,124 @@ test('PPTX text boxes are clamped inside their filled card shapes', async () => 
   assert.doesNotMatch(slideXml, /cy="1270000"/)
 })
 
+test('PPTX header eyebrow avoids the company logo slot', async () => {
+  await rm(tmpDir, { recursive: true, force: true })
+  await mkdir(path.join(tmpDir, 'resources', 'logos'), { recursive: true })
+  await writeFile(
+    path.join(tmpDir, 'resources', 'logos', 'company-light.svg'),
+    '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 24"><text x="0" y="18">Logo</text></svg>',
+  )
+
+  const definitions = await loadDefinitions(new URL('../resources/definitions', import.meta.url))
+  const brand = {
+    ...definitions.brand,
+    assets: {
+      logo: {
+        light: 'resource:logos/company-light.svg',
+      },
+    },
+    layouts: {
+      ...definitions.brand.layouts,
+      companyLogo: { x: 36, y: 21, w: 98, h: 24 },
+    },
+  }
+  const deck = parseDeckMarkdown(`# Cover
+
+---
+
+<!-- eyebrow: ARCHITECTURE -->
+
+# A single real-time layer connects every channel and system in the enterprise
+
+Body copy`)
+  const out = path.join(tmpDir, 'header-logo-safe.pptx')
+
+  await writePptx({
+    deck,
+    outputPath: out,
+    brand,
+    resourcesDir: path.join(tmpDir, 'resources'),
+  })
+
+  const archive = await JSZip.loadAsync(await readFile(out))
+  const slideXml = await archive.file('ppt/slides/slide2.xml').async('string')
+  const eyebrowShape = shapeXmlContaining(slideXml, 'ARCHITECTURE')
+  const eyebrowX = shapeOffset(eyebrowShape).x
+
+  assert.ok(eyebrowX >= 146 * 12700)
+})
+
+test('PPTX logo wall contains wide logos without stretching them', async () => {
+  await rm(tmpDir, { recursive: true, force: true })
+  await mkdir(path.join(tmpDir, 'resources', 'logos'), { recursive: true })
+  await writeFile(
+    path.join(tmpDir, 'resources', 'logos', 'wide.svg'),
+    '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 100"><rect width="800" height="100"/></svg>',
+  )
+
+  const definitions = await loadDefinitions(new URL('../resources/definitions', import.meta.url))
+  const deck = parseDeckMarkdown(`# Trusted logos
+
+<deck-logo-wall>
+  <deck-logo name="Wide" image="resource:logos/wide.svg"></deck-logo>
+</deck-logo-wall>`)
+  const out = path.join(tmpDir, 'logo-wall-contain.pptx')
+
+  await writePptx({
+    deck,
+    outputPath: out,
+    brand: definitions.brand,
+    resourcesDir: path.join(tmpDir, 'resources'),
+  })
+
+  const archive = await JSZip.loadAsync(await readFile(out))
+  const slideXml = await archive.file('ppt/slides/slide1.xml').async('string')
+
+  assert.doesNotMatch(slideXml, /<a:ext cx="1955800" cy="482600"\/>/)
+  assert.match(slideXml, /<a:ext cx="1955800" cy="244475"\/>/)
+})
+
+test('PPTX swimlane steps fill available lane width and keep text readable', async () => {
+  await rm(tmpDir, { recursive: true, force: true })
+  await mkdir(tmpDir, { recursive: true })
+
+  const definitions = await loadDefinitions(new URL('../resources/definitions', import.meta.url))
+  const brand = {
+    ...definitions.brand,
+    layouts: {
+      ...definitions.brand.layouts,
+      swimlane: {
+        ...definitions.brand.layouts.swimlane,
+        fills: {
+          ...definitions.brand.layouts.swimlane.fills,
+          blue: 'dark',
+        },
+      },
+    },
+  }
+  const deck = parseDeckMarkdown(`<!-- _class: light -->
+<!-- eyebrow: ARCHITECTURE -->
+
+# A single real-time layer connects every channel and system in the enterprise
+
+<deck-swimlane>
+  <deck-lane title="Initiate" color="blue">
+    <deck-step title="Trigger">Agent or digital channel triggers a Lightico session from any CRM, IVR, or web app.</deck-step>
+  </deck-lane>
+</deck-swimlane>`)
+  const out = path.join(tmpDir, 'swimlane-step-fit.pptx')
+
+  await writePptx({ deck, outputPath: out, brand })
+
+  const archive = await JSZip.loadAsync(await readFile(out))
+  const slideXml = await archive.file('ppt/slides/slide1.xml').async('string')
+  const stepShape = shapeXmlContaining(slideXml, 'Trigger')
+
+  assert.match(slideXml, /<a:ext cx="10515600" cy="/)
+  assert.match(stepShape, /<a:srgbClr val="FFFFFF"\/>/)
+  assert.doesNotMatch(stepShape, /<a:srgbClr val="090909"\/>/)
+})
+
 test('writes executive layouts with independent light and dark surfaces in PPTX', async () => {
   await rm(tmpDir, { recursive: true, force: true })
   await mkdir(tmpDir, { recursive: true })
@@ -1026,3 +1144,22 @@ test('splits premium HTML slides from editable PPTX fallback slides', async () =
 
   assert.equal(slideNames.length, 2)
 })
+
+function shapeXmlContaining(slideXml, text) {
+  const textIndex = slideXml.indexOf(text)
+  assert.notEqual(textIndex, -1, `Expected slide XML to contain "${text}"`)
+  const shapeStart = slideXml.lastIndexOf('<p:sp>', textIndex)
+  const shapeEnd = slideXml.indexOf('</p:sp>', textIndex)
+  assert.notEqual(shapeStart, -1, `Expected "${text}" to be inside a shape`)
+  assert.notEqual(shapeEnd, -1, `Expected "${text}" shape to close`)
+  return slideXml.slice(shapeStart, shapeEnd + '</p:sp>'.length)
+}
+
+function shapeOffset(shapeXml) {
+  const match = shapeXml.match(/<a:off x="(\d+)" y="(\d+)"\/>/)
+  assert.ok(match, 'Expected shape XML to include an offset')
+  return {
+    x: Number(match[1]),
+    y: Number(match[2]),
+  }
+}

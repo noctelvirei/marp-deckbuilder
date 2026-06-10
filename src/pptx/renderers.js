@@ -6,8 +6,6 @@ import {
   addSurfaceResourceImage,
   addTextBox,
   normalizePptxColors,
-  resolveResourcePath,
-  resolveSurfaceResourcePath,
   svgToDataUri,
 } from './helpers.js'
 
@@ -123,7 +121,7 @@ export function addCards(slide, model, brand, resourcesDir) {
     addRect(slide, brand, x, layout.yTop, cardW, layout.topBarHeight, color(brand, 'blue'))
     const mediaBox = cardMediaBox(cards[i], x, layout.yTop, header)
     if (mediaBox) {
-      addResourceImage(slide, cards[i].media.src, resourcesDir, mediaBox, cards[i].media.alt || cards[i].header)
+      addResourceImage(slide, cards[i].media.src, resourcesDir, mediaBox, cards[i].media.alt || cards[i].header, { fit: 'contain' })
     }
     const headerXOffset = mediaBox ? mediaBox.w + 9 : 0
     addTextBox(slide, brand, cards[i].header, {
@@ -295,36 +293,49 @@ export function addComparison(slide, model, brand, resourcesDir) {
 }
 
 export function addSwimlane(slide, model, brand, resourcesDir) {
-  addBaseHeader(slide, model, brand, resourcesDir)
+  const header = addBaseHeader(slide, model, brand, resourcesDir)
   const swimlane = model.swimlane
   if (!swimlane) return addContent(slide, model, brand, resourcesDir)
 
   const layout = brand.layouts.swimlane
-  const laneCount = Math.min(swimlane.lanes.length, layout.laneY?.length || 2)
+  const laneCount = Math.min(swimlane.lanes.length, layout.maxLanes || 4)
+  const laneGap = layout.laneGap ?? inferLaneGap(layout)
+  const contentTop = Math.max(header?.contentTop || 0, layout.laneY?.[0] || 0)
+  const contentBottom = swimlaneBottom(model, brand, layout)
+  const laneH = Math.max(
+    layout.minLaneH || 56,
+    Math.min(layout.laneH, (contentBottom - contentTop - laneGap * Math.max(0, laneCount - 1)) / Math.max(1, laneCount)),
+  )
+
   swimlane.lanes.slice(0, laneCount).forEach((lane, laneIndex) => {
-    const laneY = layout.laneY[laneIndex]
+    const laneY = contentTop + laneIndex * (laneH + laneGap)
     const fill = swimlaneFill(brand, model, layout, lane.color)
     const accent = swimlaneAccent(brand, layout, lane.color)
-    addRect(slide, brand, layout.x, laneY, layout.laneW, layout.laneH, surfaceCardFill(brand, model), surfaceBorder(brand, model), 0.5)
+    addRect(slide, brand, layout.x, laneY, layout.laneW, laneH, surfaceCardFill(brand, model), surfaceBorder(brand, model), 0.5)
     addTextBox(slide, brand, lane.title, surfaceBox(brand, model, { ...layout.label, y: laneY + layout.label.dy }, 'heading'))
 
-    const steps = lane.steps.slice(0, 5)
-    const stepW = (layout.laneW - layout.stepGap * 4 - 24) / 5
-    const stepY = laneY + layout.stepYDy
+    const steps = lane.steps.slice(0, layout.maxSteps || 5)
+    const stepCount = Math.max(1, steps.length)
+    const stepW = (layout.laneW - 24 - layout.stepGap * (stepCount - 1)) / stepCount
+    const stepY = laneY + Math.min(layout.stepYDy, Math.max(28, laneH - (layout.stepH || 74) - 12))
+    const stepH = Math.max(layout.minStepH || 36, laneY + laneH - stepY - 12)
     steps.forEach((step, stepIndex) => {
       const stepX = layout.x + 12 + stepIndex * (stepW + layout.stepGap)
-      addRect(slide, brand, stepX, stepY, stepW, layout.stepH, fill, color(brand, 'border'), 0.4)
-      addRect(slide, brand, stepX, stepY, 4, layout.stepH, accent)
+      addRect(slide, brand, stepX, stepY, stepW, stepH, fill, color(brand, 'border'), 0.4)
+      addRect(slide, brand, stepX, stepY, 4, stepH, accent)
+      const titleY = stepY + layout.stepPad + 1
+      const titleH = Math.min(22, Math.max(12, stepH - layout.stepPad * 2))
+      const bodyY = titleY + titleH + 5
       addTextBox(slide, brand, step.title, {
         ...fitBoxInsideBottom(
           {
-            ...surfaceBox(brand, model, layout.stepTitle, 'heading'),
+            ...textBoxForFill(brand, model, layout.stepTitle, fill, 'heading'),
             x: stepX + layout.stepPad,
-            y: stepY + 9,
+            y: titleY,
             w: stepW - layout.stepPad * 2,
-            h: 18,
+            h: titleH,
           },
-          stepY + layout.stepH,
+          stepY + stepH,
           8,
         ),
         fit: 'shrink',
@@ -333,13 +344,13 @@ export function addSwimlane(slide, model, brand, resourcesDir) {
         addTextBox(slide, brand, step.body, {
           ...fitBoxInsideBottom(
             {
-              ...surfaceBox(brand, model, layout.stepBody, 'body'),
+              ...textBoxForFill(brand, model, layout.stepBody, fill, 'body'),
               x: stepX + layout.stepPad,
-              y: stepY + 31,
+              y: bodyY,
               w: stepW - layout.stepPad * 2,
-              h: 34,
+              h: Math.max(12, stepY + stepH - bodyY - layout.stepPad),
             },
-            stepY + layout.stepH,
+            stepY + stepH,
             8,
           ),
           fit: 'shrink',
@@ -367,16 +378,7 @@ export function addProof(slide, model, brand, resourcesDir) {
   if (!proof) return addContent(slide, model, brand, resourcesDir)
 
   const layout = brand.layouts.proof
-  const logoPath = resolveResourcePath(proof.logo, resourcesDir)
-  if (logoPath) {
-    slide.addImage({
-      path: logoPath,
-      x: ptToIn(layout.logo.x),
-      y: ptToIn(layout.logo.y),
-      w: ptToIn(layout.logo.w),
-      h: ptToIn(layout.logo.h),
-    })
-  } else if (proof.logoName) {
+  if (!addResourceImage(slide, proof.logo, resourcesDir, layout.logo, proof.logoName || 'Proof logo', { fit: 'contain' }) && proof.logoName) {
     addRect(slide, brand, layout.logo.x, layout.logo.y, layout.logo.w, layout.logo.h, surfaceCardFill(brand, model), surfaceBorder(brand, model), 0.5)
     addTextBox(slide, brand, proof.logoName, surfaceBox(brand, model, { ...layout.logo, align: 'center', fit: 'shrink' }, 'heading'))
   }
@@ -464,16 +466,15 @@ export function addLogoWall(slide, model, brand, resourcesDir) {
     const x = layout.x + col * (layout.tileW + layout.gapX)
     const y = layout.y + row * (layout.tileH + layout.gapY)
     addRect(slide, brand, x, y, layout.tileW, layout.tileH, surfaceCardFill(brand, model), surfaceBorder(brand, model), 0.5)
-    const logoPath = resolveSurfaceResourcePath(logo.image, resourcesDir, model.surface)
-    if (logoPath) {
-      slide.addImage({
-        path: logoPath,
-        x: ptToIn(x + 18),
-        y: ptToIn(y + 10),
-        w: ptToIn(layout.tileW - 36),
-        h: ptToIn(layout.tileH - 20),
-      })
-    } else {
+    if (!addSurfaceResourceImage(
+      slide,
+      logo.image,
+      resourcesDir,
+      model.surface,
+      { x: x + 18, y: y + 10, w: layout.tileW - 36, h: layout.tileH - 20 },
+      logo.name,
+      { fit: 'contain' },
+    )) {
       addTextBox(slide, brand, logo.name, {
         ...surfaceBox(brand, model, layout.text, 'heading'),
         x: x + 12,
@@ -723,10 +724,16 @@ function estimateWrappedLines(text, box) {
 function addBaseHeader(slide, model, brand, resourcesDir) {
   addSlideChrome(slide, brand, resourcesDir, 'content', isLightSurface(model) ? 'white' : 'dark', model)
   const layout = brand.layouts.header
+  const logoBox = brand.layouts.companyLogo || brand.layouts.logo || { x: 36, y: 21, w: 98, h: 24 }
+  const titleBox = expandedTitleBox(model.title, layout.title)
+  let contentTop = titleBox.y + titleBox.h + 18
   if (model.eyebrow) {
-    addTextBox(slide, brand, model.eyebrow.toUpperCase(), surfaceBox(brand, model, layout.eyebrow, 'accent'), { margin: 0 })
+    const eyebrowBox = avoidBoxOverlap(layout.eyebrow, logoBox, 12)
+    contentTop = Math.max(contentTop, eyebrowBox.y + eyebrowBox.h + 18)
+    addTextBox(slide, brand, model.eyebrow.toUpperCase(), surfaceBox(brand, model, eyebrowBox, 'accent'), { margin: 0 })
   }
-  addTextBox(slide, brand, model.title, surfaceBox(brand, model, layout.title, 'heading'), { fit: 'shrink' })
+  addTextBox(slide, brand, model.title, surfaceBox(brand, model, titleBox, 'heading'), { fit: 'shrink' })
+  return { contentTop }
 }
 
 function addExecutiveHeader(slide, model, brand, resourcesDir) {
@@ -832,7 +839,7 @@ function addSlideChrome(slide, brand, resourcesDir, kind, fallbackColor, model =
 
   const logo = brandLogoForSurface(brand, kind, surface)
   const logoBox = brand.layouts.companyLogo || brand.layouts.logo || { x: 36, y: 21, w: 98, h: 24 }
-  addResourceImage(slide, logo, resourcesDir, logoBox, `${brand.name || 'Brand'} logo`)
+  addResourceImage(slide, logo, resourcesDir, logoBox, `${brand.name || 'Brand'} logo`, { fit: 'contain' })
 
   if (model.customerLogo?.src) {
     const customerLogoBox = brand.layouts.customerLogo || { x: 828, y: 21, w: 98, h: 24 }
@@ -840,8 +847,36 @@ function addSlideChrome(slide, brand, resourcesDir, kind, fallbackColor, model =
       const backplate = logoBackplateBox(customerLogoBox)
       addRect(slide, brand, backplate.x, backplate.y, backplate.w, backplate.h, color(brand, 'white'))
     }
-    addSurfaceResourceImage(slide, model.customerLogo.src, resourcesDir, surface, customerLogoBox, model.customerLogo.alt || 'Customer logo')
+    addSurfaceResourceImage(
+      slide,
+      model.customerLogo.src,
+      resourcesDir,
+      surface,
+      customerLogoBox,
+      model.customerLogo.alt || 'Customer logo',
+      { fit: 'contain' },
+    )
   }
+}
+
+function avoidBoxOverlap(box, reservedBox, gap = 12) {
+  if (!box || !reservedBox || !rectsOverlap(box, reservedBox)) return box
+  const right = box.x + box.w
+  const x = reservedBox.x + reservedBox.w + gap
+  return {
+    ...box,
+    x,
+    w: Math.max(24, right - x),
+  }
+}
+
+function rectsOverlap(a, b) {
+  return (
+    a.x < b.x + b.w &&
+    a.x + a.w > b.x &&
+    a.y < b.y + b.h &&
+    a.y + a.h > b.y
+  )
 }
 
 function isLightSurface(model) {
@@ -915,6 +950,27 @@ function surfaceBox(brand, model, box = {}, role = 'body') {
   }
 }
 
+function textBoxForFill(brand, model, box = {}, fill, role = 'body') {
+  const base = surfaceBox(brand, model, box, role)
+  if (isDarkColor(fill)) {
+    return {
+      ...base,
+      color: role === 'heading'
+        ? (brand.colors?.white ? 'white' : 'FFFFFF')
+        : (brand.colors?.bodyOnDark ? 'bodyOnDark' : 'C8D8F0'),
+    }
+  }
+  if (isLightColor(fill)) {
+    return {
+      ...base,
+      color: role === 'heading'
+        ? lightToken(brand, 'headingLight', '090909')
+        : lightToken(brand, 'bodyLight', '444444'),
+    }
+  }
+  return base
+}
+
 function surfaceFillToken(brand, model, current, key = 'cardFillLight', fallback = 'FDFDFD') {
   if (!isLightSurface(model)) return current
   const token = String(current || '').toLowerCase()
@@ -985,6 +1041,20 @@ function swimlaneFill(brand, model, layout, laneColor = 'blue') {
 function swimlaneAccent(brand, layout, laneColor = 'blue') {
   const configured = layout.accents?.[laneColor] || (brand.colors?.[laneColor] ? laneColor : '') || layout.accents?.blue || 'blue'
   return color(brand, configured)
+}
+
+function inferLaneGap(layout) {
+  if (layout.laneY?.length >= 2) {
+    return Math.max(10, layout.laneY[1] - layout.laneY[0] - layout.laneH)
+  }
+  return 18
+}
+
+function swimlaneBottom(model, brand, layout) {
+  if (layout.bottom) return layout.bottom
+  const takeaway = brand.layouts?.takeaway
+  if (model.takeaway && takeaway) return (model.footnote ? takeaway.footnoteY : takeaway.y) - 16
+  return brand.slide.heightPt - 42
 }
 
 function readableDarkSurfaceToken(brand, current, preferredToken, fallbackHex) {
