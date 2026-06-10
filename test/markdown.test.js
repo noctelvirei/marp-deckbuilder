@@ -78,6 +78,8 @@ paginate: true
 
 test('infers slide surfaces and customer logo chrome metadata', () => {
   const deck = parseDeckMarkdown(`---
+companyLogo: resource:logos/lightico.svg
+companyName: Lightico
 customer:
   name: HSBC
   logo: resource:logos/hsbc.svg
@@ -96,9 +98,12 @@ customer:
 Body copy`)
 
   assert.equal(deck.slides[0].surface, 'dark')
+  assert.equal(deck.slides[0].companyLogo.src, 'resource:logos/lightico.svg')
+  assert.equal(deck.slides[0].companyLogo.alt, 'Lightico')
   assert.equal(deck.slides[0].customerLogo.src, 'resource:logos/hsbc.svg')
   assert.equal(deck.slides[0].customerLogo.alt, 'HSBC')
   assert.equal(deck.slides[1].surface, 'light')
+  assert.equal(deck.slides[1].companyLogo.src, 'resource:logos/lightico.svg')
   assert.equal(deck.slides[1].customerLogo.src, 'resource:logos/inline.svg')
   assert.equal(deck.slides[1].customerLogo.alt, 'Inline customer')
 })

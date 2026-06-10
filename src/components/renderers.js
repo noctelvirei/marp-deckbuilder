@@ -165,23 +165,37 @@ export function renderExecRowsHtml(execRows) {
 }
 
 export function renderExecCardsHtml(execCards) {
-  return `<div class="deck-exec deck-exec-cards ${surfaceClass(execCards)} deck-exec-cards-${execCards.columns} deck-exec-cards-${escapeAttr(execCards.variant)}">
-  ${execCards.intro ? `<p class="deck-exec-intro">${escapeHtml(execCards.intro)}</p>` : ''}
-  <div class="deck-exec-card-grid">${execCards.cards
-    .map(
-      (card) => `<article class="deck-exec-card deck-exec-accent-${escapeAttr(card.accent)}">
-    <strong class="deck-exec-card-label">${escapeHtml(card.label)}</strong>
-    ${card.title ? `<h3>${escapeHtml(card.title)}</h3>` : ''}
-    ${card.metric ? `<div class="deck-exec-card-metric">${escapeHtml(card.metric)}</div>` : ''}
-    ${card.subtitle ? `<span class="deck-exec-card-subtitle">${escapeHtml(card.subtitle)}</span>` : ''}
-    ${card.body ? `<p>${escapeHtml(card.body)}</p>` : ''}
-  </article>`,
+  const cards = execCards.cards
+    .map((card) => {
+      const parts = [
+        `<article class="deck-exec-card deck-exec-accent-${escapeAttr(card.accent)}">`,
+        `<strong class="deck-exec-card-label">${escapeHtml(card.label)}</strong>`,
+      ]
+      if (card.title) parts.push(`<h3>${escapeHtml(card.title)}</h3>`)
+      if (card.metric) parts.push(`<div class="deck-exec-card-metric">${escapeHtml(card.metric)}</div>`)
+      if (card.subtitle) parts.push(`<span class="deck-exec-card-subtitle">${escapeHtml(card.subtitle)}</span>`)
+      if (card.body) parts.push(`<p>${escapeHtml(card.body)}</p>`)
+      parts.push('</article>')
+      return parts.join('')
+    })
+    .join('')
+
+  const parts = [
+    `<div class="deck-exec deck-exec-cards ${surfaceClass(execCards)} deck-exec-cards-${execCards.columns} deck-exec-cards-${escapeAttr(execCards.variant)}">`,
+  ]
+  if (execCards.intro) parts.push(`<p class="deck-exec-intro">${escapeHtml(execCards.intro)}</p>`)
+  parts.push(`<div class="deck-exec-card-grid">${cards}</div>`)
+  if (execCards.loopCaption) {
+    parts.push(`<p class="deck-exec-loop-caption">${escapeHtml(execCards.loopCaption)}</p>`)
+  }
+  if (execCards.target) {
+    parts.push(
+      `<div class="deck-exec-target deck-exec-accent-${escapeAttr(execCards.targetAccent)}">${escapeHtml(execCards.target)}</div>`,
     )
-    .join('\n')}</div>
-  ${execCards.loopCaption ? `<p class="deck-exec-loop-caption">${escapeHtml(execCards.loopCaption)}</p>` : ''}
-  ${execCards.target ? `<div class="deck-exec-target deck-exec-accent-${escapeAttr(execCards.targetAccent)}">${escapeHtml(execCards.target)}</div>` : ''}
-  ${renderExecTakeawayHtml(execCards.takeaway, execCards.takeawayAccent)}
-</div>`
+  }
+  parts.push(renderExecTakeawayHtml(execCards.takeaway, execCards.takeawayAccent))
+  parts.push('</div>')
+  return parts.join('')
 }
 
 export function renderExecTimelineHtml(execTimeline) {
