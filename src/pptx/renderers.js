@@ -5,6 +5,7 @@ import {
   addResourceImage,
   addSurfaceResourceImage,
   addTextBox,
+  normalizePptxColors,
   resolveResourcePath,
   resolveSurfaceResourcePath,
   svgToDataUri,
@@ -177,7 +178,7 @@ export function addChartSlide(pptx, slide, model, brand, resourcesDir) {
     },
   ]
 
-  slide.addChart(chartType, chartData, {
+  slide.addChart(chartType, chartData, normalizePptxColors(brand, {
     x: ptToIn(layout.x),
     y: ptToIn(layout.y),
     w: ptToIn(layout.w),
@@ -215,7 +216,7 @@ export function addChartSlide(pptx, slide, model, brand, resourcesDir) {
     showValAxis: true,
     showCatAxis: true,
     showLeaderLines: false,
-  })
+  }))
 
   addTakeaway(slide, model, brand)
 }
@@ -621,14 +622,14 @@ export function addExecTimeline(slide, model, brand, resourcesDir) {
     const x = xs[index]
     const accent = execAccent(item.accent, index)
     addTextBox(slide, brand, item.year, execTextBox(x, 170, 260, 30, accent, 18, 'medium', { align: 'center' }))
-    slide.addShape('ellipse', {
+    slide.addShape('ellipse', normalizePptxColors(brand, {
       x: ptToIn(x + 118),
       y: ptToIn(230),
       w: ptToIn(24),
       h: ptToIn(24),
       fill: { color: color(brand, accent) },
       line: { color: color(brand, accent), transparency: 100 },
-    })
+    }))
     addTextBox(slide, brand, item.title, execTextBox(x, 270, 260, 28, execHeadingToken(brand, model), 17, 'medium'))
     addTextBox(slide, brand, item.body, execTextBox(x, 302, 250, 75, execMutedToken(brand, model), 12, 'regular', { fit: 'shrink' }))
   })

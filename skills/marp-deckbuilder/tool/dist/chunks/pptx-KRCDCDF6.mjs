@@ -4,7 +4,7 @@ import {
   color,
   font,
   ptToIn
-} from "./chunk-PYQ7XIPE.mjs";
+} from "./chunk-EO5GTAKY.mjs";
 import {
   require_node
 } from "./chunk-ZA7UPLW5.mjs";
@@ -15068,7 +15068,7 @@ import { Buffer as Buffer2 } from "node:buffer";
 import { readFileSync } from "node:fs";
 import path from "node:path";
 function addTextBox(slide, brand, text, box, options = {}) {
-  slide.addText(text || "", {
+  slide.addText(text || "", normalizePptxColors(brand, {
     x: ptToIn(box.x),
     y: ptToIn(box.y),
     w: ptToIn(box.w),
@@ -15082,7 +15082,7 @@ function addTextBox(slide, brand, text, box, options = {}) {
     align: box.align,
     fit: box.fit,
     ...options
-  });
+  }));
 }
 function addCell(slide, brand, text, x, y, w, h, fill, textStyle) {
   addRect(slide, brand, x, y, w, h, color(brand, fill), color(brand, "border"), 0.4);
@@ -15096,14 +15096,37 @@ function addCell(slide, brand, text, x, y, w, h, fill, textStyle) {
   });
 }
 function addRect(slide, brand, x, y, w, h, fill, line, lineWidth) {
+  const fillColor = pptxColor(brand, fill);
+  const lineColor = pptxColor(brand, line);
   slide.addShape("rect", {
     x: ptToIn(x),
     y: ptToIn(y),
     w: ptToIn(w),
     h: ptToIn(h),
-    fill: { color: fill },
-    line: line ? { color: line, width: lineWidth || 0.5 } : { color: fill, transparency: 100 }
+    fill: { color: fillColor },
+    line: lineColor ? { color: lineColor, width: lineWidth || 0.5 } : { color: fillColor, transparency: 100 }
   });
+}
+function normalizePptxColors(brand, value, key = "") {
+  if (Array.isArray(value)) {
+    return value.map((item) => normalizePptxColors(brand, item, key));
+  }
+  if (!value || typeof value !== "object") {
+    return shouldNormalizeColorKey(key) ? pptxColor(brand, value) : value;
+  }
+  return Object.fromEntries(
+    Object.entries(value).map(([entryKey, entryValue]) => [
+      entryKey,
+      normalizePptxColors(brand, entryValue, entryKey)
+    ])
+  );
+}
+function pptxColor(brand, value) {
+  if (typeof value !== "string") return value;
+  return color(brand, value);
+}
+function shouldNormalizeColorKey(key) {
+  return key === "color" || /Color$/i.test(key) || key === "chartColors";
 }
 function addResourceImage(slide, resource, resourcesDir, box, altText = "") {
   const imagePath = resolveResourcePath(resource, resourcesDir);
@@ -15299,7 +15322,7 @@ function addChartSlide(pptx, slide, model, brand, resourcesDir) {
       values: model.chart.values
     }
   ];
-  slide.addChart(chartType, chartData, {
+  slide.addChart(chartType, chartData, normalizePptxColors(brand, {
     x: ptToIn(layout.x),
     y: ptToIn(layout.y),
     w: ptToIn(layout.w),
@@ -15337,7 +15360,7 @@ function addChartSlide(pptx, slide, model, brand, resourcesDir) {
     showValAxis: true,
     showCatAxis: true,
     showLeaderLines: false
-  });
+  }));
   addTakeaway(slide, model, brand);
 }
 function addVisual(slide, model, brand, resourcesDir) {
@@ -15705,14 +15728,14 @@ function addExecTimeline(slide, model, brand, resourcesDir) {
     const x = xs[index];
     const accent = execAccent(item.accent, index);
     addTextBox(slide, brand, item.year, execTextBox(x, 170, 260, 30, accent, 18, "medium", { align: "center" }));
-    slide.addShape("ellipse", {
+    slide.addShape("ellipse", normalizePptxColors(brand, {
       x: ptToIn(x + 118),
       y: ptToIn(230),
       w: ptToIn(24),
       h: ptToIn(24),
       fill: { color: color(brand, accent) },
       line: { color: color(brand, accent), transparency: 100 }
-    });
+    }));
     addTextBox(slide, brand, item.title, execTextBox(x, 270, 260, 28, execHeadingToken(brand, model), 17, "medium"));
     addTextBox(slide, brand, item.body, execTextBox(x, 302, 250, 75, execMutedToken(brand, model), 12, "regular", { fit: "shrink" }));
   });

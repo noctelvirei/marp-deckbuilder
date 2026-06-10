@@ -23,7 +23,7 @@ async function buildCommand(argv) {
     );
   }
   const [{ loadDefinitions }, { parseDeckMarkdown }] = await Promise.all([
-    import("./chunks/brand-N2HHKH3N.mjs"),
+    import("./chunks/brand-WX3MR7EQ.mjs"),
     import("./chunks/markdown-CS4NJAGR.mjs")
   ]);
   const inputPath = path.resolve(argv.input);
@@ -61,7 +61,7 @@ async function buildCommand(argv) {
     }
   }
   if (argv.pptx) {
-    const { writePptx } = await import("./chunks/pptx-NVS7LQPR.mjs");
+    const { writePptx } = await import("./chunks/pptx-KRCDCDF6.mjs");
     const pptxPath = path.resolve(argv.pptx);
     await mkdir(path.dirname(pptxPath), { recursive: true });
     await writePptx({
@@ -87,7 +87,7 @@ async function reportCommand(argv) {
     );
   }
   const [{ loadDefinitions }, { renderReportHtml }] = await Promise.all([
-    import("./chunks/brand-N2HHKH3N.mjs"),
+    import("./chunks/brand-WX3MR7EQ.mjs"),
     import("./chunks/report-QNEX2H7K.mjs")
   ]);
   const inputPath = path.resolve(argv.input);

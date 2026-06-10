@@ -6,7 +6,7 @@ import { color, font, ptToIn } from '../brand.js'
 import { resolveResourceFile, resolveSurfaceResourceFile } from '../resources.js'
 
 export function addTextBox(slide, brand, text, box, options = {}) {
-  slide.addText(text || '', {
+  slide.addText(text || '', normalizePptxColors(brand, {
     x: ptToIn(box.x),
     y: ptToIn(box.y),
     w: ptToIn(box.w),
@@ -20,7 +20,7 @@ export function addTextBox(slide, brand, text, box, options = {}) {
     align: box.align,
     fit: box.fit,
     ...options,
-  })
+  }))
 }
 
 export function addCell(slide, brand, text, x, y, w, h, fill, textStyle) {
@@ -36,14 +36,41 @@ export function addCell(slide, brand, text, x, y, w, h, fill, textStyle) {
 }
 
 export function addRect(slide, brand, x, y, w, h, fill, line, lineWidth) {
+  const fillColor = pptxColor(brand, fill)
+  const lineColor = pptxColor(brand, line)
   slide.addShape('rect', {
     x: ptToIn(x),
     y: ptToIn(y),
     w: ptToIn(w),
     h: ptToIn(h),
-    fill: { color: fill },
-    line: line ? { color: line, width: lineWidth || 0.5 } : { color: fill, transparency: 100 },
+    fill: { color: fillColor },
+    line: lineColor ? { color: lineColor, width: lineWidth || 0.5 } : { color: fillColor, transparency: 100 },
   })
+}
+
+export function normalizePptxColors(brand, value, key = '') {
+  if (Array.isArray(value)) {
+    return value.map((item) => normalizePptxColors(brand, item, key))
+  }
+  if (!value || typeof value !== 'object') {
+    return shouldNormalizeColorKey(key) ? pptxColor(brand, value) : value
+  }
+
+  return Object.fromEntries(
+    Object.entries(value).map(([entryKey, entryValue]) => [
+      entryKey,
+      normalizePptxColors(brand, entryValue, entryKey),
+    ]),
+  )
+}
+
+export function pptxColor(brand, value) {
+  if (typeof value !== 'string') return value
+  return color(brand, value)
+}
+
+function shouldNormalizeColorKey(key) {
+  return key === 'color' || /Color$/i.test(key) || key === 'chartColors'
 }
 
 export function addResourceImage(slide, resource, resourcesDir, box, altText = '') {

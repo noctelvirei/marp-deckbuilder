@@ -38,7 +38,21 @@ export function pxToIn(value, slide) {
 
 export function color(brand, keyOrHex) {
   if (!keyOrHex) return brand.colors.dark
-  return brand.colors[keyOrHex] || keyOrHex
+  if (typeof keyOrHex !== 'string') return keyOrHex
+
+  const value = keyOrHex.trim()
+  const direct = brand.colors[value]
+  if (direct) return direct
+
+  const normalizedKey = Object.keys(brand.colors || {}).find(
+    (key) => key.toLowerCase() === value.toLowerCase(),
+  )
+  if (normalizedKey) return brand.colors[normalizedKey]
+
+  const hex = value.match(/^#?([0-9a-f]{6})$/i)
+  if (hex) return hex[1].toUpperCase()
+
+  return value
 }
 
 export function font(brand, keyOrName = 'regular') {

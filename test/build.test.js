@@ -170,6 +170,51 @@ test('writes branded chart area fills into PPTX charts', async () => {
   assert.match(chartXml, /C8D8F0/)
 })
 
+test('normalizes brand colour tokens before writing PPTX XML', async () => {
+  await rm(tmpDir, { recursive: true, force: true })
+  await mkdir(tmpDir, { recursive: true })
+
+  const definitions = await loadDefinitions(new URL('../resources/definitions', import.meta.url))
+  const brand = {
+    ...definitions.brand,
+    layouts: {
+      ...definitions.brand.layouts,
+      header: {
+        ...definitions.brand.layouts.header,
+        title: {
+          ...definitions.brand.layouts.header.title,
+          color: 'lightblue',
+        },
+      },
+    },
+  }
+  const deck = parseDeckMarkdown(`# Cover
+
+---
+
+# Content title
+
+Body copy`)
+  const out = path.join(tmpDir, 'normalised-colours.pptx')
+  const warnings = []
+  const originalWarn = console.warn
+  console.warn = (...args) => warnings.push(args.join(' '))
+  try {
+    await writePptx({ deck, outputPath: out, brand })
+  } finally {
+    console.warn = originalWarn
+  }
+
+  const archive = await JSZip.loadAsync(await readFile(out))
+  const slideXml = await archive.file('ppt/slides/slide2.xml').async('string')
+
+  assert.deepEqual(
+    warnings.filter((warning) => warning.includes('not a valid scheme color')),
+    [],
+  )
+  assert.match(slideXml, /59D6FD/)
+})
+
 test('writes markdown subheadings and bullets into native PPTX content slides', async () => {
   await rm(tmpDir, { recursive: true, force: true })
   await mkdir(tmpDir, { recursive: true })
