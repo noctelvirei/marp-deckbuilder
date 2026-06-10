@@ -61,6 +61,7 @@ export function renderDeckHtml(deck, options = {}) {
     document: htmlDocument({
       html,
       css,
+      deckbuilderCss: themeCss,
       comments,
       bespokeCss: definitions.bespokeCss,
       bespokeJs: definitions.bespokeJs,
@@ -477,6 +478,7 @@ export function shouldSkipHtml(slideModel) {
 export function htmlDocument({
   html,
   css,
+  deckbuilderCss = '',
   comments = [],
   bespokeCss = '',
   bespokeJs = '',
@@ -493,6 +495,7 @@ export function htmlDocument({
   <meta name="twitter:card" content="summary">
   <title>${escapeHtml(title)}</title>
   <style>${css}</style>
+  <style data-deckbuilder-theme>${deckbuilderCss}</style>
   <style>${bespokeCss}</style>
 </head>
 <body>

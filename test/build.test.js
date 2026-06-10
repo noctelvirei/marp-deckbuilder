@@ -27,6 +27,7 @@ test('renders Marp Deckbuilder HTML', async () => {
   assert.match(rendered.document, /bespoke\.js\.LICENSE/)
   assert.match(rendered.document, /Marp Deckbuilder Demo/)
   assert.match(rendered.document, /@page/)
+  assert.match(rendered.document, /<style data-deckbuilder-theme>/)
 })
 
 test('writes editable fallback PPTX', async () => {
@@ -491,6 +492,8 @@ test('HTML component chrome constrains visuals and swimlanes inside the slide', 
 
   assert.match(rendered.document, /class="deck-swimlane deck-swimlane-3"/)
   assert.match(rendered.document, /class="deck-lane-steps deck-lane-steps-1"/)
+  assert.match(rendered.document, /<style data-deckbuilder-theme>[\s\S]*section\s*\{[\s\S]*position:\s*relative/)
+  assert.match(rendered.document, /section img\s*\{[^}]*max-width:\s*100%/)
   assert.match(rendered.document, /\.deck-visual-stage\s*\{[^}]*overflow:\s*hidden/)
   assert.match(rendered.document, /\.deck-swimlane\s*\{[^}]*max-height:/)
   assert.match(rendered.document, /\.deck-lane-steps\s*\{[^}]*grid-template-columns:\s*repeat\(auto-fit/)
@@ -744,6 +747,9 @@ Body copy`)
   })
 
   assert.match(rendered.document, /deck-brand-logo deck-company-logo/)
+  assert.match(rendered.document, /<style data-deckbuilder-theme>[\s\S]*\.deck-brand-logo,\s*[\r\n]+\.deck-company-logo\s*\{[\s\S]*position:\s*absolute/)
+  assert.match(rendered.document, /<style data-deckbuilder-theme>[\s\S]*\.deck-customer-logo-frame\s*\{[\s\S]*position:\s*absolute/)
+  assert.match(rendered.document, /<style data-deckbuilder-theme>[\s\S]*\.deck-customer-logo\s*\{[\s\S]*object-fit:\s*contain/)
   assert.match(rendered.document, /<section[^>]*class="light"/)
   assert.match(rendered.document, /deck-customer-logo-frame deck-logo-on-dark/)
   assert.match(rendered.document, /deck-customer-logo-frame deck-logo-on-light/)

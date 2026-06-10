@@ -1,14 +1,49 @@
 /* @theme deckbuilder */
 
 section {
+  position: relative;
   width: 1280px;
   height: 720px;
   box-sizing: border-box;
   padding: 72px 75px 112px;
+  overflow: hidden;
   background: #ffffff;
   color: #090909;
   font-family: "Poppins", "Aptos", "Segoe UI", sans-serif;
   letter-spacing: 0;
+}
+
+section *,
+section *::before,
+section *::after {
+  box-sizing: border-box;
+}
+
+section > svg,
+section > canvas,
+section > img,
+section > figure,
+section > div {
+  max-width: 100%;
+}
+
+section img {
+  max-width: 100%;
+  object-fit: contain;
+}
+
+section > img:not(.deck-brand-logo):not(.deck-company-logo):not(.deck-customer-logo),
+section > p > img:not(.deck-brand-logo):not(.deck-company-logo):not(.deck-customer-logo) {
+  display: block;
+  width: auto;
+  height: auto;
+  max-width: min(100%, 780px);
+  max-height: 360px;
+  object-fit: contain;
+}
+
+section > p:has(> img) {
+  margin: 0;
 }
 
 section.cover {
@@ -109,6 +144,8 @@ li {
   display: grid;
   gap: 19px;
   margin-top: 38px;
+  max-width: 100%;
+  overflow: hidden;
 }
 
 .card-grid.three {
@@ -121,10 +158,12 @@ li {
 
 .card-grid article {
   min-height: 320px;
+  min-width: 0;
   padding: 24px 22px;
   border: 1px solid #dedede;
   border-top: 5px solid #0f82f5;
   background: #fdfdfd;
+  overflow: hidden;
 }
 
 .card-grid h2 {
@@ -158,6 +197,8 @@ li {
   padding: 24px 26px 22px;
   border: 1px solid #dedede;
   background: #fdfdfd;
+  max-width: 100%;
+  overflow: hidden;
 }
 
 .deck-chart figcaption {
@@ -200,6 +241,8 @@ li {
 
 .deck-visual {
   margin: 18px 0 0;
+  max-width: 100%;
+  overflow: hidden;
 }
 
 .deck-visual figcaption {
@@ -211,19 +254,23 @@ li {
 
 .deck-visual-stage {
   display: grid;
-  height: 400px;
+  height: 360px;
   min-height: 0;
   place-items: center;
-  overflow: visible;
+  overflow: hidden;
   border: 0;
   background: transparent;
 }
 
-.deck-visual-stage svg {
+.deck-visual-stage svg,
+.deck-visual-stage canvas,
+.deck-visual-stage img {
   display: block;
   width: 100%;
   height: 100%;
-  max-height: none;
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
 }
 
 .deck-visual-caption {
@@ -279,38 +326,84 @@ li {
 
 .deck-swimlane {
   display: grid;
-  gap: 26px;
-  margin-top: 28px;
+  gap: 18px;
+  grid-auto-rows: minmax(0, 1fr);
+  max-height: 420px;
+  margin-top: 24px;
+  overflow: hidden;
+}
+
+.deck-swimlane-3 {
+  gap: 12px;
+  max-height: 408px;
 }
 
 .deck-lane {
-  padding: 18px 20px;
+  min-height: 0;
+  padding: 14px 18px;
   border: 1px solid #dedede;
   background: #fdfdfd;
+  overflow: hidden;
 }
 
 .deck-lane h2 {
-  margin-bottom: 16px;
-  font-size: 18px;
+  margin-bottom: 10px;
+  font-size: 16px;
 }
 
 .deck-lane-steps {
   display: grid;
-  grid-template-columns: repeat(5, 1fr);
-  gap: 10px;
+  grid-template-columns: repeat(auto-fit, minmax(156px, 1fr));
+  gap: 8px;
   align-items: stretch;
+  min-height: 0;
 }
 
 .deck-lane-steps article {
-  min-height: 86px;
-  padding: 14px 12px;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+  padding: 10px 12px;
   border-left: 4px solid #0f82f5;
   background: #e8f4fe;
+  overflow: hidden;
+}
+
+.deck-lane-blue .deck-lane-steps article {
+  border-left-color: #0f82f5;
+  background: #e8f4fe;
+}
+
+.deck-lane-lightBlue .deck-lane-steps article,
+.deck-lane-cyan .deck-lane-steps article {
+  border-left-color: #59d6fd;
+  background: #e9f9ff;
 }
 
 .deck-lane-purple .deck-lane-steps article {
   border-left-color: #5143d5;
   background: #f0edfe;
+}
+
+.deck-lane-green .deck-lane-steps article {
+  border-left-color: #66cc8e;
+  background: #ecf9f1;
+}
+
+.deck-lane-orange .deck-lane-steps article {
+  border-left-color: #f9935b;
+  background: #fff3ea;
+}
+
+.deck-lane-red .deck-lane-steps article {
+  border-left-color: #fc5161;
+  background: #fff0f2;
+}
+
+.deck-lane-yellow .deck-lane-steps article {
+  border-left-color: #fbc546;
+  background: #fff8df;
 }
 
 .deck-lane-steps h3 {
@@ -320,8 +413,36 @@ li {
 
 .deck-lane-steps p {
   margin: 0;
+  font-size: 11px;
+  line-height: 1.25;
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+}
+
+.deck-swimlane-3 .deck-lane {
+  padding: 10px 14px;
+}
+
+.deck-swimlane-3 .deck-lane h2 {
+  margin-bottom: 6px;
+  font-size: 14px;
+}
+
+.deck-swimlane-3 .deck-lane-steps article {
+  padding: 8px 10px;
+}
+
+.deck-swimlane-3 .deck-lane-steps h3 {
+  margin-bottom: 4px;
   font-size: 12px;
-  line-height: 1.3;
+}
+
+.deck-swimlane-3 .deck-lane-steps p {
+  font-size: 10px;
+  line-height: 1.22;
+  -webkit-line-clamp: 2;
 }
 
 .deck-arrow {
@@ -341,8 +462,12 @@ li {
 }
 
 .deck-proof-logo img {
+  display: block;
+  width: 100%;
+  height: 100%;
   max-width: 170px;
   max-height: 56px;
+  object-fit: contain;
 }
 
 .deck-proof-context {
@@ -442,8 +567,556 @@ li {
 }
 
 .deck-logo-tile img {
+  display: block;
+  width: 100%;
+  height: 100%;
   max-width: 150px;
   max-height: 46px;
+  object-fit: contain;
+}
+
+.deck-exec {
+  color: #ffffff;
+  min-width: 0;
+  min-height: 0;
+}
+
+.deck-exec h1,
+.deck-exec h2,
+.deck-exec h3,
+.deck-exec p {
+  margin: 0;
+}
+
+.deck-exec-eyebrow {
+  color: #4fa8e8;
+  font-size: 26px;
+  font-weight: 600;
+  letter-spacing: .04em;
+  text-transform: uppercase;
+}
+
+.deck-exec-subtitle,
+.deck-exec p {
+  color: #c9d2e8;
+}
+
+.deck-exec-title {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  align-content: center;
+  padding: 0 44px;
+  overflow: hidden;
+}
+
+.deck-exec-title .deck-exec-eyebrow {
+  margin-bottom: 10px;
+  color: #e94b7b;
+  font-size: 26px;
+}
+
+.deck-exec-title h1 {
+  max-width: 860px;
+  color: #ffffff;
+  font-family: "Poppins Light", "Poppins", "Aptos", sans-serif;
+  font-size: 78px;
+  font-weight: 300;
+  line-height: 1.04;
+}
+
+.deck-exec-title .deck-exec-subtitle {
+  max-width: 860px;
+  margin-top: 28px;
+  color: #c9d2e8;
+  font-size: 30px;
+  line-height: 1.18;
+}
+
+.deck-exec-rows,
+.deck-exec-cards,
+.deck-exec-timeline,
+.deck-exec-metrics {
+  position: absolute;
+  left: 48px;
+  right: 48px;
+  top: 178px;
+  bottom: 34px;
+}
+
+.deck-exec-row-stack {
+  display: grid;
+  gap: 23px;
+  grid-auto-rows: minmax(0, 1fr);
+  width: calc(100% - 202px);
+  height: 100%;
+  min-height: 0;
+}
+
+.deck-exec-rows:not(.has-side) .deck-exec-row-stack {
+  width: 100%;
+}
+
+.deck-exec-row {
+  position: relative;
+  display: grid;
+  grid-template-columns: 135px minmax(0, 1fr) 88px;
+  min-height: 101px;
+  min-width: 0;
+  padding: 18px 28px 16px 34px;
+  border-left: 8px solid #4fa8e8;
+  background: #13213d;
+  overflow: hidden;
+}
+
+.deck-exec-row-label strong {
+  display: block;
+  color: #f5b946;
+  font-size: 19px;
+  line-height: 1;
+}
+
+.deck-exec-row-label span {
+  display: block;
+  margin-top: 12px;
+  color: #8a95a8;
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: .03em;
+  text-transform: uppercase;
+}
+
+.deck-exec-row-copy h3 {
+  color: #ffffff;
+  font-size: 26px;
+  font-weight: 700;
+  line-height: 1.1;
+}
+
+.deck-exec-row-copy p {
+  margin-top: 10px;
+  color: #8a95a8;
+  font-size: 20px;
+  line-height: 1.25;
+}
+
+.deck-exec-row em {
+  align-self: center;
+  color: #e94b7b;
+  font-size: 18px;
+  font-style: italic;
+}
+
+.deck-exec-side {
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 178px;
+  min-height: 341px;
+  padding: 32px 28px;
+  border-left: 6px solid #f5b946;
+  background: #13213d;
+  overflow: hidden;
+}
+
+.deck-exec-side h3 {
+  color: #f5b946;
+  font-size: 18px;
+  font-weight: 700;
+  letter-spacing: .04em;
+  text-transform: uppercase;
+}
+
+.deck-exec-side strong {
+  display: block;
+  margin: 36px 0 30px;
+  color: #f5b946;
+  font-size: 74px;
+  line-height: 1;
+}
+
+.deck-exec-side p {
+  color: #c9d2e8;
+  font-size: 24px;
+  line-height: 1.25;
+}
+
+.deck-exec-takeaway {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  min-height: 67px;
+  padding: 18px 30px;
+  border-left: 8px solid #4fa8e8;
+  background: #13213d;
+  color: #ffffff;
+  font-size: 26px;
+  font-style: italic;
+  line-height: 1.2;
+}
+
+.deck-exec-card-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 28px;
+  min-height: 0;
+}
+
+.deck-exec-cards-2 .deck-exec-card-grid {
+  grid-template-columns: repeat(2, 1fr);
+}
+
+.deck-exec-cards-4 .deck-exec-card-grid {
+  grid-template-columns: repeat(4, 1fr);
+  gap: 30px;
+}
+
+.deck-exec-card {
+  position: relative;
+  min-height: 220px;
+  min-width: 0;
+  padding: 26px 36px;
+  border-left: 7px solid #4fa8e8;
+  background: #13213d;
+  overflow: hidden;
+}
+
+.deck-exec-cards-4 .deck-exec-card {
+  min-height: 280px;
+  text-align: center;
+}
+
+.deck-exec-card-label {
+  display: block;
+  color: #4fa8e8;
+  font-size: 21px;
+  line-height: 1;
+}
+
+.deck-exec-card h3 {
+  margin-top: 20px;
+  color: #ffffff;
+  font-size: 30px;
+  font-weight: 700;
+  line-height: 1.1;
+}
+
+.deck-exec-card-metric {
+  margin-top: 18px;
+  color: #f5b946;
+  font-size: 52px;
+  font-weight: 700;
+  line-height: .95;
+}
+
+.deck-exec-card-subtitle {
+  display: block;
+  margin-top: 12px;
+  color: #8a95a8;
+  font-size: 17px;
+}
+
+.deck-exec-card p {
+  margin-top: 16px;
+  color: #c9d2e8;
+  font-size: 20px;
+  line-height: 1.25;
+}
+
+.deck-exec-intro,
+.deck-exec-loop-caption {
+  margin: 0 0 28px;
+  color: #c9d2e8;
+  font-size: 24px;
+  text-align: center;
+}
+
+.deck-exec-target {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 28px;
+  min-height: 80px;
+  padding: 24px 28px;
+  background: #f5b946;
+  color: #0a0f1a;
+  font-size: 46px;
+  font-weight: 800;
+}
+
+.deck-exec-timeline-line {
+  position: absolute;
+  left: 72px;
+  right: 42px;
+  top: 126px;
+  height: 3px;
+  background: #4fa8e8;
+}
+
+.deck-exec-timeline-items {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 28px;
+}
+
+.deck-exec-timeline-item {
+  position: relative;
+  padding-top: 10px;
+}
+
+.deck-exec-timeline-item strong {
+  display: block;
+  color: #4fa8e8;
+  font-size: 34px;
+  line-height: 1;
+}
+
+.deck-exec-timeline-item span {
+  display: block;
+  width: 32px;
+  height: 32px;
+  margin: 96px auto 58px;
+  border-radius: 50%;
+  background: #4fa8e8;
+}
+
+.deck-exec-timeline-item h3 {
+  color: #ffffff;
+  font-size: 30px;
+  font-weight: 700;
+}
+
+.deck-exec-timeline-item p {
+  margin-top: 22px;
+  color: #8a95a8;
+  font-size: 24px;
+  line-height: 1.24;
+}
+
+.deck-exec-metric-row {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 32px;
+}
+
+.deck-exec-metric {
+  min-height: 120px;
+  padding: 24px 30px;
+  border-left: 7px solid #4fa8e8;
+  background: #13213d;
+}
+
+.deck-exec-metric strong {
+  display: block;
+  color: #ffffff;
+  font-size: 58px;
+  line-height: .95;
+}
+
+.deck-exec-metric span {
+  display: block;
+  margin-top: 24px;
+  color: #8a95a8;
+  font-size: 21px;
+}
+
+.deck-exec-metrics h2 {
+  margin: 42px 0 24px;
+  color: #4fa8e8;
+  font-size: 20px;
+  letter-spacing: .05em;
+  text-transform: uppercase;
+}
+
+.deck-exec-panel-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 32px;
+}
+
+.deck-exec-panel {
+  min-height: 174px;
+  padding: 32px 36px;
+  border-left: 7px solid #4fa8e8;
+  background: #13213d;
+}
+
+.deck-exec-panel strong {
+  display: block;
+  float: left;
+  width: 170px;
+  color: #4fa8e8;
+  font-size: 58px;
+  line-height: .95;
+}
+
+.deck-exec-panel h3 {
+  color: #ffffff;
+  font-size: 29px;
+  font-weight: 700;
+}
+
+.deck-exec-panel p {
+  margin-top: 18px;
+  color: #8a95a8;
+  font-size: 22px;
+  line-height: 1.25;
+}
+
+.deck-exec-panel em {
+  display: block;
+  clear: both;
+  margin-top: 34px;
+  color: #ffffff;
+  font-size: 18px;
+}
+
+.deck-exec-accent-yellow,
+.deck-exec-accent-yellow .deck-exec-card-label,
+.deck-exec-accent-yellow .deck-exec-card-metric,
+.deck-exec-accent-yellow.deck-exec-metric strong,
+.deck-exec-accent-yellow.deck-exec-panel strong,
+.deck-exec-accent-yellow.deck-exec-timeline-item strong {
+  color: #f5b946;
+  border-color: #f5b946;
+}
+
+.deck-exec-accent-red,
+.deck-exec-accent-red .deck-exec-card-label,
+.deck-exec-accent-red .deck-exec-card-metric,
+.deck-exec-accent-red.deck-exec-metric strong,
+.deck-exec-accent-red.deck-exec-panel strong,
+.deck-exec-accent-red.deck-exec-timeline-item strong {
+  color: #e94b7b;
+  border-color: #e94b7b;
+}
+
+.deck-exec-accent-lightBlue,
+.deck-exec-accent-lightBlue .deck-exec-card-label,
+.deck-exec-accent-lightBlue .deck-exec-card-metric,
+.deck-exec-accent-lightBlue.deck-exec-metric strong,
+.deck-exec-accent-lightBlue.deck-exec-panel strong,
+.deck-exec-accent-lightBlue.deck-exec-timeline-item strong {
+  color: #59d6fd;
+  border-color: #59d6fd;
+}
+
+section.light .deck-exec,
+.deck-exec-surface-light {
+  color: #090909;
+}
+
+section.light .deck-exec-subtitle,
+section.light .deck-exec p,
+section.light .deck-exec-intro,
+section.light .deck-exec-loop-caption,
+.deck-exec-surface-light .deck-exec-subtitle,
+.deck-exec-surface-light p,
+.deck-exec-surface-light .deck-exec-intro,
+.deck-exec-surface-light .deck-exec-loop-caption {
+  color: #444444;
+}
+
+section.light .deck-exec-title h1,
+section.light .deck-exec-row-copy h3,
+section.light .deck-exec-card h3,
+section.light .deck-exec-timeline-item h3,
+section.light .deck-exec-metric strong,
+section.light .deck-exec-panel h3,
+section.light .deck-exec-panel em,
+section.light .deck-exec-takeaway,
+.deck-exec-surface-light.deck-exec-title h1,
+.deck-exec-surface-light .deck-exec-row-copy h3,
+.deck-exec-surface-light .deck-exec-card h3,
+.deck-exec-surface-light .deck-exec-timeline-item h3,
+.deck-exec-surface-light .deck-exec-metric strong,
+.deck-exec-surface-light .deck-exec-panel h3,
+.deck-exec-surface-light .deck-exec-panel em,
+.deck-exec-surface-light .deck-exec-takeaway {
+  color: #090909;
+}
+
+section.light .deck-exec-row,
+section.light .deck-exec-side,
+section.light .deck-exec-card,
+section.light .deck-exec-takeaway,
+section.light .deck-exec-metric,
+section.light .deck-exec-panel,
+.deck-exec-surface-light .deck-exec-row,
+.deck-exec-surface-light .deck-exec-side,
+.deck-exec-surface-light .deck-exec-card,
+.deck-exec-surface-light .deck-exec-takeaway,
+.deck-exec-surface-light .deck-exec-metric,
+.deck-exec-surface-light .deck-exec-panel {
+  background: #fdfdfd;
+}
+
+section.light .deck-exec-row-copy p,
+section.light .deck-exec-row-label span,
+section.light .deck-exec-card-subtitle,
+section.light .deck-exec-card p,
+section.light .deck-exec-timeline-item p,
+section.light .deck-exec-metric span,
+section.light .deck-exec-panel p,
+section.light .deck-exec-side p,
+.deck-exec-surface-light .deck-exec-row-copy p,
+.deck-exec-surface-light .deck-exec-row-label span,
+.deck-exec-surface-light .deck-exec-card-subtitle,
+.deck-exec-surface-light .deck-exec-card p,
+.deck-exec-surface-light .deck-exec-timeline-item p,
+.deck-exec-surface-light .deck-exec-metric span,
+.deck-exec-surface-light .deck-exec-panel p,
+.deck-exec-surface-light .deck-exec-side p {
+  color: #666666;
+}
+
+section.light .deck-exec-accent-yellow,
+section.light .deck-exec-accent-yellow .deck-exec-card-label,
+section.light .deck-exec-accent-yellow .deck-exec-card-metric,
+section.light .deck-exec-accent-yellow.deck-exec-metric strong,
+section.light .deck-exec-accent-yellow.deck-exec-panel strong,
+section.light .deck-exec-accent-yellow.deck-exec-timeline-item strong,
+.deck-exec-surface-light .deck-exec-accent-yellow,
+.deck-exec-surface-light .deck-exec-accent-yellow .deck-exec-card-label,
+.deck-exec-surface-light .deck-exec-accent-yellow .deck-exec-card-metric,
+.deck-exec-surface-light .deck-exec-accent-yellow.deck-exec-metric strong,
+.deck-exec-surface-light .deck-exec-accent-yellow.deck-exec-panel strong,
+.deck-exec-surface-light .deck-exec-accent-yellow.deck-exec-timeline-item strong {
+  color: #f5b946;
+  border-color: #f5b946;
+}
+
+section.light .deck-exec-accent-red,
+section.light .deck-exec-accent-red .deck-exec-card-label,
+section.light .deck-exec-accent-red .deck-exec-card-metric,
+section.light .deck-exec-accent-red.deck-exec-metric strong,
+section.light .deck-exec-accent-red.deck-exec-panel strong,
+section.light .deck-exec-accent-red.deck-exec-timeline-item strong,
+.deck-exec-surface-light .deck-exec-accent-red,
+.deck-exec-surface-light .deck-exec-accent-red .deck-exec-card-label,
+.deck-exec-surface-light .deck-exec-accent-red .deck-exec-card-metric,
+.deck-exec-surface-light .deck-exec-accent-red.deck-exec-metric strong,
+.deck-exec-surface-light .deck-exec-accent-red.deck-exec-panel strong,
+.deck-exec-surface-light .deck-exec-accent-red.deck-exec-timeline-item strong {
+  color: #e94b7b;
+  border-color: #e94b7b;
+}
+
+section.light .deck-exec-accent-lightBlue,
+section.light .deck-exec-accent-lightBlue .deck-exec-card-label,
+section.light .deck-exec-accent-lightBlue .deck-exec-card-metric,
+section.light .deck-exec-accent-lightBlue.deck-exec-metric strong,
+section.light .deck-exec-accent-lightBlue.deck-exec-panel strong,
+section.light .deck-exec-accent-lightBlue.deck-exec-timeline-item strong,
+.deck-exec-surface-light .deck-exec-accent-lightBlue,
+.deck-exec-surface-light .deck-exec-accent-lightBlue .deck-exec-card-label,
+.deck-exec-surface-light .deck-exec-accent-lightBlue .deck-exec-card-metric,
+.deck-exec-surface-light .deck-exec-accent-lightBlue.deck-exec-metric strong,
+.deck-exec-surface-light .deck-exec-accent-lightBlue.deck-exec-panel strong,
+.deck-exec-surface-light .deck-exec-accent-lightBlue.deck-exec-timeline-item strong {
+  color: #59d6fd;
+  border-color: #59d6fd;
 }
 
 .deck-divider,

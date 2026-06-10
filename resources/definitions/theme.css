@@ -1,6 +1,7 @@
 /* @theme deckbuilder */
 
 section {
+  position: relative;
   width: 1280px;
   height: 720px;
   box-sizing: border-box;
@@ -27,6 +28,7 @@ section > div {
 }
 
 section img {
+  max-width: 100%;
   object-fit: contain;
 }
 
