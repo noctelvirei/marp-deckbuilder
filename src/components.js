@@ -136,6 +136,7 @@ export function compileDeckComponents(source, options = {}) {
         fail(`deck-lane "${lane.title}" must include at least one deck-step.`, context)
       }
     }
+    validateSwimlaneCopy(model, context)
     components.push(model)
     swimlane.replaceWith(renderSwimlaneHtml(model))
   })
@@ -163,6 +164,7 @@ export function compileDeckComponents(source, options = {}) {
     const execTitle = root(element)
     const model = parseExecTitle(execTitle)
     if (!model.title) fail('deck-exec-title requires a title attribute or h1 child.', context)
+    validateExecTitleCopy(model, context)
     components.push(model)
     execTitle.replaceWith(renderExecTitleHtml(model))
   })
@@ -170,6 +172,7 @@ export function compileDeckComponents(source, options = {}) {
     const execRows = root(element)
     const model = parseExecRows(root, execRows)
     if (model.rows.length === 0) fail('deck-exec-rows must include at least one deck-exec-row.', context)
+    validateExecRowsCopy(model, context)
     components.push(model)
     execRows.replaceWith(renderExecRowsHtml(model))
   })
@@ -177,6 +180,7 @@ export function compileDeckComponents(source, options = {}) {
     const execCards = root(element)
     const model = parseExecCards(root, execCards)
     if (model.cards.length === 0) fail('deck-exec-cards must include at least one deck-exec-card.', context)
+    validateExecCardsCopy(model, context)
     components.push(model)
     execCards.replaceWith(renderExecCardsHtml(model))
   })
@@ -416,6 +420,183 @@ function validateChart(chart, context) {
   if (chart.values.some((value) => !Number.isFinite(value))) {
     fail('deck-chart values must all be numeric.', context)
   }
+}
+
+function validateExecTitleCopy(model, context) {
+  assertCopyFits({
+    component: 'deck-exec-title',
+    field: 'title',
+    text: model.title,
+    maxChars: 42,
+    maxLines: 2,
+    charsPerLine: 22,
+    context,
+  })
+  if (model.subtitle) {
+    assertCopyFits({
+      component: 'deck-exec-title',
+      field: 'subtitle',
+      text: model.subtitle,
+      maxChars: 110,
+      maxLines: 2,
+      charsPerLine: 58,
+      context,
+    })
+  }
+}
+
+function validateExecRowsCopy(model, context) {
+  model.rows.forEach((row, index) => {
+    const label = `deck-exec-row[${index + 1}]`
+    assertCopyFits({
+      component: 'deck-exec-rows',
+      field: `${label}.title`,
+      text: row.title,
+      maxChars: 28,
+      maxLines: 1,
+      charsPerLine: 28,
+      context,
+    })
+    if (row.body) {
+      assertCopyFits({
+        component: 'deck-exec-rows',
+        field: `${label}.body`,
+        text: row.body,
+        maxChars: 105,
+        maxLines: 2,
+        charsPerLine: 58,
+        context,
+      })
+    }
+    if (row.note) {
+      assertCopyFits({
+        component: 'deck-exec-rows',
+        field: `${label}.note`,
+        text: row.note,
+        maxChars: 16,
+        maxLines: 1,
+        charsPerLine: 16,
+        context,
+      })
+    }
+  })
+
+  if (model.side) {
+    if (model.side.value) {
+      assertCopyFits({
+        component: 'deck-exec-rows',
+        field: 'side-value',
+        text: model.side.value,
+        maxChars: 8,
+        maxLines: 1,
+        charsPerLine: 8,
+        context,
+      })
+    }
+    if (model.side.body) {
+      assertCopyFits({
+        component: 'deck-exec-rows',
+        field: 'side-body',
+        text: model.side.body,
+        maxChars: 62,
+        maxLines: 4,
+        charsPerLine: 18,
+        context,
+      })
+    }
+  }
+}
+
+function validateExecCardsCopy(model, context) {
+  const columns = model.columns || 3
+  const titleChars = columns === 4 ? 22 : 30
+  const metricChars = columns === 4 ? 10 : 14
+  const bodyChars = columns === 4 ? 82 : 100
+
+  model.cards.forEach((card, index) => {
+    const label = `deck-exec-card[${index + 1}]`
+    if (card.title) {
+      assertCopyFits({
+        component: 'deck-exec-cards',
+        field: `${label}.title`,
+        text: card.title,
+        maxChars: titleChars,
+        maxLines: 2,
+        charsPerLine: columns === 4 ? 15 : 22,
+        context,
+      })
+    }
+    if (card.metric) {
+      assertCopyFits({
+        component: 'deck-exec-cards',
+        field: `${label}.metric`,
+        text: card.metric,
+        maxChars: metricChars,
+        maxLines: 1,
+        charsPerLine: metricChars,
+        context,
+      })
+    }
+    if (card.body) {
+      assertCopyFits({
+        component: 'deck-exec-cards',
+        field: `${label}.body`,
+        text: card.body,
+        maxChars: bodyChars,
+        maxLines: columns === 4 ? 4 : 3,
+        charsPerLine: columns === 4 ? 26 : 42,
+        context,
+      })
+    }
+  })
+}
+
+function validateSwimlaneCopy(model, context) {
+  model.lanes.forEach((lane, laneIndex) => {
+    const stepCount = Math.max(1, lane.steps.length)
+    const bodyChars = stepCount >= 4 ? 78 : 96
+    lane.steps.forEach((step, stepIndex) => {
+      const label = `deck-lane[${laneIndex + 1}].deck-step[${stepIndex + 1}]`
+      assertCopyFits({
+        component: 'deck-swimlane',
+        field: `${label}.title`,
+        text: step.title,
+        maxChars: 22,
+        maxLines: 1,
+        charsPerLine: 22,
+        context,
+      })
+      if (step.body) {
+        assertCopyFits({
+          component: 'deck-swimlane',
+          field: `${label}.body`,
+          text: step.body,
+          maxChars: bodyChars,
+          maxLines: 3,
+          charsPerLine: stepCount >= 4 ? 28 : 38,
+          context,
+        })
+      }
+    })
+  })
+}
+
+function assertCopyFits({ component, field, text, maxChars, maxLines, charsPerLine, context }) {
+  const normalized = cleanText(text)
+  if (!normalized) return
+  const lines = estimateCopyLines(normalized, charsPerLine)
+  if (normalized.length <= maxChars && lines <= maxLines) return
+
+  fail(
+    `Keep <${component}>; shorten ${field} to fit this component (${normalized.length}/${maxChars} chars, ${lines}/${maxLines} estimated line(s)). Do not switch component type; reduce words or split the idea across another slide.`,
+    context,
+  )
+}
+
+function estimateCopyLines(text, charsPerLine) {
+  return String(text || '')
+    .split(/\r?\n/)
+    .reduce((total, line) => total + Math.max(1, Math.ceil(line.trim().length / Math.max(8, charsPerLine))), 0)
 }
 
 function componentContext(options = {}) {

@@ -73,6 +73,7 @@ export function parseSlide(source, index, originalSource = source, components = 
   const layout = directives.layout || inferComponentLayout(components) || inferLayout(source, index)
   const componentTakeaway = components.find((component) => component.type === 'takeaway')
   const proof = firstComponent(components, 'proof')
+  const companyLogo = extractCompanyLogo(source) || frontmatterCompanyLogo(frontmatter)
   const customerLogo = extractCustomerLogo(source) || frontmatterCustomerLogo(frontmatter)
   const layoutComponent = firstComponent(components, layout)
   const surface = inferSurface(layout, directives, frontmatter, layoutComponent?.surface)
@@ -106,6 +107,7 @@ export function parseSlide(source, index, originalSource = source, components = 
     execMetrics: firstComponent(components, 'exec-metrics'),
     divider: firstComponent(components, 'divider'),
     close: firstComponent(components, 'close'),
+    companyLogo,
     customerLogo,
     paragraphs: extractParagraphs(source, title),
     bullets: extractBullets(source),
@@ -256,6 +258,27 @@ function extractCustomerLogo(source) {
   return {
     src,
     alt: firstMatch(attrs, /\balt=["']([^"']*)["']/i) || 'Customer logo',
+  }
+}
+
+function extractCompanyLogo(source) {
+  const img = String(source || '').match(/<img\b([^>]*\bclass=["'][^"']*\bdeck-(?:brand|company)-logo\b[^"']*["'][^>]*)>/i)
+  if (!img) return null
+  const attrs = img[1]
+  const src = firstMatch(attrs, /\bsrc=["']([^"']+)["']/i)
+  if (!src) return null
+  return {
+    src,
+    alt: firstMatch(attrs, /\balt=["']([^"']*)["']/i) || 'Company logo',
+  }
+}
+
+function frontmatterCompanyLogo(frontmatter = {}) {
+  const value = frontmatter.companyLogo || frontmatter.brandLogo || frontmatter.company?.logo || frontmatter.company?.logoSrc
+  if (!value) return null
+  return {
+    src: String(value),
+    alt: frontmatter.companyName || frontmatter.company?.name || frontmatter.brandName || 'Company logo',
   }
 }
 

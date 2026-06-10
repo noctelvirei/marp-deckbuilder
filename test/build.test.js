@@ -244,6 +244,35 @@ test('writes markdown subheadings and bullets into native PPTX content slides', 
   assert.match(slideXml, /Skills are repeatable workflows/)
 })
 
+test('rejects executive title copy that cannot fit the executive title layout', () => {
+  assert.throws(
+    () => parseDeckMarkdown(`# Cover
+
+---
+
+<deck-exec-title
+  title="Real-time completion, built for regulated enterprise."
+  subtitle="Lightico orchestrates consent, identity, documents, and signature into a single in-conversation experience across voice, digital, or branch."
+></deck-exec-title>`),
+    /Keep <deck-exec-title>; shorten title/,
+  )
+})
+
+test('rejects executive row copy that would overlap inside fixed row cards', () => {
+  assert.throws(
+    () => parseDeckMarkdown(`# Cover
+
+---
+
+# Roadmap
+
+<deck-exec-rows surface="light">
+  <deck-exec-row label="01" kicker="Capture" title="Collect everything in one session" body="Identity, consent, documents, and payment captured in a single in-session flow with no portal redirect and no follow-up call."></deck-exec-row>
+</deck-exec-rows>`),
+    /Keep <deck-exec-rows>; shorten deck-exec-row\[1\]/,
+  )
+})
+
 test('inlines extensionless deck-card icons into HTML', async () => {
   await rm(tmpDir, { recursive: true, force: true })
   await mkdir(path.join(tmpDir, 'resources', 'icons'), { recursive: true })
@@ -703,6 +732,79 @@ Body copy`)
   assert.doesNotMatch(rendered.document, /resource:logos\/customer\.svg/)
 })
 
+test('HTML branding honours frontmatter company logo before brand defaults', async () => {
+  await rm(tmpDir, { recursive: true, force: true })
+  await mkdir(path.join(tmpDir, 'resources', 'logos'), { recursive: true })
+  const authoredLogo =
+    '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 24"><text x="0" y="18">Authored</text></svg>'
+  const defaultLogo =
+    '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 24"><text x="0" y="18">Default</text></svg>'
+  await writeFile(path.join(tmpDir, 'resources', 'logos', 'company-authored.svg'), authoredLogo)
+  await writeFile(path.join(tmpDir, 'resources', 'logos', 'company-default.svg'), defaultLogo)
+
+  const baseDefinitions = await loadDefinitions(new URL('../resources/definitions', import.meta.url))
+  const definitions = {
+    ...baseDefinitions,
+    brand: {
+      ...baseDefinitions.brand,
+      assets: {
+        logo: {
+          default: 'resource:logos/company-default.svg',
+        },
+      },
+      layouts: {
+        ...baseDefinitions.brand.layouts,
+        companyLogo: { x: 36, y: 21, w: 98, h: 24 },
+      },
+    },
+  }
+  const deck = parseDeckMarkdown(`---
+companyLogo: resource:logos/company-authored.svg
+companyName: Authored Co
+---
+
+# Cover`)
+
+  const rendered = renderDeckHtml(deck, {
+    resourcesDir: path.join(tmpDir, 'resources'),
+    definitions,
+    inlineAssets: true,
+  })
+
+  assert.match(rendered.document, /alt="Authored Co"/)
+  assert.equal(rendered.document.includes(Buffer.from(authoredLogo).toString('base64')), true)
+  assert.equal(rendered.document.includes(Buffer.from(defaultLogo).toString('base64')), false)
+})
+
+test('HTML branding uses surface-specific frontmatter company logo variants', async () => {
+  await rm(tmpDir, { recursive: true, force: true })
+  await mkdir(path.join(tmpDir, 'resources', 'logos'), { recursive: true })
+  const lightLogo =
+    '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 24"><text x="0" y="18">Company light</text></svg>'
+  const darkLogo =
+    '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 24"><text x="0" y="18">Company dark</text></svg>'
+  await writeFile(path.join(tmpDir, 'resources', 'logos', 'company.svg'), lightLogo)
+  await writeFile(path.join(tmpDir, 'resources', 'logos', 'company.dark.svg'), darkLogo)
+
+  const definitions = await loadDefinitions(new URL('../resources/definitions', import.meta.url))
+  const deck = parseDeckMarkdown(`---
+companyLogo: resource:logos/company.svg
+---
+
+<!-- _class: dark -->
+
+# Dark cover`)
+
+  const rendered = renderDeckHtml(deck, {
+    resourcesDir: path.join(tmpDir, 'resources'),
+    definitions,
+    inlineAssets: true,
+  })
+
+  assert.equal(rendered.document.includes(Buffer.from(darkLogo).toString('base64')), true)
+  assert.equal(rendered.document.includes(Buffer.from(lightLogo).toString('base64')), false)
+})
+
 test('HTML branding preserves customer logo colours while fitting the logo frame', async () => {
   await rm(tmpDir, { recursive: true, force: true })
   await mkdir(path.join(tmpDir, 'resources', 'logos'), { recursive: true })
@@ -926,6 +1028,36 @@ test('HTML logo walls use surface-specific sibling variants when present', async
 
   assert.match(rendered.document, /partner\.dark\.svg/)
   assert.doesNotMatch(rendered.document, /partner\.svg["')]/)
+})
+
+test('HTML light and dark surfaces emit fallback background colours', async () => {
+  const baseDefinitions = await loadDefinitions(new URL('../resources/definitions', import.meta.url))
+  const definitions = {
+    ...baseDefinitions,
+    brand: {
+      ...baseDefinitions.brand,
+      colors: {
+        ...baseDefinitions.brand.colors,
+        backgroundDark: '101820',
+        backgroundLight: 'FAFBFC',
+      },
+    },
+  }
+  const deck = parseDeckMarkdown(`<deck-exec-cards surface="dark" columns="2">
+  <deck-exec-card number="01" title="Dark surface" body="Readable dark content."></deck-exec-card>
+</deck-exec-cards>
+
+---
+
+<deck-exec-cards surface="light" columns="2">
+  <deck-exec-card number="01" title="Light surface" body="Readable light content."></deck-exec-card>
+</deck-exec-cards>`)
+  const rendered = renderDeckHtml(deck, { resourcesDir: 'resources', definitions })
+
+  assert.match(rendered.css, /section\.dark\s*\{\s*background-color:\s*#101820(?:;|\})/)
+  assert.match(rendered.css, /section\.light\s*\{\s*background-color:\s*#FAFBFC(?:;|\})/)
+  assert.match(rendered.document, /<section[^>]*class="dark"/)
+  assert.match(rendered.document, /<section[^>]*class="light"/)
 })
 
 test('PPTX light content slides use light fills and both logo slots', async () => {
@@ -1163,6 +1295,53 @@ customerLogo: resource:logos/wide-customer.svg
   assert.equal(extent.cx, 98 * 12700)
   assert.equal(extent.cy, 12.25 * 12700)
   assert.equal(offset.x, 828 * 12700)
+  assert.ok(Math.abs(offset.y - (26.875 * 12700)) <= 1)
+})
+
+test('PPTX company logo from frontmatter fits frame without changing aspect ratio', async () => {
+  await rm(tmpDir, { recursive: true, force: true })
+  await mkdir(path.join(tmpDir, 'resources', 'logos'), { recursive: true })
+  await writeFile(
+    path.join(tmpDir, 'resources', 'logos', 'wide-company.svg'),
+    '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 100"><rect width="800" height="100" fill="#0f82f5"/></svg>',
+  )
+
+  const definitions = await loadDefinitions(new URL('../resources/definitions', import.meta.url))
+  const brand = {
+    ...definitions.brand,
+    assets: {
+      backgrounds: {},
+      logo: {},
+    },
+    layouts: {
+      ...definitions.brand.layouts,
+      companyLogo: { x: 36, y: 21, w: 98, h: 24 },
+    },
+  }
+  const deck = parseDeckMarkdown(`---
+companyLogo: resource:logos/wide-company.svg
+companyName: Frontmatter company
+---
+
+# Company logo fit`)
+  const out = path.join(tmpDir, 'company-logo-contain.pptx')
+
+  await writePptx({
+    deck,
+    outputPath: out,
+    brand,
+    resourcesDir: path.join(tmpDir, 'resources'),
+  })
+
+  const archive = await JSZip.loadAsync(await readFile(out))
+  const slideXml = await archive.file('ppt/slides/slide1.xml').async('string')
+  const companyLogoXml = pictureXmlContaining(slideXml, 'Frontmatter company')
+  const offset = pictureOffset(companyLogoXml)
+  const extent = pictureExtent(companyLogoXml)
+
+  assert.equal(extent.cx, 98 * 12700)
+  assert.equal(extent.cy, 12.25 * 12700)
+  assert.equal(offset.x, 36 * 12700)
   assert.ok(Math.abs(offset.y - (26.875 * 12700)) <= 1)
 })
 

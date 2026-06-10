@@ -104,6 +104,7 @@ export function brandLogoCss(brand = {}) {
   top: ${ptToPxCss(brand, companyBox.y)};
   width: ${ptToPxCss(brand, companyBox.w)};
   height: ${ptToPxCss(brand, companyBox.h)};
+  display: block;
   object-fit: contain;
   z-index: 20;
   pointer-events: none;
@@ -132,6 +133,8 @@ ${customerLogoBackplateEnabled(brand) ? `.deck-customer-logo-frame.deck-logo-on-
 
 .deck-customer-logo {
   display: block;
+  width: 100%;
+  height: 100%;
   max-width: 100%;
   max-height: 100%;
   object-fit: contain;
@@ -141,6 +144,8 @@ ${customerLogoBackplateEnabled(brand) ? `.deck-customer-logo-frame.deck-logo-on-
 }
 
 export function brandSurfaceCss(brand = {}) {
+  const darkBackground = cssColor(brand, 'backgroundDark', cssColor(brand, 'dark', '090909'))
+  const lightBackground = cssColor(brand, 'backgroundLight', cssColor(brand, 'white', 'FFFFFF'))
   const darkText = readableDarkCssColor(brand, 'body', 'C8D8F0')
   const darkMuted = readableDarkCssColor(brand, 'muted', '8B9AB5')
   const darkHeading = readableDarkCssColor(brand, 'white', 'FFFFFF')
@@ -153,7 +158,12 @@ export function brandSurfaceCss(brand = {}) {
   const lightBorder = cssColor(brand, 'borderLight', 'DEDEDE')
 
   return `section.dark {
+  background-color: ${darkBackground};
   color: ${darkText};
+}
+
+section.light {
+  background-color: ${lightBackground};
 }
 
 section.dark h1,
@@ -222,6 +232,62 @@ section.light .deck-proof,
 section.light .deck-logo-tile {
   background: ${lightCard};
   border-color: ${lightBorder};
+}
+
+section.dark .deck-lane-blue .deck-lane-steps article,
+section.dark .deck-lane-lightBlue .deck-lane-steps article,
+section.dark .deck-lane-cyan .deck-lane-steps article,
+section.dark .deck-lane-purple .deck-lane-steps article,
+section.dark .deck-lane-green .deck-lane-steps article,
+section.dark .deck-lane-orange .deck-lane-steps article,
+section.dark .deck-lane-red .deck-lane-steps article,
+section.dark .deck-lane-yellow .deck-lane-steps article {
+  background: ${darkCard};
+}
+
+section.dark .deck-lane-blue .deck-lane-steps article { border-left-color: ${cssColor(brand, 'blue', '0F82F5')}; }
+section.dark .deck-lane-lightBlue .deck-lane-steps article,
+section.dark .deck-lane-cyan .deck-lane-steps article { border-left-color: ${cssColor(brand, 'lightBlue', '59D6FD')}; }
+section.dark .deck-lane-purple .deck-lane-steps article { border-left-color: ${cssColor(brand, 'purple', '5143D5')}; }
+section.dark .deck-lane-green .deck-lane-steps article { border-left-color: ${cssColor(brand, 'green', '66CC8E')}; }
+section.dark .deck-lane-orange .deck-lane-steps article { border-left-color: ${cssColor(brand, 'orange', 'F9935B')}; }
+section.dark .deck-lane-red .deck-lane-steps article { border-left-color: ${cssColor(brand, 'red', 'FC5161')}; }
+section.dark .deck-lane-yellow .deck-lane-steps article { border-left-color: ${cssColor(brand, 'yellow', 'FBC546')}; }
+
+section.light .deck-lane-blue .deck-lane-steps article {
+  background: #e8f4fe;
+  border-left-color: ${cssColor(brand, 'blue', '0F82F5')};
+}
+
+section.light .deck-lane-lightBlue .deck-lane-steps article,
+section.light .deck-lane-cyan .deck-lane-steps article {
+  background: #e9f9ff;
+  border-left-color: ${cssColor(brand, 'lightBlue', '59D6FD')};
+}
+
+section.light .deck-lane-purple .deck-lane-steps article {
+  background: #f0edfe;
+  border-left-color: ${cssColor(brand, 'purple', '5143D5')};
+}
+
+section.light .deck-lane-green .deck-lane-steps article {
+  background: #ecf9f1;
+  border-left-color: ${cssColor(brand, 'green', '66CC8E')};
+}
+
+section.light .deck-lane-orange .deck-lane-steps article {
+  background: #fff3ea;
+  border-left-color: ${cssColor(brand, 'orange', 'F9935B')};
+}
+
+section.light .deck-lane-red .deck-lane-steps article {
+  background: #fff0f2;
+  border-left-color: ${cssColor(brand, 'red', 'FC5161')};
+}
+
+section.light .deck-lane-yellow .deck-lane-steps article {
+  background: #fff8df;
+  border-left-color: ${cssColor(brand, 'yellow', 'FBC546')};
 }`
 }
 
@@ -252,9 +318,12 @@ function applyHtmlBranding(slide, brand = {}, resourcesDir = 'resources') {
     slide.surface,
   )
   const logos = []
-  const companyLogo = brandLogoForSlide(brand, slideKind(slide), slide.surface)
+  const companyLogo = slide.companyLogo?.src
+    ? surfaceResourceReference(slide.companyLogo.src, resourcesDir, slide.surface)
+    : brandLogoForSlide(brand, slideKind(slide), slide.surface)
+  const companyAlt = slide.companyLogo?.alt || `${brand.name || 'Brand'} logo`
   if (companyLogo && !/class=["'][^"']*\bdeck-brand-logo\b/i.test(source)) {
-    logos.push(logoHtml(companyLogo, `${brand.name || 'Brand'} logo`, 'deck-brand-logo deck-company-logo'))
+    logos.push(logoHtml(companyLogo, companyAlt, 'deck-brand-logo deck-company-logo'))
   }
   if (slide.customerLogo?.src) {
     logos.push(customerLogoHtml(

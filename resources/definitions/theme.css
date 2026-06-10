@@ -5,6 +5,7 @@ section {
   height: 720px;
   box-sizing: border-box;
   padding: 72px 75px 112px;
+  overflow: hidden;
   background: #ffffff;
   color: #090909;
   font-family: "Poppins", "Aptos", "Segoe UI", sans-serif;
@@ -23,6 +24,24 @@ section > img,
 section > figure,
 section > div {
   max-width: 100%;
+}
+
+section img {
+  object-fit: contain;
+}
+
+section > img:not(.deck-brand-logo):not(.deck-company-logo):not(.deck-customer-logo),
+section > p > img:only-child {
+  display: block;
+  width: auto;
+  height: auto;
+  max-width: min(100%, 780px);
+  max-height: 360px;
+  object-fit: contain;
+}
+
+section > p:has(> img:only-child) {
+  margin: 0;
 }
 
 section.cover {
@@ -347,9 +366,40 @@ li {
   overflow: hidden;
 }
 
+.deck-lane-blue .deck-lane-steps article {
+  border-left-color: #0f82f5;
+  background: #e8f4fe;
+}
+
+.deck-lane-lightBlue .deck-lane-steps article,
+.deck-lane-cyan .deck-lane-steps article {
+  border-left-color: #59d6fd;
+  background: #e9f9ff;
+}
+
 .deck-lane-purple .deck-lane-steps article {
   border-left-color: #5143d5;
   background: #f0edfe;
+}
+
+.deck-lane-green .deck-lane-steps article {
+  border-left-color: #66cc8e;
+  background: #ecf9f1;
+}
+
+.deck-lane-orange .deck-lane-steps article {
+  border-left-color: #f9935b;
+  background: #fff3ea;
+}
+
+.deck-lane-red .deck-lane-steps article {
+  border-left-color: #fc5161;
+  background: #fff0f2;
+}
+
+.deck-lane-yellow .deck-lane-steps article {
+  border-left-color: #fbc546;
+  background: #fff8df;
 }
 
 .deck-lane-steps h3 {
@@ -380,8 +430,12 @@ li {
 }
 
 .deck-proof-logo img {
+  display: block;
+  width: 100%;
+  height: 100%;
   max-width: 170px;
   max-height: 56px;
+  object-fit: contain;
 }
 
 .deck-proof-context {
@@ -481,12 +535,18 @@ li {
 }
 
 .deck-logo-tile img {
+  display: block;
+  width: 100%;
+  height: 100%;
   max-width: 150px;
   max-height: 46px;
+  object-fit: contain;
 }
 
 .deck-exec {
   color: #ffffff;
+  min-width: 0;
+  min-height: 0;
 }
 
 .deck-exec h1,
@@ -515,6 +575,7 @@ li {
   display: grid;
   align-content: center;
   padding: 0 44px;
+  overflow: hidden;
 }
 
 .deck-exec-title .deck-exec-eyebrow {
@@ -524,18 +585,20 @@ li {
 }
 
 .deck-exec-title h1 {
-  max-width: 760px;
+  max-width: 860px;
   color: #ffffff;
   font-family: "Poppins Light", "Poppins", "Aptos", sans-serif;
-  font-size: 90px;
+  font-size: 78px;
   font-weight: 300;
-  line-height: 1.05;
+  line-height: 1.04;
 }
 
 .deck-exec-title .deck-exec-subtitle {
-  margin-top: 46px;
+  max-width: 860px;
+  margin-top: 28px;
   color: #c9d2e8;
-  font-size: 34px;
+  font-size: 30px;
+  line-height: 1.18;
 }
 
 .deck-exec-rows,
@@ -552,7 +615,10 @@ li {
 .deck-exec-row-stack {
   display: grid;
   gap: 23px;
+  grid-auto-rows: minmax(0, 1fr);
   width: calc(100% - 202px);
+  height: 100%;
+  min-height: 0;
 }
 
 .deck-exec-rows:not(.has-side) .deck-exec-row-stack {
@@ -564,9 +630,11 @@ li {
   display: grid;
   grid-template-columns: 135px minmax(0, 1fr) 88px;
   min-height: 101px;
+  min-width: 0;
   padding: 18px 28px 16px 34px;
   border-left: 8px solid #4fa8e8;
   background: #13213d;
+  overflow: hidden;
 }
 
 .deck-exec-row-label strong {
@@ -588,15 +656,15 @@ li {
 
 .deck-exec-row-copy h3 {
   color: #ffffff;
-  font-size: 28px;
+  font-size: 26px;
   font-weight: 700;
   line-height: 1.1;
 }
 
 .deck-exec-row-copy p {
-  margin-top: 14px;
+  margin-top: 10px;
   color: #8a95a8;
-  font-size: 22px;
+  font-size: 20px;
   line-height: 1.25;
 }
 
@@ -616,6 +684,7 @@ li {
   padding: 32px 28px;
   border-left: 6px solid #f5b946;
   background: #13213d;
+  overflow: hidden;
 }
 
 .deck-exec-side h3 {
@@ -659,6 +728,7 @@ li {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   gap: 28px;
+  min-height: 0;
 }
 
 .deck-exec-cards-2 .deck-exec-card-grid {
@@ -673,9 +743,11 @@ li {
 .deck-exec-card {
   position: relative;
   min-height: 220px;
+  min-width: 0;
   padding: 26px 36px;
   border-left: 7px solid #4fa8e8;
   background: #13213d;
+  overflow: hidden;
 }
 
 .deck-exec-cards-4 .deck-exec-card {
@@ -691,17 +763,17 @@ li {
 }
 
 .deck-exec-card h3 {
-  margin-top: 26px;
+  margin-top: 20px;
   color: #ffffff;
-  font-size: 32px;
+  font-size: 30px;
   font-weight: 700;
   line-height: 1.1;
 }
 
 .deck-exec-card-metric {
-  margin-top: 24px;
+  margin-top: 18px;
   color: #f5b946;
-  font-size: 56px;
+  font-size: 52px;
   font-weight: 700;
   line-height: .95;
 }
@@ -714,9 +786,9 @@ li {
 }
 
 .deck-exec-card p {
-  margin-top: 22px;
+  margin-top: 16px;
   color: #c9d2e8;
-  font-size: 22px;
+  font-size: 20px;
   line-height: 1.25;
 }
 

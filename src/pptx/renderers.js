@@ -22,10 +22,11 @@ export function addCover(slide, model, frontmatter, brand, resourcesDir) {
 }
 
 export function addContent(slide, model, brand, resourcesDir) {
-  addBaseHeader(slide, model, brand, resourcesDir)
+  const header = addBaseHeader(slide, model, brand, resourcesDir)
   const body = contentBody(model)
   if (body) {
-    addTextBox(slide, brand, body, surfaceBox(brand, model, brand.layouts.body.paragraph, 'body'), {
+    const paragraphBox = boxAfterHeader(brand.layouts.body.paragraph, header.contentTop, 44)
+    addTextBox(slide, brand, body, surfaceBox(brand, model, paragraphBox, 'body'), {
       breakLine: true,
       fit: 'shrink',
     })
@@ -94,14 +95,15 @@ export function addThreeStat(slide, model, brand, resourcesDir) {
 }
 
 export function addCards(slide, model, brand, resourcesDir) {
-  addBaseHeader(slide, model, brand, resourcesDir)
+  const headerInfo = addBaseHeader(slide, model, brand, resourcesDir)
 
   const cards = model.cards.slice(0, 4)
   const count = cards.length <= 3 ? 3 : 4
   const layout = brand.layouts.cards
   const gap = count === 3 ? layout.gap3 : layout.gap4
   const cardW = (brand.slide.widthPt - layout.margin * 2 - gap * (count - 1)) / count
-  const cardH = layout.yBottom - layout.yTop
+  const yTop = Math.max(layout.yTop, headerInfo.contentTop)
+  const cardH = Math.max(72, layout.yBottom - yTop)
   const header = count === 3 ? layout.header3 : layout.header4
   const body = count === 3 ? layout.body3 : layout.body4
 
@@ -111,15 +113,15 @@ export function addCards(slide, model, brand, resourcesDir) {
       slide,
       brand,
       x,
-      layout.yTop,
+      yTop,
       cardW,
       cardH,
       surfaceCardFill(brand, model),
       surfaceBorder(brand, model),
       0.5,
     )
-    addRect(slide, brand, x, layout.yTop, cardW, layout.topBarHeight, color(brand, 'blue'))
-    const mediaBox = cardMediaBox(cards[i], x, layout.yTop, header)
+    addRect(slide, brand, x, yTop, cardW, layout.topBarHeight, color(brand, 'blue'))
+    const mediaBox = cardMediaBox(cards[i], x, yTop, header)
     if (mediaBox) {
       addResourceImage(slide, cards[i].media.src, resourcesDir, mediaBox, cards[i].media.alt || cards[i].header, { fit: 'contain' })
     }
@@ -127,7 +129,7 @@ export function addCards(slide, model, brand, resourcesDir) {
     addTextBox(slide, brand, cards[i].header, {
       ...surfaceBox(brand, model, header, 'heading'),
       x: x + header.dx + headerXOffset,
-      y: layout.yTop + header.dy,
+      y: yTop + header.dy,
       w: cardW - header.dx * 2 - headerXOffset,
       fit: 'shrink',
     })
@@ -136,10 +138,10 @@ export function addCards(slide, model, brand, resourcesDir) {
         {
           ...surfaceBox(brand, model, body, 'body'),
           x: x + body.dx,
-          y: layout.yTop + body.dy,
+          y: yTop + body.dy,
           w: cardW - body.dx * 2,
         },
-        layout.yTop + cardH,
+        yTop + cardH,
         body.bottomPad ?? 14,
       ),
       fit: 'shrink',
@@ -162,11 +164,12 @@ function cardMediaBox(card, x, y, header) {
 }
 
 export function addChartSlide(pptx, slide, model, brand, resourcesDir) {
-  addBaseHeader(slide, model, brand, resourcesDir)
+  const header = addBaseHeader(slide, model, brand, resourcesDir)
 
   if (!model.chart) return addContent(slide, model, brand, resourcesDir)
 
   const layout = brand.layouts.chart
+  const chartBox = boxAfterHeader(layout, header.contentTop, 120)
   const chartType = model.chart.chartType === 'line' ? pptx.ChartType.line : pptx.ChartType.bar
   const chartData = [
     {
@@ -177,10 +180,10 @@ export function addChartSlide(pptx, slide, model, brand, resourcesDir) {
   ]
 
   slide.addChart(chartType, chartData, normalizePptxColors(brand, {
-    x: ptToIn(layout.x),
-    y: ptToIn(layout.y),
-    w: ptToIn(layout.w),
-    h: ptToIn(layout.h),
+    x: ptToIn(chartBox.x),
+    y: ptToIn(chartBox.y),
+    w: ptToIn(chartBox.w),
+    h: ptToIn(chartBox.h),
     showTitle: Boolean(model.chart.title),
     title: model.chart.title,
     titleFontFace: font(brand, layout.title.font),
@@ -223,7 +226,7 @@ export function addVisual(slide, model, brand, resourcesDir) {
   const visual = model.visual
   if (!visual?.svg) return addContent(slide, model, brand, resourcesDir)
 
-  addBaseHeader(slide, model, brand, resourcesDir)
+  const header = addBaseHeader(slide, model, brand, resourcesDir)
 
   const layout = brand.layouts.visual || {
     x: 62,
@@ -232,13 +235,14 @@ export function addVisual(slide, model, brand, resourcesDir) {
     h: 292,
     caption: { x: 84, y: 418, w: 792, h: 20, font: 'regular', size: 8, color: 'muted' },
   }
+  const visualBox = boxAfterHeader(layout, header.contentTop, 120)
   try {
     slide.addImage({
       data: svgToDataUri(visual.svg),
-      x: ptToIn(layout.x),
-      y: ptToIn(layout.y),
-      w: ptToIn(layout.w),
-      h: ptToIn(layout.h),
+      x: ptToIn(visualBox.x),
+      y: ptToIn(visualBox.y),
+      w: ptToIn(visualBox.w),
+      h: ptToIn(visualBox.h),
       altText: visual.alt || visual.title || model.title,
     })
   } catch {
@@ -248,20 +252,24 @@ export function addVisual(slide, model, brand, resourcesDir) {
   }
 
   if (visual.caption) {
-    addTextBox(slide, brand, visual.caption, surfaceBox(brand, model, layout.caption, 'muted'), { fit: 'shrink' })
+    const captionBox = {
+      ...layout.caption,
+      y: Math.max(layout.caption.y, visualBox.y + visualBox.h + 8),
+    }
+    addTextBox(slide, brand, visual.caption, surfaceBox(brand, model, captionBox, 'muted'), { fit: 'shrink' })
   }
 
   addTakeaway(slide, model, brand)
 }
 
 export function addComparison(slide, model, brand, resourcesDir) {
-  addBaseHeader(slide, model, brand, resourcesDir)
+  const header = addBaseHeader(slide, model, brand, resourcesDir)
   const comparison = model.comparison
   if (!comparison) return addContent(slide, model, brand, resourcesDir)
 
   const layout = brand.layouts.comparison
   const x = layout.x
-  const y = layout.y
+  const y = Math.max(layout.y, header.contentTop)
   const headerH = layout.headerH
   const rowH = layout.rowH
   const colX = [x, x + layout.labelW, x + layout.labelW + layout.leftW]
@@ -373,41 +381,44 @@ export function addSwimlane(slide, model, brand, resourcesDir) {
 }
 
 export function addProof(slide, model, brand, resourcesDir) {
-  addBaseHeader(slide, model, brand, resourcesDir)
+  const header = addBaseHeader(slide, model, brand, resourcesDir)
   const proof = model.proof
   if (!proof) return addContent(slide, model, brand, resourcesDir)
 
   const layout = brand.layouts.proof
-  if (!addResourceImage(slide, proof.logo, resourcesDir, layout.logo, proof.logoName || 'Proof logo', { fit: 'contain' }) && proof.logoName) {
-    addRect(slide, brand, layout.logo.x, layout.logo.y, layout.logo.w, layout.logo.h, surfaceCardFill(brand, model), surfaceBorder(brand, model), 0.5)
-    addTextBox(slide, brand, proof.logoName, surfaceBox(brand, model, { ...layout.logo, align: 'center', fit: 'shrink' }, 'heading'))
+  const logoBox = boxAfterHeader(layout.logo, header.contentTop, 40)
+  if (!addResourceImage(slide, proof.logo, resourcesDir, logoBox, proof.logoName || 'Proof logo', { fit: 'contain' }) && proof.logoName) {
+    addRect(slide, brand, logoBox.x, logoBox.y, logoBox.w, logoBox.h, surfaceCardFill(brand, model), surfaceBorder(brand, model), 0.5)
+    addTextBox(slide, brand, proof.logoName, surfaceBox(brand, model, { ...logoBox, align: 'center', fit: 'shrink' }, 'heading'))
   }
 
   proof.stats.slice(0, 3).forEach((stat, index) => {
     const x = layout.stats.x[index]
-    addTextBox(slide, brand, stat.value, surfaceBox(brand, model, { ...layout.stats.value, x, align: 'center' }, 'accent'))
+    const valueBox = boxAfterHeader({ ...layout.stats.value, x, align: 'center' }, header.contentTop, 24)
+    addTextBox(slide, brand, stat.value, surfaceBox(brand, model, valueBox, 'accent'))
     addTextBox(slide, brand, stat.label, {
       ...surfaceBox(brand, model, layout.stats.label, 'body'),
       x,
-      y: layout.stats.value.y + layout.stats.label.dy,
+      y: valueBox.y + layout.stats.label.dy,
       align: 'center',
       fit: 'shrink',
     })
   })
 
-  if (proof.context) addTextBox(slide, brand, proof.context, surfaceBox(brand, model, { ...layout.context, fit: 'shrink' }, 'body'))
-  if (proof.bridge) addTextBox(slide, brand, proof.bridge, surfaceBox(brand, model, { ...layout.bridge, fit: 'shrink' }, 'body'))
+  if (proof.context) addTextBox(slide, brand, proof.context, surfaceBox(brand, model, { ...boxAfterHeader(layout.context, header.contentTop, 40), fit: 'shrink' }, 'body'))
+  if (proof.bridge) addTextBox(slide, brand, proof.bridge, surfaceBox(brand, model, { ...boxAfterHeader(layout.bridge, header.contentTop, 24), fit: 'shrink' }, 'body'))
   addTakeaway(slide, model, brand)
 }
 
 export function addNextSteps(slide, model, brand, resourcesDir) {
-  addBaseHeader(slide, model, brand, resourcesDir)
+  const header = addBaseHeader(slide, model, brand, resourcesDir)
   const nextSteps = model.nextSteps
   if (!nextSteps) return addContent(slide, model, brand, resourcesDir)
 
   const layout = brand.layouts.nextSteps
+  const startY = Math.max(layout.y, header.contentTop)
   nextSteps.steps.slice(0, 3).forEach((step, index) => {
-    const rowY = layout.y + index * (layout.rowH + layout.gap)
+    const rowY = startY + index * (layout.rowH + layout.gap)
     addRect(slide, brand, layout.x, rowY, layout.w, layout.rowH, surfaceCardFill(brand, model), surfaceBorder(brand, model), 0.5)
     addRect(slide, brand, layout.x, rowY, layout.accentWidth, layout.rowH, color(brand, 'blue'))
     addRect(
@@ -455,16 +466,17 @@ export function addNextSteps(slide, model, brand, resourcesDir) {
 }
 
 export function addLogoWall(slide, model, brand, resourcesDir) {
-  addBaseHeader(slide, model, brand, resourcesDir)
+  const header = addBaseHeader(slide, model, brand, resourcesDir)
   const logoWall = model.logoWall
   if (!logoWall) return addContent(slide, model, brand, resourcesDir)
 
   const layout = brand.layouts.logoWall
+  const startY = Math.max(layout.y, header.contentTop)
   logoWall.logos.slice(0, 12).forEach((logo, index) => {
     const col = index % layout.columns
     const row = Math.floor(index / layout.columns)
     const x = layout.x + col * (layout.tileW + layout.gapX)
-    const y = layout.y + row * (layout.tileH + layout.gapY)
+    const y = startY + row * (layout.tileH + layout.gapY)
     addRect(slide, brand, x, y, layout.tileW, layout.tileH, surfaceCardFill(brand, model), surfaceBorder(brand, model), 0.5)
     if (!addSurfaceResourceImage(
       slide,
@@ -505,7 +517,7 @@ export function addExecTitle(slide, model, brand, resourcesDir) {
       margin: 0,
     })
   }
-  addLargeTextBox(slide, brand, execTitle.title || model.title, {
+  const titleBox = expandedTitleBox(execTitle.title || model.title, {
     x: 36,
     y: 156,
     w: 720,
@@ -515,12 +527,14 @@ export function addExecTitle(slide, model, brand, resourcesDir) {
     color: execHeadingToken(brand, model),
     margin: 0,
   })
+  addLargeTextBox(slide, brand, execTitle.title || model.title, titleBox)
   if (execTitle.subtitle) {
+    const subtitleY = titleBox.y + titleBox.h + 22
     addTextBox(slide, brand, execTitle.subtitle, {
       x: 36,
-      y: 310,
+      y: subtitleY,
       w: 760,
-      h: 46,
+      h: Math.max(32, 405 - subtitleY),
       font: 'regular',
       size: 21,
       color: execMutedToken(brand, model),
@@ -551,9 +565,12 @@ export function addExecRows(slide, model, brand, resourcesDir) {
     if (row.kicker) {
       addTextBox(slide, brand, row.kicker.toUpperCase(), execTextBox(60, y + 30, 92, 16, execMutedToken(brand, model), 8, 'medium'))
     }
-    addTextBox(slide, brand, row.title, execTextBox(170, y + 12, 290, 25, execHeadingToken(brand, model), 18, 'medium'))
+    const titleLines = estimateWrappedLines(row.title, { w: 300, size: 18 })
+    const titleH = Math.min(36, Math.max(22, titleLines * 21))
+    addTextBox(slide, brand, row.title, execTextBox(170, y + 12, 300, titleH, execHeadingToken(brand, model), 18, 'medium', { fit: 'shrink' }))
     if (row.body) {
-      addTextBox(slide, brand, row.body, execTextBox(170, y + 42, rowW - 220, 28, execMutedToken(brand, model), 12, 'regular', { fit: 'shrink' }))
+      const bodyY = y + 12 + titleH + 5
+      addTextBox(slide, brand, row.body, execTextBox(170, bodyY, rowW - 220, Math.max(16, y + rowH - bodyY - 8), execMutedToken(brand, model), 12, 'regular', { fit: 'shrink' }))
     }
     if (row.note) {
       addTextBox(slide, brand, row.note, execTextBox(rowX + rowW - 105, y + 28, 90, 18, 'red', 10, 'regular', { italic: true }))
@@ -713,6 +730,16 @@ function boxAfterTitle(titleBox, box) {
   }
 }
 
+function boxAfterHeader(box, contentTop, minHeight = 18) {
+  const y = Math.max(box.y, contentTop)
+  const originalBottom = box.y + box.h
+  return {
+    ...box,
+    y,
+    h: Math.max(minHeight, originalBottom - y),
+  }
+}
+
 function estimateWrappedLines(text, box) {
   const size = box.size || 48
   const charsPerLine = Math.max(8, Math.floor((box.w || 760) / (size * 0.5)))
@@ -837,9 +864,21 @@ function addSlideChrome(slide, brand, resourcesDir, kind, fallbackColor, model =
     `${brand.name || 'Deck'} ${kind} background`,
   )
 
-  const logo = brandLogoForSurface(brand, kind, surface)
   const logoBox = brand.layouts.companyLogo || brand.layouts.logo || { x: 36, y: 21, w: 98, h: 24 }
-  addResourceImage(slide, logo, resourcesDir, logoBox, `${brand.name || 'Brand'} logo`, { fit: 'contain' })
+  if (model.companyLogo?.src) {
+    addSurfaceResourceImage(
+      slide,
+      model.companyLogo.src,
+      resourcesDir,
+      surface,
+      logoBox,
+      model.companyLogo.alt || `${brand.name || 'Brand'} logo`,
+      { fit: 'contain' },
+    )
+  } else {
+    const logo = brandLogoForSurface(brand, kind, surface)
+    addResourceImage(slide, logo, resourcesDir, logoBox, `${brand.name || 'Brand'} logo`, { fit: 'contain' })
+  }
 
   if (model.customerLogo?.src) {
     const customerLogoBox = brand.layouts.customerLogo || { x: 828, y: 21, w: 98, h: 24 }
@@ -1033,14 +1072,22 @@ function brandLogoForSurface(brand, kind, surface) {
 }
 
 function swimlaneFill(brand, model, layout, laneColor = 'blue') {
-  const configured = layout.fills?.[laneColor] || (brand.colors?.[laneColor] ? laneColor : '')
+  const normalizedColor = normalizeLaneColor(laneColor)
+  const configured = layout.fills?.[normalizedColor] || layout.fills?.[laneColor]
   if (configured) return color(brand, configured)
   return surfaceCardFill(brand, model)
 }
 
 function swimlaneAccent(brand, layout, laneColor = 'blue') {
-  const configured = layout.accents?.[laneColor] || (brand.colors?.[laneColor] ? laneColor : '') || layout.accents?.blue || 'blue'
+  const normalizedColor = normalizeLaneColor(laneColor)
+  const configured = layout.accents?.[normalizedColor] || layout.accents?.[laneColor] || (brand.colors?.[normalizedColor] ? normalizedColor : '') || layout.accents?.blue || 'blue'
   return color(brand, configured)
+}
+
+function normalizeLaneColor(laneColor = 'blue') {
+  const token = String(laneColor || 'blue').trim()
+  if (token === 'cyan') return 'lightBlue'
+  return token
 }
 
 function inferLaneGap(layout) {
