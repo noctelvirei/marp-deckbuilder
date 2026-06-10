@@ -4,7 +4,7 @@ import {
   color,
   font,
   ptToIn
-} from "./chunk-EO5GTAKY.mjs";
+} from "./chunk-OR5XALJV.mjs";
 import {
   require_node
 } from "./chunk-ZA7UPLW5.mjs";
@@ -15211,6 +15211,9 @@ function intrinsicImageSize(imagePath) {
   }
   return null;
 }
+function svgIntrinsicSize(svg) {
+  return svgSize(svg);
+}
 function svgSize(svg) {
   const viewBox = svg.match(/\bviewBox\s*=\s*["']\s*([+-]?\d*\.?\d+)\s+([+-]?\d*\.?\d+)\s+([+-]?\d*\.?\d+)\s+([+-]?\d*\.?\d+)\s*["']/i);
   if (viewBox) {
@@ -15272,10 +15275,11 @@ function addCover(slide, model, frontmatter, brand, resourcesDir) {
   if (presenter.role) addTextBox(slide, brand, presenter.role, layout.presenterRole);
 }
 function addContent(slide, model, brand, resourcesDir) {
-  addBaseHeader(slide, model, brand, resourcesDir);
+  const header = addBaseHeader(slide, model, brand, resourcesDir);
   const body = contentBody(model);
   if (body) {
-    addTextBox(slide, brand, body, surfaceBox(brand, model, brand.layouts.body.paragraph, "body"), {
+    const paragraphBox = boxAfterHeader(brand.layouts.body.paragraph, header.contentTop, 44);
+    addTextBox(slide, brand, body, surfaceBox(brand, model, paragraphBox, "body"), {
       breakLine: true,
       fit: "shrink"
     });
@@ -15296,7 +15300,7 @@ function addDivider(slide, model, brand, resourcesDir) {
   const divider = model.divider || {};
   const title = divider.title || model.title;
   const subtitle = divider.subtitle || model.subtitle;
-  const titleBox = expandedTitleBox(title, layout.title);
+  const titleBox = expandedTitleBox(title, layout.title, { maxH: subtitle ? 190 : 250 });
   const subtitleBox = subtitle ? boxAfterTitle(titleBox, layout.subtitle) : layout.subtitle;
   addSlideChrome(slide, brand, resourcesDir, "divider", "dark", model);
   if (divider.act) addTextBox(slide, brand, divider.act, layout.act);
@@ -15336,13 +15340,14 @@ function addThreeStat(slide, model, brand, resourcesDir) {
   addTakeaway(slide, model, brand);
 }
 function addCards(slide, model, brand, resourcesDir) {
-  addBaseHeader(slide, model, brand, resourcesDir);
+  const headerInfo = addBaseHeader(slide, model, brand, resourcesDir);
   const cards = model.cards.slice(0, 4);
   const count = cards.length <= 3 ? 3 : 4;
   const layout = brand.layouts.cards;
   const gap = count === 3 ? layout.gap3 : layout.gap4;
   const cardW = (brand.slide.widthPt - layout.margin * 2 - gap * (count - 1)) / count;
-  const cardH = layout.yBottom - layout.yTop;
+  const yTop = Math.max(layout.yTop, headerInfo.contentTop);
+  const cardH = Math.max(72, layout.yBottom - yTop);
   const header = count === 3 ? layout.header3 : layout.header4;
   const body = count === 3 ? layout.body3 : layout.body4;
   for (let i = 0; i < cards.length; i += 1) {
@@ -15351,15 +15356,15 @@ function addCards(slide, model, brand, resourcesDir) {
       slide,
       brand,
       x,
-      layout.yTop,
+      yTop,
       cardW,
       cardH,
       surfaceCardFill(brand, model),
       surfaceBorder(brand, model),
       0.5
     );
-    addRect(slide, brand, x, layout.yTop, cardW, layout.topBarHeight, color(brand, "blue"));
-    const mediaBox = cardMediaBox(cards[i], x, layout.yTop, header);
+    addRect(slide, brand, x, yTop, cardW, layout.topBarHeight, color(brand, "blue"));
+    const mediaBox = cardMediaBox(cards[i], x, yTop, header);
     if (mediaBox) {
       addResourceImage(slide, cards[i].media.src, resourcesDir, mediaBox, cards[i].media.alt || cards[i].header, { fit: "contain" });
     }
@@ -15367,7 +15372,7 @@ function addCards(slide, model, brand, resourcesDir) {
     addTextBox(slide, brand, cards[i].header, {
       ...surfaceBox(brand, model, header, "heading"),
       x: x + header.dx + headerXOffset,
-      y: layout.yTop + header.dy,
+      y: yTop + header.dy,
       w: cardW - header.dx * 2 - headerXOffset,
       fit: "shrink"
     });
@@ -15376,10 +15381,10 @@ function addCards(slide, model, brand, resourcesDir) {
         {
           ...surfaceBox(brand, model, body, "body"),
           x: x + body.dx,
-          y: layout.yTop + body.dy,
+          y: yTop + body.dy,
           w: cardW - body.dx * 2
         },
-        layout.yTop + cardH,
+        yTop + cardH,
         body.bottomPad ?? 14
       ),
       fit: "shrink"
@@ -15399,9 +15404,10 @@ function cardMediaBox(card, x, y, header) {
   };
 }
 function addChartSlide(pptx, slide, model, brand, resourcesDir) {
-  addBaseHeader(slide, model, brand, resourcesDir);
+  const header = addBaseHeader(slide, model, brand, resourcesDir);
   if (!model.chart) return addContent(slide, model, brand, resourcesDir);
   const layout = brand.layouts.chart;
+  const chartBox = boxAfterHeader(layout, header.contentTop, 120);
   const chartType = model.chart.chartType === "line" ? pptx.ChartType.line : pptx.ChartType.bar;
   const chartData = [
     {
@@ -15411,10 +15417,10 @@ function addChartSlide(pptx, slide, model, brand, resourcesDir) {
     }
   ];
   slide.addChart(chartType, chartData, normalizePptxColors(brand, {
-    x: ptToIn(layout.x),
-    y: ptToIn(layout.y),
-    w: ptToIn(layout.w),
-    h: ptToIn(layout.h),
+    x: ptToIn(chartBox.x),
+    y: ptToIn(chartBox.y),
+    w: ptToIn(chartBox.w),
+    h: ptToIn(chartBox.h),
     showTitle: Boolean(model.chart.title),
     title: model.chart.title,
     titleFontFace: font(brand, layout.title.font),
@@ -15454,7 +15460,7 @@ function addChartSlide(pptx, slide, model, brand, resourcesDir) {
 function addVisual(slide, model, brand, resourcesDir) {
   const visual = model.visual;
   if (!visual?.svg) return addContent(slide, model, brand, resourcesDir);
-  addBaseHeader(slide, model, brand, resourcesDir);
+  const header = addBaseHeader(slide, model, brand, resourcesDir);
   const layout = brand.layouts.visual || {
     x: 62,
     y: 126,
@@ -15462,13 +15468,15 @@ function addVisual(slide, model, brand, resourcesDir) {
     h: 292,
     caption: { x: 84, y: 418, w: 792, h: 20, font: "regular", size: 8, color: "muted" }
   };
+  const visualBox = boxAfterHeader(layout, header.contentTop, 120);
+  const renderedBox = containSvgBox(visual.svg, visualBox);
   try {
     slide.addImage({
       data: svgToDataUri(visual.svg),
-      x: ptToIn(layout.x),
-      y: ptToIn(layout.y),
-      w: ptToIn(layout.w),
-      h: ptToIn(layout.h),
+      x: ptToIn(renderedBox.x),
+      y: ptToIn(renderedBox.y),
+      w: ptToIn(renderedBox.w),
+      h: ptToIn(renderedBox.h),
       altText: visual.alt || visual.title || model.title
     });
   } catch {
@@ -15477,17 +15485,26 @@ function addVisual(slide, model, brand, resourcesDir) {
     }
   }
   if (visual.caption) {
-    addTextBox(slide, brand, visual.caption, surfaceBox(brand, model, layout.caption, "muted"), { fit: "shrink" });
+    const captionBox = {
+      ...layout.caption,
+      y: Math.max(layout.caption.y, renderedBox.y + renderedBox.h + 8)
+    };
+    addTextBox(slide, brand, visual.caption, surfaceBox(brand, model, captionBox, "muted"), { fit: "shrink" });
   }
   addTakeaway(slide, model, brand);
 }
+function containSvgBox(svg, box) {
+  const size = svgIntrinsicSize(svg);
+  if (!size?.width || !size?.height) return box;
+  return containBox(box, size.width, size.height);
+}
 function addComparison(slide, model, brand, resourcesDir) {
-  addBaseHeader(slide, model, brand, resourcesDir);
+  const header = addBaseHeader(slide, model, brand, resourcesDir);
   const comparison = model.comparison;
   if (!comparison) return addContent(slide, model, brand, resourcesDir);
   const layout = brand.layouts.comparison;
   const x = layout.x;
-  const y = layout.y;
+  const y = Math.max(layout.y, header.contentTop);
   const headerH = layout.headerH;
   const rowH = layout.rowH;
   const colX = [x, x + layout.labelW, x + layout.labelW + layout.leftW];
@@ -15520,7 +15537,10 @@ function addSwimlane(slide, model, brand, resourcesDir) {
   if (!swimlane) return addContent(slide, model, brand, resourcesDir);
   const layout = brand.layouts.swimlane;
   const laneCount = Math.min(swimlane.lanes.length, layout.maxLanes || 4);
-  const laneGap = layout.laneGap ?? inferLaneGap(layout);
+  const compact = laneCount >= 3;
+  const laneGap = compact ? Math.min(layout.laneGap ?? inferLaneGap(layout), 14) : layout.laneGap ?? inferLaneGap(layout);
+  const stepGap = compact ? Math.min(layout.stepGap || 12, 10) : layout.stepGap || 12;
+  const stepPad = compact ? Math.min(layout.stepPad || 8, 7) : layout.stepPad || 8;
   const contentTop = Math.max(header?.contentTop || 0, layout.laneY?.[0] || 0);
   const contentBottom = swimlaneBottom(model, brand, layout);
   const laneH = Math.max(
@@ -15535,23 +15555,26 @@ function addSwimlane(slide, model, brand, resourcesDir) {
     addTextBox(slide, brand, lane.title, surfaceBox(brand, model, { ...layout.label, y: laneY + layout.label.dy }, "heading"));
     const steps = lane.steps.slice(0, layout.maxSteps || 5);
     const stepCount = Math.max(1, steps.length);
-    const stepW = (layout.laneW - 24 - layout.stepGap * (stepCount - 1)) / stepCount;
-    const stepY = laneY + Math.min(layout.stepYDy, Math.max(28, laneH - (layout.stepH || 74) - 12));
-    const stepH = Math.max(layout.minStepH || 36, laneY + laneH - stepY - 12);
+    const stepW = (layout.laneW - 24 - stepGap * (stepCount - 1)) / stepCount;
+    const preferredStepH = compact ? Math.max(50, Math.min(layout.stepH || 74, laneH - 34)) : layout.stepH || 74;
+    const stepTopDy = compact ? Math.min(layout.stepYDy ?? 38, 28) : layout.stepYDy ?? 38;
+    const stepBottomPad = compact ? 8 : 12;
+    const stepY = laneY + Math.min(stepTopDy, Math.max(24, laneH - preferredStepH - stepBottomPad));
+    const stepH = Math.max(layout.minStepH || 36, laneY + laneH - stepY - stepBottomPad);
     steps.forEach((step, stepIndex) => {
-      const stepX = layout.x + 12 + stepIndex * (stepW + layout.stepGap);
+      const stepX = layout.x + 12 + stepIndex * (stepW + stepGap);
       addRect(slide, brand, stepX, stepY, stepW, stepH, fill, color(brand, "border"), 0.4);
       addRect(slide, brand, stepX, stepY, 4, stepH, accent);
-      const titleY = stepY + layout.stepPad + 1;
-      const titleH = Math.min(22, Math.max(12, stepH - layout.stepPad * 2));
-      const bodyY = titleY + titleH + 5;
+      const titleY = stepY + stepPad + 1;
+      const titleH = Math.min(compact ? 15 : 22, Math.max(12, stepH - stepPad * 2));
+      const bodyY = titleY + titleH + (compact ? 3 : 5);
       addTextBox(slide, brand, step.title, {
         ...fitBoxInsideBottom(
           {
             ...textBoxForFill(brand, model, layout.stepTitle, fill, "heading"),
-            x: stepX + layout.stepPad,
+            x: stepX + stepPad,
             y: titleY,
-            w: stepW - layout.stepPad * 2,
+            w: stepW - stepPad * 2,
             h: titleH
           },
           stepY + stepH,
@@ -15564,10 +15587,10 @@ function addSwimlane(slide, model, brand, resourcesDir) {
           ...fitBoxInsideBottom(
             {
               ...textBoxForFill(brand, model, layout.stepBody, fill, "body"),
-              x: stepX + layout.stepPad,
+              x: stepX + stepPad,
               y: bodyY,
-              w: stepW - layout.stepPad * 2,
-              h: Math.max(12, stepY + stepH - bodyY - layout.stepPad)
+              w: stepW - stepPad * 2,
+              h: Math.max(16, stepY + stepH - bodyY - stepPad)
             },
             stepY + stepH,
             8
@@ -15580,7 +15603,7 @@ function addSwimlane(slide, model, brand, resourcesDir) {
           ...surfaceBox(brand, model, layout.arrow, "muted"),
           x: stepX + stepW + 1,
           y: stepY + 25,
-          w: layout.stepGap,
+          w: stepGap,
           h: 18,
           align: "center"
         });
@@ -15590,36 +15613,39 @@ function addSwimlane(slide, model, brand, resourcesDir) {
   addTakeaway(slide, model, brand);
 }
 function addProof(slide, model, brand, resourcesDir) {
-  addBaseHeader(slide, model, brand, resourcesDir);
+  const header = addBaseHeader(slide, model, brand, resourcesDir);
   const proof = model.proof;
   if (!proof) return addContent(slide, model, brand, resourcesDir);
   const layout = brand.layouts.proof;
-  if (!addResourceImage(slide, proof.logo, resourcesDir, layout.logo, proof.logoName || "Proof logo", { fit: "contain" }) && proof.logoName) {
-    addRect(slide, brand, layout.logo.x, layout.logo.y, layout.logo.w, layout.logo.h, surfaceCardFill(brand, model), surfaceBorder(brand, model), 0.5);
-    addTextBox(slide, brand, proof.logoName, surfaceBox(brand, model, { ...layout.logo, align: "center", fit: "shrink" }, "heading"));
+  const logoBox = boxAfterHeader(layout.logo, header.contentTop, 40);
+  if (!addResourceImage(slide, proof.logo, resourcesDir, logoBox, proof.logoName || "Proof logo", { fit: "contain" }) && proof.logoName) {
+    addRect(slide, brand, logoBox.x, logoBox.y, logoBox.w, logoBox.h, surfaceCardFill(brand, model), surfaceBorder(brand, model), 0.5);
+    addTextBox(slide, brand, proof.logoName, surfaceBox(brand, model, { ...logoBox, align: "center", fit: "shrink" }, "heading"));
   }
   proof.stats.slice(0, 3).forEach((stat, index) => {
     const x = layout.stats.x[index];
-    addTextBox(slide, brand, stat.value, surfaceBox(brand, model, { ...layout.stats.value, x, align: "center" }, "accent"));
+    const valueBox = boxAfterHeader({ ...layout.stats.value, x, align: "center" }, header.contentTop, 24);
+    addTextBox(slide, brand, stat.value, surfaceBox(brand, model, valueBox, "accent"));
     addTextBox(slide, brand, stat.label, {
       ...surfaceBox(brand, model, layout.stats.label, "body"),
       x,
-      y: layout.stats.value.y + layout.stats.label.dy,
+      y: valueBox.y + layout.stats.label.dy,
       align: "center",
       fit: "shrink"
     });
   });
-  if (proof.context) addTextBox(slide, brand, proof.context, surfaceBox(brand, model, { ...layout.context, fit: "shrink" }, "body"));
-  if (proof.bridge) addTextBox(slide, brand, proof.bridge, surfaceBox(brand, model, { ...layout.bridge, fit: "shrink" }, "body"));
+  if (proof.context) addTextBox(slide, brand, proof.context, surfaceBox(brand, model, { ...boxAfterHeader(layout.context, header.contentTop, 40), fit: "shrink" }, "body"));
+  if (proof.bridge) addTextBox(slide, brand, proof.bridge, surfaceBox(brand, model, { ...boxAfterHeader(layout.bridge, header.contentTop, 24), fit: "shrink" }, "body"));
   addTakeaway(slide, model, brand);
 }
 function addNextSteps(slide, model, brand, resourcesDir) {
-  addBaseHeader(slide, model, brand, resourcesDir);
+  const header = addBaseHeader(slide, model, brand, resourcesDir);
   const nextSteps = model.nextSteps;
   if (!nextSteps) return addContent(slide, model, brand, resourcesDir);
   const layout = brand.layouts.nextSteps;
+  const startY = Math.max(layout.y, header.contentTop);
   nextSteps.steps.slice(0, 3).forEach((step, index) => {
-    const rowY = layout.y + index * (layout.rowH + layout.gap);
+    const rowY = startY + index * (layout.rowH + layout.gap);
     addRect(slide, brand, layout.x, rowY, layout.w, layout.rowH, surfaceCardFill(brand, model), surfaceBorder(brand, model), 0.5);
     addRect(slide, brand, layout.x, rowY, layout.accentWidth, layout.rowH, color(brand, "blue"));
     addRect(
@@ -15665,15 +15691,16 @@ function addNextSteps(slide, model, brand, resourcesDir) {
   addTakeaway(slide, model, brand);
 }
 function addLogoWall(slide, model, brand, resourcesDir) {
-  addBaseHeader(slide, model, brand, resourcesDir);
+  const header = addBaseHeader(slide, model, brand, resourcesDir);
   const logoWall = model.logoWall;
   if (!logoWall) return addContent(slide, model, brand, resourcesDir);
   const layout = brand.layouts.logoWall;
+  const startY = Math.max(layout.y, header.contentTop);
   logoWall.logos.slice(0, 12).forEach((logo, index) => {
     const col = index % layout.columns;
     const row = Math.floor(index / layout.columns);
     const x = layout.x + col * (layout.tileW + layout.gapX);
-    const y = layout.y + row * (layout.tileH + layout.gapY);
+    const y = startY + row * (layout.tileH + layout.gapY);
     addRect(slide, brand, x, y, layout.tileW, layout.tileH, surfaceCardFill(brand, model), surfaceBorder(brand, model), 0.5);
     if (!addSurfaceResourceImage(
       slide,
@@ -15712,7 +15739,7 @@ function addExecTitle(slide, model, brand, resourcesDir) {
       margin: 0
     });
   }
-  addLargeTextBox(slide, brand, execTitle.title || model.title, {
+  const titleBox = expandedTitleBox(execTitle.title || model.title, {
     x: 36,
     y: 156,
     w: 720,
@@ -15722,12 +15749,14 @@ function addExecTitle(slide, model, brand, resourcesDir) {
     color: execHeadingToken(brand, model),
     margin: 0
   });
+  addLargeTextBox(slide, brand, execTitle.title || model.title, titleBox);
   if (execTitle.subtitle) {
+    const subtitleY = titleBox.y + titleBox.h + 22;
     addTextBox(slide, brand, execTitle.subtitle, {
       x: 36,
-      y: 310,
+      y: subtitleY,
       w: 760,
-      h: 46,
+      h: Math.max(32, 405 - subtitleY),
       font: "regular",
       size: 21,
       color: execMutedToken(brand, model),
@@ -15755,9 +15784,12 @@ function addExecRows(slide, model, brand, resourcesDir) {
     if (row.kicker) {
       addTextBox(slide, brand, row.kicker.toUpperCase(), execTextBox(60, y + 30, 92, 16, execMutedToken(brand, model), 8, "medium"));
     }
-    addTextBox(slide, brand, row.title, execTextBox(170, y + 12, 290, 25, execHeadingToken(brand, model), 18, "medium"));
+    const titleLines = estimateWrappedLines(row.title, { w: 300, size: 18 });
+    const titleH = Math.min(36, Math.max(22, titleLines * 21));
+    addTextBox(slide, brand, row.title, execTextBox(170, y + 12, 300, titleH, execHeadingToken(brand, model), 18, "medium", { fit: "shrink" }));
     if (row.body) {
-      addTextBox(slide, brand, row.body, execTextBox(170, y + 42, rowW - 220, 28, execMutedToken(brand, model), 12, "regular", { fit: "shrink" }));
+      const bodyY = y + 12 + titleH + 5;
+      addTextBox(slide, brand, row.body, execTextBox(170, bodyY, rowW - 220, Math.max(16, y + rowH - bodyY - 8), execMutedToken(brand, model), 12, "regular", { fit: "shrink" }));
     }
     if (row.note) {
       addTextBox(slide, brand, row.note, execTextBox(rowX + rowW - 105, y + 28, 90, 18, "red", 10, "regular", { italic: true }));
@@ -15867,34 +15899,42 @@ function addClose(slide, model, frontmatter, brand, resourcesDir) {
   const close = model.close || {};
   const presenter = frontmatter.presenter || {};
   addSlideChrome(slide, brand, resourcesDir, "close", "dark", model);
-  addLargeTextBox(slide, brand, close.title || model.title || "Thank you", expandedTitleBox(close.title || model.title || "Thank you", layout.title));
+  addLargeTextBox(slide, brand, close.title || model.title || "Thank you", expandedTitleBox(close.title || model.title || "Thank you", layout.title, { maxH: 180 }));
   const name = close.name || presenter.name;
   const role = close.role || presenter.role;
   if (name) addTextBox(slide, brand, name, layout.name);
   if (role) addTextBox(slide, brand, role, layout.role);
 }
 function addLargeTextBox(slide, brand, text, box, options = {}) {
-  const size = box.size || 48;
   addTextBox(slide, brand, text, box, {
     breakLine: true,
     fit: "shrink",
-    lineSpacing: Math.ceil(size * 1.16),
     paraSpaceAfter: 0,
     ...options
   });
 }
-function expandedTitleBox(text, box) {
+function expandedTitleBox(text, box, options = {}) {
   const lines = estimateWrappedLines(text, box);
   const lineHeight = Math.ceil((box.size || 48) * 1.16);
+  const expandedHeight = Math.max(box.h, lines * lineHeight);
   return {
     ...box,
-    h: Math.max(box.h, lines * lineHeight)
+    h: options.maxH ? Math.min(options.maxH, expandedHeight) : expandedHeight
   };
 }
 function boxAfterTitle(titleBox, box) {
   return {
     ...box,
     y: Math.max(box.y, titleBox.y + titleBox.h + 16)
+  };
+}
+function boxAfterHeader(box, contentTop, minHeight = 18) {
+  const y = Math.max(box.y, contentTop);
+  const originalBottom = box.y + box.h;
+  return {
+    ...box,
+    y,
+    h: Math.max(minHeight, originalBottom - y)
   };
 }
 function estimateWrappedLines(text, box) {
@@ -15906,14 +15946,14 @@ function addBaseHeader(slide, model, brand, resourcesDir) {
   addSlideChrome(slide, brand, resourcesDir, "content", isLightSurface(model) ? "white" : "dark", model);
   const layout = brand.layouts.header;
   const logoBox = brand.layouts.companyLogo || brand.layouts.logo || { x: 36, y: 21, w: 98, h: 24 };
-  const titleBox = expandedTitleBox(model.title, layout.title);
+  const titleBox = expandedTitleBox(model.title, layout.title, { maxH: 116 });
   let contentTop = titleBox.y + titleBox.h + 18;
   if (model.eyebrow) {
     const eyebrowBox = avoidBoxOverlap(layout.eyebrow, logoBox, 12);
     contentTop = Math.max(contentTop, eyebrowBox.y + eyebrowBox.h + 18);
     addTextBox(slide, brand, model.eyebrow.toUpperCase(), surfaceBox(brand, model, eyebrowBox, "accent"), { margin: 0 });
   }
-  addTextBox(slide, brand, model.title, surfaceBox(brand, model, titleBox, "heading"), { fit: "shrink" });
+  addTextBox(slide, brand, model.title, surfaceBox(brand, model, titleBox, "heading"), { breakLine: true, fit: "shrink" });
   return { contentTop };
 }
 function addExecutiveHeader(slide, model, brand, resourcesDir) {
@@ -16004,9 +16044,21 @@ function addSlideChrome(slide, brand, resourcesDir, kind, fallbackColor, model =
     { x: 0, y: 0, w: brand.slide.widthPt, h: brand.slide.heightPt },
     `${brand.name || "Deck"} ${kind} background`
   );
-  const logo = brandLogoForSurface(brand, kind, surface);
   const logoBox = brand.layouts.companyLogo || brand.layouts.logo || { x: 36, y: 21, w: 98, h: 24 };
-  addResourceImage(slide, logo, resourcesDir, logoBox, `${brand.name || "Brand"} logo`, { fit: "contain" });
+  if (model.companyLogo?.src) {
+    addSurfaceResourceImage(
+      slide,
+      model.companyLogo.src,
+      resourcesDir,
+      surface,
+      logoBox,
+      model.companyLogo.alt || `${brand.name || "Brand"} logo`,
+      { fit: "contain" }
+    );
+  } else {
+    const logo = brandLogoForSurface(brand, kind, surface);
+    addResourceImage(slide, logo, resourcesDir, logoBox, `${brand.name || "Brand"} logo`, { fit: "contain" });
+  }
   if (model.customerLogo?.src) {
     const customerLogoBox = brand.layouts.customerLogo || { x: 828, y: 21, w: 98, h: 24 };
     if (surface === "dark" && customerLogoBackplateEnabled(brand)) {
@@ -16154,13 +16206,38 @@ function brandLogoForSurface(brand, kind, surface) {
   return logo.companyDark || logo.dark || logo[kind] || (kind === "divider" ? logo.cover : "") || (kind === "close" ? logo.cover : "") || logo.default || "";
 }
 function swimlaneFill(brand, model, layout, laneColor = "blue") {
-  const configured = layout.fills?.[laneColor] || (brand.colors?.[laneColor] ? laneColor : "");
+  const normalizedColor = normalizeLaneColor(laneColor);
+  const configured = layout.fills?.[normalizedColor] || layout.fills?.[laneColor];
   if (configured) return color(brand, configured);
+  if (isLightSurface(model)) {
+    const fallback = swimlaneFallbackFill(normalizedColor);
+    if (fallback) return color(brand, fallback);
+  }
   return surfaceCardFill(brand, model);
 }
 function swimlaneAccent(brand, layout, laneColor = "blue") {
-  const configured = layout.accents?.[laneColor] || (brand.colors?.[laneColor] ? laneColor : "") || layout.accents?.blue || "blue";
+  const normalizedColor = normalizeLaneColor(laneColor);
+  const configured = layout.accents?.[normalizedColor] || layout.accents?.[laneColor] || normalizedColor || layout.accents?.blue || "blue";
   return color(brand, configured);
+}
+function normalizeLaneColor(laneColor = "blue") {
+  const token = String(laneColor || "blue").trim();
+  const lower = token.toLowerCase();
+  if (lower === "cyan" || lower === "lightblue") return "lightBlue";
+  return token;
+}
+function swimlaneFallbackFill(laneColor = "blue") {
+  const fills = {
+    blue: "E8F4FE",
+    lightBlue: "E9F9FF",
+    cyan: "E9F9FF",
+    purple: "F0EDFE",
+    green: "ECF9F1",
+    orange: "FFF3EA",
+    red: "FFF0F2",
+    yellow: "FFF8DF"
+  };
+  return fills[laneColor] || "";
 }
 function inferLaneGap(layout) {
   if (layout.laneY?.length >= 2) {

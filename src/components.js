@@ -256,6 +256,7 @@ function compileDivider(root, element, components, context) {
     subtitle: divider.attr('subtitle') || cleanText(divider.find('p').first().text()),
   }
   if (!model.title) fail('deck-divider requires a title attribute or h1 child.', context)
+  validateDividerCopy(model, context)
   components.push(model)
   divider.replaceWith(renderDividerHtml(model))
 }
@@ -554,7 +555,8 @@ function validateExecCardsCopy(model, context) {
 function validateSwimlaneCopy(model, context) {
   model.lanes.forEach((lane, laneIndex) => {
     const stepCount = Math.max(1, lane.steps.length)
-    const bodyChars = stepCount >= 4 ? 78 : 96
+    const compact = model.lanes.length >= 3 || stepCount >= 3
+    const bodyChars = stepCount >= 4 ? 88 : compact ? 105 : 116
     lane.steps.forEach((step, stepIndex) => {
       const label = `deck-lane[${laneIndex + 1}].deck-step[${stepIndex + 1}]`
       assertCopyFits({
@@ -572,13 +574,36 @@ function validateSwimlaneCopy(model, context) {
           field: `${label}.body`,
           text: step.body,
           maxChars: bodyChars,
-          maxLines: 3,
-          charsPerLine: stepCount >= 4 ? 28 : 38,
+          maxLines: compact ? 2 : 3,
+          charsPerLine: stepCount >= 4 ? 36 : compact ? 52 : 42,
           context,
         })
       }
     })
   })
+}
+
+function validateDividerCopy(model, context) {
+  assertCopyFits({
+    component: 'deck-divider',
+    field: 'title',
+    text: model.title,
+    maxChars: 82,
+    maxLines: 3,
+    charsPerLine: 30,
+    context,
+  })
+  if (model.subtitle) {
+    assertCopyFits({
+      component: 'deck-divider',
+      field: 'subtitle',
+      text: model.subtitle,
+      maxChars: 130,
+      maxLines: 2,
+      charsPerLine: 65,
+      context,
+    })
+  }
 }
 
 function assertCopyFits({ component, field, text, maxChars, maxLines, charsPerLine, context }) {

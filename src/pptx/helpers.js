@@ -140,7 +140,7 @@ function resolveImageBox(imagePath, box, options = {}) {
   return containBox(box, size.width, size.height)
 }
 
-function containBox(box, imageW, imageH) {
+export function containBox(box, imageW, imageH) {
   const imageRatio = imageW / imageH
   const boxRatio = box.w / box.h
   if (!Number.isFinite(imageRatio) || imageRatio <= 0 || !Number.isFinite(boxRatio) || boxRatio <= 0) return box
@@ -173,6 +173,10 @@ function intrinsicImageSize(imagePath) {
     return null
   }
   return null
+}
+
+export function svgIntrinsicSize(svg) {
+  return svgSize(svg)
 }
 
 function svgSize(svg) {

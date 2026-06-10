@@ -5,7 +5,9 @@ import {
   addResourceImage,
   addSurfaceResourceImage,
   addTextBox,
+  containBox,
   normalizePptxColors,
+  svgIntrinsicSize,
   svgToDataUri,
 } from './helpers.js'
 
@@ -49,7 +51,7 @@ export function addDivider(slide, model, brand, resourcesDir) {
   const divider = model.divider || {}
   const title = divider.title || model.title
   const subtitle = divider.subtitle || model.subtitle
-  const titleBox = expandedTitleBox(title, layout.title)
+  const titleBox = expandedTitleBox(title, layout.title, { maxH: subtitle ? 190 : 250 })
   const subtitleBox = subtitle ? boxAfterTitle(titleBox, layout.subtitle) : layout.subtitle
 
   addSlideChrome(slide, brand, resourcesDir, 'divider', 'dark', model)
@@ -236,13 +238,14 @@ export function addVisual(slide, model, brand, resourcesDir) {
     caption: { x: 84, y: 418, w: 792, h: 20, font: 'regular', size: 8, color: 'muted' },
   }
   const visualBox = boxAfterHeader(layout, header.contentTop, 120)
+  const renderedBox = containSvgBox(visual.svg, visualBox)
   try {
     slide.addImage({
       data: svgToDataUri(visual.svg),
-      x: ptToIn(visualBox.x),
-      y: ptToIn(visualBox.y),
-      w: ptToIn(visualBox.w),
-      h: ptToIn(visualBox.h),
+      x: ptToIn(renderedBox.x),
+      y: ptToIn(renderedBox.y),
+      w: ptToIn(renderedBox.w),
+      h: ptToIn(renderedBox.h),
       altText: visual.alt || visual.title || model.title,
     })
   } catch {
@@ -254,12 +257,18 @@ export function addVisual(slide, model, brand, resourcesDir) {
   if (visual.caption) {
     const captionBox = {
       ...layout.caption,
-      y: Math.max(layout.caption.y, visualBox.y + visualBox.h + 8),
+      y: Math.max(layout.caption.y, renderedBox.y + renderedBox.h + 8),
     }
     addTextBox(slide, brand, visual.caption, surfaceBox(brand, model, captionBox, 'muted'), { fit: 'shrink' })
   }
 
   addTakeaway(slide, model, brand)
+}
+
+function containSvgBox(svg, box) {
+  const size = svgIntrinsicSize(svg)
+  if (!size?.width || !size?.height) return box
+  return containBox(box, size.width, size.height)
 }
 
 export function addComparison(slide, model, brand, resourcesDir) {
@@ -307,7 +316,10 @@ export function addSwimlane(slide, model, brand, resourcesDir) {
 
   const layout = brand.layouts.swimlane
   const laneCount = Math.min(swimlane.lanes.length, layout.maxLanes || 4)
-  const laneGap = layout.laneGap ?? inferLaneGap(layout)
+  const compact = laneCount >= 3
+  const laneGap = compact ? Math.min(layout.laneGap ?? inferLaneGap(layout), 14) : (layout.laneGap ?? inferLaneGap(layout))
+  const stepGap = compact ? Math.min(layout.stepGap || 12, 10) : (layout.stepGap || 12)
+  const stepPad = compact ? Math.min(layout.stepPad || 8, 7) : (layout.stepPad || 8)
   const contentTop = Math.max(header?.contentTop || 0, layout.laneY?.[0] || 0)
   const contentBottom = swimlaneBottom(model, brand, layout)
   const laneH = Math.max(
@@ -324,23 +336,26 @@ export function addSwimlane(slide, model, brand, resourcesDir) {
 
     const steps = lane.steps.slice(0, layout.maxSteps || 5)
     const stepCount = Math.max(1, steps.length)
-    const stepW = (layout.laneW - 24 - layout.stepGap * (stepCount - 1)) / stepCount
-    const stepY = laneY + Math.min(layout.stepYDy, Math.max(28, laneH - (layout.stepH || 74) - 12))
-    const stepH = Math.max(layout.minStepH || 36, laneY + laneH - stepY - 12)
+    const stepW = (layout.laneW - 24 - stepGap * (stepCount - 1)) / stepCount
+    const preferredStepH = compact ? Math.max(50, Math.min(layout.stepH || 74, laneH - 34)) : (layout.stepH || 74)
+    const stepTopDy = compact ? Math.min(layout.stepYDy ?? 38, 28) : (layout.stepYDy ?? 38)
+    const stepBottomPad = compact ? 8 : 12
+    const stepY = laneY + Math.min(stepTopDy, Math.max(24, laneH - preferredStepH - stepBottomPad))
+    const stepH = Math.max(layout.minStepH || 36, laneY + laneH - stepY - stepBottomPad)
     steps.forEach((step, stepIndex) => {
-      const stepX = layout.x + 12 + stepIndex * (stepW + layout.stepGap)
+      const stepX = layout.x + 12 + stepIndex * (stepW + stepGap)
       addRect(slide, brand, stepX, stepY, stepW, stepH, fill, color(brand, 'border'), 0.4)
       addRect(slide, brand, stepX, stepY, 4, stepH, accent)
-      const titleY = stepY + layout.stepPad + 1
-      const titleH = Math.min(22, Math.max(12, stepH - layout.stepPad * 2))
-      const bodyY = titleY + titleH + 5
+      const titleY = stepY + stepPad + 1
+      const titleH = Math.min(compact ? 15 : 22, Math.max(12, stepH - stepPad * 2))
+      const bodyY = titleY + titleH + (compact ? 3 : 5)
       addTextBox(slide, brand, step.title, {
         ...fitBoxInsideBottom(
           {
             ...textBoxForFill(brand, model, layout.stepTitle, fill, 'heading'),
-            x: stepX + layout.stepPad,
+            x: stepX + stepPad,
             y: titleY,
-            w: stepW - layout.stepPad * 2,
+            w: stepW - stepPad * 2,
             h: titleH,
           },
           stepY + stepH,
@@ -353,10 +368,10 @@ export function addSwimlane(slide, model, brand, resourcesDir) {
           ...fitBoxInsideBottom(
             {
               ...textBoxForFill(brand, model, layout.stepBody, fill, 'body'),
-              x: stepX + layout.stepPad,
+              x: stepX + stepPad,
               y: bodyY,
-              w: stepW - layout.stepPad * 2,
-              h: Math.max(12, stepY + stepH - bodyY - layout.stepPad),
+              w: stepW - stepPad * 2,
+              h: Math.max(16, stepY + stepH - bodyY - stepPad),
             },
             stepY + stepH,
             8,
@@ -369,7 +384,7 @@ export function addSwimlane(slide, model, brand, resourcesDir) {
           ...surfaceBox(brand, model, layout.arrow, 'muted'),
           x: stepX + stepW + 1,
           y: stepY + 25,
-          w: layout.stepGap,
+          w: stepGap,
           h: 18,
           align: 'center',
         })
@@ -696,7 +711,7 @@ export function addClose(slide, model, frontmatter, brand, resourcesDir) {
   const close = model.close || {}
   const presenter = frontmatter.presenter || {}
   addSlideChrome(slide, brand, resourcesDir, 'close', 'dark', model)
-  addLargeTextBox(slide, brand, close.title || model.title || 'Thank you', expandedTitleBox(close.title || model.title || 'Thank you', layout.title))
+  addLargeTextBox(slide, brand, close.title || model.title || 'Thank you', expandedTitleBox(close.title || model.title || 'Thank you', layout.title, { maxH: 180 }))
   const name = close.name || presenter.name
   const role = close.role || presenter.role
   if (name) addTextBox(slide, brand, name, layout.name)
@@ -704,22 +719,21 @@ export function addClose(slide, model, frontmatter, brand, resourcesDir) {
 }
 
 function addLargeTextBox(slide, brand, text, box, options = {}) {
-  const size = box.size || 48
   addTextBox(slide, brand, text, box, {
     breakLine: true,
     fit: 'shrink',
-    lineSpacing: Math.ceil(size * 1.16),
     paraSpaceAfter: 0,
     ...options,
   })
 }
 
-function expandedTitleBox(text, box) {
+function expandedTitleBox(text, box, options = {}) {
   const lines = estimateWrappedLines(text, box)
   const lineHeight = Math.ceil((box.size || 48) * 1.16)
+  const expandedHeight = Math.max(box.h, lines * lineHeight)
   return {
     ...box,
-    h: Math.max(box.h, lines * lineHeight),
+    h: options.maxH ? Math.min(options.maxH, expandedHeight) : expandedHeight,
   }
 }
 
@@ -752,14 +766,14 @@ function addBaseHeader(slide, model, brand, resourcesDir) {
   addSlideChrome(slide, brand, resourcesDir, 'content', isLightSurface(model) ? 'white' : 'dark', model)
   const layout = brand.layouts.header
   const logoBox = brand.layouts.companyLogo || brand.layouts.logo || { x: 36, y: 21, w: 98, h: 24 }
-  const titleBox = expandedTitleBox(model.title, layout.title)
+  const titleBox = expandedTitleBox(model.title, layout.title, { maxH: 116 })
   let contentTop = titleBox.y + titleBox.h + 18
   if (model.eyebrow) {
     const eyebrowBox = avoidBoxOverlap(layout.eyebrow, logoBox, 12)
     contentTop = Math.max(contentTop, eyebrowBox.y + eyebrowBox.h + 18)
     addTextBox(slide, brand, model.eyebrow.toUpperCase(), surfaceBox(brand, model, eyebrowBox, 'accent'), { margin: 0 })
   }
-  addTextBox(slide, brand, model.title, surfaceBox(brand, model, titleBox, 'heading'), { fit: 'shrink' })
+  addTextBox(slide, brand, model.title, surfaceBox(brand, model, titleBox, 'heading'), { breakLine: true, fit: 'shrink' })
   return { contentTop }
 }
 
@@ -1075,19 +1089,38 @@ function swimlaneFill(brand, model, layout, laneColor = 'blue') {
   const normalizedColor = normalizeLaneColor(laneColor)
   const configured = layout.fills?.[normalizedColor] || layout.fills?.[laneColor]
   if (configured) return color(brand, configured)
+  if (isLightSurface(model)) {
+    const fallback = swimlaneFallbackFill(normalizedColor)
+    if (fallback) return color(brand, fallback)
+  }
   return surfaceCardFill(brand, model)
 }
 
 function swimlaneAccent(brand, layout, laneColor = 'blue') {
   const normalizedColor = normalizeLaneColor(laneColor)
-  const configured = layout.accents?.[normalizedColor] || layout.accents?.[laneColor] || (brand.colors?.[normalizedColor] ? normalizedColor : '') || layout.accents?.blue || 'blue'
+  const configured = layout.accents?.[normalizedColor] || layout.accents?.[laneColor] || normalizedColor || layout.accents?.blue || 'blue'
   return color(brand, configured)
 }
 
 function normalizeLaneColor(laneColor = 'blue') {
   const token = String(laneColor || 'blue').trim()
-  if (token === 'cyan') return 'lightBlue'
+  const lower = token.toLowerCase()
+  if (lower === 'cyan' || lower === 'lightblue') return 'lightBlue'
   return token
+}
+
+function swimlaneFallbackFill(laneColor = 'blue') {
+  const fills = {
+    blue: 'E8F4FE',
+    lightBlue: 'E9F9FF',
+    cyan: 'E9F9FF',
+    purple: 'F0EDFE',
+    green: 'ECF9F1',
+    orange: 'FFF3EA',
+    red: 'FFF0F2',
+    yellow: 'FFF8DF',
+  }
+  return fills[laneColor] || ''
 }
 
 function inferLaneGap(layout) {

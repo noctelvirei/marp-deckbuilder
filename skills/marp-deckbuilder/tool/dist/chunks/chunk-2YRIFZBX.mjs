@@ -47185,21 +47185,34 @@ function renderExecRowsHtml(execRows) {
 </div>`;
 }
 function renderExecCardsHtml(execCards) {
-  return `<div class="deck-exec deck-exec-cards ${surfaceClass(execCards)} deck-exec-cards-${execCards.columns} deck-exec-cards-${escapeAttr(execCards.variant)}">
-  ${execCards.intro ? `<p class="deck-exec-intro">${escapeHtml(execCards.intro)}</p>` : ""}
-  <div class="deck-exec-card-grid">${execCards.cards.map(
-    (card) => `<article class="deck-exec-card deck-exec-accent-${escapeAttr(card.accent)}">
-    <strong class="deck-exec-card-label">${escapeHtml(card.label)}</strong>
-    ${card.title ? `<h3>${escapeHtml(card.title)}</h3>` : ""}
-    ${card.metric ? `<div class="deck-exec-card-metric">${escapeHtml(card.metric)}</div>` : ""}
-    ${card.subtitle ? `<span class="deck-exec-card-subtitle">${escapeHtml(card.subtitle)}</span>` : ""}
-    ${card.body ? `<p>${escapeHtml(card.body)}</p>` : ""}
-  </article>`
-  ).join("\n")}</div>
-  ${execCards.loopCaption ? `<p class="deck-exec-loop-caption">${escapeHtml(execCards.loopCaption)}</p>` : ""}
-  ${execCards.target ? `<div class="deck-exec-target deck-exec-accent-${escapeAttr(execCards.targetAccent)}">${escapeHtml(execCards.target)}</div>` : ""}
-  ${renderExecTakeawayHtml(execCards.takeaway, execCards.takeawayAccent)}
-</div>`;
+  const cards = execCards.cards.map((card) => {
+    const parts2 = [
+      `<article class="deck-exec-card deck-exec-accent-${escapeAttr(card.accent)}">`,
+      `<strong class="deck-exec-card-label">${escapeHtml(card.label)}</strong>`
+    ];
+    if (card.title) parts2.push(`<h3>${escapeHtml(card.title)}</h3>`);
+    if (card.metric) parts2.push(`<div class="deck-exec-card-metric">${escapeHtml(card.metric)}</div>`);
+    if (card.subtitle) parts2.push(`<span class="deck-exec-card-subtitle">${escapeHtml(card.subtitle)}</span>`);
+    if (card.body) parts2.push(`<p>${escapeHtml(card.body)}</p>`);
+    parts2.push("</article>");
+    return parts2.join("");
+  }).join("");
+  const parts = [
+    `<div class="deck-exec deck-exec-cards ${surfaceClass(execCards)} deck-exec-cards-${execCards.columns} deck-exec-cards-${escapeAttr(execCards.variant)}">`
+  ];
+  if (execCards.intro) parts.push(`<p class="deck-exec-intro">${escapeHtml(execCards.intro)}</p>`);
+  parts.push(`<div class="deck-exec-card-grid">${cards}</div>`);
+  if (execCards.loopCaption) {
+    parts.push(`<p class="deck-exec-loop-caption">${escapeHtml(execCards.loopCaption)}</p>`);
+  }
+  if (execCards.target) {
+    parts.push(
+      `<div class="deck-exec-target deck-exec-accent-${escapeAttr(execCards.targetAccent)}">${escapeHtml(execCards.target)}</div>`
+    );
+  }
+  parts.push(renderExecTakeawayHtml(execCards.takeaway, execCards.takeawayAccent));
+  parts.push("</div>");
+  return parts.join("");
 }
 function renderExecTimelineHtml(execTimeline) {
   return `<div class="deck-exec deck-exec-timeline ${surfaceClass(execTimeline)}">
@@ -47315,6 +47328,7 @@ function compileDeckComponents(source, options = {}) {
         fail(`deck-lane "${lane.title}" must include at least one deck-step.`, context);
       }
     }
+    validateSwimlaneCopy(model, context);
     components.push(model);
     swimlane.replaceWith(renderSwimlaneHtml(model));
   });
@@ -47342,6 +47356,7 @@ function compileDeckComponents(source, options = {}) {
     const execTitle = root2(element);
     const model = parseExecTitle(execTitle);
     if (!model.title) fail("deck-exec-title requires a title attribute or h1 child.", context);
+    validateExecTitleCopy(model, context);
     components.push(model);
     execTitle.replaceWith(renderExecTitleHtml(model));
   });
@@ -47349,6 +47364,7 @@ function compileDeckComponents(source, options = {}) {
     const execRows = root2(element);
     const model = parseExecRows(root2, execRows);
     if (model.rows.length === 0) fail("deck-exec-rows must include at least one deck-exec-row.", context);
+    validateExecRowsCopy(model, context);
     components.push(model);
     execRows.replaceWith(renderExecRowsHtml(model));
   });
@@ -47356,6 +47372,7 @@ function compileDeckComponents(source, options = {}) {
     const execCards = root2(element);
     const model = parseExecCards(root2, execCards);
     if (model.cards.length === 0) fail("deck-exec-cards must include at least one deck-exec-card.", context);
+    validateExecCardsCopy(model, context);
     components.push(model);
     execCards.replaceWith(renderExecCardsHtml(model));
   });
@@ -47424,6 +47441,7 @@ function compileDivider(root2, element, components, context) {
     subtitle: divider.attr("subtitle") || cleanText(divider.find("p").first().text())
   };
   if (!model.title) fail("deck-divider requires a title attribute or h1 child.", context);
+  validateDividerCopy(model, context);
   components.push(model);
   divider.replaceWith(renderDividerHtml(model));
 }
@@ -47568,6 +47586,195 @@ function validateChart(chart, context) {
     fail("deck-chart values must all be numeric.", context);
   }
 }
+function validateExecTitleCopy(model, context) {
+  assertCopyFits({
+    component: "deck-exec-title",
+    field: "title",
+    text: model.title,
+    maxChars: 42,
+    maxLines: 2,
+    charsPerLine: 22,
+    context
+  });
+  if (model.subtitle) {
+    assertCopyFits({
+      component: "deck-exec-title",
+      field: "subtitle",
+      text: model.subtitle,
+      maxChars: 110,
+      maxLines: 2,
+      charsPerLine: 58,
+      context
+    });
+  }
+}
+function validateExecRowsCopy(model, context) {
+  model.rows.forEach((row, index2) => {
+    const label = `deck-exec-row[${index2 + 1}]`;
+    assertCopyFits({
+      component: "deck-exec-rows",
+      field: `${label}.title`,
+      text: row.title,
+      maxChars: 28,
+      maxLines: 1,
+      charsPerLine: 28,
+      context
+    });
+    if (row.body) {
+      assertCopyFits({
+        component: "deck-exec-rows",
+        field: `${label}.body`,
+        text: row.body,
+        maxChars: 105,
+        maxLines: 2,
+        charsPerLine: 58,
+        context
+      });
+    }
+    if (row.note) {
+      assertCopyFits({
+        component: "deck-exec-rows",
+        field: `${label}.note`,
+        text: row.note,
+        maxChars: 16,
+        maxLines: 1,
+        charsPerLine: 16,
+        context
+      });
+    }
+  });
+  if (model.side) {
+    if (model.side.value) {
+      assertCopyFits({
+        component: "deck-exec-rows",
+        field: "side-value",
+        text: model.side.value,
+        maxChars: 8,
+        maxLines: 1,
+        charsPerLine: 8,
+        context
+      });
+    }
+    if (model.side.body) {
+      assertCopyFits({
+        component: "deck-exec-rows",
+        field: "side-body",
+        text: model.side.body,
+        maxChars: 62,
+        maxLines: 4,
+        charsPerLine: 18,
+        context
+      });
+    }
+  }
+}
+function validateExecCardsCopy(model, context) {
+  const columns = model.columns || 3;
+  const titleChars = columns === 4 ? 22 : 30;
+  const metricChars = columns === 4 ? 10 : 14;
+  const bodyChars = columns === 4 ? 82 : 100;
+  model.cards.forEach((card, index2) => {
+    const label = `deck-exec-card[${index2 + 1}]`;
+    if (card.title) {
+      assertCopyFits({
+        component: "deck-exec-cards",
+        field: `${label}.title`,
+        text: card.title,
+        maxChars: titleChars,
+        maxLines: 2,
+        charsPerLine: columns === 4 ? 15 : 22,
+        context
+      });
+    }
+    if (card.metric) {
+      assertCopyFits({
+        component: "deck-exec-cards",
+        field: `${label}.metric`,
+        text: card.metric,
+        maxChars: metricChars,
+        maxLines: 1,
+        charsPerLine: metricChars,
+        context
+      });
+    }
+    if (card.body) {
+      assertCopyFits({
+        component: "deck-exec-cards",
+        field: `${label}.body`,
+        text: card.body,
+        maxChars: bodyChars,
+        maxLines: columns === 4 ? 4 : 3,
+        charsPerLine: columns === 4 ? 26 : 42,
+        context
+      });
+    }
+  });
+}
+function validateSwimlaneCopy(model, context) {
+  model.lanes.forEach((lane, laneIndex) => {
+    const stepCount = Math.max(1, lane.steps.length);
+    const compact = model.lanes.length >= 3 || stepCount >= 3;
+    const bodyChars = stepCount >= 4 ? 88 : compact ? 105 : 116;
+    lane.steps.forEach((step, stepIndex) => {
+      const label = `deck-lane[${laneIndex + 1}].deck-step[${stepIndex + 1}]`;
+      assertCopyFits({
+        component: "deck-swimlane",
+        field: `${label}.title`,
+        text: step.title,
+        maxChars: 22,
+        maxLines: 1,
+        charsPerLine: 22,
+        context
+      });
+      if (step.body) {
+        assertCopyFits({
+          component: "deck-swimlane",
+          field: `${label}.body`,
+          text: step.body,
+          maxChars: bodyChars,
+          maxLines: compact ? 2 : 3,
+          charsPerLine: stepCount >= 4 ? 36 : compact ? 52 : 42,
+          context
+        });
+      }
+    });
+  });
+}
+function validateDividerCopy(model, context) {
+  assertCopyFits({
+    component: "deck-divider",
+    field: "title",
+    text: model.title,
+    maxChars: 82,
+    maxLines: 3,
+    charsPerLine: 30,
+    context
+  });
+  if (model.subtitle) {
+    assertCopyFits({
+      component: "deck-divider",
+      field: "subtitle",
+      text: model.subtitle,
+      maxChars: 130,
+      maxLines: 2,
+      charsPerLine: 65,
+      context
+    });
+  }
+}
+function assertCopyFits({ component, field, text: text3, maxChars, maxLines, charsPerLine, context }) {
+  const normalized = cleanText(text3);
+  if (!normalized) return;
+  const lines = estimateCopyLines(normalized, charsPerLine);
+  if (normalized.length <= maxChars && lines <= maxLines) return;
+  fail(
+    `Keep <${component}>; shorten ${field} to fit this component (${normalized.length}/${maxChars} chars, ${lines}/${maxLines} estimated line(s)). Do not switch component type; reduce words or split the idea across another slide.`,
+    context
+  );
+}
+function estimateCopyLines(text3, charsPerLine) {
+  return String(text3 || "").split(/\r?\n/).reduce((total, line) => total + Math.max(1, Math.ceil(line.trim().length / Math.max(8, charsPerLine))), 0);
+}
 function componentContext(options = {}) {
   return options.slideNumber ? `slide ${options.slideNumber}` : "deck";
 }
@@ -47639,6 +47846,7 @@ function parseSlide(source, index2, originalSource = source, components = [], fr
   const layout = directives.layout || inferComponentLayout(components) || inferLayout(source, index2);
   const componentTakeaway = components.find((component) => component.type === "takeaway");
   const proof = firstComponent(components, "proof");
+  const companyLogo = extractCompanyLogo(source) || frontmatterCompanyLogo(frontmatter);
   const customerLogo = extractCustomerLogo(source) || frontmatterCustomerLogo(frontmatter);
   const layoutComponent = firstComponent(components, layout);
   const surface = inferSurface(layout, directives, frontmatter, layoutComponent?.surface);
@@ -47671,6 +47879,7 @@ function parseSlide(source, index2, originalSource = source, components = [], fr
     execMetrics: firstComponent(components, "exec-metrics"),
     divider: firstComponent(components, "divider"),
     close: firstComponent(components, "close"),
+    companyLogo,
     customerLogo,
     paragraphs: extractParagraphs(source, title),
     bullets: extractBullets(source)
@@ -47795,6 +48004,25 @@ function extractCustomerLogo(source) {
   return {
     src,
     alt: firstMatch2(attrs, /\balt=["']([^"']*)["']/i) || "Customer logo"
+  };
+}
+function extractCompanyLogo(source) {
+  const img = String(source || "").match(/<img\b([^>]*\bclass=["'][^"']*\bdeck-(?:brand|company)-logo\b[^"']*["'][^>]*)>/i);
+  if (!img) return null;
+  const attrs = img[1];
+  const src = firstMatch2(attrs, /\bsrc=["']([^"']+)["']/i);
+  if (!src) return null;
+  return {
+    src,
+    alt: firstMatch2(attrs, /\balt=["']([^"']*)["']/i) || "Company logo"
+  };
+}
+function frontmatterCompanyLogo(frontmatter = {}) {
+  const value = frontmatter.companyLogo || frontmatter.brandLogo || frontmatter.company?.logo || frontmatter.company?.logoSrc;
+  if (!value) return null;
+  return {
+    src: String(value),
+    alt: frontmatter.companyName || frontmatter.company?.name || frontmatter.brandName || "Company logo"
   };
 }
 function frontmatterCustomerLogo(frontmatter = {}) {

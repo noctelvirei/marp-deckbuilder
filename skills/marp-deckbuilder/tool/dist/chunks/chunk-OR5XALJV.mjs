@@ -6,6 +6,46 @@ import { existsSync } from "node:fs";
 import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+var semanticColorFallbacks = {
+  dark: "090909",
+  white: "FFFFFF",
+  carddark: "1D1E29",
+  cardlight: "FDFDFD",
+  blue: "0F82F5",
+  lightblue: "59D6FD",
+  cyan: "59D6FD",
+  purple: "5143D5",
+  primarypurple: "803584",
+  green: "66CC8E",
+  orange: "F9935B",
+  yellow: "FBC546",
+  red: "FC5161",
+  body: "444444",
+  border: "DEDEDE",
+  muted: "888888",
+  footnote: "888888",
+  backgrounddark: "090909",
+  backgroundlight: "FFFFFF",
+  cardfilllight: "FDFDFD",
+  borderlight: "DEDEDE",
+  headinglight: "090909",
+  bodylight: "444444",
+  mutedlight: "666666",
+  bodyondark: "C8D8F0",
+  mutedondark: "8A95A8",
+  execheading: "FFFFFF",
+  execbody: "C9D2E8",
+  execmuted: "8A95A8",
+  execcard: "13213D",
+  execcardlight: "FDFDFD",
+  takeawayfill: "F0F0F0",
+  takeawayfilllight: "F0F4FA",
+  rowfilllight: "FDFDFD",
+  leftfilllight: "FFF0F0",
+  rightfilllight: "EEF6FE",
+  lefttextlight: "CC3333",
+  righttextlight: "0A5FAB"
+};
 async function loadDefinitions(definitionsDir) {
   const root = definitionsDir instanceof URL ? fileURLToPath(definitionsDir) : path.resolve(definitionsDir);
   const brandPath = path.join(root, "brand.json");
@@ -43,6 +83,8 @@ function color(brand, keyOrHex) {
     (key) => key.toLowerCase() === value.toLowerCase()
   );
   if (normalizedKey) return brand.colors[normalizedKey];
+  const semantic = semanticColorFallbacks[value.toLowerCase()];
+  if (semantic) return semantic;
   const hex = value.match(/^#?([0-9a-f]{6})$/i);
   if (hex) return hex[1].toUpperCase();
   return value;

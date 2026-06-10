@@ -23,8 +23,8 @@ async function buildCommand(argv) {
     );
   }
   const [{ loadDefinitions }, { parseDeckMarkdown }] = await Promise.all([
-    import("./chunks/brand-WX3MR7EQ.mjs"),
-    import("./chunks/markdown-2XFYKI5V.mjs")
+    import("./chunks/brand-6PXFCDA5.mjs"),
+    import("./chunks/markdown-TSAXYTOC.mjs")
   ]);
   const inputPath = path.resolve(argv.input);
   const projectRoot = process.cwd();
@@ -42,7 +42,7 @@ async function buildCommand(argv) {
   const htmlAssets = argv.htmlAssets || "inline";
   let rendered;
   if (wantsHtml) {
-    const { renderDeckHtml } = await import("./chunks/render-QPQIWL23.mjs");
+    const { renderDeckHtml } = await import("./chunks/render-JLEML4J2.mjs");
     rendered = renderDeckHtml(deck, {
       resourcesDir,
       definitions,
@@ -61,7 +61,7 @@ async function buildCommand(argv) {
     }
   }
   if (argv.pptx) {
-    const { writePptx } = await import("./chunks/pptx-5XQ7KKST.mjs");
+    const { writePptx } = await import("./chunks/pptx-IFPYPMZX.mjs");
     const pptxPath = path.resolve(argv.pptx);
     await mkdir(path.dirname(pptxPath), { recursive: true });
     await writePptx({
@@ -87,8 +87,8 @@ async function reportCommand(argv) {
     );
   }
   const [{ loadDefinitions }, { renderReportHtml }] = await Promise.all([
-    import("./chunks/brand-WX3MR7EQ.mjs"),
-    import("./chunks/report-ROBEGXYG.mjs")
+    import("./chunks/brand-6PXFCDA5.mjs"),
+    import("./chunks/report-Z6QD5MAO.mjs")
   ]);
   const inputPath = path.resolve(argv.input);
   const projectRoot = process.cwd();

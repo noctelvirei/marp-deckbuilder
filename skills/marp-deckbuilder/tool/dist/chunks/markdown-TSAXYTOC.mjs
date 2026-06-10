@@ -7,7 +7,7 @@ import {
   parseSlide,
   splitFrontmatter,
   splitSlides
-} from "./chunk-TEEFIOG3.mjs";
+} from "./chunk-2YRIFZBX.mjs";
 import "./chunk-YFTCHU5C.mjs";
 import "./chunk-IDDWZGZI.mjs";
 export {

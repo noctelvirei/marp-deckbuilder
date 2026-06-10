@@ -70,6 +70,12 @@ test('writes SVG visual components as embedded PPTX media', async () => {
   const archive = await JSZip.loadAsync(await readFile(out))
   const mediaNames = Object.keys(archive.files).filter((name) => name.startsWith('ppt/media/'))
   assert.ok(mediaNames.some((name) => name.endsWith('.svg')))
+  const slideXml = await archive.file('ppt/slides/slide2.xml').async('string')
+  const visualXml = pictureXmlContaining(slideXml, 'Operating model')
+  const extent = pictureExtent(visualXml)
+  assert.ok(Math.abs(extent.cx / extent.cy - 2) < 0.01)
+  assert.ok(extent.cx < 836 * 12700)
+  assert.ok(extent.cy <= 292 * 12700)
 })
 
 test('writes configured brand backgrounds and logos into PPTX media', async () => {
@@ -175,15 +181,17 @@ test('normalizes brand colour tokens before writing PPTX XML', async () => {
   await mkdir(tmpDir, { recursive: true })
 
   const definitions = await loadDefinitions(new URL('../resources/definitions', import.meta.url))
+  const { lightBlue, yellow, ...colorsWithoutSemanticAliases } = definitions.brand.colors
   const brand = {
     ...definitions.brand,
+    colors: colorsWithoutSemanticAliases,
     layouts: {
       ...definitions.brand.layouts,
       header: {
         ...definitions.brand.layouts.header,
         title: {
           ...definitions.brand.layouts.header.title,
-          color: 'lightblue',
+          color: 'lightBlue',
         },
       },
     },
@@ -194,7 +202,13 @@ test('normalizes brand colour tokens before writing PPTX XML', async () => {
 
 # Content title
 
-Body copy`)
+Body copy
+
+---
+
+<deck-exec-metrics surface="dark">
+  <deck-exec-metric value="2" label="Yellow accent" accent="yellow"></deck-exec-metric>
+</deck-exec-metrics>`)
   const out = path.join(tmpDir, 'normalised-colours.pptx')
   const warnings = []
   const originalWarn = console.warn
@@ -207,12 +221,14 @@ Body copy`)
 
   const archive = await JSZip.loadAsync(await readFile(out))
   const slideXml = await archive.file('ppt/slides/slide2.xml').async('string')
+  const execSlideXml = await archive.file('ppt/slides/slide3.xml').async('string')
 
   assert.deepEqual(
     warnings.filter((warning) => warning.includes('not a valid scheme color')),
     [],
   )
   assert.match(slideXml, /59D6FD/)
+  assert.match(execSlideXml, /FBC546/)
 })
 
 test('writes markdown subheadings and bullets into native PPTX content slides', async () => {
@@ -383,8 +399,13 @@ test('spaces wrapped divider titles above subtitles in native PPTX', async () =>
 
   assert.match(slideXml, /Find One Workflow Worth Automating/)
   assert.match(slideXml, /Not the biggest thing/)
-  assert.match(slideXml, /<a:spcPts val="\d+"/)
-  assert.match(slideXml, /<a:off x="457200" y="4013200"/)
+  const titleShape = shapeXmlContaining(slideXml, 'Find One Workflow Worth Automating')
+  const subtitleShape = shapeXmlContaining(slideXml, 'Not the biggest thing')
+  const titleOffset = shapeOffset(titleShape)
+  const titleExtent = shapeExtent(titleShape)
+  const subtitleOffset = shapeOffset(subtitleShape)
+  assert.ok(subtitleOffset.y >= titleOffset.y + titleExtent.cy + 16 * 12700)
+  assert.doesNotMatch(titleShape, /<a:spcPts/)
 })
 
 test('renders multiline SVG visual components as live HTML SVG', async () => {
@@ -473,6 +494,8 @@ test('HTML component chrome constrains visuals and swimlanes inside the slide', 
   assert.match(rendered.document, /\.deck-visual-stage\s*\{[^}]*overflow:\s*hidden/)
   assert.match(rendered.document, /\.deck-swimlane\s*\{[^}]*max-height:/)
   assert.match(rendered.document, /\.deck-lane-steps\s*\{[^}]*grid-template-columns:\s*repeat\(auto-fit/)
+  assert.match(rendered.document, /section > p > img:not\(\.deck-brand-logo\)/)
+  assert.match(rendered.document, /-webkit-line-clamp:\s*2/)
 })
 
 test('resolves resource URLs inside brand theme CSS', async () => {
@@ -1384,6 +1407,36 @@ test('PPTX swimlane steps fill available lane width and keep text readable', asy
   assert.match(slideXml, /<a:ext cx="10515600" cy="/)
   assert.match(stepShape, /<a:srgbClr val="FFFFFF"\/>/)
   assert.doesNotMatch(stepShape, /<a:srgbClr val="090909"\/>/)
+
+  const compactDeck = parseDeckMarkdown(`<!-- _class: light -->
+<!-- eyebrow: ARCHITECTURE -->
+
+# A single real-time layer connects every channel and system in the enterprise
+
+<deck-swimlane>
+  <deck-lane title="Customer" color="blue">
+    <deck-step title="Receives link">Customer receives secure link; verifies identity, signs documents, and gives consent in one flow.</deck-step>
+  </deck-lane>
+  <deck-lane title="Agent" color="cyan">
+    <deck-step title="Guides live">Agent sees real-time customer progress with no blind transfers and no callbacks.</deck-step>
+  </deck-lane>
+  <deck-lane title="Platform" color="purple">
+    <deck-step title="Captures">Evidence is timestamped and stored automatically in the audit vault.</deck-step>
+  </deck-lane>
+</deck-swimlane>`)
+  const compactOut = path.join(tmpDir, 'swimlane-compact-fit.pptx')
+  await writePptx({ deck: compactDeck, outputPath: compactOut, brand })
+
+  const compactArchive = await JSZip.loadAsync(await readFile(compactOut))
+  const compactXml = await compactArchive.file('ppt/slides/slide1.xml').async('string')
+  const compactBody = shapeXmlContaining(compactXml, 'Customer receives secure link')
+  const compactTitle = shapeXmlContaining(compactXml, 'Receives link')
+  const bodyOffset = shapeOffset(compactBody)
+  const bodyExtent = shapeExtent(compactBody)
+  const titleOffset = shapeOffset(compactTitle)
+  assert.ok(bodyOffset.y > titleOffset.y)
+  assert.ok(bodyExtent.cy >= 16 * 12700)
+  assert.ok(bodyOffset.y + bodyExtent.cy < 445 * 12700)
 })
 
 test('writes executive layouts with independent light and dark surfaces in PPTX', async () => {
@@ -1475,6 +1528,15 @@ function shapeOffset(shapeXml) {
   return {
     x: Number(match[1]),
     y: Number(match[2]),
+  }
+}
+
+function shapeExtent(shapeXml) {
+  const match = shapeXml.match(/<a:ext cx="(\d+)" cy="(\d+)"\/>/)
+  assert.ok(match, 'Expected shape XML to include an extent')
+  return {
+    cx: Number(match[1]),
+    cy: Number(match[2]),
   }
 }
 

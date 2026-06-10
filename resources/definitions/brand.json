@@ -124,8 +124,26 @@
       "stepH": 74,
       "stepGap": 12,
       "stepPad": 8,
-      "fills": { "blue": "E8F4FE", "purple": "F0EDFE", "green": "ECF9F1" },
-      "accents": { "blue": "blue", "purple": "purple", "green": "green" },
+      "fills": {
+        "blue": "E8F4FE",
+        "lightBlue": "E9F9FF",
+        "cyan": "E9F9FF",
+        "purple": "F0EDFE",
+        "green": "ECF9F1",
+        "orange": "FFF3EA",
+        "red": "FFF0F2",
+        "yellow": "FFF8DF"
+      },
+      "accents": {
+        "blue": "blue",
+        "lightBlue": "lightBlue",
+        "cyan": "lightBlue",
+        "purple": "purple",
+        "green": "green",
+        "orange": "orange",
+        "red": "red",
+        "yellow": "yellow"
+      },
       "stepTitle": { "font": "medium", "size": 8, "color": "dark" },
       "stepBody": { "font": "regular", "size": 7, "color": "body" },
       "arrow": { "font": "medium", "size": 13, "color": "muted" }
