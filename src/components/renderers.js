@@ -52,11 +52,12 @@ export function renderComparisonHtml(comparison) {
 }
 
 export function renderSwimlaneHtml(swimlane) {
-  return `<div class="deck-swimlane">${swimlane.lanes
+  const laneCount = Math.max(swimlane.lanes.length, 1)
+  return `<div class="deck-swimlane deck-swimlane-${laneCount}">${swimlane.lanes
     .map(
       (lane) => `<section class="deck-lane deck-lane-${escapeAttr(lane.color)}">
   <h2>${escapeHtml(lane.title)}</h2>
-  <div class="deck-lane-steps">${lane.steps
+  <div class="deck-lane-steps deck-lane-steps-${Math.max(lane.steps.length, 1)}">${lane.steps
     .map(
       (step) => `<article>
     <h3>${escapeHtml(step.title)}</h3>

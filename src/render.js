@@ -135,6 +135,8 @@ ${customerLogoBackplateEnabled(brand) ? `.deck-customer-logo-frame.deck-logo-on-
   max-width: 100%;
   max-height: 100%;
   object-fit: contain;
+  filter: none !important;
+  mix-blend-mode: normal !important;
 }`
 }
 

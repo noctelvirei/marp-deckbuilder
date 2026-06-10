@@ -411,6 +411,41 @@ test('renders raw SVG blocks with blank lines as valid HTML SVG', async () => {
   assert.doesNotMatch(rendered.document, /<br \/>[\s\S]*<text x="50"/)
 })
 
+test('HTML component chrome constrains visuals and swimlanes inside the slide', async () => {
+  const source = `# Cover
+
+---
+
+# Architecture
+
+<deck-visual title="Oversized chart">
+  <svg viewBox="0 0 2000 600" role="img" aria-label="Oversized chart">
+    <rect width="2000" height="600" fill="#0f82f5"/>
+  </svg>
+</deck-visual>
+
+<deck-swimlane>
+  <deck-lane title="Initiate" color="blue">
+    <deck-step title="Trigger">Agent or digital channel triggers a session.</deck-step>
+  </deck-lane>
+  <deck-lane title="Engage" color="cyan">
+    <deck-step title="Connect">Customer receives a branded secure link.</deck-step>
+  </deck-lane>
+  <deck-lane title="Validate" color="purple">
+    <deck-step title="Check">Rules engine checks completeness before review.</deck-step>
+  </deck-lane>
+</deck-swimlane>`
+  const definitions = await loadDefinitions(new URL('../resources/definitions', import.meta.url))
+  const deck = parseDeckMarkdown(source)
+  const rendered = renderDeckHtml(deck, { resourcesDir: 'resources', definitions })
+
+  assert.match(rendered.document, /class="deck-swimlane deck-swimlane-3"/)
+  assert.match(rendered.document, /class="deck-lane-steps deck-lane-steps-1"/)
+  assert.match(rendered.document, /\.deck-visual-stage\s*\{[^}]*overflow:\s*hidden/)
+  assert.match(rendered.document, /\.deck-swimlane\s*\{[^}]*max-height:/)
+  assert.match(rendered.document, /\.deck-lane-steps\s*\{[^}]*grid-template-columns:\s*repeat\(auto-fit/)
+})
+
 test('resolves resource URLs inside brand theme CSS', async () => {
   await rm(tmpDir, { recursive: true, force: true })
   await mkdir(path.join(tmpDir, 'resources'), { recursive: true })
@@ -666,6 +701,60 @@ Body copy`)
   assert.equal((rendered.document.match(/<img class="deck-customer-logo"/g) || []).length, 2)
   assert.doesNotMatch(rendered.document, /<p>\s*<img class="deck-customer-logo"/)
   assert.doesNotMatch(rendered.document, /resource:logos\/customer\.svg/)
+})
+
+test('HTML branding preserves customer logo colours while fitting the logo frame', async () => {
+  await rm(tmpDir, { recursive: true, force: true })
+  await mkdir(path.join(tmpDir, 'resources', 'logos'), { recursive: true })
+  await writeFile(
+    path.join(tmpDir, 'resources', 'logos', 'company-dark.svg'),
+    '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 24"><text x="0" y="18">Dark</text></svg>',
+  )
+  await writeFile(
+    path.join(tmpDir, 'resources', 'logos', 'customer.svg'),
+    '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 24"><rect width="40" height="24" fill="#DB0011"/><text x="45" y="18" fill="#000000">HSBC</text></svg>',
+  )
+  await writeFile(
+    path.join(tmpDir, 'resources', 'logos', 'customer.dark.svg'),
+    '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 24"><rect width="40" height="24" fill="#DB0011"/><text x="45" y="18" fill="#ffffff">HSBC</text></svg>',
+  )
+
+  const baseDefinitions = await loadDefinitions(new URL('../resources/definitions', import.meta.url))
+  const definitions = {
+    ...baseDefinitions,
+    themeCss: `${baseDefinitions.themeCss}
+.deck-customer-logo { filter: brightness(0) invert(1); }`,
+    brand: {
+      ...baseDefinitions.brand,
+      assets: {
+        logo: {
+          dark: 'resource:logos/company-dark.svg',
+        },
+      },
+      layouts: {
+        ...baseDefinitions.brand.layouts,
+        customerLogo: { x: 828, y: 21, w: 98, h: 24 },
+      },
+    },
+  }
+  const deck = parseDeckMarkdown(`---
+customerLogo: resource:logos/customer.svg
+---
+
+<!-- _class: dark -->
+
+# Cover`)
+  const rendered = renderDeckHtml(deck, {
+    resourcesDir: path.join(tmpDir, 'resources'),
+    definitions,
+  })
+
+  assert.match(rendered.document, /customer\.dark\.svg/)
+  assert.match(rendered.document, /deck-customer-logo\s*\{[^}]*max-width:\s*100%/)
+  assert.match(rendered.document, /deck-customer-logo\s*\{[^}]*max-height:\s*100%/)
+  assert.match(rendered.document, /deck-customer-logo\s*\{[^}]*object-fit:\s*contain/)
+  assert.match(rendered.document, /deck-customer-logo\s*\{[^}]*filter:\s*none\s*!important/)
+  assert.match(rendered.document, /deck-customer-logo\s*\{[^}]*mix-blend-mode:\s*normal\s*!important/)
 })
 
 test('customer logo backplate is opt-in for legacy assets', async () => {
@@ -1031,6 +1120,52 @@ test('PPTX logo wall contains wide logos without stretching them', async () => {
   assert.match(slideXml, /<a:ext cx="1955800" cy="244475"\/>/)
 })
 
+test('PPTX customer logo fits frame without changing aspect ratio', async () => {
+  await rm(tmpDir, { recursive: true, force: true })
+  await mkdir(path.join(tmpDir, 'resources', 'logos'), { recursive: true })
+  await writeFile(
+    path.join(tmpDir, 'resources', 'logos', 'wide-customer.svg'),
+    '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 100"><rect width="800" height="100" fill="#db0011"/></svg>',
+  )
+
+  const definitions = await loadDefinitions(new URL('../resources/definitions', import.meta.url))
+  const brand = {
+    ...definitions.brand,
+    assets: {
+      backgrounds: {},
+      logo: {},
+    },
+    layouts: {
+      ...definitions.brand.layouts,
+      customerLogo: { x: 828, y: 21, w: 98, h: 24 },
+    },
+  }
+  const deck = parseDeckMarkdown(`---
+customerLogo: resource:logos/wide-customer.svg
+---
+
+# Customer logo fit`)
+  const out = path.join(tmpDir, 'customer-logo-contain.pptx')
+
+  await writePptx({
+    deck,
+    outputPath: out,
+    brand,
+    resourcesDir: path.join(tmpDir, 'resources'),
+  })
+
+  const archive = await JSZip.loadAsync(await readFile(out))
+  const slideXml = await archive.file('ppt/slides/slide1.xml').async('string')
+  const customerLogoXml = pictureXmlContaining(slideXml, 'Customer logo')
+  const offset = pictureOffset(customerLogoXml)
+  const extent = pictureExtent(customerLogoXml)
+
+  assert.equal(extent.cx, 98 * 12700)
+  assert.equal(extent.cy, 12.25 * 12700)
+  assert.equal(offset.x, 828 * 12700)
+  assert.ok(Math.abs(offset.y - (26.875 * 12700)) <= 1)
+})
+
 test('PPTX swimlane steps fill available lane width and keep text readable', async () => {
   await rm(tmpDir, { recursive: true, force: true })
   await mkdir(tmpDir, { recursive: true })
@@ -1161,5 +1296,33 @@ function shapeOffset(shapeXml) {
   return {
     x: Number(match[1]),
     y: Number(match[2]),
+  }
+}
+
+function pictureXmlContaining(slideXml, altText) {
+  const altIndex = slideXml.indexOf(`descr="${altText}"`)
+  assert.notEqual(altIndex, -1, `Expected slide XML to contain picture alt text "${altText}"`)
+  const pictureStart = slideXml.lastIndexOf('<p:pic>', altIndex)
+  const pictureEnd = slideXml.indexOf('</p:pic>', altIndex)
+  assert.notEqual(pictureStart, -1, `Expected "${altText}" to be inside a picture`)
+  assert.notEqual(pictureEnd, -1, `Expected "${altText}" picture to close`)
+  return slideXml.slice(pictureStart, pictureEnd + '</p:pic>'.length)
+}
+
+function pictureOffset(pictureXml) {
+  const match = pictureXml.match(/<a:off x="(\d+)" y="(\d+)"\/>/)
+  assert.ok(match, 'Expected picture XML to include an offset')
+  return {
+    x: Number(match[1]),
+    y: Number(match[2]),
+  }
+}
+
+function pictureExtent(pictureXml) {
+  const match = pictureXml.match(/<a:ext cx="(\d+)" cy="(\d+)"\/>/)
+  assert.ok(match, 'Expected picture XML to include an extent')
+  return {
+    cx: Number(match[1]),
+    cy: Number(match[2]),
   }
 }

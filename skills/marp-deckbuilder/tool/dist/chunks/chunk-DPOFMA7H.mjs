@@ -2,7 +2,7 @@ import { createRequire as __deckbuilderCreateRequire } from "node:module";
 const require = __deckbuilderCreateRequire(import.meta.url);
 import {
   buildMarpMarkdown
-} from "./chunk-YDXX2O6H.mjs";
+} from "./chunk-TEEFIOG3.mjs";
 import {
   require_node
 } from "./chunk-ZA7UPLW5.mjs";
@@ -136111,6 +136111,8 @@ ${customerLogoBackplateEnabled(brand) ? `.deck-customer-logo-frame.deck-logo-on-
   max-width: 100%;
   max-height: 100%;
   object-fit: contain;
+  filter: none !important;
+  mix-blend-mode: normal !important;
 }`;
 }
 function brandSurfaceCss(brand = {}) {
