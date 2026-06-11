@@ -292,13 +292,14 @@ function validateReportChart(chart, context) {
     'funnel',
     'waterfall',
     'bullet',
+    'scatter',
     'grouped-bar',
     'stacked-bar',
     'heatmap',
   ])
   if (!supportedTypes.has(chart.chartType)) {
     fail(
-      `report-chart type "${chart.chartType}" is not available. Supported types: bar, line, doughnut, area, treemap, funnel, grouped-bar, stacked-bar, heatmap, waterfall, bullet. Ask the skill maker to add missing chart types.`,
+      `report-chart type "${chart.chartType}" is not available. Supported types: bar, line, doughnut, area, treemap, funnel, grouped-bar, stacked-bar, heatmap, waterfall, bullet, scatter. Ask the skill maker to add missing chart types.`,
       context,
     )
   }
@@ -339,6 +340,10 @@ function validateReportChart(chart, context) {
     validateReportHeatmapChart(chart, context)
     return
   }
+  if (chart.chartType === 'scatter') {
+    validateReportScatterChart(chart, context)
+    return
+  }
   validateReportChartLabelsAndValues(chart, context)
   if (chart.chartType === 'bullet') {
     validateReportBulletChart(chart, context)
@@ -369,6 +374,15 @@ function validateReportChartLabelsAndValues(chart, context) {
   }
   if (chart.values.some((value) => !Number.isFinite(value))) {
     fail('report-chart values must all be numeric.', context)
+  }
+}
+
+function validateReportScatterChart(chart, context) {
+  if (chart.points.length === 0) {
+    fail('report-chart type="scatter" requires non-empty points or numeric labels/values attributes.', context)
+  }
+  if (chart.points.some((point) => !Number.isFinite(Number(point.x)) || !Number.isFinite(point.y))) {
+    fail('report-chart type="scatter" points must be numeric x:y pairs.', context)
   }
 }
 

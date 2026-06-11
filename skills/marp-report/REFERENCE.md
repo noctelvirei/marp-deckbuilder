@@ -81,6 +81,7 @@ Reports use normal Markdown plus compact `report-*` component tags. The renderer
 | Chart.js stacked bar chart | `report-chart type="stacked-bar"` | `labels`, `series`, matrix `values` |
 | Chart.js waterfall chart | `report-chart type="waterfall"` | `labels`, `values` as sequential deltas |
 | Chart.js bullet chart | `report-chart type="bullet"` | `labels`, `values`, `targets` |
+| Chart.js scatter chart | `report-chart type="scatter"` | numeric `points` as `x:y` pairs |
 | Observable Plot area chart | `report-chart type="area"` | `points` as `x:y` pairs, or `labels`, `values` |
 | D3 treemap | `report-chart type="treemap"` | `labels`, `values` |
 | D3 funnel | `report-chart type="funnel"` | `labels`, `values` |
@@ -124,7 +125,7 @@ Supported `report-page-break` attributes:
 
 ### Report Chart: Chart.js, Observable Plot, And D3
 
-Use `report-chart` for standard Chart.js bar, line, doughnut, grouped bar, stacked bar, waterfall, and bullet charts, Observable Plot area charts, D3 treemaps, D3 funnels, and D3 heatmaps. Do not write the `<canvas>`, chart container, SVG, or JavaScript initializer yourself. The renderer generates hover tooltips that show the represented value.
+Use `report-chart` for standard Chart.js bar, line, doughnut, grouped bar, stacked bar, waterfall, bullet, and scatter charts, Observable Plot area charts, D3 treemaps, D3 funnels, and D3 heatmaps. Do not write the `<canvas>`, chart container, SVG, or JavaScript initializer yourself. The renderer generates hover tooltips that show the represented value.
 
 ```md
 <report-chart
@@ -203,6 +204,18 @@ Use `report-chart` for standard Chart.js bar, line, doughnut, grouped bar, stack
 
 ```md
 <report-chart
+  type="scatter"
+  title="Effort vs completion"
+  series="Journeys"
+  x-label="Touches"
+  y-label="Completion"
+  value-suffix="%"
+  points="2:93,4:88,7:72,9:61"
+></report-chart>
+```
+
+```md
+<report-chart
   type="area"
   title="Daily volume"
   series="Cases"
@@ -246,13 +259,14 @@ Supported attributes:
 
 | Attribute | Required | Notes |
 | --- | --- | --- |
-| `type` | no | Supports `bar`, `line`, `doughnut`, `grouped-bar`, `stacked-bar`, `waterfall`, `bullet`, `area`, `treemap`, `funnel`, and `heatmap`. Defaults to `bar`. Aliases: `donut`, `tree-map`, `grouped`, `clustered-bar`, `stacked`. |
+| `type` | no | Supports `bar`, `line`, `doughnut`, `grouped-bar`, `stacked-bar`, `waterfall`, `bullet`, `scatter`, `area`, `treemap`, `funnel`, and `heatmap`. Defaults to `bar`. Aliases: `donut`, `tree-map`, `grouped`, `clustered-bar`, `stacked`. |
 | `title` | no | Rendered above the chart and used as the accessible label. |
 | `series` | no | Dataset label for single-series charts. For `grouped-bar` and `stacked-bar`, use pipe-separated series names such as `Opened|Completed`. Aliases: `datasets`, `series-labels`. |
 | `labels` | yes for Chart.js, `treemap`, and `funnel` types | Comma-separated labels. For `area`, this can be used with `values` as an alternative to `points`. |
 | `values` | yes for Chart.js, `treemap`, and `funnel` types | Comma-separated numeric values. Must match label count. For `area`, this can be used with `labels` as an alternative to `points`. |
 | `values` for `waterfall` | yes | Comma-separated sequential deltas. Positive values move the running total up; negative values move it down. |
 | `targets` for `bullet` | yes | Comma-separated numeric target markers. Must match label count. Aliases: `target`, `target-values`. |
+| `points` for `scatter` | yes | Comma-separated numeric `x:y` or `x=y` pairs such as `2:93,4:88`. Numeric `labels` with `values` are also accepted. |
 | `values` for `grouped-bar` and `stacked-bar` | yes | Semicolon-separated label rows with pipe-separated series values, such as `10|20;12|24`. Aliases: `matrix`, `series-values`. |
 | `x-labels` | yes for `heatmap` | Pipe-separated column labels. Aliases: `columns`, `x`. |
 | `y-labels` | yes for `heatmap` | Pipe-separated row labels. Aliases: `rows`, `y`. |
@@ -260,6 +274,7 @@ Supported attributes:
 | `points` | yes for `area` | Comma-separated `x:y` or `x=y` points such as `2026-04-01:2200,2026-04-02:2600`. Alias: `data`. |
 | `colors` | no | Comma-separated hex colors. Defaults to brand chart colors. |
 | `height` | no | Pixel height, clamped by the renderer. Defaults to `320`. |
+| `x-label`, `y-label` | no | Axis titles for `scatter`. Aliases: `x-axis-label`, `x-title`, `y-axis-label`, `y-title`. |
 | `value-prefix` | no | Prefix shown in tooltips, such as `$`. Alias: `prefix`. |
 | `value-suffix` | no | Suffix shown in tooltips, such as `%` or ` cases`. Alias: `suffix`. |
 

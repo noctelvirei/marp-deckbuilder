@@ -513,6 +513,37 @@ test('expands report bullet charts into Chart.js target comparisons', async () =
   assert.match(rendered.document, /"Target: " \+ formatTooltipValue\(target\)/)
 })
 
+test('expands report scatter charts into Chart.js numeric point plots', async () => {
+  const definitions = await loadDefinitions(new URL('../resources/definitions', import.meta.url))
+  const rendered = renderReportHtml(
+    `# Scatter chart report
+
+<report-chart
+  type="scatter"
+  title="Effort vs completion"
+  series="Journeys"
+  x-label="Touches"
+  y-label="Completion"
+  value-suffix="%"
+  points="2:93,4:88,7:72,9:61"
+></report-chart>
+`,
+    {
+      resourcesDir: path.resolve('resources'),
+      definitions,
+      inlineAssets: true,
+    },
+  )
+
+  assert.doesNotMatch(rendered.document, /<report-chart/i)
+  assert.match(rendered.document, /class="report-chart report-chart-scatter"/)
+  assert.match(rendered.document, /type: "scatter"/)
+  assert.match(rendered.document, /data: \[\{"x":2,"y":93\},\{"x":4,"y":88\},\{"x":7,"y":72\},\{"x":9,"y":61\}\]/)
+  assert.match(rendered.document, /text: "Touches"/)
+  assert.match(rendered.document, /text: "Completion"/)
+  assert.match(rendered.document, /"X: " \+ formatAxisValue\(context\.parsed\.x\) \+ ", Y: " \+ formatTooltipValue\(context\.parsed\.y\)/)
+})
+
 test('allows Chart.js, Observable Plot, and D3 report charts to coexist', async () => {
   const definitions = await loadDefinitions(new URL('../resources/definitions', import.meta.url))
   const rendered = renderReportHtml(
@@ -1598,7 +1629,15 @@ test('report chart components fail clearly when data is invalid', async () => {
   )
   assert.throws(
     () => renderReportHtml('<report-chart type="radar" labels="A" values="10"></report-chart>', options),
-    /report-chart type "radar" is not available\. Supported types: bar, line, doughnut, area, treemap, funnel, grouped-bar, stacked-bar, heatmap, waterfall, bullet\. Ask the skill maker to add missing chart types/,
+    /report-chart type "radar" is not available\. Supported types: bar, line, doughnut, area, treemap, funnel, grouped-bar, stacked-bar, heatmap, waterfall, bullet, scatter\. Ask the skill maker to add missing chart types/,
+  )
+  assert.throws(
+    () => renderReportHtml('<report-chart type="scatter"></report-chart>', options),
+    /report-chart type="scatter" requires non-empty points or numeric labels\/values attributes/,
+  )
+  assert.throws(
+    () => renderReportHtml('<report-chart type="scatter" points="A:10"></report-chart>', options),
+    /report-chart type="scatter" points must be numeric x:y pairs/,
   )
   assert.throws(
     () => renderReportHtml('<report-chart type="bullet" labels="A" values="10"></report-chart>', options),

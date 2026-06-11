@@ -15,6 +15,8 @@ export function parseReportChart(chart, index = 0) {
   const requestedId = chart.attr('id') || chart.attr('chart-id') || ''
   const valuePrefix = chart.attr('value-prefix') || chart.attr('prefix') || ''
   const valueSuffix = chart.attr('value-suffix') || chart.attr('suffix') || ''
+  const xAxisLabel = chart.attr('x-label') || chart.attr('x-axis-label') || chart.attr('x-title') || ''
+  const yAxisLabel = chart.attr('y-label') || chart.attr('y-axis-label') || chart.attr('y-title') || ''
   const points = parseChartPoints(chart.attr('points') || chart.attr('data'))
   const seriesNames = splitPipe(chart.attr('series') || chart.attr('datasets') || chart.attr('series-labels'))
   const xLabels = splitPipe(chart.attr('x-labels') || chart.attr('columns') || chart.attr('x') || '')
@@ -51,6 +53,8 @@ export function parseReportChart(chart, index = 0) {
     height,
     valuePrefix,
     valueSuffix,
+    xAxisLabel,
+    yAxisLabel,
     ariaLabel: chart.attr('aria-label') || title || `${type} chart`,
   }
 }

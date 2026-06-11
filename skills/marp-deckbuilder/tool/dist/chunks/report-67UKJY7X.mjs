@@ -4744,6 +4744,8 @@ function parseReportChart(chart, index = 0) {
   const requestedId = chart.attr("id") || chart.attr("chart-id") || "";
   const valuePrefix = chart.attr("value-prefix") || chart.attr("prefix") || "";
   const valueSuffix = chart.attr("value-suffix") || chart.attr("suffix") || "";
+  const xAxisLabel = chart.attr("x-label") || chart.attr("x-axis-label") || chart.attr("x-title") || "";
+  const yAxisLabel = chart.attr("y-label") || chart.attr("y-axis-label") || chart.attr("y-title") || "";
   const points = parseChartPoints(chart.attr("points") || chart.attr("data"));
   const seriesNames = splitPipe(chart.attr("series") || chart.attr("datasets") || chart.attr("series-labels"));
   const xLabels = splitPipe(chart.attr("x-labels") || chart.attr("columns") || chart.attr("x") || "");
@@ -4774,6 +4776,8 @@ function parseReportChart(chart, index = 0) {
     height,
     valuePrefix,
     valueSuffix,
+    xAxisLabel,
+    yAxisLabel,
     ariaLabel: chart.attr("aria-label") || title || `${type} chart`
   };
 }
@@ -5429,6 +5433,7 @@ function renderReportChartScript(chart, context = {}) {
   if (chart.chartType === "stacked-bar") return renderReportMultiBarChartScript(chart, context, { stacked: true });
   if (chart.chartType === "waterfall") return renderReportWaterfallChartScript(chart, context);
   if (chart.chartType === "bullet") return renderReportBulletChartScript(chart, context);
+  if (chart.chartType === "scatter") return renderReportScatterChartScript(chart, context);
   const palette = chart.colors.length ? chart.colors : reportChartPalette(context.brand);
   const colors = chart.labels.map((_, index) => normalizeChartColor(palette[index % palette.length]));
   const primaryColor = normalizeChartColor(palette[0]) || "#0F82F5";
@@ -5522,6 +5527,104 @@ ${datasetOptions}
         }
       }
 ${chartScales}
+    }
+  });
+})();`;
+}
+function renderReportScatterChartScript(chart, context = {}) {
+  const palette = chart.colors.length ? chart.colors : reportChartPalette(context.brand);
+  const pointColor = normalizeChartColor(palette[0]) || "#0F82F5";
+  const points = chart.points.map((point) => ({
+    x: Number(point.x),
+    y: point.y
+  }));
+  return `(() => {
+  const canvas = document.getElementById(${jsString(chart.id)});
+  const themeRoot = canvas.closest(".deck-report") || document.body || document.documentElement;
+  const rootStyle = getComputedStyle(themeRoot);
+  const tickColor = rootStyle.getPropertyValue("--text-dim").trim() || "#64748b";
+  const gridColor = rootStyle.getPropertyValue("--border").trim() || "rgba(148, 163, 184, 0.28)";
+  const tooltipBg = rootStyle.getPropertyValue("--bg-card").trim() || "rgba(15, 23, 42, 0.92)";
+  const tooltipText = rootStyle.getPropertyValue("--text").trim() || "#ffffff";
+  const tooltipMuted = rootStyle.getPropertyValue("--text-dim").trim() || "#cbd5e1";
+  const valuePrefix = ${jsString(chart.valuePrefix)};
+  const valueSuffix = ${jsString(chart.valueSuffix)};
+  const valueFormatter = new Intl.NumberFormat("en-US", { maximumFractionDigits: 2 });
+  const formatAxisValue = (value) => {
+    const numeric = Number(value);
+    return Number.isFinite(numeric) ? valueFormatter.format(numeric) : String(value ?? "");
+  };
+  const formatTooltipValue = (value) => {
+    const formatted = formatAxisValue(value);
+    return valuePrefix + formatted + valueSuffix;
+  };
+  new Chart(canvas, {
+    type: "scatter",
+    data: {
+      datasets: [{
+        label: ${jsString(chart.series || chart.title || "Series 1")},
+        data: ${jsValue(points)},
+        backgroundColor: ${jsString(hexToRgba(pointColor, 0.82))},
+        borderColor: ${jsString(pointColor)},
+        borderWidth: 2,
+        pointRadius: 5,
+        pointHoverRadius: 7
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      interaction: {
+        mode: "nearest",
+        intersect: true
+      },
+      plugins: {
+        legend: { display: ${chart.series && chart.series !== chart.title ? "true" : "false"}, position: "top", labels: { color: tickColor } },
+        tooltip: {
+          enabled: true,
+          mode: "nearest",
+          intersect: true,
+          backgroundColor: tooltipBg,
+          titleColor: tooltipText,
+          bodyColor: tooltipMuted,
+          borderColor: gridColor,
+          borderWidth: 1,
+          displayColors: false,
+          padding: 12,
+          callbacks: {
+            label: (context) => {
+              return "X: " + formatAxisValue(context.parsed.x) + ", Y: " + formatTooltipValue(context.parsed.y);
+            }
+          }
+        }
+      },
+      scales: {
+        x: {
+          type: "linear",
+          title: {
+            display: ${chart.xAxisLabel ? "true" : "false"},
+            text: ${jsString(chart.xAxisLabel)},
+            color: tickColor
+          },
+          ticks: {
+            color: tickColor,
+            callback: value => Number(value).toLocaleString()
+          },
+          grid: { color: gridColor }
+        },
+        y: {
+          title: {
+            display: ${chart.yAxisLabel ? "true" : "false"},
+            text: ${jsString(chart.yAxisLabel)},
+            color: tickColor
+          },
+          ticks: {
+            color: tickColor,
+            callback: value => Number(value).toLocaleString()
+          },
+          grid: { color: gridColor }
+        }
+      }
     }
   });
 })();`;
@@ -6484,13 +6587,14 @@ function validateReportChart(chart, context) {
     "funnel",
     "waterfall",
     "bullet",
+    "scatter",
     "grouped-bar",
     "stacked-bar",
     "heatmap"
   ]);
   if (!supportedTypes.has(chart.chartType)) {
     fail(
-      `report-chart type "${chart.chartType}" is not available. Supported types: bar, line, doughnut, area, treemap, funnel, grouped-bar, stacked-bar, heatmap, waterfall, bullet. Ask the skill maker to add missing chart types.`,
+      `report-chart type "${chart.chartType}" is not available. Supported types: bar, line, doughnut, area, treemap, funnel, grouped-bar, stacked-bar, heatmap, waterfall, bullet, scatter. Ask the skill maker to add missing chart types.`,
       context
     );
   }
@@ -6531,6 +6635,10 @@ function validateReportChart(chart, context) {
     validateReportHeatmapChart(chart, context);
     return;
   }
+  if (chart.chartType === "scatter") {
+    validateReportScatterChart(chart, context);
+    return;
+  }
   validateReportChartLabelsAndValues(chart, context);
   if (chart.chartType === "bullet") {
     validateReportBulletChart(chart, context);
@@ -6560,6 +6668,14 @@ function validateReportChartLabelsAndValues(chart, context) {
   }
   if (chart.values.some((value) => !Number.isFinite(value))) {
     fail("report-chart values must all be numeric.", context);
+  }
+}
+function validateReportScatterChart(chart, context) {
+  if (chart.points.length === 0) {
+    fail('report-chart type="scatter" requires non-empty points or numeric labels/values attributes.', context);
+  }
+  if (chart.points.some((point) => !Number.isFinite(Number(point.x)) || !Number.isFinite(point.y))) {
+    fail('report-chart type="scatter" points must be numeric x:y pairs.', context);
   }
 }
 function validateReportBulletChart(chart, context) {
