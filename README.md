@@ -360,6 +360,7 @@ Reports can use:
 - Ranked rate bars via `report-rate-bars`.
 - Formatted data tables via `report-data-table`.
 - Source and methodology notes via `report-source-note`.
+- Mixed action/insight grids via `report-card-grid`.
 - Callouts via `report-callout`.
 - Accent cards via `report-accent-card`.
 - Badges via `report-badge`.

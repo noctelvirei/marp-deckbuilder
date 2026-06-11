@@ -875,6 +875,66 @@ test('report source notes fail clearly when empty', async () => {
   )
 })
 
+test('expands report card grids into accent card layouts', async () => {
+  const definitions = await loadDefinitions(new URL('../resources/definitions', import.meta.url))
+  const rendered = renderReportHtml(
+    `# Card grid report
+
+<report-card-grid title="Actions" columns="2">
+  <report-card title="Monitor" accent="blue">Track the dominant journey daily.</report-card>
+  <report-card title="Review" accent="orange">Validate the unregistered journey.</report-card>
+</report-card-grid>
+`,
+    {
+      resourcesDir: path.resolve('resources'),
+      definitions,
+      inlineAssets: true,
+    },
+  )
+
+  assert.doesNotMatch(rendered.document, /<report-card/i)
+  assert.match(rendered.document, /<section class="report-card-grid report-card-grid-2"/)
+  assert.match(rendered.document, /<div class="report-card-grid-title">Actions<\/div>/)
+  assert.match(rendered.document, /class="report-card-grid-card report-card-grid-card-blue"/)
+  assert.match(rendered.document, /<div class="report-card-grid-card-title">Monitor<\/div>/)
+  assert.match(rendered.document, /<div class="report-card-grid-card-body">Track the dominant journey daily\.<\/div>/)
+  assert.match(rendered.document, /class="report-card-grid-card report-card-grid-card-orange"/)
+})
+
+test('report card grids fail clearly when malformed', async () => {
+  const definitions = await loadDefinitions(new URL('../resources/definitions', import.meta.url))
+  const options = {
+    resourcesDir: path.resolve('resources'),
+    definitions,
+    inlineAssets: true,
+  }
+
+  assert.throws(
+    () => renderReportHtml('<report-card title="Outside"></report-card>', options),
+    /<report-card> must be placed directly inside <report-card-grid>/,
+  )
+  assert.throws(
+    () => renderReportHtml('<report-card-grid columns="5"><report-card title="A"></report-card></report-card-grid>', options),
+    /report-card-grid columns must be between 1 and 4/,
+  )
+  assert.throws(
+    () => renderReportHtml('<report-card-grid></report-card-grid>', options),
+    /report-card-grid must include at least one report-card/,
+  )
+  assert.throws(
+    () =>
+      renderReportHtml(
+        '<report-card-grid><report-card accent="magenta">Body</report-card></report-card-grid>',
+        options,
+      ),
+    /Unsupported report-card accent "magenta"/,
+  )
+  assert.throws(
+    () => renderReportHtml('<report-card-grid><report-card></report-card></report-card-grid>', options),
+    /report-card at position 1 must include title and\/or body text/,
+  )
+})
+
 test('expands report metric grid components into reusable metric cards', async () => {
   const definitions = await loadDefinitions(new URL('../resources/definitions', import.meta.url))
   const rendered = renderReportHtml(

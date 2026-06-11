@@ -81,6 +81,17 @@ ${keyValues.items.map(renderReportKeyValueItem).join('\n')}
 </section>`
 }
 
+export function renderReportCardGridHtml(grid) {
+  return `<section class="report-card-grid report-card-grid-${escapeAttr(grid.columns)}" aria-label="${escapeAttr(
+    grid.title || 'Report cards',
+  )}">
+  ${grid.title ? `<div class="report-card-grid-title">${escapeHtml(grid.title)}</div>` : ''}
+  <div class="report-card-grid-items">
+${grid.cards.map(renderReportCardGridItem).join('\n')}
+  </div>
+</section>`
+}
+
 export function renderReportSourceNoteHtml(sourceNote) {
   const meta = [
     sourceNote.source ? `<span>Source: ${escapeHtml(sourceNote.source)}</span>` : '',
@@ -151,6 +162,13 @@ function renderReportKeyValueItem(item) {
       <dt>${escapeHtml(item.key)}</dt>
       <dd>${escapeHtml(item.value)}</dd>
     </div>`
+}
+
+function renderReportCardGridItem(card) {
+  return `    <article class="report-card-grid-card report-card-grid-card-${escapeAttr(card.accent)}">
+      ${card.title ? `<div class="report-card-grid-card-title">${escapeHtml(card.title)}</div>` : ''}
+      ${card.body ? `<div class="report-card-grid-card-body">${escapeHtml(card.body)}</div>` : ''}
+    </article>`
 }
 
 function parseDataTableNumber(value) {

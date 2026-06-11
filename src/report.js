@@ -575,6 +575,71 @@ body {
   font-size: 12px;
 }
 
+.report-card-grid {
+  margin: 28px 0;
+}
+
+.report-card-grid-title {
+  margin: 0 0 14px;
+  color: var(--text-dim, #334155);
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.report-card-grid-items {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.report-card-grid-1 .report-card-grid-items {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.report-card-grid-2 .report-card-grid-items {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.report-card-grid-4 .report-card-grid-items {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.report-card-grid-card {
+  min-width: 0;
+  padding: 16px;
+  border: 1px solid var(--border, #dbe5f2);
+  border-top: 4px solid var(--report-card-accent, var(--blue, #0F82F5));
+  border-radius: 8px;
+  background: var(--bg-card, #ffffff);
+  box-shadow: 0 10px 26px rgba(15, 23, 42, 0.06);
+}
+
+.report-card-grid-card-title {
+  margin-bottom: 7px;
+  color: var(--report-card-accent, var(--blue, #0F82F5));
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.report-card-grid-card-body {
+  min-width: 0;
+  color: var(--text, #334155);
+  font-size: 14px;
+  line-height: 1.45;
+  overflow-wrap: anywhere;
+}
+
+.report-card-grid-card-blue { --report-card-accent: var(--blue, #0F82F5); }
+.report-card-grid-card-cyan { --report-card-accent: var(--cyan, #59D6FD); }
+.report-card-grid-card-purple { --report-card-accent: var(--purple, #5143D5); }
+.report-card-grid-card-green { --report-card-accent: var(--green, #16a34a); }
+.report-card-grid-card-orange { --report-card-accent: var(--orange, #F9935B); }
+.report-card-grid-card-red { --report-card-accent: var(--red, #dc2626); }
+
 .report-chart {
   margin: 28px 0;
   padding: 22px;
@@ -1031,6 +1096,10 @@ body.report-theme-dark-page {
   box-shadow: none;
 }
 
+.deck-report.report-theme-dark .report-card-grid-card {
+  box-shadow: none;
+}
+
 .deck-report.report-theme-dark .report-accent-card {
   box-shadow: none;
 }
@@ -1094,7 +1163,10 @@ pre code {
 
   .report-key-values dl,
   .report-key-values-3 dl,
-  .report-key-values-4 dl {
+  .report-key-values-4 dl,
+  .report-card-grid-items,
+  .report-card-grid-2 .report-card-grid-items,
+  .report-card-grid-4 .report-card-grid-items {
     grid-template-columns: minmax(0, 1fr);
   }
 }

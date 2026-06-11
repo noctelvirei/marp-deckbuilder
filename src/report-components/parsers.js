@@ -112,6 +112,27 @@ export function parseReportKeyValues(keyValues) {
   }
 }
 
+export function parseReportCardGrid(root, grid) {
+  const cards = []
+  grid.children('report-card').each((_, element) => {
+    const card = root(element)
+    const rawAccent = card.attr('accent') || card.attr('color') || card.attr('tone') || 'blue'
+    cards.push({
+      title: card.attr('title') || cleanText(card.find('h3,strong,b').first().text()),
+      body: card.attr('body') || card.attr('text') || cleanText(card.text()),
+      accent: normalizeAccent(rawAccent) || String(rawAccent || '').trim().toLowerCase(),
+      rawAccent,
+    })
+  })
+
+  return {
+    type: 'card-grid',
+    title: grid.attr('title') || cleanText(grid.find('h2,h3').first().text()),
+    columns: normalizeCardGridColumns(grid.attr('columns') || grid.attr('cols') || ''),
+    cards,
+  }
+}
+
 export function parseReportSourceNote(sourceNote) {
   return {
     type: 'source-note',
@@ -218,6 +239,12 @@ function parseKeyValueItems(value = '') {
 function normalizeKeyValueColumns(value = '') {
   const numeric = Number.parseInt(value || 2, 10)
   if (!Number.isFinite(numeric)) return 2
+  return numeric
+}
+
+function normalizeCardGridColumns(value = '') {
+  const numeric = Number.parseInt(value || 3, 10)
+  if (!Number.isFinite(numeric)) return 0
   return numeric
 }
 

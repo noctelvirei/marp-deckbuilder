@@ -58,6 +58,7 @@ Reports use normal Markdown plus compact `report-*` component tags. The renderer
 | Ranked distribution bars | `report-rate-bars` | `labels`, `values`; optional `shares` |
 | Formatted data table | `report-data-table` | `columns`, `rows`; optional `types`, `caption`, `source` |
 | Citation or methodology note | `report-source-note` | Body text and/or `source`; optional `title`, `date` |
+| Mixed insight/action card grid | `report-card-grid` with `report-card` children | Card `title` and/or body text |
 | Finding, risk, or action block | `report-callout` | Body text or `text`; optional `variant`, `title` |
 | Highlighted recommendation card | `report-accent-card` | Body text or `body`; optional `accent`, `title` |
 | Captioned embedded image | `report-figure` | `src`, `alt`; optional `caption`, `source`, `size` |
@@ -311,6 +312,35 @@ Supported attributes:
 | `date` | no | Date, period, or freshness indicator. Alias: `period`. |
 
 The note must include at least one of title, body text, source, or date.
+
+### Report Card Grid
+
+Use `report-card-grid` for grouped insights, action plans, ownership summaries, and mixed card layouts. Do not hand-author grid/card HTML for this standard layout.
+
+```md
+<report-card-grid title="Action plan" columns="3">
+  <report-card title="Confirm" accent="orange">Determine whether J0116 is a new journey or a data quality issue.</report-card>
+  <report-card title="Track" accent="blue">Add month-over-month monitoring for the top three journeys.</report-card>
+  <report-card title="Calibrate" accent="green">Tune operational monitoring around the dominant journey.</report-card>
+</report-card-grid>
+```
+
+Supported `report-card-grid` attributes:
+
+| Attribute | Required | Notes |
+| --- | --- | --- |
+| `title` | no | Rendered above the grid. |
+| `columns` | no | Number of columns from `1` to `4`. Alias: `cols`. Defaults to `3`. |
+
+Supported `report-card` attributes:
+
+| Attribute | Required | Notes |
+| --- | --- | --- |
+| `title` | no | Short card title. |
+| `body` | no | Body text when you prefer attribute-only authoring. Alias: `text`. Otherwise use the tag body. |
+| `accent` | no | Supports `blue`, `cyan`, `purple`, `green`, `orange`, `red`. Aliases: `color`, `tone`. Defaults to `blue`. |
+
+Each `report-card` must be directly inside `report-card-grid`.
 
 ### Report Callout
 

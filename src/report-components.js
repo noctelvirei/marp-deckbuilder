@@ -4,6 +4,7 @@ import {
   parseReportAccentCard,
   parseReportBadge,
   parseReportCallout,
+  parseReportCardGrid,
   parseReportChart,
   parseReportDataTable,
   parseReportFigure,
@@ -16,6 +17,7 @@ import {
   renderReportAccentCardHtml,
   renderReportBadgeHtml,
   renderReportCalloutHtml,
+  renderReportCardGridHtml,
   renderReportChartHtml,
   renderReportChartScript,
   renderReportDataTableHtml,
@@ -30,6 +32,8 @@ const knownReportTags = new Set([
   'report-accent-card',
   'report-badge',
   'report-callout',
+  'report-card-grid',
+  'report-card',
   'report-chart',
   'report-data-table',
   'report-figure',
@@ -95,6 +99,13 @@ export function compileReportComponents(source, options = {}) {
     keyValuesElement.replaceWith(renderReportKeyValuesHtml(keyValues))
   })
 
+  root('report-card-grid').each((_, element) => {
+    const cardGridElement = root(element)
+    const cardGrid = parseReportCardGrid(root, cardGridElement)
+    validateReportCardGrid(cardGrid, context)
+    cardGridElement.replaceWith(renderReportCardGridHtml(cardGrid))
+  })
+
   root('report-source-note').each((_, element) => {
     const sourceNoteElement = root(element)
     const sourceNote = parseReportSourceNote(sourceNoteElement)
@@ -137,6 +148,12 @@ function validateReportComponentTree(root, context) {
     const parent = root(element).parent()
     if (!parent.is('report-metric-grid')) {
       fail('<report-metric> must be placed directly inside <report-metric-grid>.', context)
+    }
+  })
+  root('report-card').each((_, element) => {
+    const parent = root(element).parent()
+    if (!parent.is('report-card-grid')) {
+      fail('<report-card> must be placed directly inside <report-card-grid>.', context)
     }
   })
 }
@@ -410,6 +427,27 @@ function validateReportSourceNote(sourceNote, context) {
   if (!sourceNote.title && !sourceNote.body && !sourceNote.source && !sourceNote.date) {
     fail('report-source-note requires title, body text, source, or date.', context)
   }
+}
+
+function validateReportCardGrid(cardGrid, context) {
+  const accents = new Set(['blue', 'cyan', 'purple', 'green', 'orange', 'red'])
+  if (cardGrid.columns < 1 || cardGrid.columns > 4) {
+    fail('report-card-grid columns must be between 1 and 4.', context)
+  }
+  if (cardGrid.cards.length === 0) {
+    fail('report-card-grid must include at least one report-card.', context)
+  }
+  cardGrid.cards.forEach((card, index) => {
+    if (!accents.has(card.accent)) {
+      fail(
+        `Unsupported report-card accent "${card.rawAccent}". Supported accents: blue, cyan, purple, green, orange, red.`,
+        context,
+      )
+    }
+    if (!card.title && !card.body) {
+      fail(`report-card at position ${index + 1} must include title and/or body text.`, context)
+    }
+  })
 }
 
 function validateReportRateBars(rateBars, context) {

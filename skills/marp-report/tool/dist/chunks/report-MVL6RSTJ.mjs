@@ -4828,6 +4828,25 @@ function parseReportKeyValues(keyValues) {
     columns: normalizeKeyValueColumns(keyValues.attr("columns") || keyValues.attr("cols") || "")
   };
 }
+function parseReportCardGrid(root, grid) {
+  const cards = [];
+  grid.children("report-card").each((_, element) => {
+    const card = root(element);
+    const rawAccent = card.attr("accent") || card.attr("color") || card.attr("tone") || "blue";
+    cards.push({
+      title: card.attr("title") || cleanText(card.find("h3,strong,b").first().text()),
+      body: card.attr("body") || card.attr("text") || cleanText(card.text()),
+      accent: normalizeAccent(rawAccent) || String(rawAccent || "").trim().toLowerCase(),
+      rawAccent
+    });
+  });
+  return {
+    type: "card-grid",
+    title: grid.attr("title") || cleanText(grid.find("h2,h3").first().text()),
+    columns: normalizeCardGridColumns(grid.attr("columns") || grid.attr("cols") || ""),
+    cards
+  };
+}
 function parseReportSourceNote(sourceNote) {
   return {
     type: "source-note",
@@ -4917,6 +4936,11 @@ function parseKeyValueItems(value = "") {
 function normalizeKeyValueColumns(value = "") {
   const numeric = Number.parseInt(value || 2, 10);
   if (!Number.isFinite(numeric)) return 2;
+  return numeric;
+}
+function normalizeCardGridColumns(value = "") {
+  const numeric = Number.parseInt(value || 3, 10);
+  if (!Number.isFinite(numeric)) return 0;
   return numeric;
 }
 function parseChartPoints(value = "") {
@@ -5034,6 +5058,16 @@ ${keyValues.items.map(renderReportKeyValueItem).join("\n")}
   </dl>
 </section>`;
 }
+function renderReportCardGridHtml(grid) {
+  return `<section class="report-card-grid report-card-grid-${escapeAttr(grid.columns)}" aria-label="${escapeAttr(
+    grid.title || "Report cards"
+  )}">
+  ${grid.title ? `<div class="report-card-grid-title">${escapeHtml2(grid.title)}</div>` : ""}
+  <div class="report-card-grid-items">
+${grid.cards.map(renderReportCardGridItem).join("\n")}
+  </div>
+</section>`;
+}
 function renderReportSourceNoteHtml(sourceNote) {
   const meta = [
     sourceNote.source ? `<span>Source: ${escapeHtml2(sourceNote.source)}</span>` : "",
@@ -5093,6 +5127,12 @@ function renderReportKeyValueItem(item) {
       <dt>${escapeHtml2(item.key)}</dt>
       <dd>${escapeHtml2(item.value)}</dd>
     </div>`;
+}
+function renderReportCardGridItem(card) {
+  return `    <article class="report-card-grid-card report-card-grid-card-${escapeAttr(card.accent)}">
+      ${card.title ? `<div class="report-card-grid-card-title">${escapeHtml2(card.title)}</div>` : ""}
+      ${card.body ? `<div class="report-card-grid-card-body">${escapeHtml2(card.body)}</div>` : ""}
+    </article>`;
 }
 function parseDataTableNumber(value) {
   return Number(String(value || "").replace(/,/g, "").replace(/%$/, "").trim());
@@ -5783,6 +5823,8 @@ var knownReportTags = /* @__PURE__ */ new Set([
   "report-accent-card",
   "report-badge",
   "report-callout",
+  "report-card-grid",
+  "report-card",
   "report-chart",
   "report-data-table",
   "report-figure",
@@ -5838,6 +5880,12 @@ function compileReportComponents(source, options = {}) {
     validateReportKeyValues(keyValues, context);
     keyValuesElement.replaceWith(renderReportKeyValuesHtml(keyValues));
   });
+  root("report-card-grid").each((_, element) => {
+    const cardGridElement = root(element);
+    const cardGrid = parseReportCardGrid(root, cardGridElement);
+    validateReportCardGrid(cardGrid, context);
+    cardGridElement.replaceWith(renderReportCardGridHtml(cardGrid));
+  });
   root("report-source-note").each((_, element) => {
     const sourceNoteElement = root(element);
     const sourceNote = parseReportSourceNote(sourceNoteElement);
@@ -5875,6 +5923,12 @@ function validateReportComponentTree(root, context) {
     const parent = root(element).parent();
     if (!parent.is("report-metric-grid")) {
       fail("<report-metric> must be placed directly inside <report-metric-grid>.", context);
+    }
+  });
+  root("report-card").each((_, element) => {
+    const parent = root(element).parent();
+    if (!parent.is("report-card-grid")) {
+      fail("<report-card> must be placed directly inside <report-card-grid>.", context);
     }
   });
 }
@@ -6134,6 +6188,26 @@ function validateReportSourceNote(sourceNote, context) {
   if (!sourceNote.title && !sourceNote.body && !sourceNote.source && !sourceNote.date) {
     fail("report-source-note requires title, body text, source, or date.", context);
   }
+}
+function validateReportCardGrid(cardGrid, context) {
+  const accents = /* @__PURE__ */ new Set(["blue", "cyan", "purple", "green", "orange", "red"]);
+  if (cardGrid.columns < 1 || cardGrid.columns > 4) {
+    fail("report-card-grid columns must be between 1 and 4.", context);
+  }
+  if (cardGrid.cards.length === 0) {
+    fail("report-card-grid must include at least one report-card.", context);
+  }
+  cardGrid.cards.forEach((card, index) => {
+    if (!accents.has(card.accent)) {
+      fail(
+        `Unsupported report-card accent "${card.rawAccent}". Supported accents: blue, cyan, purple, green, orange, red.`,
+        context
+      );
+    }
+    if (!card.title && !card.body) {
+      fail(`report-card at position ${index + 1} must include title and/or body text.`, context);
+    }
+  });
 }
 function validateReportRateBars(rateBars, context) {
   if (rateBars.labels.length === 0 || rateBars.values.length === 0) {
@@ -6862,6 +6936,71 @@ body {
   font-size: 12px;
 }
 
+.report-card-grid {
+  margin: 28px 0;
+}
+
+.report-card-grid-title {
+  margin: 0 0 14px;
+  color: var(--text-dim, #334155);
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.report-card-grid-items {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.report-card-grid-1 .report-card-grid-items {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.report-card-grid-2 .report-card-grid-items {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.report-card-grid-4 .report-card-grid-items {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.report-card-grid-card {
+  min-width: 0;
+  padding: 16px;
+  border: 1px solid var(--border, #dbe5f2);
+  border-top: 4px solid var(--report-card-accent, var(--blue, #0F82F5));
+  border-radius: 8px;
+  background: var(--bg-card, #ffffff);
+  box-shadow: 0 10px 26px rgba(15, 23, 42, 0.06);
+}
+
+.report-card-grid-card-title {
+  margin-bottom: 7px;
+  color: var(--report-card-accent, var(--blue, #0F82F5));
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.report-card-grid-card-body {
+  min-width: 0;
+  color: var(--text, #334155);
+  font-size: 14px;
+  line-height: 1.45;
+  overflow-wrap: anywhere;
+}
+
+.report-card-grid-card-blue { --report-card-accent: var(--blue, #0F82F5); }
+.report-card-grid-card-cyan { --report-card-accent: var(--cyan, #59D6FD); }
+.report-card-grid-card-purple { --report-card-accent: var(--purple, #5143D5); }
+.report-card-grid-card-green { --report-card-accent: var(--green, #16a34a); }
+.report-card-grid-card-orange { --report-card-accent: var(--orange, #F9935B); }
+.report-card-grid-card-red { --report-card-accent: var(--red, #dc2626); }
+
 .report-chart {
   margin: 28px 0;
   padding: 22px;
@@ -7318,6 +7457,10 @@ body.report-theme-dark-page {
   box-shadow: none;
 }
 
+.deck-report.report-theme-dark .report-card-grid-card {
+  box-shadow: none;
+}
+
 .deck-report.report-theme-dark .report-accent-card {
   box-shadow: none;
 }
@@ -7381,7 +7524,10 @@ pre code {
 
   .report-key-values dl,
   .report-key-values-3 dl,
-  .report-key-values-4 dl {
+  .report-key-values-4 dl,
+  .report-card-grid-items,
+  .report-card-grid-2 .report-card-grid-items,
+  .report-card-grid-4 .report-card-grid-items {
     grid-template-columns: minmax(0, 1fr);
   }
 }
