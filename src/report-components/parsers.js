@@ -13,6 +13,10 @@ export function parseReportChart(chart, index = 0) {
   const valuePrefix = chart.attr('value-prefix') || chart.attr('prefix') || ''
   const valueSuffix = chart.attr('value-suffix') || chart.attr('suffix') || ''
   const points = parseChartPoints(chart.attr('points') || chart.attr('data'))
+  const seriesNames = splitPipe(chart.attr('series') || chart.attr('datasets') || chart.attr('series-labels'))
+  const matrix = parseChartMatrix(
+    chart.attr('matrix') || chart.attr('series-values') || (type === 'grouped-bar' ? chart.attr('values') : ''),
+  )
   const derivedPoints =
     points.length > 0
       ? points
@@ -32,6 +36,8 @@ export function parseReportChart(chart, index = 0) {
     values,
     colors,
     points: derivedPoints,
+    seriesNames,
+    matrix,
     height,
     valuePrefix,
     valueSuffix,
@@ -162,6 +168,7 @@ function normalizeChartType(value = 'bar') {
   if (token === 'column') return 'bar'
   if (token === 'donut') return 'doughnut'
   if (token === 'tree-map') return 'treemap'
+  if (['grouped', 'groupedbar', 'clustered', 'clustered-bar', 'clusteredbar'].includes(token)) return 'grouped-bar'
   return token
 }
 
@@ -216,6 +223,10 @@ function parseChartPoints(value = '') {
       y: Number(rest.join(separator).trim()),
     }
   })
+}
+
+function parseChartMatrix(value = '') {
+  return splitRows(value).map((row) => splitPipe(row, { keepEmpty: true }).map((cell) => Number(cell.replace(/,/g, ''))))
 }
 
 function parseDimension(value, fallback) {

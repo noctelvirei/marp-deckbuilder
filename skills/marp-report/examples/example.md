@@ -49,6 +49,17 @@ April volume is concentrated in one dominant journey. The top three journeys acc
   values="17240,18990,20530,21191"
 ></report-chart>
 
+## Outcome Comparison
+
+<report-chart
+  type="grouped-bar"
+  title="Weekly journey outcomes"
+  series="Opened|Completed|Exceptions"
+  value-suffix=" cases"
+  labels="Week 1,Week 2,Week 3,Week 4"
+  values="17240|15020|640;18990|16880|720;20530|18030|760;21191|19050|810"
+></report-chart>
+
 ## Completion Funnel
 
 <report-chart

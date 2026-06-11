@@ -366,6 +366,7 @@ Reports can use:
 - Captioned embedded images via `report-figure`.
 - Tables.
 - Chart.js charts via `report-chart type="bar"`, `line`, and `doughnut`.
+- Chart.js grouped bars via `report-chart type="grouped-bar"`.
 - Observable Plot charts via `report-chart type="area"`.
 - D3 charts via `report-chart type="treemap"`.
 - D3 funnels via `report-chart type="funnel"`.

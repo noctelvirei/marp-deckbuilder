@@ -4742,6 +4742,10 @@ function parseReportChart(chart, index = 0) {
   const valuePrefix = chart.attr("value-prefix") || chart.attr("prefix") || "";
   const valueSuffix = chart.attr("value-suffix") || chart.attr("suffix") || "";
   const points = parseChartPoints(chart.attr("points") || chart.attr("data"));
+  const seriesNames = splitPipe(chart.attr("series") || chart.attr("datasets") || chart.attr("series-labels"));
+  const matrix = parseChartMatrix(
+    chart.attr("matrix") || chart.attr("series-values") || (type === "grouped-bar" ? chart.attr("values") : "")
+  );
   const derivedPoints = points.length > 0 ? points : labels.map((label, index2) => ({
     x: label,
     y: values[index2]
@@ -4757,6 +4761,8 @@ function parseReportChart(chart, index = 0) {
     values,
     colors,
     points: derivedPoints,
+    seriesNames,
+    matrix,
     height,
     valuePrefix,
     valueSuffix,
@@ -4874,6 +4880,7 @@ function normalizeChartType(value = "bar") {
   if (token === "column") return "bar";
   if (token === "donut") return "doughnut";
   if (token === "tree-map") return "treemap";
+  if (["grouped", "groupedbar", "clustered", "clustered-bar", "clusteredbar"].includes(token)) return "grouped-bar";
   return token;
 }
 function normalizeFigureSize(value = "") {
@@ -4916,6 +4923,9 @@ function parseChartPoints(value = "") {
       y: Number(rest.join(separator).trim())
     };
   });
+}
+function parseChartMatrix(value = "") {
+  return splitRows(value).map((row) => splitPipe(row, { keepEmpty: true }).map((cell) => Number(cell.replace(/,/g, ""))));
 }
 function parseDimension(value, fallback) {
   const numeric = Number.parseInt(value || fallback, 10);
@@ -5128,6 +5138,7 @@ function renderReportChartScript(chart, context = {}) {
   if (chart.chartType === "area") return renderReportAreaChartScript(chart, context);
   if (chart.chartType === "treemap") return renderReportTreemapChartScript(chart, context);
   if (chart.chartType === "funnel") return renderReportFunnelChartScript(chart, context);
+  if (chart.chartType === "grouped-bar") return renderReportMultiBarChartScript(chart, context, { stacked: false });
   const palette = chart.colors.length ? chart.colors : reportChartPalette(context.brand);
   const colors = chart.labels.map((_, index) => normalizeChartColor(palette[index % palette.length]));
   const primaryColor = normalizeChartColor(palette[0]) || "#0F82F5";
@@ -5221,6 +5232,85 @@ ${datasetOptions}
         }
       }
 ${chartScales}
+    }
+  });
+})();`;
+}
+function renderReportMultiBarChartScript(chart, context = {}, options = {}) {
+  const palette = chart.colors.length ? chart.colors : reportChartPalette(context.brand);
+  const datasets = chart.seriesNames.map((series, seriesIndex) => ({
+    label: series,
+    data: chart.matrix.map((row) => row[seriesIndex]),
+    backgroundColor: normalizeChartColor(palette[seriesIndex % palette.length]) || "#0F82F5",
+    borderRadius: 5
+  }));
+  const stacked = Boolean(options.stacked);
+  return `(() => {
+  const canvas = document.getElementById(${jsString(chart.id)});
+  const themeRoot = canvas.closest(".deck-report") || document.body || document.documentElement;
+  const rootStyle = getComputedStyle(themeRoot);
+  const tickColor = rootStyle.getPropertyValue("--text-dim").trim() || "#64748b";
+  const gridColor = rootStyle.getPropertyValue("--border").trim() || "rgba(148, 163, 184, 0.28)";
+  const tooltipBg = rootStyle.getPropertyValue("--bg-card").trim() || "rgba(15, 23, 42, 0.92)";
+  const tooltipText = rootStyle.getPropertyValue("--text").trim() || "#ffffff";
+  const tooltipMuted = rootStyle.getPropertyValue("--text-dim").trim() || "#cbd5e1";
+  const valuePrefix = ${jsString(chart.valuePrefix)};
+  const valueSuffix = ${jsString(chart.valueSuffix)};
+  const valueFormatter = new Intl.NumberFormat("en-US", { maximumFractionDigits: 2 });
+  const formatTooltipValue = (value) => {
+    const numeric = Number(value);
+    const formatted = Number.isFinite(numeric) ? valueFormatter.format(numeric) : String(value ?? "");
+    return valuePrefix + formatted + valueSuffix;
+  };
+  new Chart(canvas, {
+    type: "bar",
+    data: {
+      labels: ${jsValue(chart.labels)},
+      datasets: ${jsValue(datasets)}
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      interaction: {
+        mode: "index",
+        intersect: false
+      },
+      plugins: {
+        legend: { display: true, position: "top", labels: { color: tickColor } },
+        tooltip: {
+          enabled: true,
+          mode: "index",
+          intersect: false,
+          backgroundColor: tooltipBg,
+          titleColor: tooltipText,
+          bodyColor: tooltipMuted,
+          borderColor: gridColor,
+          borderWidth: 1,
+          displayColors: true,
+          padding: 12,
+          callbacks: {
+            label: (context) => {
+              const label = context.dataset.label ? context.dataset.label + ": " : "";
+              return label + formatTooltipValue(context.parsed.y);
+            }
+          }
+        }
+      },
+      scales: {
+        x: {
+          stacked: ${stacked},
+          ticks: { color: tickColor },
+          grid: { color: gridColor }
+        },
+        y: {
+          stacked: ${stacked},
+          ticks: {
+            color: tickColor,
+            callback: value => Number(value).toLocaleString()
+          },
+          grid: { color: gridColor }
+        }
+      }
     }
   });
 })();`;
@@ -5710,10 +5800,10 @@ function validateReportComponentSyntax(source, context) {
   }
 }
 function validateReportChart(chart, context) {
-  const supportedTypes = /* @__PURE__ */ new Set(["bar", "line", "doughnut", "area", "treemap", "funnel"]);
+  const supportedTypes = /* @__PURE__ */ new Set(["bar", "line", "doughnut", "area", "treemap", "funnel", "grouped-bar"]);
   if (!supportedTypes.has(chart.chartType)) {
     fail(
-      `report-chart type "${chart.chartType}" is not available. Supported types: bar, line, doughnut, area, treemap, funnel. Ask the skill maker to add missing chart types.`,
+      `report-chart type "${chart.chartType}" is not available. Supported types: bar, line, doughnut, area, treemap, funnel, grouped-bar. Ask the skill maker to add missing chart types.`,
       context
     );
   }
@@ -5746,6 +5836,10 @@ function validateReportChart(chart, context) {
     }
     return;
   }
+  if (chart.chartType === "grouped-bar") {
+    validateReportMultiSeriesChart(chart, context);
+    return;
+  }
   validateReportChartLabelsAndValues(chart, context);
   if (chart.chartType === "doughnut") {
     if (chart.values.some((value) => value < 0)) {
@@ -5769,6 +5863,34 @@ function validateReportChartLabelsAndValues(chart, context) {
   if (chart.values.some((value) => !Number.isFinite(value))) {
     fail("report-chart values must all be numeric.", context);
   }
+}
+function validateReportMultiSeriesChart(chart, context) {
+  if (chart.labels.length === 0) {
+    fail(`report-chart type="${chart.chartType}" requires non-empty labels.`, context);
+  }
+  if (chart.seriesNames.length === 0) {
+    fail(`report-chart type="${chart.chartType}" requires series names in the series attribute.`, context);
+  }
+  if (chart.matrix.length === 0) {
+    fail(`report-chart type="${chart.chartType}" requires matrix values in values, matrix, or series-values.`, context);
+  }
+  if (chart.matrix.length !== chart.labels.length) {
+    fail(
+      `report-chart type="${chart.chartType}" labels/rows length mismatch: ${chart.labels.length} label(s), ${chart.matrix.length} row(s).`,
+      context
+    );
+  }
+  chart.matrix.forEach((row, rowIndex) => {
+    if (row.length !== chart.seriesNames.length) {
+      fail(
+        `report-chart type="${chart.chartType}" row ${rowIndex + 1} has ${row.length} value(s), but ${chart.seriesNames.length} series were declared.`,
+        context
+      );
+    }
+    if (row.some((value) => !Number.isFinite(value))) {
+      fail(`report-chart type="${chart.chartType}" row ${rowIndex + 1} values must all be numeric.`, context);
+    }
+  });
 }
 function validateReportMetricGrid(metricGrid, context) {
   if (metricGrid.metrics.length === 0) {

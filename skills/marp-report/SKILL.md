@@ -48,6 +48,7 @@ Use these renderer-backed component tags in `report.md`. They look like HTML tag
 | Chart.js bar chart | `<report-chart type="bar">` | `labels`, `values` |
 | Chart.js line chart | `<report-chart type="line">` | `labels`, `values` |
 | Chart.js doughnut chart | `<report-chart type="doughnut">` | `labels`, `values` |
+| Chart.js grouped bar chart | `<report-chart type="grouped-bar">` | `labels`, `series`, matrix `values` |
 | Observable Plot area chart | `<report-chart type="area">` | `points` as `x:y` pairs, or `labels` and `values` |
 | D3 treemap | `<report-chart type="treemap">` | `labels`, `values` |
 | D3 funnel | `<report-chart type="funnel">` | `labels`, `values` |
@@ -71,6 +72,7 @@ Generate `report.md` in this order:
 - Keep branding renderer-owned through `brand.json` and bundled resources; report Markdown should not declare corporate logos, brand colors, fonts, or background chrome.
 - Keep technical field names as plain text in dark reports unless code formatting is truly necessary.
 - Use `<report-chart type="bar">`, `<report-chart type="line">`, or `<report-chart type="doughnut">` for standard Chart.js charts with renderer-owned hover tooltips.
+- Use `<report-chart type="grouped-bar">` for Chart.js grouped comparisons with matrix `values` like `10|20;12|24`.
 - Use `<report-chart type="area">` for Observable Plot time-series area charts with renderer-owned hover tips.
 - Use `<report-chart type="treemap">` for D3 treemaps with renderer-owned sizing, brand colors, and hover tips.
 - Use `<report-chart type="funnel">` for D3 stage funnels with renderer-owned hover tips.

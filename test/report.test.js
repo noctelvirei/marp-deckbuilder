@@ -300,6 +300,39 @@ test('expands report funnel chart components into D3 funnel initializers', async
   assert.match(rendered.document, /const valueSuffix = " cases"/)
 })
 
+test('expands report grouped bar charts into Chart.js multi-dataset bars', async () => {
+  const definitions = await loadDefinitions(new URL('../resources/definitions', import.meta.url))
+  const rendered = renderReportHtml(
+    `# Grouped bar report
+
+<report-chart
+  type="grouped-bar"
+  title="Weekly journey outcomes"
+  value-suffix=" cases"
+  labels="Week 1,Week 2,Week 3"
+  series="Opened|Completed"
+  values="17240|15020;18990|16880;20530|18030"
+></report-chart>
+`,
+    {
+      resourcesDir: path.resolve('resources'),
+      definitions,
+      inlineAssets: true,
+    },
+  )
+
+  assert.doesNotMatch(rendered.document, /<report-chart/i)
+  assert.match(rendered.document, /class="report-chart report-chart-grouped-bar"/)
+  assert.match(rendered.document, /<canvas id="report-chart-1"/)
+  assert.match(rendered.document, /new Chart\(canvas, /)
+  assert.match(rendered.document, /type:\s*"bar"/)
+  assert.match(rendered.document, /"label":"Opened","data":\[17240,18990,20530\]/)
+  assert.match(rendered.document, /"label":"Completed","data":\[15020,16880,18030\]/)
+  assert.match(rendered.document, /legend:\s*\{\s*display:\s*true,\s*position:\s*"top"/)
+  assert.match(rendered.document, /stacked:\s*false/)
+  assert.match(rendered.document, /const valueSuffix = " cases"/)
+})
+
 test('allows Chart.js, Observable Plot, and D3 report charts to coexist', async () => {
   const definitions = await loadDefinitions(new URL('../resources/definitions', import.meta.url))
   const rendered = renderReportHtml(
@@ -1049,7 +1082,7 @@ test('report chart components fail clearly when data is invalid', async () => {
   )
   assert.throws(
     () => renderReportHtml('<report-chart type="radar" labels="A" values="10"></report-chart>', options),
-    /report-chart type "radar" is not available\. Supported types: bar, line, doughnut, area, treemap, funnel\. Ask the skill maker to add missing chart types/,
+    /report-chart type "radar" is not available\. Supported types: bar, line, doughnut, area, treemap, funnel, grouped-bar\. Ask the skill maker to add missing chart types/,
   )
   assert.throws(
     () => renderReportHtml('<report-chart type="doughnut" labels="A,B" values="10,-1"></report-chart>', options),
@@ -1078,6 +1111,25 @@ test('report chart components fail clearly when data is invalid', async () => {
   assert.throws(
     () => renderReportHtml('<report-chart type="funnel" labels="A,B" values="0,0"></report-chart>', options),
     /report-chart funnel values must sum to more than zero/,
+  )
+  assert.throws(
+    () => renderReportHtml('<report-chart type="grouped-bar" labels="A" values="10"></report-chart>', options),
+    /report-chart type="grouped-bar" requires series names in the series attribute/,
+  )
+  assert.throws(
+    () =>
+      renderReportHtml('<report-chart type="grouped-bar" labels="A,B" series="X|Y" values="10|20"></report-chart>', options),
+    /report-chart type="grouped-bar" labels\/rows length mismatch/,
+  )
+  assert.throws(
+    () =>
+      renderReportHtml('<report-chart type="grouped-bar" labels="A" series="X|Y" values="10|20|30"></report-chart>', options),
+    /report-chart type="grouped-bar" row 1 has 3 value\(s\), but 2 series were declared/,
+  )
+  assert.throws(
+    () =>
+      renderReportHtml('<report-chart type="grouped-bar" labels="A" series="X|Y" values="10|nope"></report-chart>', options),
+    /report-chart type="grouped-bar" row 1 values must all be numeric/,
   )
   assert.throws(
     () => renderReportHtml('<report-unknown></report-unknown>', options),
