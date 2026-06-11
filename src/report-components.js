@@ -146,8 +146,9 @@ function validateReportComponentSyntax(source, context) {
 }
 
 function validateReportChart(chart, context) {
-  if (chart.chartType !== 'bar') {
-    fail(`Unsupported report-chart type "${chart.chartType}". Supported type: bar.`, context)
+  const supportedTypes = new Set(['bar', 'line'])
+  if (!supportedTypes.has(chart.chartType)) {
+    fail(`Unsupported report-chart type "${chart.chartType}". Supported types: bar, line.`, context)
   }
   if (chart.labels.length === 0 || chart.values.length === 0) {
     fail('report-chart requires non-empty labels and values attributes.', context)

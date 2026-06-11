@@ -93,6 +93,21 @@ function renderReportRateBar(row) {
 export function renderReportChartScript(chart, context = {}) {
   const palette = chart.colors.length ? chart.colors : reportChartPalette(context.brand)
   const colors = chart.labels.map((_, index) => normalizeChartColor(palette[index % palette.length]))
+  const primaryColor = normalizeChartColor(palette[0]) || '#0F82F5'
+  const chartJsType = chart.chartType === 'line' ? 'line' : 'bar'
+  const datasetOptions =
+    chart.chartType === 'line'
+      ? `        borderColor: ${jsString(primaryColor)},
+        backgroundColor: ${jsString(hexToRgba(primaryColor, 0.18))},
+        pointBackgroundColor: ${jsString(primaryColor)},
+        pointBorderColor: tooltipBg,
+        pointHoverRadius: 6,
+        pointRadius: 4,
+        borderWidth: 3,
+        tension: 0.35,
+        fill: false`
+      : `        backgroundColor: ${jsValue(colors)},
+        borderRadius: 5`
 
   return `(() => {
   const canvas = document.getElementById(${jsString(chart.id)});
@@ -112,14 +127,13 @@ export function renderReportChartScript(chart, context = {}) {
     return valuePrefix + formatted + valueSuffix;
   };
   new Chart(canvas, {
-    type: "bar",
+    type: ${jsString(chartJsType)},
     data: {
       labels: ${jsValue(chart.labels)},
       datasets: [{
         label: ${jsString(chart.series)},
         data: ${jsValue(chart.values)},
-        backgroundColor: ${jsValue(colors)},
-        borderRadius: 5
+${datasetOptions}
       }]
     },
     options: {
@@ -188,6 +202,16 @@ function normalizeChartColor(value = '') {
   const token = String(value || '').trim()
   const hex = token.match(/^#?([0-9a-f]{6})$/i)
   return hex ? `#${hex[1]}` : token
+}
+
+function hexToRgba(value, alpha = 1) {
+  const hex = String(value || '').trim().match(/^#?([0-9a-f]{6})$/i)
+  if (!hex) return value
+  const numeric = Number.parseInt(hex[1], 16)
+  const red = (numeric >> 16) & 255
+  const green = (numeric >> 8) & 255
+  const blue = numeric & 255
+  return `rgba(${red}, ${green}, ${blue}, ${alpha})`
 }
 
 function clampPercent(value) {

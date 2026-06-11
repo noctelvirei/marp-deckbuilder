@@ -132,9 +132,9 @@ code { background: var(--bg-card) !important; color: var(--cyan) !important; bor
 
 Reports use normal Markdown plus compact `report-*` component tags where supported. The renderer expands those tags into HTML, CSS hooks, and JavaScript initializers.
 
-### Report Chart: Chart.js Bar
+### Report Chart: Chart.js Bar And Line
 
-Use `report-chart` for standard bar charts. Do not write the `<canvas>` or Chart.js initializer yourself. The renderer generates Chart.js hover tooltips that show the represented value.
+Use `report-chart` for standard Chart.js bar and line charts. Do not write the `<canvas>` or Chart.js initializer yourself. The renderer generates Chart.js hover tooltips that show the represented value.
 
 ```html
 <report-chart
@@ -146,11 +146,21 @@ Use `report-chart` for standard bar charts. Do not write the `<canvas>` or Chart
 ></report-chart>
 ```
 
+```html
+<report-chart
+  type="line"
+  title="Weekly case volume"
+  series="Cases"
+  labels="Week 1,Week 2,Week 3,Week 4"
+  values="17240,18990,20530,21191"
+></report-chart>
+```
+
 Supported attributes:
 
 | Attribute | Required | Notes |
 | --- | --- | --- |
-| `type` | no | Currently supports `bar`. Defaults to `bar`. |
+| `type` | no | Supports `bar` and `line`. Defaults to `bar`. |
 | `title` | no | Rendered above the chart and used as the accessible label. |
 | `series` | no | Dataset label. |
 | `labels` | yes | Comma-separated labels. |

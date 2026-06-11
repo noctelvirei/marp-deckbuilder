@@ -25,6 +25,16 @@ April volume is concentrated in one dominant journey. The top three journeys acc
   values="52208,11119,8648,3751"
 ></report-chart>
 
+## Weekly Trend
+
+<report-chart
+  type="line"
+  title="Weekly case volume"
+  series="Cases"
+  labels="Week 1,Week 2,Week 3,Week 4"
+  values="17240,18990,20530,21191"
+></report-chart>
+
 ## Distribution
 
 <report-rate-bars

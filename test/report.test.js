@@ -147,6 +147,35 @@ test('assigns unique generated IDs to multiple report charts', async () => {
   assert.match(rendered.document, /document\.getElementById\("report-chart-2"\)/)
 })
 
+test('expands report line chart components into Chart.js line initializers', async () => {
+  const definitions = await loadDefinitions(new URL('../resources/definitions', import.meta.url))
+  const rendered = renderReportHtml(
+    `# Line chart report
+
+<report-chart
+  type="line"
+  title="Weekly cases"
+  series="Cases"
+  labels="Week 1,Week 2,Week 3"
+  values="4200,5100,4800"
+></report-chart>
+`,
+    {
+      resourcesDir: path.resolve('resources'),
+      definitions,
+      inlineAssets: true,
+    },
+  )
+
+  assert.doesNotMatch(rendered.document, /<report-chart/i)
+  assert.match(rendered.document, /class="report-chart report-chart-line"/)
+  assert.match(rendered.document, /type:\s*"line"/)
+  assert.match(rendered.document, /borderColor:\s*"#0F82F5"/)
+  assert.match(rendered.document, /pointHoverRadius:\s*6/)
+  assert.match(rendered.document, /tension:\s*0\.35/)
+  assert.match(rendered.document, /tooltip:\s*\{[\s\S]*enabled:\s*true/)
+})
+
 test('applies dark report theme and generated navigation from frontmatter', async () => {
   const definitions = await loadDefinitions(new URL('../resources/definitions', import.meta.url))
   const rendered = renderReportHtml(
@@ -650,7 +679,7 @@ test('report chart components fail clearly when data is invalid', async () => {
   )
   assert.throws(
     () => renderReportHtml('<report-chart type="area" labels="A" values="10"></report-chart>', options),
-    /Unsupported report-chart type "area"/,
+    /Unsupported report-chart type "area". Supported types: bar, line/,
   )
   assert.throws(
     () => renderReportHtml('<report-unknown></report-unknown>', options),

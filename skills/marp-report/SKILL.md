@@ -38,13 +38,13 @@ node scripts/build-report.mjs <output-folder>/report.md --out-dir <output-folder
 - Prefer `reportTheme: dark` for dark navy reports instead of pasting CSS into Markdown.
 - Keep branding renderer-owned through `brand.json` and bundled resources; report Markdown should not declare corporate logos, brand colors, fonts, or background chrome.
 - Keep technical field names as plain text in dark reports unless code formatting is truly necessary.
-- Use `<report-chart type="bar">` for standard Chart.js bar charts with renderer-owned hover tooltips.
+- Use `<report-chart type="bar">` or `<report-chart type="line">` for standard Chart.js charts with renderer-owned hover tooltips.
 - Use `<report-metric-grid>` for KPI summaries.
 - Use `<report-rate-bars>` for ranked distribution bars.
 - Use `<report-callout>` for info, warning, success, and danger findings.
 - Use `<report-accent-card>` for highlighted recommendations, risks, or ownership notes.
 - Use `<report-badge>` for table statuses and small inline state labels.
-- Use Chart.js manually only for chart types that are not yet supported as report components, such as stacked bar, line, and doughnut charts.
+- Use Chart.js manually only for chart types that are not yet supported as report components, such as stacked bar and doughnut charts.
 - Use Observable Plot for concise dot, area, heatmap, and small-multiple charts.
 - Use D3 for bespoke SVG charts such as treemaps, custom arcs, Sankey-style flows, and force layouts.
 - Use inline SVG when the visual should be static, exact, and dependency-free.
