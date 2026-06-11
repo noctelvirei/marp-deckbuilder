@@ -201,6 +201,24 @@ Supported attributes:
 | `shares` | no | Comma-separated percentages. Aliases: `percentages`, `percents`. When omitted, shares are computed from `values`. |
 | `colors` | no | Comma-separated six-digit hex colors. Defaults to brand chart colors. |
 
+### Report Callout
+
+Use `report-callout` for findings, risks, and next actions. Do not hand-author `r-callout` blocks.
+
+```html
+<report-callout variant="warning" title="Action">
+J0116 generated meaningful volume but is not in the registered journey profile.
+</report-callout>
+```
+
+Supported attributes:
+
+| Attribute | Required | Notes |
+| --- | --- | --- |
+| `variant` | no | Supports `info`, `warning`, `success`, `danger`. Aliases: `type`, `tone`. Defaults to `info`. |
+| `title` | no | Short bold heading. |
+| `text` | no | Body text when you prefer attribute-only authoring. Otherwise use the tag body. |
+
 ## Legacy HTML Classes
 
 Some components are still in migration. Until their `report-*` versions exist, reports may use these HTML classes:
@@ -211,7 +229,6 @@ Some components are still in migration. Until their `report-*` versions exist, r
 | Metrics | `r-metric-grid`, `r-metric`, `r-metric-value`, `r-metric-label` | `r-metric-sub`, `down` |
 | Cards | `r-card`, `r-card-accent` | `cyan`, `green`, `orange`, `red`, `purple` |
 | Chart frame | `r-chart-wrap`, `r-chart-title` | `r-legend`, `r-legend-item`, `r-legend-swatch` |
-| Callouts | `r-callout` | `info`, `warning`, `success`, `danger` |
 | Badges | `r-badge` | `blue`, `green`, `orange`, `red`, `muted` |
 | Grids | `r-two-col`, `r-three-col` | none |
 
@@ -232,15 +249,6 @@ Do not use `deck-*` tags in reports. They are presentation components.
     <div class="r-metric-sub down">-1.1 pp</div>
   </div>
 </div>
-```
-
-### Callouts
-
-```html
-<div class="r-callout info"><div><strong>Info:</strong> Three journeys drive most volume.</div></div>
-<div class="r-callout warning"><div><strong>Warning:</strong> One journey is unregistered.</div></div>
-<div class="r-callout success"><div><strong>Success:</strong> Completion is above target.</div></div>
-<div class="r-callout danger"><div><strong>Action:</strong> A control is failing.</div></div>
 ```
 
 ### Accent Cards

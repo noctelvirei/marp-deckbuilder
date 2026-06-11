@@ -325,6 +325,46 @@ test('report rate bars fail clearly when data is malformed', async () => {
   )
 })
 
+test('expands report callouts into reusable finding blocks', async () => {
+  const definitions = await loadDefinitions(new URL('../resources/definitions', import.meta.url))
+  const rendered = renderReportHtml(
+    `# Callout report
+
+<report-callout variant="warning" title="Action & review">
+J0116 generated meaningful volume & needs review.
+</report-callout>
+`,
+    {
+      resourcesDir: path.resolve('resources'),
+      definitions,
+      inlineAssets: true,
+    },
+  )
+
+  assert.doesNotMatch(rendered.document, /<report-callout/i)
+  assert.match(rendered.document, /class="report-callout report-callout-warning"/)
+  assert.match(rendered.document, /<div class="report-callout-title">Action &amp; review<\/div>/)
+  assert.match(rendered.document, /<div class="report-callout-body">J0116 generated meaningful volume &amp; needs review\.<\/div>/)
+})
+
+test('report callouts fail clearly when malformed', async () => {
+  const definitions = await loadDefinitions(new URL('../resources/definitions', import.meta.url))
+  const options = {
+    resourcesDir: path.resolve('resources'),
+    definitions,
+    inlineAssets: true,
+  }
+
+  assert.throws(
+    () => renderReportHtml('<report-callout variant="urgent">Check this.</report-callout>', options),
+    /Unsupported report-callout variant "urgent"/,
+  )
+  assert.throws(
+    () => renderReportHtml('<report-callout variant="info"></report-callout>', options),
+    /report-callout requires title and\/or text content/,
+  )
+})
+
 test('report chart components fail clearly when data is invalid', async () => {
   const definitions = await loadDefinitions(new URL('../resources/definitions', import.meta.url))
   const options = {

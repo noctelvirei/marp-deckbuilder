@@ -43,7 +43,9 @@ April volume is concentrated in one dominant journey. The top three journeys acc
 | J0101 | 8,648 | 11.1% | Active |
 | J0116 | 3,751 | 4.8% | Review |
 
-**Action:** J0116 generated meaningful volume but is not in the registered journey profile.
+<report-callout variant="warning" title="Action">
+J0116 generated meaningful volume but is not in the registered journey profile.
+</report-callout>
 
 ## Next Steps
 

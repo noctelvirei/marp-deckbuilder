@@ -459,6 +459,52 @@ body {
   text-align: right;
 }
 
+.report-callout {
+  margin: 22px 0;
+  padding: 16px 18px;
+  border: 1px solid var(--report-callout-border, rgba(15, 130, 245, 0.32));
+  border-left-width: 5px;
+  border-radius: 8px;
+  background: var(--report-callout-bg, rgba(15, 130, 245, 0.08));
+  color: var(--report-callout-text, var(--text, #0f172a));
+}
+
+.report-callout-title {
+  margin-bottom: 4px;
+  color: var(--report-callout-title, var(--text, #0f172a));
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.report-callout-body {
+  color: var(--report-callout-text, var(--text, #334155));
+  font-size: 15px;
+}
+
+.report-callout-info {
+  --report-callout-bg: rgba(15, 130, 245, 0.1);
+  --report-callout-border: rgba(15, 130, 245, 0.38);
+  --report-callout-title: var(--blue, #0F82F5);
+}
+
+.report-callout-warning {
+  --report-callout-bg: rgba(249, 147, 91, 0.12);
+  --report-callout-border: rgba(249, 147, 91, 0.42);
+  --report-callout-title: var(--orange, #F9935B);
+}
+
+.report-callout-success {
+  --report-callout-bg: rgba(102, 204, 142, 0.12);
+  --report-callout-border: rgba(102, 204, 142, 0.42);
+  --report-callout-title: var(--green, #16a34a);
+}
+
+.report-callout-danger {
+  --report-callout-bg: rgba(252, 81, 97, 0.12);
+  --report-callout-border: rgba(252, 81, 97, 0.44);
+  --report-callout-title: var(--red, #dc2626);
+}
+
 .report-layout {
   display: grid;
   grid-template-columns: minmax(160px, 200px) minmax(0, 1fr);

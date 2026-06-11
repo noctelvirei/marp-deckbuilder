@@ -49,6 +49,16 @@ export function parseReportMetricGrid(root, grid) {
   }
 }
 
+export function parseReportCallout(callout) {
+  return {
+    type: 'callout',
+    variant: normalizeCalloutVariant(callout.attr('variant') || callout.attr('type') || callout.attr('tone')),
+    rawVariant: callout.attr('variant') || callout.attr('type') || callout.attr('tone') || 'info',
+    title: callout.attr('title') || cleanText(callout.find('strong,b,h3').first().text()),
+    body: callout.attr('text') || cleanText(callout.text()),
+  }
+}
+
 export function parseReportRateBars(rateBars) {
   return {
     type: 'rate-bars',
@@ -79,6 +89,14 @@ function normalizeMetricDirection(value = '') {
   const token = String(value || '').trim().toLowerCase()
   if (['down', 'negative', 'decrease', 'bad'].includes(token)) return 'down'
   return ''
+}
+
+function normalizeCalloutVariant(value = 'info') {
+  const token = String(value || 'info').trim().toLowerCase()
+  if (token === 'danger' || token === 'error') return 'danger'
+  if (token === 'warn') return 'warning'
+  if (token === 'positive') return 'success'
+  return token
 }
 
 function normalizeAccent(value = '') {

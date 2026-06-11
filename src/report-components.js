@@ -1,18 +1,26 @@
 import * as cheerio from 'cheerio'
 
 import {
+  parseReportCallout,
   parseReportChart,
   parseReportMetricGrid,
   parseReportRateBars,
 } from './report-components/parsers.js'
 import {
+  renderReportCalloutHtml,
   renderReportChartHtml,
   renderReportChartScript,
   renderReportMetricGridHtml,
   renderReportRateBarsHtml,
 } from './report-components/renderers.js'
 
-const knownReportTags = new Set(['report-chart', 'report-metric-grid', 'report-metric', 'report-rate-bars'])
+const knownReportTags = new Set([
+  'report-callout',
+  'report-chart',
+  'report-metric-grid',
+  'report-metric',
+  'report-rate-bars',
+])
 
 export function compileReportComponents(source, options = {}) {
   const context = reportComponentContext(options)
@@ -39,6 +47,13 @@ export function compileReportComponents(source, options = {}) {
     const rateBars = parseReportRateBars(rateBarsElement)
     validateReportRateBars(rateBars, context)
     rateBarsElement.replaceWith(renderReportRateBarsHtml(rateBars, context))
+  })
+
+  root('report-callout').each((_, element) => {
+    const calloutElement = root(element)
+    const callout = parseReportCallout(calloutElement)
+    validateReportCallout(callout, context)
+    calloutElement.replaceWith(renderReportCalloutHtml(callout))
   })
 
   root('report-chart').each((index, element) => {
@@ -173,6 +188,19 @@ function validateReportRateBars(rateBars, context) {
   }
   if (rateBars.colors.some((color) => !isSixDigitHexColor(color))) {
     fail('report-rate-bars colors must be six-digit hex colors.', context)
+  }
+}
+
+function validateReportCallout(callout, context) {
+  const variants = new Set(['info', 'warning', 'success', 'danger'])
+  if (!variants.has(callout.variant)) {
+    fail(
+      `Unsupported report-callout variant "${callout.rawVariant}". Supported variants: info, warning, success, danger.`,
+      context,
+    )
+  }
+  if (!callout.title && !callout.body) {
+    fail('report-callout requires title and/or text content.', context)
   }
 }
 

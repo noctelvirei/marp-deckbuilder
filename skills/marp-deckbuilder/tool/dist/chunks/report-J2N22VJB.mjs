@@ -4774,6 +4774,15 @@ function parseReportMetricGrid(root, grid) {
     metrics
   };
 }
+function parseReportCallout(callout) {
+  return {
+    type: "callout",
+    variant: normalizeCalloutVariant(callout.attr("variant") || callout.attr("type") || callout.attr("tone")),
+    rawVariant: callout.attr("variant") || callout.attr("type") || callout.attr("tone") || "info",
+    title: callout.attr("title") || cleanText(callout.find("strong,b,h3").first().text()),
+    body: callout.attr("text") || cleanText(callout.text())
+  };
+}
 function parseReportRateBars(rateBars) {
   return {
     type: "rate-bars",
@@ -4802,6 +4811,13 @@ function normalizeMetricDirection(value = "") {
   if (["down", "negative", "decrease", "bad"].includes(token)) return "down";
   return "";
 }
+function normalizeCalloutVariant(value = "info") {
+  const token = String(value || "info").trim().toLowerCase();
+  if (token === "danger" || token === "error") return "danger";
+  if (token === "warn") return "warning";
+  if (token === "positive") return "success";
+  return token;
+}
 function normalizeAccent(value = "") {
   const token = String(value || "").trim().toLowerCase();
   if (["blue", "cyan", "purple", "green", "orange", "red"].includes(token)) return token;
@@ -4820,6 +4836,12 @@ function renderReportChartHtml(chart) {
 function renderReportMetricGridHtml(grid) {
   return `<div class="report-metric-grid">
 ${grid.metrics.map(renderReportMetricHtml).join("\n")}
+</div>`;
+}
+function renderReportCalloutHtml(callout) {
+  return `<div class="report-callout report-callout-${escapeAttr(callout.variant)}" role="note">
+  ${callout.title ? `<div class="report-callout-title">${escapeHtml2(callout.title)}</div>` : ""}
+  ${callout.body ? `<div class="report-callout-body">${escapeHtml2(callout.body)}</div>` : ""}
 </div>`;
 }
 function renderReportMetricHtml(metric) {
@@ -4929,7 +4951,13 @@ function clampPercent(value) {
 }
 
 // src/report-components.js
-var knownReportTags = /* @__PURE__ */ new Set(["report-chart", "report-metric-grid", "report-metric", "report-rate-bars"]);
+var knownReportTags = /* @__PURE__ */ new Set([
+  "report-callout",
+  "report-chart",
+  "report-metric-grid",
+  "report-metric",
+  "report-rate-bars"
+]);
 function compileReportComponents(source, options = {}) {
   const context = reportComponentContext(options);
   validateReportComponentSyntax(source, context);
@@ -4951,6 +4979,12 @@ function compileReportComponents(source, options = {}) {
     const rateBars = parseReportRateBars(rateBarsElement);
     validateReportRateBars(rateBars, context);
     rateBarsElement.replaceWith(renderReportRateBarsHtml(rateBars, context));
+  });
+  root("report-callout").each((_, element) => {
+    const calloutElement = root(element);
+    const callout = parseReportCallout(calloutElement);
+    validateReportCallout(callout, context);
+    calloutElement.replaceWith(renderReportCalloutHtml(callout));
   });
   root("report-chart").each((index, element) => {
     const chartElement = root(element);
@@ -5074,6 +5108,18 @@ function validateReportRateBars(rateBars, context) {
   }
   if (rateBars.colors.some((color) => !isSixDigitHexColor(color))) {
     fail("report-rate-bars colors must be six-digit hex colors.", context);
+  }
+}
+function validateReportCallout(callout, context) {
+  const variants = /* @__PURE__ */ new Set(["info", "warning", "success", "danger"]);
+  if (!variants.has(callout.variant)) {
+    fail(
+      `Unsupported report-callout variant "${callout.rawVariant}". Supported variants: info, warning, success, danger.`,
+      context
+    );
+  }
+  if (!callout.title && !callout.body) {
+    fail("report-callout requires title and/or text content.", context);
   }
 }
 function uniqueDomId(value, usedIds, prefix) {
@@ -5632,6 +5678,52 @@ body {
   font-family: "Consolas", "SFMono-Regular", monospace;
   font-size: 12px;
   text-align: right;
+}
+
+.report-callout {
+  margin: 22px 0;
+  padding: 16px 18px;
+  border: 1px solid var(--report-callout-border, rgba(15, 130, 245, 0.32));
+  border-left-width: 5px;
+  border-radius: 8px;
+  background: var(--report-callout-bg, rgba(15, 130, 245, 0.08));
+  color: var(--report-callout-text, var(--text, #0f172a));
+}
+
+.report-callout-title {
+  margin-bottom: 4px;
+  color: var(--report-callout-title, var(--text, #0f172a));
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.report-callout-body {
+  color: var(--report-callout-text, var(--text, #334155));
+  font-size: 15px;
+}
+
+.report-callout-info {
+  --report-callout-bg: rgba(15, 130, 245, 0.1);
+  --report-callout-border: rgba(15, 130, 245, 0.38);
+  --report-callout-title: var(--blue, #0F82F5);
+}
+
+.report-callout-warning {
+  --report-callout-bg: rgba(249, 147, 91, 0.12);
+  --report-callout-border: rgba(249, 147, 91, 0.42);
+  --report-callout-title: var(--orange, #F9935B);
+}
+
+.report-callout-success {
+  --report-callout-bg: rgba(102, 204, 142, 0.12);
+  --report-callout-border: rgba(102, 204, 142, 0.42);
+  --report-callout-title: var(--green, #16a34a);
+}
+
+.report-callout-danger {
+  --report-callout-bg: rgba(252, 81, 97, 0.12);
+  --report-callout-border: rgba(252, 81, 97, 0.44);
+  --report-callout-title: var(--red, #dc2626);
 }
 
 .report-layout {

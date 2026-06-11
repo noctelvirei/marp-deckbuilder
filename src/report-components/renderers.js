@@ -23,6 +23,13 @@ ${grid.metrics.map(renderReportMetricHtml).join('\n')}
 </div>`
 }
 
+export function renderReportCalloutHtml(callout) {
+  return `<div class="report-callout report-callout-${escapeAttr(callout.variant)}" role="note">
+  ${callout.title ? `<div class="report-callout-title">${escapeHtml(callout.title)}</div>` : ''}
+  ${callout.body ? `<div class="report-callout-body">${escapeHtml(callout.body)}</div>` : ''}
+</div>`
+}
+
 function renderReportMetricHtml(metric) {
   const className = ['report-metric', metric.accent ? `report-metric-${metric.accent}` : '']
     .filter(Boolean)
