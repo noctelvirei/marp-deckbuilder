@@ -17,6 +17,7 @@ export function parseReportChart(chart, index = 0) {
   const valueSuffix = chart.attr('value-suffix') || chart.attr('suffix') || ''
   const xAxisLabel = chart.attr('x-label') || chart.attr('x-axis-label') || chart.attr('x-title') || ''
   const yAxisLabel = chart.attr('y-label') || chart.attr('y-axis-label') || chart.attr('y-title') || ''
+  const binCount = Number.parseInt(chart.attr('bins') || chart.attr('bucket-count') || chart.attr('buckets') || '10', 10)
   const points = parseChartPoints(chart.attr('points') || chart.attr('data'))
   const seriesNames = splitPipe(chart.attr('series') || chart.attr('datasets') || chart.attr('series-labels'))
   const xLabels = splitPipe(chart.attr('x-labels') || chart.attr('columns') || chart.attr('x') || '')
@@ -55,6 +56,7 @@ export function parseReportChart(chart, index = 0) {
     valueSuffix,
     xAxisLabel,
     yAxisLabel,
+    binCount,
     ariaLabel: chart.attr('aria-label') || title || `${type} chart`,
   }
 }

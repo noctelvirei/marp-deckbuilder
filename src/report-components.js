@@ -294,13 +294,14 @@ function validateReportChart(chart, context) {
     'bullet',
     'scatter',
     'bubble',
+    'histogram',
     'grouped-bar',
     'stacked-bar',
     'heatmap',
   ])
   if (!supportedTypes.has(chart.chartType)) {
     fail(
-      `report-chart type "${chart.chartType}" is not available. Supported types: bar, line, doughnut, area, treemap, funnel, grouped-bar, stacked-bar, heatmap, waterfall, bullet, scatter, bubble. Ask the skill maker to add missing chart types.`,
+      `report-chart type "${chart.chartType}" is not available. Supported types: bar, line, doughnut, area, treemap, funnel, grouped-bar, stacked-bar, heatmap, waterfall, bullet, scatter, bubble, histogram. Ask the skill maker to add missing chart types.`,
       context,
     )
   }
@@ -349,6 +350,10 @@ function validateReportChart(chart, context) {
     validateReportBubbleChart(chart, context)
     return
   }
+  if (chart.chartType === 'histogram') {
+    validateReportHistogramChart(chart, context)
+    return
+  }
   validateReportChartLabelsAndValues(chart, context)
   if (chart.chartType === 'bullet') {
     validateReportBulletChart(chart, context)
@@ -379,6 +384,18 @@ function validateReportChartLabelsAndValues(chart, context) {
   }
   if (chart.values.some((value) => !Number.isFinite(value))) {
     fail('report-chart values must all be numeric.', context)
+  }
+}
+
+function validateReportHistogramChart(chart, context) {
+  if (chart.values.length === 0) {
+    fail('report-chart type="histogram" requires non-empty numeric values.', context)
+  }
+  if (chart.values.some((value) => !Number.isFinite(value))) {
+    fail('report-chart type="histogram" values must all be numeric.', context)
+  }
+  if (!Number.isInteger(chart.binCount) || chart.binCount < 2 || chart.binCount > 30) {
+    fail('report-chart type="histogram" bins must be an integer between 2 and 30.', context)
   }
 }
 
