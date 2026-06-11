@@ -21,7 +21,7 @@ The report wrapper injects Chart.js, Observable Plot, and D3 into the generated 
 3. Create one output folder for the request. Prefer `Documents/Presentations/YYYY-MM-DD/<report-title-slug>/` when the user has not specified a location.
 4. Draft `report.md` in that folder. For dark navy, set `reportTheme: dark` in frontmatter. For reports with four or more sections, set `reportNav: true` to generate a sticky sidebar from headings.
 5. Let the renderer own brand chrome. Corporate logos, colors, fonts, and report background assets come from `tool/resources/definitions/brand.json` and `tool/resources`; do not hand-place branding in report Markdown.
-6. Use report components for fidelity. Use `<report-metric-grid>` for KPI cards, `<report-key-values>` for metadata summaries, `<report-rate-bars>` for ranked distributions, `<report-data-table>` for formatted tabular data, `<report-insight>` for finding/evidence/impact/action blocks, `<report-recommendation>` for owned actions, `<report-source-note>` for citations or methodology, `<report-callout>` for findings or actions, `<report-accent-card>` for recommendation cards, `<report-badge>` for inline statuses, and `<report-chart>` for supported chart types. Do not use raw HTML or JavaScript as a fallback. If a component type is missing, tell the user to ask the skill maker to add it.
+6. Use report components for fidelity. Use `<report-metric-grid>` for KPI cards, `<report-key-values>` for metadata summaries, `<report-rate-bars>` for ranked distributions, `<report-data-table>` for formatted tabular data, `<report-insight>` for finding/evidence/impact/action blocks, `<report-recommendation>` for owned actions, `<report-source-note>` for one-off methodology, `<report-source-list>` with `<report-source>` and inline `<report-cite>` for reusable citations, `<report-callout>` for findings or actions, `<report-accent-card>` for recommendation cards, `<report-badge>` for inline statuses, and `<report-chart>` for supported chart types. Do not use raw HTML or JavaScript as a fallback. If a component type is missing, tell the user to ask the skill maker to add it.
 7. Build from this skill folder:
 
 ```bash
@@ -43,6 +43,8 @@ Use these renderer-backed component tags in `report.md`. They look like HTML tag
 | Structured insight | `<report-insight>` | Finding/body text or `title`, `evidence`, `impact`, `action` |
 | Owned recommendation | `<report-recommendation>` | Body text or `title`; optional `owner`, `priority`, `due`, `status` |
 | Citation or methodology note | `<report-source-note>` | Body text and/or `source`; optional `title`, `date` |
+| Reusable source list | `<report-source-list>` with `<report-source>` children | Source `id` and descriptive source data |
+| Inline source citation | `<report-cite>` | `source` matching a declared `report-source` id |
 | Mixed insight/action card grid | `<report-card-grid>` with `<report-card>` children | Card `title` and/or body text |
 | Ordered milestones/events | `<report-timeline>` with `<report-event>` children | Event date/title/body |
 | Findings and actions | `<report-callout>` | Body text or `text`; optional `variant`, `title` |
@@ -91,6 +93,7 @@ Generate `report.md` in this order:
 - Use `<report-insight>` for structured finding, evidence, impact, and action narrative.
 - Use `<report-recommendation>` for owned actions with priority, due date, and status.
 - Use `<report-source-note>` for citations, methodology, assumptions, and data freshness notes.
+- Use `<report-source-list>` with `<report-source>` children for reusable numbered sources, and `<report-cite source="..."></report-cite>` for inline citations.
 - Use `<report-card-grid>` for grouped insights, action plans, ownership summaries, and mixed card layouts.
 - Use `<report-timeline>` for ordered milestones, delivery paths, decision logs, and event sequences.
 - Use `<report-callout>` for info, warning, success, and danger findings.

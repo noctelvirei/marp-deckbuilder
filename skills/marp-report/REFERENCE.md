@@ -60,6 +60,8 @@ Reports use normal Markdown plus compact `report-*` component tags. The renderer
 | Structured insight | `report-insight` | Finding/body text or `title`, `evidence`, `impact`, `action` |
 | Owned recommendation | `report-recommendation` | Body text or `title`; optional `owner`, `priority`, `due`, `status` |
 | Citation or methodology note | `report-source-note` | Body text and/or `source`; optional `title`, `date` |
+| Reusable source list | `report-source-list` with `report-source` children | Source `id` and descriptive source data |
+| Inline source citation | `report-cite` | `source` matching a declared `report-source` id |
 | Mixed insight/action card grid | `report-card-grid` with `report-card` children | Card `title` and/or body text |
 | Ordered milestones/events | `report-timeline` with `report-event` children | Event date/title/body |
 | Finding, risk, or action block | `report-callout` | Body text or `text`; optional `variant`, `title` |
@@ -378,6 +380,51 @@ Supported attributes:
 | `date` | no | Date, period, or freshness indicator. Alias: `period`. |
 
 The note must include at least one of title, body text, source, or date.
+
+### Report Source List And Cite
+
+Use `report-source-list` for reusable numbered sources and `report-cite` for inline references. Do not hand-author citation links, numbered source lists, or footnote HTML.
+
+```md
+Completion rates use the April extract <report-cite source="journey-export"></report-cite>.
+
+<report-source-list title="Sources">
+  <report-source
+    id="journey-export"
+    title="April journey export"
+    publisher="Operations"
+    date="April 2026"
+  >Completed journey records excluding test journeys.</report-source>
+</report-source-list>
+```
+
+Supported `report-source-list` attributes:
+
+| Attribute | Required | Notes |
+| --- | --- | --- |
+| `title` | no | Rendered above the source list. Alias: `label`. Defaults to `Sources`. |
+
+Supported `report-source` attributes:
+
+| Attribute | Required | Notes |
+| --- | --- | --- |
+| `id` | yes | Unique source id used by `report-cite`. Alias: `source-id`. Use letters, numbers, hyphens, and underscores only. |
+| `title` | no | Source title. Alias: `label`. |
+| `publisher` | no | Source owner or publisher. Alias: `source`. |
+| `date` | no | Date, period, or freshness indicator. Alias: `period`. |
+| `url` | no | Source URL. Alias: `href`. |
+| `note` | no | Source detail when you prefer attribute-only authoring. Aliases: `text`, `body`. Otherwise use the tag body. |
+
+Each `report-source` must be directly inside `report-source-list`, and ids must be unique.
+
+Supported `report-cite` attributes:
+
+| Attribute | Required | Notes |
+| --- | --- | --- |
+| `source` | yes | Must match a declared `report-source` id. Aliases: `ref`, `id`. |
+| `label` | no | Optional visible citation label. Defaults to the generated source number such as `[1]`. |
+
+If a citation cannot resolve to a declared source, do not create a manual link. Ask the skill maker to add or adjust renderer-backed citation support.
 
 ### Report Card Grid
 

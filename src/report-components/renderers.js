@@ -158,6 +158,22 @@ export function renderReportSourceNoteHtml(sourceNote) {
 </aside>`
 }
 
+export function renderReportSourceListHtml(sourceList) {
+  return `<section class="report-source-list" aria-label="${escapeAttr(sourceList.title || 'Sources')}">
+  ${sourceList.title ? `<div class="report-source-list-title">${escapeHtml(sourceList.title)}</div>` : ''}
+  <ol>
+${sourceList.sources.map(renderReportSourceItem).join('\n')}
+  </ol>
+</section>`
+}
+
+export function renderReportCiteHtml(cite) {
+  const label = cite.label || `[${cite.number}]`
+  return `<a class="report-cite" href="#${escapeAttr(cite.domId)}" aria-label="${escapeAttr(
+    `Source ${cite.number}: ${cite.title}`,
+  )}">${escapeHtml(label)}</a>`
+}
+
 export function renderReportCalloutHtml(callout) {
   return `<div class="report-callout report-callout-${escapeAttr(callout.variant)}" role="note">
   ${callout.title ? `<div class="report-callout-title">${escapeHtml(callout.title)}</div>` : ''}
@@ -258,6 +274,24 @@ function renderReportInsightSection([label, value]) {
       <dt>${escapeHtml(label)}</dt>
       <dd>${escapeHtml(value)}</dd>
     </div>`
+}
+
+function renderReportSourceItem(source) {
+  const meta = [
+    source.publisher ? `<span>${escapeHtml(source.publisher)}</span>` : '',
+    source.date ? `<span>${escapeHtml(source.date)}</span>` : '',
+    source.url ? `<a href="${escapeAttr(source.url)}">${escapeHtml(source.url)}</a>` : '',
+  ]
+    .filter(Boolean)
+    .join('\n        ')
+  return `    <li id="${escapeAttr(source.domId)}">
+      <div class="report-source-list-heading">
+        <span class="report-source-list-number">[${escapeHtml(source.number)}]</span>
+        <span class="report-source-list-name">${escapeHtml(source.title)}</span>
+      </div>
+      ${source.note ? `<div class="report-source-list-note">${escapeHtml(source.note)}</div>` : ''}
+      ${meta ? `<div class="report-source-list-meta">\n        ${meta}\n      </div>` : ''}
+    </li>`
 }
 
 function renderReportCardGridItem(card) {

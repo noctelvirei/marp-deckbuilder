@@ -739,6 +739,96 @@ body {
   font-size: 12px;
 }
 
+.report-source-list {
+  margin: 28px 0;
+  padding: 18px;
+  border: 1px solid var(--border, #dbe5f2);
+  border-radius: 8px;
+  background: var(--bg-card, #ffffff);
+  box-shadow: 0 12px 30px rgba(15, 23, 42, 0.07);
+}
+
+.report-source-list-title {
+  margin: 0 0 14px;
+  color: var(--text-dim, #334155);
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.report-source-list ol {
+  display: grid;
+  gap: 13px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.report-source-list li {
+  min-width: 0;
+  padding: 12px 14px;
+  border: 1px solid var(--border-dim, #e2e8f0);
+  border-radius: 6px;
+  background: var(--bg-subtle, #f8fbff);
+}
+
+.report-source-list-heading {
+  display: flex;
+  gap: 8px;
+  align-items: baseline;
+  color: var(--text, #0f172a);
+  font-size: 14px;
+  font-weight: 750;
+}
+
+.report-source-list-number {
+  color: var(--cyan, var(--report-cyan, #59D6FD));
+  font-family: Consolas, "SFMono-Regular", monospace;
+  font-size: 12px;
+}
+
+.report-source-list-note {
+  margin-top: 6px;
+  color: var(--text, #334155);
+  font-size: 13px;
+  line-height: 1.4;
+}
+
+.report-source-list-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 12px;
+  margin-top: 8px;
+  color: var(--text-dim, #64748b);
+  font-size: 12px;
+}
+
+.report-source-list-meta a {
+  color: var(--cyan, var(--report-cyan, #59D6FD));
+  overflow-wrap: anywhere;
+}
+
+.report-cite {
+  display: inline-flex;
+  align-items: center;
+  min-height: 18px;
+  padding: 1px 5px;
+  border: 1px solid rgba(89, 214, 253, 0.4);
+  border-radius: 999px;
+  background: rgba(89, 214, 253, 0.12);
+  color: var(--cyan, var(--report-cyan, #59D6FD));
+  font-family: Consolas, "SFMono-Regular", monospace;
+  font-size: 0.82em;
+  font-weight: 700;
+  text-decoration: none;
+  vertical-align: baseline;
+}
+
+.report-cite:hover {
+  background: rgba(89, 214, 253, 0.2);
+}
+
 .report-card-grid {
   margin: 28px 0;
 }
@@ -1358,7 +1448,8 @@ body.report-theme-dark-page {
 }
 
 .deck-report.report-theme-dark .report-insight,
-.deck-report.report-theme-dark .report-recommendation {
+.deck-report.report-theme-dark .report-recommendation,
+.deck-report.report-theme-dark .report-source-list {
   box-shadow: none;
 }
 

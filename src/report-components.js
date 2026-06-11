@@ -13,6 +13,8 @@ import {
   parseReportMetricGrid,
   parseReportRateBars,
   parseReportRecommendation,
+  parseReportCite,
+  parseReportSourceList,
   parseReportSourceNote,
   parseReportTimeline,
 } from './report-components/parsers.js'
@@ -30,6 +32,8 @@ import {
   renderReportMetricGridHtml,
   renderReportRateBarsHtml,
   renderReportRecommendationHtml,
+  renderReportCiteHtml,
+  renderReportSourceListHtml,
   renderReportSourceNoteHtml,
   renderReportTimelineHtml,
 } from './report-components/renderers.js'
@@ -41,6 +45,7 @@ const knownReportTags = new Set([
   'report-card-grid',
   'report-card',
   'report-chart',
+  'report-cite',
   'report-data-table',
   'report-figure',
   'report-insight',
@@ -49,7 +54,9 @@ const knownReportTags = new Set([
   'report-metric',
   'report-rate-bars',
   'report-recommendation',
+  'report-source-list',
   'report-source-note',
+  'report-source',
   'report-timeline',
   'report-event',
 ])
@@ -66,6 +73,7 @@ export function compileReportComponents(source, options = {}) {
 
   const scripts = []
   const usedIds = new Set()
+  const sourceRegistry = new Map()
 
   root('report-metric-grid').each((_, element) => {
     const metricGridElement = root(element)
@@ -137,6 +145,20 @@ export function compileReportComponents(source, options = {}) {
     sourceNoteElement.replaceWith(renderReportSourceNoteHtml(sourceNote))
   })
 
+  root('report-source-list').each((_, element) => {
+    const sourceListElement = root(element)
+    const sourceList = parseReportSourceList(root, sourceListElement)
+    prepareReportSourceList(sourceList, sourceRegistry, context)
+    sourceListElement.replaceWith(renderReportSourceListHtml(sourceList))
+  })
+
+  root('report-cite').each((_, element) => {
+    const citeElement = root(element)
+    const cite = parseReportCite(citeElement)
+    resolveReportCite(cite, sourceRegistry, context)
+    citeElement.replaceWith(renderReportCiteHtml(cite))
+  })
+
   root('report-timeline').each((_, element) => {
     const timelineElement = root(element)
     const timeline = parseReportTimeline(root, timelineElement)
@@ -191,6 +213,12 @@ function validateReportComponentTree(root, context) {
     const parent = root(element).parent()
     if (!parent.is('report-timeline')) {
       fail('<report-event> must be placed directly inside <report-timeline>.', context)
+    }
+  })
+  root('report-source').each((_, element) => {
+    const parent = root(element).parent()
+    if (!parent.is('report-source-list')) {
+      fail('<report-source> must be placed directly inside <report-source-list>.', context)
     }
   })
 }
@@ -533,6 +561,43 @@ function validateReportSourceNote(sourceNote, context) {
   }
 }
 
+function prepareReportSourceList(sourceList, sourceRegistry, context) {
+  if (sourceList.sources.length === 0) {
+    fail('report-source-list must include at least one report-source.', context)
+  }
+  sourceList.sources.forEach((source) => {
+    if (!source.id) {
+      fail('report-source requires an id attribute so report-cite can reference it.', context)
+    }
+    if (!/^[a-z0-9_-]+$/i.test(source.id)) {
+      fail('report-source id may contain only letters, numbers, hyphens, and underscores.', context)
+    }
+    if (!source.title && !source.publisher && !source.date && !source.url && !source.note) {
+      fail(`report-source "${source.id}" requires title, publisher/source, date, url, or note text.`, context)
+    }
+    if (sourceRegistry.has(source.id)) {
+      fail(`Duplicate report-source id "${source.id}". Source ids must be unique.`, context)
+    }
+    source.number = sourceRegistry.size + 1
+    source.domId = reportSourceDomId(source.id)
+    source.title = source.title || source.publisher || source.id
+    sourceRegistry.set(source.id, source)
+  })
+}
+
+function resolveReportCite(cite, sourceRegistry, context) {
+  if (!cite.source) {
+    fail('report-cite requires a source, ref, or id attribute.', context)
+  }
+  const source = sourceRegistry.get(cite.source)
+  if (!source) {
+    fail(`report-cite source "${cite.source}" was not declared in a report-source-list.`, context)
+  }
+  cite.number = source.number
+  cite.domId = source.domId
+  cite.title = source.title
+}
+
 function validateReportCardGrid(cardGrid, context) {
   const accents = new Set(['blue', 'cyan', 'purple', 'green', 'orange', 'red'])
   if (cardGrid.columns < 1 || cardGrid.columns > 4) {
@@ -673,6 +738,10 @@ function isSixDigitHexColor(value) {
 
 function parseDataTableNumber(value) {
   return Number(String(value || '').replace(/,/g, '').replace(/%$/, '').trim())
+}
+
+function reportSourceDomId(id = '') {
+  return `report-source-${String(id).replace(/[^a-z0-9_-]/gi, '-').toLowerCase()}`
 }
 
 function indent(source, spaces) {

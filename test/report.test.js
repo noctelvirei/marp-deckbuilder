@@ -1032,6 +1032,71 @@ test('report source notes fail clearly when empty', async () => {
   )
 })
 
+test('expands report source lists and inline cites', async () => {
+  const definitions = await loadDefinitions(new URL('../resources/definitions', import.meta.url))
+  const rendered = renderReportHtml(
+    `# Sources report
+
+Completion rates use the April extract <report-cite source="journey-export"></report-cite>.
+
+<report-source-list title="Sources">
+  <report-source id="journey-export" title="Journey export" publisher="Operations" date="April 2026" url="https://example.test/export">Completed journey records excluding test data.</report-source>
+  <report-source id="quality-review" title="Quality review" publisher="Data team">Manual exception review.</report-source>
+</report-source-list>
+`,
+    {
+      resourcesDir: path.resolve('resources'),
+      definitions,
+      inlineAssets: true,
+    },
+  )
+
+  assert.doesNotMatch(rendered.document, /<report-source-list/i)
+  assert.doesNotMatch(rendered.document, /<report-source\b/i)
+  assert.doesNotMatch(rendered.document, /<report-cite/i)
+  assert.match(rendered.document, /<a class="report-cite" href="#report-source-journey-export" aria-label="Source 1: Journey export">\[1\]<\/a>/)
+  assert.match(rendered.document, /<section class="report-source-list" aria-label="Sources">/)
+  assert.match(rendered.document, /<li id="report-source-journey-export">/)
+  assert.match(rendered.document, /<span class="report-source-list-number">\[1\]<\/span>/)
+  assert.match(rendered.document, /<span class="report-source-list-name">Journey export<\/span>/)
+  assert.match(rendered.document, /<a href="https:\/\/example\.test\/export">https:\/\/example\.test\/export<\/a>/)
+  assert.match(rendered.document, /<li id="report-source-quality-review">/)
+})
+
+test('report source lists and cites fail clearly when malformed', async () => {
+  const definitions = await loadDefinitions(new URL('../resources/definitions', import.meta.url))
+  const options = {
+    resourcesDir: path.resolve('resources'),
+    definitions,
+    inlineAssets: true,
+  }
+
+  assert.throws(
+    () => renderReportHtml('<report-source id="orphan" title="Orphan"></report-source>', options),
+    /<report-source> must be placed directly inside <report-source-list>/,
+  )
+  assert.throws(
+    () => renderReportHtml('<report-source-list></report-source-list>', options),
+    /report-source-list must include at least one report-source/,
+  )
+  assert.throws(
+    () => renderReportHtml('<report-source-list><report-source title="Missing id"></report-source></report-source-list>', options),
+    /report-source requires an id attribute/,
+  )
+  assert.throws(
+    () =>
+      renderReportHtml(
+        '<report-source-list><report-source id="a" title="A"></report-source><report-source id="a" title="B"></report-source></report-source-list>',
+        options,
+      ),
+    /Duplicate report-source id "a"/,
+  )
+  assert.throws(
+    () => renderReportHtml('<report-cite source="missing"></report-cite>', options),
+    /report-cite source "missing" was not declared in a report-source-list/,
+  )
+})
+
 test('expands report card grids into accent card layouts', async () => {
   const definitions = await loadDefinitions(new URL('../resources/definitions', import.meta.url))
   const rendered = renderReportHtml(

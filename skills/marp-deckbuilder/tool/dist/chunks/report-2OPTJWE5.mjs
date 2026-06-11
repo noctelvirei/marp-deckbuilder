@@ -4906,6 +4906,32 @@ function parseReportSourceNote(sourceNote) {
     date: sourceNote.attr("date") || sourceNote.attr("period") || ""
   };
 }
+function parseReportSourceList(root, sourceList) {
+  const sources = [];
+  sourceList.children("report-source").each((_, element) => {
+    const source = root(element);
+    sources.push({
+      id: source.attr("id") || source.attr("source-id") || "",
+      title: source.attr("title") || source.attr("label") || "",
+      publisher: source.attr("publisher") || source.attr("source") || "",
+      date: source.attr("date") || source.attr("period") || "",
+      url: source.attr("url") || source.attr("href") || "",
+      note: source.attr("note") || source.attr("text") || source.attr("body") || cleanText(source.text())
+    });
+  });
+  return {
+    type: "source-list",
+    title: sourceList.attr("title") || sourceList.attr("label") || "Sources",
+    sources
+  };
+}
+function parseReportCite(cite) {
+  return {
+    type: "cite",
+    source: cite.attr("source") || cite.attr("ref") || cite.attr("id") || "",
+    label: cite.attr("label") || cleanText(cite.text())
+  };
+}
 function parseReportCallout(callout) {
   return {
     type: "callout",
@@ -5204,6 +5230,20 @@ function renderReportSourceNoteHtml(sourceNote) {
   </div>` : ""}
 </aside>`;
 }
+function renderReportSourceListHtml(sourceList) {
+  return `<section class="report-source-list" aria-label="${escapeAttr(sourceList.title || "Sources")}">
+  ${sourceList.title ? `<div class="report-source-list-title">${escapeHtml2(sourceList.title)}</div>` : ""}
+  <ol>
+${sourceList.sources.map(renderReportSourceItem).join("\n")}
+  </ol>
+</section>`;
+}
+function renderReportCiteHtml(cite) {
+  const label = cite.label || `[${cite.number}]`;
+  return `<a class="report-cite" href="#${escapeAttr(cite.domId)}" aria-label="${escapeAttr(
+    `Source ${cite.number}: ${cite.title}`
+  )}">${escapeHtml2(label)}</a>`;
+}
 function renderReportCalloutHtml(callout) {
   return `<div class="report-callout report-callout-${escapeAttr(callout.variant)}" role="note">
   ${callout.title ? `<div class="report-callout-title">${escapeHtml2(callout.title)}</div>` : ""}
@@ -5283,6 +5323,23 @@ function renderReportInsightSection([label, value]) {
       <dt>${escapeHtml2(label)}</dt>
       <dd>${escapeHtml2(value)}</dd>
     </div>`;
+}
+function renderReportSourceItem(source) {
+  const meta = [
+    source.publisher ? `<span>${escapeHtml2(source.publisher)}</span>` : "",
+    source.date ? `<span>${escapeHtml2(source.date)}</span>` : "",
+    source.url ? `<a href="${escapeAttr(source.url)}">${escapeHtml2(source.url)}</a>` : ""
+  ].filter(Boolean).join("\n        ");
+  return `    <li id="${escapeAttr(source.domId)}">
+      <div class="report-source-list-heading">
+        <span class="report-source-list-number">[${escapeHtml2(source.number)}]</span>
+        <span class="report-source-list-name">${escapeHtml2(source.title)}</span>
+      </div>
+      ${source.note ? `<div class="report-source-list-note">${escapeHtml2(source.note)}</div>` : ""}
+      ${meta ? `<div class="report-source-list-meta">
+        ${meta}
+      </div>` : ""}
+    </li>`;
 }
 function renderReportCardGridItem(card) {
   return `    <article class="report-card-grid-card report-card-grid-card-${escapeAttr(card.accent)}">
@@ -5995,6 +6052,7 @@ var knownReportTags = /* @__PURE__ */ new Set([
   "report-card-grid",
   "report-card",
   "report-chart",
+  "report-cite",
   "report-data-table",
   "report-figure",
   "report-insight",
@@ -6003,7 +6061,9 @@ var knownReportTags = /* @__PURE__ */ new Set([
   "report-metric",
   "report-rate-bars",
   "report-recommendation",
+  "report-source-list",
   "report-source-note",
+  "report-source",
   "report-timeline",
   "report-event"
 ]);
@@ -6017,6 +6077,7 @@ function compileReportComponents(source, options = {}) {
   validateReportComponentTree(root, context);
   const scripts = [];
   const usedIds = /* @__PURE__ */ new Set();
+  const sourceRegistry = /* @__PURE__ */ new Map();
   root("report-metric-grid").each((_, element) => {
     const metricGridElement = root(element);
     const metricGrid = parseReportMetricGrid(root, metricGridElement);
@@ -6077,6 +6138,18 @@ function compileReportComponents(source, options = {}) {
     validateReportSourceNote(sourceNote, context);
     sourceNoteElement.replaceWith(renderReportSourceNoteHtml(sourceNote));
   });
+  root("report-source-list").each((_, element) => {
+    const sourceListElement = root(element);
+    const sourceList = parseReportSourceList(root, sourceListElement);
+    prepareReportSourceList(sourceList, sourceRegistry, context);
+    sourceListElement.replaceWith(renderReportSourceListHtml(sourceList));
+  });
+  root("report-cite").each((_, element) => {
+    const citeElement = root(element);
+    const cite = parseReportCite(citeElement);
+    resolveReportCite(cite, sourceRegistry, context);
+    citeElement.replaceWith(renderReportCiteHtml(cite));
+  });
   root("report-timeline").each((_, element) => {
     const timelineElement = root(element);
     const timeline = parseReportTimeline(root, timelineElement);
@@ -6126,6 +6199,12 @@ function validateReportComponentTree(root, context) {
     const parent = root(element).parent();
     if (!parent.is("report-timeline")) {
       fail("<report-event> must be placed directly inside <report-timeline>.", context);
+    }
+  });
+  root("report-source").each((_, element) => {
+    const parent = root(element).parent();
+    if (!parent.is("report-source-list")) {
+      fail("<report-source> must be placed directly inside <report-source-list>.", context);
     }
   });
 }
@@ -6451,6 +6530,41 @@ function validateReportSourceNote(sourceNote, context) {
     fail("report-source-note requires title, body text, source, or date.", context);
   }
 }
+function prepareReportSourceList(sourceList, sourceRegistry, context) {
+  if (sourceList.sources.length === 0) {
+    fail("report-source-list must include at least one report-source.", context);
+  }
+  sourceList.sources.forEach((source) => {
+    if (!source.id) {
+      fail("report-source requires an id attribute so report-cite can reference it.", context);
+    }
+    if (!/^[a-z0-9_-]+$/i.test(source.id)) {
+      fail("report-source id may contain only letters, numbers, hyphens, and underscores.", context);
+    }
+    if (!source.title && !source.publisher && !source.date && !source.url && !source.note) {
+      fail(`report-source "${source.id}" requires title, publisher/source, date, url, or note text.`, context);
+    }
+    if (sourceRegistry.has(source.id)) {
+      fail(`Duplicate report-source id "${source.id}". Source ids must be unique.`, context);
+    }
+    source.number = sourceRegistry.size + 1;
+    source.domId = reportSourceDomId(source.id);
+    source.title = source.title || source.publisher || source.id;
+    sourceRegistry.set(source.id, source);
+  });
+}
+function resolveReportCite(cite, sourceRegistry, context) {
+  if (!cite.source) {
+    fail("report-cite requires a source, ref, or id attribute.", context);
+  }
+  const source = sourceRegistry.get(cite.source);
+  if (!source) {
+    fail(`report-cite source "${cite.source}" was not declared in a report-source-list.`, context);
+  }
+  cite.number = source.number;
+  cite.domId = source.domId;
+  cite.title = source.title;
+}
 function validateReportCardGrid(cardGrid, context) {
   const accents = /* @__PURE__ */ new Set(["blue", "cyan", "purple", "green", "orange", "red"]);
   if (cardGrid.columns < 1 || cardGrid.columns > 4) {
@@ -6579,6 +6693,9 @@ function isSixDigitHexColor(value) {
 }
 function parseDataTableNumber2(value) {
   return Number(String(value || "").replace(/,/g, "").replace(/%$/, "").trim());
+}
+function reportSourceDomId(id = "") {
+  return `report-source-${String(id).replace(/[^a-z0-9_-]/gi, "-").toLowerCase()}`;
 }
 function indent(source, spaces) {
   const padding = " ".repeat(spaces);
@@ -7379,6 +7496,96 @@ body {
   font-size: 12px;
 }
 
+.report-source-list {
+  margin: 28px 0;
+  padding: 18px;
+  border: 1px solid var(--border, #dbe5f2);
+  border-radius: 8px;
+  background: var(--bg-card, #ffffff);
+  box-shadow: 0 12px 30px rgba(15, 23, 42, 0.07);
+}
+
+.report-source-list-title {
+  margin: 0 0 14px;
+  color: var(--text-dim, #334155);
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.report-source-list ol {
+  display: grid;
+  gap: 13px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.report-source-list li {
+  min-width: 0;
+  padding: 12px 14px;
+  border: 1px solid var(--border-dim, #e2e8f0);
+  border-radius: 6px;
+  background: var(--bg-subtle, #f8fbff);
+}
+
+.report-source-list-heading {
+  display: flex;
+  gap: 8px;
+  align-items: baseline;
+  color: var(--text, #0f172a);
+  font-size: 14px;
+  font-weight: 750;
+}
+
+.report-source-list-number {
+  color: var(--cyan, var(--report-cyan, #59D6FD));
+  font-family: Consolas, "SFMono-Regular", monospace;
+  font-size: 12px;
+}
+
+.report-source-list-note {
+  margin-top: 6px;
+  color: var(--text, #334155);
+  font-size: 13px;
+  line-height: 1.4;
+}
+
+.report-source-list-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 12px;
+  margin-top: 8px;
+  color: var(--text-dim, #64748b);
+  font-size: 12px;
+}
+
+.report-source-list-meta a {
+  color: var(--cyan, var(--report-cyan, #59D6FD));
+  overflow-wrap: anywhere;
+}
+
+.report-cite {
+  display: inline-flex;
+  align-items: center;
+  min-height: 18px;
+  padding: 1px 5px;
+  border: 1px solid rgba(89, 214, 253, 0.4);
+  border-radius: 999px;
+  background: rgba(89, 214, 253, 0.12);
+  color: var(--cyan, var(--report-cyan, #59D6FD));
+  font-family: Consolas, "SFMono-Regular", monospace;
+  font-size: 0.82em;
+  font-weight: 700;
+  text-decoration: none;
+  vertical-align: baseline;
+}
+
+.report-cite:hover {
+  background: rgba(89, 214, 253, 0.2);
+}
+
 .report-card-grid {
   margin: 28px 0;
 }
@@ -7998,7 +8205,8 @@ body.report-theme-dark-page {
 }
 
 .deck-report.report-theme-dark .report-insight,
-.deck-report.report-theme-dark .report-recommendation {
+.deck-report.report-theme-dark .report-recommendation,
+.deck-report.report-theme-dark .report-source-list {
   box-shadow: none;
 }
 

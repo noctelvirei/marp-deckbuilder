@@ -362,6 +362,7 @@ Reports can use:
 - Structured finding/evidence/impact/action blocks via `report-insight`.
 - Owned action cards via `report-recommendation`.
 - Source and methodology notes via `report-source-note`.
+- Reusable numbered sources and inline citations via `report-source-list`, `report-source`, and `report-cite`.
 - Mixed action/insight grids via `report-card-grid`.
 - Ordered milestones via `report-timeline`.
 - Callouts via `report-callout`.

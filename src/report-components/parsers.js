@@ -197,6 +197,35 @@ export function parseReportSourceNote(sourceNote) {
   }
 }
 
+export function parseReportSourceList(root, sourceList) {
+  const sources = []
+  sourceList.children('report-source').each((_, element) => {
+    const source = root(element)
+    sources.push({
+      id: source.attr('id') || source.attr('source-id') || '',
+      title: source.attr('title') || source.attr('label') || '',
+      publisher: source.attr('publisher') || source.attr('source') || '',
+      date: source.attr('date') || source.attr('period') || '',
+      url: source.attr('url') || source.attr('href') || '',
+      note: source.attr('note') || source.attr('text') || source.attr('body') || cleanText(source.text()),
+    })
+  })
+
+  return {
+    type: 'source-list',
+    title: sourceList.attr('title') || sourceList.attr('label') || 'Sources',
+    sources,
+  }
+}
+
+export function parseReportCite(cite) {
+  return {
+    type: 'cite',
+    source: cite.attr('source') || cite.attr('ref') || cite.attr('id') || '',
+    label: cite.attr('label') || cleanText(cite.text()),
+  }
+}
+
 export function parseReportCallout(callout) {
   return {
     type: 'callout',
