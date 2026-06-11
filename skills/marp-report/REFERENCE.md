@@ -74,7 +74,7 @@ Use this sequence when creating `report.md`:
 4. Add visuals only through the available `report-*` component tags below.
 5. Build with `node scripts/build-report.mjs report.md --out-dir output`.
 
-If the needed visual is not listed, do not create raw HTML or JavaScript in the Markdown. Add a renderer-backed component first.
+If the needed visual is not listed, do not create raw HTML or JavaScript in the Markdown. Tell the user to ask the skill maker to add a renderer-backed component.
 
 ### Report Chart: Chart.js, Observable Plot, And D3
 
@@ -244,7 +244,7 @@ Supported attributes:
 
 Do not use raw HTML, CSS, SVG, canvas, Chart.js, Observable Plot, D3, or handwritten JavaScript as a fallback in report Markdown.
 
-When the report needs a display type that is not listed above, implement it as a renderer-backed component first:
+When the report needs a display type that is not listed above, ask the skill maker to add it as a renderer-backed component. The skill maker should:
 
 1. Add parsing in `src/report-components/parsers.js`.
 2. Add validation and registration in `src/report-components.js`.
@@ -261,4 +261,4 @@ Do not use `deck-*` tags in reports. They are presentation components.
 - No raw HTML blocks.
 - No CSS, SVG, canvas, script tags, chart containers, chart initializer scripts, CDN tags, or minified library source in Markdown.
 - No hand-placed logos, brand colors, font declarations, or background chrome.
-- No unsupported visuals without first adding a renderer-backed component.
+- No unsupported visuals. Ask the skill maker to add a renderer-backed component.

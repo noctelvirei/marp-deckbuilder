@@ -11,7 +11,7 @@ Use this skill to turn source material into a long-form HTML report: a scrollabl
 
 Do not force reports into slides. Write `report.md` using normal Markdown plus the report component tags in `REFERENCE.md`, then run the bundled report wrapper. This skill includes its own bundled renderer and resources under `tool/`.
 
-The report wrapper injects Chart.js, Observable Plot, and D3 into the generated HTML head from local vendor files, so the final HTML works offline after generation. The report Markdown must not contain raw HTML layouts, SVG blocks, chart containers, CSS, JavaScript, or library source. Use supported `report-*` components only. If the requested display is not supported, extend the renderer and reference docs first, then use the new component.
+The report wrapper injects Chart.js, Observable Plot, and D3 into the generated HTML head from local vendor files, so the final HTML works offline after generation. The report Markdown must not contain raw HTML layouts, SVG blocks, chart containers, CSS, JavaScript, or library source. Use supported `report-*` components only. If the requested display is not supported, tell the user to ask the skill maker to add a renderer-backed component.
 
 ## Workflow
 
@@ -21,7 +21,7 @@ The report wrapper injects Chart.js, Observable Plot, and D3 into the generated 
 3. Create one output folder for the request. Prefer `Documents/Presentations/YYYY-MM-DD/<report-title-slug>/` when the user has not specified a location.
 4. Draft `report.md` in that folder. For dark navy, set `reportTheme: dark` in frontmatter. For reports with four or more sections, set `reportNav: true` to generate a sticky sidebar from headings.
 5. Let the renderer own brand chrome. Corporate logos, colors, fonts, and report background assets come from `tool/resources/definitions/brand.json` and `tool/resources`; do not hand-place branding in report Markdown.
-6. Use report components for fidelity. Use `<report-metric-grid>` for KPI cards, `<report-rate-bars>` for ranked distributions, `<report-callout>` for findings or actions, `<report-accent-card>` for recommendation cards, `<report-badge>` for statuses, and `<report-chart>` for supported chart types. Do not use raw HTML or JavaScript as a fallback. If a component type is missing, add it to the renderer before authoring the report.
+6. Use report components for fidelity. Use `<report-metric-grid>` for KPI cards, `<report-rate-bars>` for ranked distributions, `<report-callout>` for findings or actions, `<report-accent-card>` for recommendation cards, `<report-badge>` for statuses, and `<report-chart>` for supported chart types. Do not use raw HTML or JavaScript as a fallback. If a component type is missing, tell the user to ask the skill maker to add it.
 7. Build from this skill folder:
 
 ```bash
@@ -73,7 +73,7 @@ Generate `report.md` in this order:
 - Use `<report-callout>` for info, warning, success, and danger findings.
 - Use `<report-accent-card>` for highlighted recommendations, risks, or ownership notes.
 - Use `<report-badge>` for table statuses and small inline state labels.
-- For chart types that are not yet supported, do not write Chart.js, Observable Plot, D3, SVG, or HTML manually. Add a renderer-backed `report-*` component and document that component first.
+- For chart types that are not yet supported, do not write Chart.js, Observable Plot, D3, SVG, or HTML manually. Tell the user to ask the skill maker to add that chart type.
 
 ## Renderer-Only Rules
 
@@ -84,7 +84,7 @@ Report Markdown is a compact data-and-copy layer. The renderer owns all HTML str
 3. Do not include CDN tags, vendored library source, or chart initializers in `report.md`.
 4. Do not hand-place logos, background assets, brand colors, or fonts in `report.md`.
 5. When a supported capability exists, remove any legacy raw-code guidance for it from this skill.
-6. When a requested capability does not exist, update `src/report-components*`, tests, examples, and `REFERENCE.md` so it is available as a renderer-backed component.
+6. When a requested capability does not exist, tell the user to ask the skill maker to add it as a renderer-backed component.
 
 ## Dark-Mode Rules
 
@@ -92,7 +92,7 @@ Report Markdown is a compact data-and-copy layer. The renderer owns all HTML str
 - Renderer-generated SVG text on dark backgrounds should use `#C8D8F0`, `#8B9AB5`, or `#FFFFFF`, not near-black text.
 - Do not write raw HTML, SVG, CSS, JavaScript, or library code into Markdown.
 - Do not rely on external network scripts for final output.
-- These are renderer component choices, not CSS problems. Fix the renderer-backed component instead of stacking override rules in report Markdown.
+- These are renderer component choices, not CSS problems. If the renderer component does not support the need, ask the skill maker to add or adjust it.
 
 ## Build Output
 

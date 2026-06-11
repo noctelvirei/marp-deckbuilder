@@ -365,7 +365,7 @@ Reports can use:
 - Observable Plot charts via `report-chart type="area"`.
 - D3 charts via `report-chart type="treemap"`.
 
-The report build wrapper injects vendored chart libraries into the generated HTML head and strips known CDN tags. Report Markdown should contain prose, Markdown tables/lists, and supported `report-*` component calls only. Agents should not paste raw HTML, inline SVG, CSS, minified library code, chart containers, or chart initializer scripts into report Markdown. If a display type is missing, add it as a renderer-backed report component first.
+The report build wrapper injects vendored chart libraries into the generated HTML head and strips known CDN tags. Report Markdown should contain prose, Markdown tables/lists, and supported `report-*` component calls only. Agents should not paste raw HTML, inline SVG, CSS, minified library code, chart containers, or chart initializer scripts into report Markdown. If a display type is missing, the report authoring skill should tell the user to ask the skill maker to add it as a renderer-backed report component.
 
 Use `skills/marp-report/SKILL.md` and `skills/marp-report/REFERENCE.md` for report-specific syntax. Keep report guidance out of the presentation skill unless it is a shared concept.
 
