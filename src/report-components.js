@@ -120,7 +120,13 @@ function validateReportComponentSyntax(source, context) {
     const raw = match[0]
     const tag = match[1].toLowerCase()
     const line = lineNumberAt(source, match.index)
-    if (!knownReportTags.has(tag)) fail(`Unknown report component <${tag}>.`, context, line)
+    if (!knownReportTags.has(tag)) {
+      fail(
+        `Report component <${tag}> is not available. Use a supported report-* component or ask the skill maker to add it.`,
+        context,
+        line,
+      )
+    }
 
     const isClosing = /^<\s*\//.test(raw)
     const isSelfClosing = /\/\s*>$/.test(raw)
@@ -149,7 +155,7 @@ function validateReportChart(chart, context) {
   const supportedTypes = new Set(['bar', 'line', 'doughnut', 'area', 'treemap'])
   if (!supportedTypes.has(chart.chartType)) {
     fail(
-      `Unsupported report-chart type "${chart.chartType}". Supported types: bar, line, doughnut, area, treemap.`,
+      `report-chart type "${chart.chartType}" is not available. Supported types: bar, line, doughnut, area, treemap. Ask the skill maker to add missing chart types.`,
       context,
     )
   }

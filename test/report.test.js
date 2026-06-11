@@ -798,7 +798,7 @@ test('report chart components fail clearly when data is invalid', async () => {
   )
   assert.throws(
     () => renderReportHtml('<report-chart type="radar" labels="A" values="10"></report-chart>', options),
-    /Unsupported report-chart type "radar". Supported types: bar, line, doughnut, area, treemap/,
+    /report-chart type "radar" is not available\. Supported types: bar, line, doughnut, area, treemap\. Ask the skill maker to add missing chart types/,
   )
   assert.throws(
     () => renderReportHtml('<report-chart type="doughnut" labels="A,B" values="10,-1"></report-chart>', options),
@@ -822,7 +822,7 @@ test('report chart components fail clearly when data is invalid', async () => {
   )
   assert.throws(
     () => renderReportHtml('<report-unknown></report-unknown>', options),
-    /Unknown report component <report-unknown>/,
+    /Report component <report-unknown> is not available\. Use a supported report-\* component or ask the skill maker to add it/,
   )
 })
 
