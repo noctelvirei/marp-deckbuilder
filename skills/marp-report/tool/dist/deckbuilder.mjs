@@ -24,7 +24,7 @@ async function buildCommand(argv) {
   }
   const [{ loadDefinitions }, { parseDeckMarkdown }] = await Promise.all([
     import("./chunks/brand-6PXFCDA5.mjs"),
-    import("./chunks/markdown-TSAXYTOC.mjs")
+    import("./chunks/markdown-HMQZEGKL.mjs")
   ]);
   const inputPath = path.resolve(argv.input);
   const projectRoot = process.cwd();
@@ -42,7 +42,7 @@ async function buildCommand(argv) {
   const htmlAssets = argv.htmlAssets || "inline";
   let rendered;
   if (wantsHtml) {
-    const { renderDeckHtml } = await import("./chunks/render-B7EYNUYQ.mjs");
+    const { renderDeckHtml } = await import("./chunks/render-C3O52EPV.mjs");
     rendered = renderDeckHtml(deck, {
       resourcesDir,
       definitions,
@@ -88,7 +88,7 @@ async function reportCommand(argv) {
   }
   const [{ loadDefinitions }, { renderReportHtml }] = await Promise.all([
     import("./chunks/brand-6PXFCDA5.mjs"),
-    import("./chunks/report-MUPFNKDB.mjs")
+    import("./chunks/report-GML3DOE6.mjs")
   ]);
   const inputPath = path.resolve(argv.input);
   const projectRoot = process.cwd();

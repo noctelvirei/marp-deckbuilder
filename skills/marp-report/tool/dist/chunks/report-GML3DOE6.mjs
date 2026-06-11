@@ -3,11 +3,12 @@ const require = __deckbuilderCreateRequire(import.meta.url);
 import {
   require_punycode,
   resolveResourceUrls
-} from "./chunk-K6KCWRIU.mjs";
+} from "./chunk-KQ5HQ246.mjs";
 import {
   decodeHTML,
+  load,
   splitFrontmatter
-} from "./chunk-2YRIFZBX.mjs";
+} from "./chunk-IMJWZKGS.mjs";
 import "./chunk-ZA7UPLW5.mjs";
 import {
   normalizeResourceReference
@@ -1601,11 +1602,11 @@ function StateBlock(src, md, env, tokens) {
   this.parentType = "root";
   this.level = 0;
   const s = this.src;
-  for (let start = 0, pos = 0, indent = 0, offset = 0, len = s.length, indent_found = false; pos < len; pos++) {
+  for (let start = 0, pos = 0, indent2 = 0, offset = 0, len = s.length, indent_found = false; pos < len; pos++) {
     const ch = s.charCodeAt(pos);
     if (!indent_found) {
       if (isSpace(ch)) {
-        indent++;
+        indent2++;
         if (ch === 9) {
           offset += 4 - offset % 4;
         } else {
@@ -1622,11 +1623,11 @@ function StateBlock(src, md, env, tokens) {
       }
       this.bMarks.push(start);
       this.eMarks.push(pos);
-      this.tShift.push(indent);
+      this.tShift.push(indent2);
       this.sCount.push(offset);
       this.bsCount.push(0);
       indent_found = false;
-      indent = 0;
+      indent2 = 0;
       offset = 0;
       start = pos + 1;
     }
@@ -1697,7 +1698,7 @@ StateBlock.prototype.skipCharsBack = function skipCharsBack(pos, code2, min) {
   }
   return pos;
 };
-StateBlock.prototype.getLines = function getLines(begin, end, indent, keepLastLF) {
+StateBlock.prototype.getLines = function getLines(begin, end, indent2, keepLastLF) {
   if (begin >= end) {
     return "";
   }
@@ -1712,7 +1713,7 @@ StateBlock.prototype.getLines = function getLines(begin, end, indent, keepLastLF
     } else {
       last = this.eMarks[line];
     }
-    while (first < last && lineIndent < indent) {
+    while (first < last && lineIndent < indent2) {
       const ch = this.src.charCodeAt(first);
       if (isSpace(ch)) {
         if (ch === 9) {
@@ -1727,8 +1728,8 @@ StateBlock.prototype.getLines = function getLines(begin, end, indent, keepLastLF
       }
       first++;
     }
-    if (lineIndent > indent) {
-      queue[i] = new Array(lineIndent - indent + 1).join(" ") + this.src.slice(first, last);
+    if (lineIndent > indent2) {
+      queue[i] = new Array(lineIndent - indent2 + 1).join(" ") + this.src.slice(first, last);
     } else {
       queue[i] = this.src.slice(first, last);
     }
@@ -2321,7 +2322,7 @@ function list(state, startLine, endLine, silent) {
     if (indentAfterMarker > 4) {
       indentAfterMarker = 1;
     }
-    const indent = initial + indentAfterMarker;
+    const indent2 = initial + indentAfterMarker;
     token = state.push("list_item_open", "li", 1);
     token.markup = String.fromCharCode(markerCharCode);
     const itemLines = [nextLine, 0];
@@ -2334,7 +2335,7 @@ function list(state, startLine, endLine, silent) {
     const oldSCount = state.sCount[nextLine];
     const oldListIndent = state.listIndent;
     state.listIndent = state.blkIndent;
-    state.blkIndent = indent;
+    state.blkIndent = indent2;
     state.tight = true;
     state.tShift[nextLine] = contentStart - state.bMarks[nextLine];
     state.sCount[nextLine] = offset;
@@ -4689,6 +4690,237 @@ MarkdownIt.prototype.renderInline = function(src, env) {
 };
 var lib_default = MarkdownIt;
 
+// src/report-components/utils.js
+function splitCsv(value = "") {
+  return String(value).split(",").map((item) => item.trim()).filter(Boolean);
+}
+function cleanText(value = "") {
+  return String(value || "").replace(/\s+/g, " ").trim();
+}
+function escapeHtml2(value = "") {
+  return String(value || "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#39;");
+}
+function escapeAttr(value = "") {
+  return escapeHtml2(value);
+}
+function jsString(value = "") {
+  return JSON.stringify(String(value || ""));
+}
+function jsValue(value) {
+  return JSON.stringify(value);
+}
+
+// src/report-components/parsers.js
+function parseReportChart(chart, index = 0) {
+  const type = normalizeChartType(chart.attr("type") || "bar");
+  const labels = splitCsv(chart.attr("labels"));
+  const values = splitCsv(chart.attr("values")).map((value) => Number(value));
+  const title = chart.attr("title") || cleanText(chart.find("h2,h3,figcaption").first().text());
+  const series = chart.attr("series") || title || "Series 1";
+  const colors = splitCsv(chart.attr("colors"));
+  const height = parseDimension(chart.attr("height"), 320);
+  const requestedId = chart.attr("id") || chart.attr("chart-id") || "";
+  return {
+    type: "chart",
+    chartType: type,
+    id: requestedId,
+    generatedId: `report-chart-${index + 1}`,
+    title,
+    series,
+    labels,
+    values,
+    colors,
+    height,
+    ariaLabel: chart.attr("aria-label") || title || `${type} chart`
+  };
+}
+function normalizeChartType(value = "bar") {
+  const token = String(value || "bar").trim().toLowerCase();
+  if (token === "column") return "bar";
+  return token;
+}
+function parseDimension(value, fallback) {
+  const numeric = Number.parseInt(value || fallback, 10);
+  if (!Number.isFinite(numeric)) return fallback;
+  return Math.min(720, Math.max(180, numeric));
+}
+
+// src/report-components/renderers.js
+function renderReportChartHtml(chart) {
+  return `<div class="report-chart report-chart-${escapeAttr(chart.chartType)}">
+  ${chart.title ? `<div class="report-chart-title">${escapeHtml2(chart.title)}</div>` : ""}
+  <div class="report-chart-stage" style="height:${chart.height}px">
+    <canvas id="${escapeAttr(chart.id)}" role="img" aria-label="${escapeAttr(chart.ariaLabel)}"></canvas>
+  </div>
+</div>`;
+}
+function renderReportChartScript(chart, context = {}) {
+  const palette = chart.colors.length ? chart.colors : reportChartPalette(context.brand);
+  const colors = chart.labels.map((_, index) => normalizeChartColor(palette[index % palette.length]));
+  return `(() => {
+  const rootStyle = getComputedStyle(document.documentElement);
+  const tickColor = rootStyle.getPropertyValue("--text-dim").trim() || "#64748b";
+  const gridColor = rootStyle.getPropertyValue("--border").trim() || "rgba(148, 163, 184, 0.28)";
+  new Chart(document.getElementById(${jsString(chart.id)}), {
+    type: "bar",
+    data: {
+      labels: ${jsValue(chart.labels)},
+      datasets: [{
+        label: ${jsString(chart.series)},
+        data: ${jsValue(chart.values)},
+        backgroundColor: ${jsValue(colors)},
+        borderRadius: 5
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { display: ${chart.series && chart.series !== chart.title ? "true" : "false"} }
+      },
+      scales: {
+        x: {
+          ticks: { color: tickColor },
+          grid: { color: gridColor }
+        },
+        y: {
+          ticks: {
+            color: tickColor,
+            callback: value => Number(value).toLocaleString()
+          },
+          grid: { color: gridColor }
+        }
+      }
+    }
+  });
+})();`;
+}
+function reportChartPalette(brand = {}) {
+  const colors = brand.colors || {};
+  return [
+    colors.blue || "0F82F5",
+    colors.cyan || colors.lightBlue || "59D6FD",
+    colors.purple || "5143D5",
+    colors.orange || "F9935B",
+    colors.green || "66CC8E",
+    colors.red || "FC5161"
+  ];
+}
+function normalizeChartColor(value = "") {
+  const token = String(value || "").trim();
+  const hex2 = token.match(/^#?([0-9a-f]{6})$/i);
+  return hex2 ? `#${hex2[1]}` : token;
+}
+
+// src/report-components.js
+var knownReportTags = /* @__PURE__ */ new Set(["report-chart"]);
+function compileReportComponents(source, options = {}) {
+  const context = reportComponentContext(options);
+  validateReportComponentSyntax(source, context);
+  const root = load(`<root>${source}</root>`, {
+    decodeEntities: false,
+    lowerCaseAttributeNames: true
+  });
+  const scripts = [];
+  const usedIds = /* @__PURE__ */ new Set();
+  root("report-chart").each((index, element) => {
+    const chartElement = root(element);
+    const chart = parseReportChart(chartElement, index);
+    chart.id = uniqueDomId(chart.id || chart.generatedId, usedIds, "report-chart");
+    validateReportChart(chart, context);
+    scripts.push(renderReportChartScript(chart, context));
+    chartElement.replaceWith(renderReportChartHtml(chart));
+  });
+  const compiledSource = root("root").html() || source;
+  return {
+    source: appendReportComponentScripts(compiledSource, scripts),
+    scripts
+  };
+}
+function appendReportComponentScripts(source, scripts = []) {
+  if (!scripts.length) return source;
+  return `${source}
+
+<script data-report-component-script="chart">
+document.addEventListener("DOMContentLoaded", function() {
+${scripts.map((script) => indent(script, 2)).join("\n\n")}
+});
+</script>`;
+}
+function validateReportComponentSyntax(source, context) {
+  const stack = [];
+  const tagPattern = /<\/?\s*(report-[a-z0-9-]+)\b[^>]*>/gi;
+  for (const match2 of source.matchAll(tagPattern)) {
+    const raw = match2[0];
+    const tag = match2[1].toLowerCase();
+    const line = lineNumberAt(source, match2.index);
+    if (!knownReportTags.has(tag)) fail(`Unknown report component <${tag}>.`, context, line);
+    const isClosing = /^<\s*\//.test(raw);
+    const isSelfClosing = /\/\s*>$/.test(raw);
+    if (isClosing) {
+      const opened = stack.pop();
+      if (!opened) fail(`Closing </${tag}> has no matching opening tag.`, context, line);
+      if (opened.tag !== tag) {
+        fail(
+          `Mismatched report component tags: opened <${opened.tag}> on line ${opened.line}, but found </${tag}>.`,
+          context,
+          line
+        );
+      }
+    } else if (!isSelfClosing) {
+      stack.push({ tag, line });
+    }
+  }
+  if (stack.length > 0) {
+    const opened = stack[stack.length - 1];
+    fail(`Unclosed report component <${opened.tag}> opened on line ${opened.line}.`, context, opened.line);
+  }
+}
+function validateReportChart(chart, context) {
+  if (chart.chartType !== "bar") {
+    fail(`Unsupported report-chart type "${chart.chartType}". Supported type: bar.`, context);
+  }
+  if (chart.labels.length === 0 || chart.values.length === 0) {
+    fail("report-chart requires non-empty labels and values attributes.", context);
+  }
+  if (chart.labels.length !== chart.values.length) {
+    fail(
+      `report-chart labels/values length mismatch: ${chart.labels.length} label(s), ${chart.values.length} value(s).`,
+      context
+    );
+  }
+  if (chart.values.some((value) => !Number.isFinite(value))) {
+    fail("report-chart values must all be numeric.", context);
+  }
+}
+function uniqueDomId(value, usedIds, prefix) {
+  const base = sanitizeDomId(value) || prefix;
+  let candidate = base;
+  let suffix = 2;
+  while (usedIds.has(candidate)) {
+    candidate = `${base}-${suffix}`;
+    suffix += 1;
+  }
+  usedIds.add(candidate);
+  return candidate;
+}
+function sanitizeDomId(value) {
+  return String(value || "").trim().replace(/[^a-z0-9_-]+/gi, "-").replace(/^-+|-+$/g, "");
+}
+function indent(source, spaces) {
+  const padding = " ".repeat(spaces);
+  return String(source || "").split("\n").map((line) => `${padding}${line}`).join("\n");
+}
+function reportComponentContext(options = {}) {
+  return options.reportName ? `report "${options.reportName}"` : "report";
+}
+function lineNumberAt(source, index = 0) {
+  return String(source || "").slice(0, index).split(/\r?\n/).length;
+}
+function fail(message, context = "report", line = 0) {
+  throw new Error(`Invalid report Markdown in ${context}${line ? `, line ${line}` : ""}: ${message}`);
+}
+
 // src/report.js
 var markdown = new lib_default({
   html: true,
@@ -4705,11 +4937,12 @@ function renderReportHtml(source, options = {}) {
     inlineAssets: options.inlineAssets,
     assetUrlPrefix: options.assetUrlPrefix
   };
-  const prepared = normalizeReportImageReferences(body);
-  const content = resolveResourceUrls(markdown.render(prepared), options.resourcesDir, resolverOptions);
-  const css = resolveResourceUrls(reportCss(brand), options.resourcesDir, resolverOptions);
   const title = frontmatter.title || firstHeading(body) || "Report";
   const subtitle = frontmatter.subtitle || "";
+  const prepared = normalizeReportImageReferences(body);
+  const compiled = compileReportComponents(prepared, { brand, reportName: title });
+  const content = resolveResourceUrls(markdown.render(compiled.source), options.resourcesDir, resolverOptions);
+  const css = resolveResourceUrls(reportCss(brand), options.resourcesDir, resolverOptions);
   const logo = reportLogo(brand);
   const document = resolveResourceUrls(
     reportDocument({
@@ -4762,7 +4995,7 @@ function reportDocument({
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1.0">
-  <title>${escapeHtml2(title)}</title>
+  <title>${escapeHtml3(title)}</title>
   <style>${css}</style>
 </head>
 <body>
@@ -4770,8 +5003,8 @@ function reportDocument({
     <header class="report-cover">
       ${logo ? `<img class="report-logo" src="${escapeHtmlAttr(logo)}" alt="${escapeHtmlAttr(brandName)} logo">` : ""}
       <p class="report-kicker">Report</p>
-      <h1>${escapeHtml2(title)}</h1>
-      ${subtitle ? `<p class="report-subtitle">${escapeHtml2(subtitle)}</p>` : ""}
+      <h1>${escapeHtml3(title)}</h1>
+      ${subtitle ? `<p class="report-subtitle">${escapeHtml3(subtitle)}</p>` : ""}
     </header>
     <article class="report-body">
 ${content}
@@ -4965,6 +5198,36 @@ body {
   height: auto;
 }
 
+.report-chart {
+  margin: 28px 0;
+  padding: 22px;
+  border: 1px solid var(--border, #dbe5f2);
+  border-radius: 8px;
+  background: var(--bg-card, #ffffff);
+  box-shadow: 0 12px 30px rgba(15, 23, 42, 0.07);
+}
+
+.report-chart-title {
+  margin: 0 0 16px;
+  color: var(--text-dim, #334155);
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.report-chart-stage {
+  position: relative;
+  width: 100%;
+  min-height: 180px;
+}
+
+.report-chart-stage canvas {
+  display: block;
+  width: 100% !important;
+  height: 100% !important;
+}
+
 .report-body hr {
   margin: 42px 0;
   border: 0;
@@ -5059,11 +5322,11 @@ function hex(value, fallback) {
 function escapeCssUrl(value) {
   return String(value).replace(/["\\\n\r\f]/g, "\\$&");
 }
-function escapeHtml2(value) {
+function escapeHtml3(value) {
   return String(value).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#39;");
 }
 function escapeHtmlAttr(value) {
-  return escapeHtml2(value);
+  return escapeHtml3(value);
 }
 export {
   renderReportHtml

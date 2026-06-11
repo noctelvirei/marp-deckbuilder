@@ -86,12 +86,13 @@ April volume is concentrated in one dominant journey. The top three journeys acc
 
 <h2 id="volume">Volume Chart</h2>
 
-<div class="r-chart-wrap">
-  <div class="r-chart-title">Cases by journey</div>
-  <div style="position:relative;height:320px">
-    <canvas id="journeyChart" role="img" aria-label="Bar chart of cases by journey"></canvas>
-  </div>
-</div>
+<report-chart
+  type="bar"
+  title="Cases by journey"
+  series="Cases"
+  labels="J0107,J0106,J0101,J0116"
+  values="52208,11119,8648,3751"
+></report-chart>
 
 <h2 id="breakdown">Breakdown</h2>
 
@@ -116,33 +117,6 @@ April volume is concentrated in one dominant journey. The top three journeys acc
 1. Confirm whether J0116 is a new journey or a data quality issue.
 2. Add month-over-month tracking for the top three journeys.
 3. Calibrate operational monitoring to the dominant journey.
-
-<script>
-document.addEventListener('DOMContentLoaded', function() {
-  const gridColor = 'rgba(30,58,95,.5)';
-  const tickColor = '#8B9AB5';
-  new Chart(document.getElementById('journeyChart'), {
-    type: 'bar',
-    data: {
-      labels: ['J0107', 'J0106', 'J0101', 'J0116'],
-      datasets: [{
-        data: [52208, 11119, 8648, 3751],
-        backgroundColor: ['#0f82f5', '#59d6fd', '#5143d5', '#f99358'],
-        borderRadius: 4
-      }]
-    },
-    options: {
-      responsive: true,
-      maintainAspectRatio: false,
-      plugins: { legend: { display: false } },
-      scales: {
-        x: { ticks: { color: tickColor }, grid: { color: gridColor } },
-        y: { ticks: { color: tickColor, callback: v => v.toLocaleString() }, grid: { color: gridColor } }
-      }
-    }
-  });
-});
-</script>
 
 </main>
 </div>

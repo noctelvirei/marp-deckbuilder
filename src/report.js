@@ -1,6 +1,7 @@
 import MarkdownIt from 'markdown-it'
 
 import { splitFrontmatter } from './markdown.js'
+import { compileReportComponents } from './report-components.js'
 import { normalizeResourceReference } from './resources.js'
 import { resolveResourceUrls } from './render.js'
 
@@ -20,11 +21,12 @@ export function renderReportHtml(source, options = {}) {
     inlineAssets: options.inlineAssets,
     assetUrlPrefix: options.assetUrlPrefix,
   }
-  const prepared = normalizeReportImageReferences(body)
-  const content = resolveResourceUrls(markdown.render(prepared), options.resourcesDir, resolverOptions)
-  const css = resolveResourceUrls(reportCss(brand), options.resourcesDir, resolverOptions)
   const title = frontmatter.title || firstHeading(body) || 'Report'
   const subtitle = frontmatter.subtitle || ''
+  const prepared = normalizeReportImageReferences(body)
+  const compiled = compileReportComponents(prepared, { brand, reportName: title })
+  const content = resolveResourceUrls(markdown.render(compiled.source), options.resourcesDir, resolverOptions)
+  const css = resolveResourceUrls(reportCss(brand), options.resourcesDir, resolverOptions)
   const logo = reportLogo(brand)
   const document = resolveResourceUrls(
     reportDocument({
@@ -288,6 +290,36 @@ body {
 .report-body svg {
   max-width: 100%;
   height: auto;
+}
+
+.report-chart {
+  margin: 28px 0;
+  padding: 22px;
+  border: 1px solid var(--border, #dbe5f2);
+  border-radius: 8px;
+  background: var(--bg-card, #ffffff);
+  box-shadow: 0 12px 30px rgba(15, 23, 42, 0.07);
+}
+
+.report-chart-title {
+  margin: 0 0 16px;
+  color: var(--text-dim, #334155);
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.report-chart-stage {
+  position: relative;
+  width: 100%;
+  min-height: 180px;
+}
+
+.report-chart-stage canvas {
+  display: block;
+  width: 100% !important;
+  height: 100% !important;
 }
 
 .report-body hr {

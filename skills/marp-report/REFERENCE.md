@@ -14,7 +14,7 @@ For PDF, open the generated HTML in a browser and use Print to PDF. No browser e
 
 ## Report Skeleton
 
-Use this shape for rich reports. Keep chart init scripts inside `<main>` before the closing tags.
+Use this shape for rich reports. For supported `report-*` components, the renderer generates the required HTML and JavaScript. Keep handwritten chart init scripts inside `<main>` before the closing tags only for temporary custom visuals that do not have a report component yet.
 
 ```md
 ---
@@ -43,7 +43,7 @@ Report prose goes here.
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-  // Chart init code goes here.
+  // Custom init code goes here only when no report component exists yet.
 });
 </script>
 
@@ -140,7 +140,37 @@ code { background: var(--bg-card) !important; color: var(--cyan) !important; bor
 
 ## Component Tags And Classes
 
-Reports use normal Markdown plus these HTML classes:
+Reports use normal Markdown plus compact `report-*` component tags where supported. The renderer expands those tags into HTML, CSS hooks, and JavaScript initializers.
+
+### Report Chart: Chart.js Bar
+
+Use `report-chart` for standard bar charts. Do not write the `<canvas>` or Chart.js initializer yourself.
+
+```html
+<report-chart
+  type="bar"
+  title="Cases by journey"
+  series="Cases"
+  labels="J0107,J0106,J0101,J0116"
+  values="52208,11119,8648,3751"
+></report-chart>
+```
+
+Supported attributes:
+
+| Attribute | Required | Notes |
+| --- | --- | --- |
+| `type` | no | Currently supports `bar`. Defaults to `bar`. |
+| `title` | no | Rendered above the chart and used as the accessible label. |
+| `series` | no | Dataset label. |
+| `labels` | yes | Comma-separated labels. |
+| `values` | yes | Comma-separated numeric values. Must match label count. |
+| `colors` | no | Comma-separated hex colors. Defaults to brand chart colors. |
+| `height` | no | Pixel height, clamped by the renderer. Defaults to `320`. |
+
+## Legacy HTML Classes
+
+Some components are still in migration. Until their `report-*` versions exist, reports may use these HTML classes:
 
 | Pattern | Required classes | Optional modifiers |
 | --- | --- | --- |
@@ -219,43 +249,9 @@ The report wrapper injects Chart.js, Observable Plot, and D3 into the final HTML
 
 Place the init script inside `<main class="r-main">` as the final element before `</main>`.
 
-### Chart.js Bar
+### Legacy Chart.js Bar
 
-```html
-<div class="r-chart-wrap">
-  <div class="r-chart-title">Cases by journey</div>
-  <div style="position:relative;height:320px">
-    <canvas id="journeyChart" role="img" aria-label="Cases by journey"></canvas>
-  </div>
-</div>
-
-<script>
-document.addEventListener('DOMContentLoaded', function() {
-  const gridColor = 'rgba(30,58,95,.5)';
-  const tickColor = '#8B9AB5';
-  new Chart(document.getElementById('journeyChart'), {
-    type: 'bar',
-    data: {
-      labels: ['J0107', 'J0106', 'J0101', 'J0116'],
-      datasets: [{
-        data: [52208, 11119, 8648, 3751],
-        backgroundColor: ['#0f82f5', '#59d6fd', '#5143d5', '#f99358'],
-        borderRadius: 4
-      }]
-    },
-    options: {
-      responsive: true,
-      maintainAspectRatio: false,
-      plugins: { legend: { display: false } },
-      scales: {
-        x: { ticks: { color: tickColor }, grid: { color: gridColor } },
-        y: { ticks: { color: tickColor, callback: v => v.toLocaleString() }, grid: { color: gridColor } }
-      }
-    }
-  });
-});
-</script>
-```
+Use the structured `report-chart` component above instead of the legacy raw `<canvas>` and Chart.js initializer.
 
 ### Observable Plot Area
 

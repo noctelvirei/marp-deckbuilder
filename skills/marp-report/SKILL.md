@@ -9,9 +9,9 @@ Use this skill to turn source material into a long-form HTML report: a scrollabl
 
 ## Core Rule
 
-Do not force reports into slides. Write `report.md` using normal Markdown plus the report component classes in `REFERENCE.md`, then run the bundled report wrapper. This skill includes its own bundled renderer and resources under `tool/`.
+Do not force reports into slides. Write `report.md` using normal Markdown plus the report component tags in `REFERENCE.md`, then run the bundled report wrapper. This skill includes its own bundled renderer and resources under `tool/`.
 
-The report wrapper injects Chart.js, Observable Plot, and D3 into the generated HTML head from local vendor files, so the final HTML works offline after generation. Do not paste minified library source into Markdown.
+The report wrapper injects Chart.js, Observable Plot, and D3 into the generated HTML head from local vendor files, so the final HTML works offline after generation. Use supported `report-*` components instead of pasting chart container HTML or JavaScript initializers. Do not paste minified library source into Markdown.
 
 ## Workflow
 
@@ -20,7 +20,7 @@ The report wrapper injects Chart.js, Observable Plot, and D3 into the generated 
    `Dark navy report theme (recommended) or light print theme?`
 3. Create one output folder for the request. Prefer `Documents/Presentations/YYYY-MM-DD/<report-title-slug>/` when the user has not specified a location.
 4. Draft `report.md` in that folder. For dark navy, start with the full CSS setup from `REFERENCE.md`, then use the sticky sidebar skeleton for reports with four or more sections.
-5. Use report components for fidelity: metric grids, rate bars, callouts, accent cards, badges, chart wraps, tables, blockquotes, inline SVG, and JavaScript chart initializers.
+5. Use report components for fidelity. For standard bar charts, use `<report-chart type="bar">` with labels and values. For component types that are not implemented yet, use the class patterns in `REFERENCE.md` as a temporary fallback.
 6. Build from this skill folder:
 
 ```bash
@@ -36,14 +36,15 @@ node scripts/build-report.mjs <output-folder>/report.md --out-dir <output-folder
 - Prefer a sticky sidebar for reports with four or more sections.
 - Use CSS variables for colors once the dark navy setup is present.
 - Keep technical field names as plain text in dark reports unless code formatting is truly necessary.
-- Use Chart.js for standard bar, stacked bar, line, and doughnut charts.
+- Use `<report-chart type="bar">` for standard Chart.js bar charts.
+- Use Chart.js manually only for chart types that are not yet supported as report components, such as stacked bar, line, and doughnut charts.
 - Use Observable Plot for concise dot, area, heatmap, and small-multiple charts.
 - Use D3 for bespoke SVG charts such as treemaps, custom arcs, Sankey-style flows, and force layouts.
 - Use inline SVG when the visual should be static, exact, and dependency-free.
 
 ## Script Rules
 
-Follow these rules exactly for any report with JavaScript:
+For supported `report-*` components, do not write JavaScript. The renderer generates the container and initializer. Follow these rules exactly only for temporary custom visuals that still require handwritten JavaScript:
 
 1. Do not include CDN `<script src>` tags in `report.md`. The wrapper injects bundled vendor libraries into the final HTML head.
 2. Put chart containers in the relevant section body.
