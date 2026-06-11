@@ -191,27 +191,6 @@ test('parses markdown subheadings and bullet lists for native PPTX content', () 
   assert.deepEqual(deck.slides[0].paragraphs, [])
 })
 
-test('parses rich HTML showcase custom tags without raw CSS or JS authoring', async () => {
-  const source = await readFile(new URL('../samples/rich-html-showcase.md', import.meta.url), 'utf8')
-  const deck = parseDeckMarkdown(source)
-
-  assert.equal(deck.slides.length, 19)
-  assert.equal(deck.slides.every((slide) => slide.richHtml), true)
-  assert.equal(deck.slides[0].layout, 'rich-cover')
-  assert.equal(deck.slides.at(-1).layout, 'rich-close')
-  assert.equal(deck.slides.filter((slide) => slide.layout === 'rich-html').length, 17)
-  assert.equal(deck.slides[6].richHtml.type, 'magazine-book')
-  assert.equal(deck.slides[6].richHtml.pages.length, 4)
-  assert.equal(deck.slides[13].richHtml.type, 'radar-chart')
-  assert.equal(deck.slides[16].richHtml.type, 'gauge')
-  assert.equal(deck.slides[17].richHtml.type, 'reveal-stack')
-  assert.doesNotMatch(source, /<style[\s>]/i)
-  assert.doesNotMatch(source, /<script[\s>]/i)
-  assert.match(deck.slides[6].source, /data-deck-rich-book/)
-  assert.match(deck.slides[6].source, /book-print/)
-  assert.match(deck.slides[17].source, /data-deck-rich-reveal/)
-})
-
 test('fails loudly on invalid deck component Markdown', () => {
   assert.throws(
     () =>
@@ -238,13 +217,5 @@ test('fails loudly on invalid deck component Markdown', () => {
 
 <deck-chart title="Bad" labels="A,B" values="10"></deck-chart>`),
     /deck-chart labels\/values length mismatch/,
-  )
-
-  assert.throws(
-    () =>
-      parseDeckMarkdown(`# Broken
-
-<deck-rich-card title="Outside" body="No parent"></deck-rich-card>`),
-    /<deck-rich-card> must be placed directly inside <deck-tilt-cards> or <deck-glass-cards> or <deck-stagger-grid>/,
   )
 })

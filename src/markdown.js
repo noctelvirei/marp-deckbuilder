@@ -1,7 +1,6 @@
 import yaml from 'js-yaml'
 
 import { compileDeckComponents } from './components.js'
-import { richHtmlLayout } from './components/rich-html-definitions.js'
 
 export function parseDeckMarkdown(source) {
   const { frontmatter, body } = splitFrontmatter(source)
@@ -65,12 +64,10 @@ export function splitSlides(body) {
 
 export function parseSlide(source, index, originalSource = source, components = [], frontmatter = {}) {
   const directives = extractDirectives(source)
-  const richComponent = components.find((component) => component.rich)
   const titleComponent =
     firstComponent(components, 'divider') ||
     firstComponent(components, 'close') ||
-    firstComponent(components, 'exec-title') ||
-    richComponent
+    firstComponent(components, 'exec-title')
   const title = directives.title || titleComponent?.title || extractTitle(source) || `Slide ${index + 1}`
   const subtitle = directives.subtitle || titleComponent?.subtitle || extractSubtitle(source, title)
   const layout = directives.layout || inferComponentLayout(components) || inferLayout(source, index)
@@ -79,7 +76,7 @@ export function parseSlide(source, index, originalSource = source, components = 
   const companyLogo = extractCompanyLogo(source) || frontmatterCompanyLogo(frontmatter)
   const customerLogo = extractCustomerLogo(source) || frontmatterCustomerLogo(frontmatter)
   const layoutComponent = firstComponent(components, layout)
-  const surface = inferSurface(layout, directives, frontmatter, layoutComponent?.surface || richComponent?.surface)
+  const surface = inferSurface(layout, directives, frontmatter, layoutComponent?.surface)
 
   return {
     index,
@@ -108,7 +105,6 @@ export function parseSlide(source, index, originalSource = source, components = 
     execCards: firstComponent(components, 'exec-cards'),
     execTimeline: firstComponent(components, 'exec-timeline'),
     execMetrics: firstComponent(components, 'exec-metrics'),
-    richHtml: richComponent,
     divider: firstComponent(components, 'divider'),
     close: firstComponent(components, 'close'),
     companyLogo,
@@ -149,9 +145,6 @@ function inferLayout(source, index) {
 }
 
 function inferComponentLayout(components) {
-  const richComponent = components.find((component) => component.rich)
-  if (richComponent) return richHtmlLayout(richComponent)
-
   const layoutComponents = new Map([
     ['comparison', 'comparison'],
     ['swimlane', 'swimlane'],
@@ -193,7 +186,7 @@ function inferSurface(layout, directives = {}, frontmatter = {}, componentSurfac
   )
   if (defaultSurface) return defaultSurface
 
-  if (['cover', 'divider', 'close', 'rich-cover', 'rich-html', 'rich-close'].includes(layout)) return 'dark'
+  if (['cover', 'divider', 'close'].includes(layout)) return 'dark'
   return 'light'
 }
 

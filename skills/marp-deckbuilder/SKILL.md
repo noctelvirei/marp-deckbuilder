@@ -5,9 +5,7 @@ description: Builds brandable presentation decks with rich HTML slides and edita
 
 # Marp Deckbuilder
 
-Use this baseline presentation skill to turn source material into a lightweight
-component Markdown deck, then build rich HTML and editable PPTX with the bundled
-native renderer.
+Use this skill to turn source material into a lightweight component Markdown deck, then build rich HTML and editable PPTX with the bundled native renderer.
 
 ## Core Rule
 
@@ -16,23 +14,6 @@ Do not hand-write PowerPoint code. Write `deck.md` using supported `deck-*` comp
 The HTML presenter uses vendored Marp CLI/Bespoke assets in `tool/resources/templates/`. Do not recreate or replace that presenter from prompts. The skill runs the bundled `tool/dist/deckbuilder.mjs` runtime and does not need `node_modules`, `npm install`, Marp CLI, LibreOffice, PowerPoint automation, Chromium, or other external executables.
 
 The build wrapper injects Chart.js, Observable Plot, and D3 into the generated HTML head from local vendor files, so browser-only slides using those libraries work offline after generation. Do not paste minified library source into Markdown.
-
-## Baseline Skill Contract
-
-This is the `present` baseline. Corporate agents should populate
-`tool/resources/definitions/brand.json`, `tool/resources/definitions/theme.css`,
-and `tool/resources/` with corporate backgrounds, logos, fonts, icons,
-screenshots, and customer-ready image assets. Preserve `tool/dist/`,
-`tool/resources/templates/`, and the build scripts from this upstream baseline.
-
-The renderer owns brand chrome. Corporate logo is top left. Customer logo, when
-frontmatter provides one, is top right. Authors reference one logical logo and
-the renderer picks dark/light sibling variants when available.
-
-When importing this baseline over an older branded copy, clean out old upstream
-runtime bundles first: remove the existing `tool/dist` directory, stale hashed
-chunk files, and old extracted baseline files that are not private corporate
-resources. Do not leave old and new renderer bundles side by side.
 
 ## Workflow
 
@@ -54,7 +35,6 @@ node scripts/build-deck.mjs <output-folder>/deck.md --out-dir <output-folder>
 - Treat HTML as the premium presentation format and PPTX as the editable business handoff.
 - Use supported `deck-*` components when the slide must remain editable in PowerPoint.
 - Use `deck-visual` for rich inline SVG charts, maps, dashboards, and annotated diagrams. HTML keeps the SVG inline; PPTX embeds the SVG as a crisp visual image. Put essential fills, strokes, fonts, and labels inside the SVG because PPTX receives only the SVG.
-- Use the `marp-rich-html` reference for renderer-owned cinematic covers, animated charts, magazine page flips, particles, neon/glass effects, radar charts, gauges, and reveal slides. Author those effects with the provided custom tags only; do not paste effect CSS or animation JavaScript into Markdown.
 - Use browser-only HTML, scoped CSS, and JavaScript when the HTML slide needs richer behavior than PowerPoint can edit. Mark those slides with `<!-- pptx: skip -->` or `<!-- html-only: true -->`.
 - Pair each browser-only slide with a simpler editable fallback marked `<!-- html: skip -->`, `<!-- html-skip: true -->`, or `<!-- pptx-only: true -->` when the PPTX audience needs the same point.
 - Use Chart.js for standard bar, stacked bar, line, and doughnut slides.
@@ -69,7 +49,7 @@ node scripts/build-deck.mjs <output-folder>/deck.md --out-dir <output-folder>
 - Let the renderer own brand chrome. Do not set `marp`, `theme`, or raw company-logo HTML in `deck.md`; the build uses `brand.themeName`, `brand.assets`, and `brand.layouts`.
 - Treat slide surface as a design choice, not a layout rule. Cover, divider, and close slides default dark for compatibility; other slides default light unless frontmatter or a directive says otherwise. Use `defaultSurface: dark|light` for a whole deck, `<!-- surface: dark|light -->` for a slide, or `surface="dark|light"` on an executive component. Do not assume executive headers are dark or content pages are white.
 - Use executive layout components for CEO-style large-format slides: oversized titles, wide row stacks, large metric cards, timeline rows, side callouts, and takeaway bars. They support both dark and light surfaces with the same geometry.
-- Put customer logo metadata in frontmatter (`customerLogo` plus optional `customerName`, or `customer.logo` plus `customer.name`). The renderer places the corporate logo top left and customer logo top right in both HTML and PPTX.
+- Put customer logo metadata in frontmatter (`customerLogo` plus optional `customerName`, or `customer.logo` plus `customer.name`). The renderer places the company logo top left and customer logo top right in both HTML and PPTX.
 - Customer logos and logo-wall assets should be supplied as transparent PNG assets prepared for the chosen deck surface (for example, white wordmark text for dark slides). Authors reference one logical logo; the renderer automatically prefers sibling variants such as `customer.dark.png`, `customer-on-dark.png`, `customer.light.png`, or `customer-on-light.png` when present. The renderer does not add a white chip by default. Do not try to invert customer logos with CSS filters; that breaks brand colours. A branded fork may opt into `customerLogoBackplate` only for legacy assets.
 - Keep card, swimlane, comparison, and next-step copy concise. The PPTX renderer clamps text boxes inside their filled shapes, but dense copy is still a deck-design problem and should move to a follow-up slide or speaker notes.
 - The renderer fails loudly on invalid component Markdown or missing assets. If the build errors, fix the Markdown or add the referenced file under `tool/resources/`; do not work around it by leaving empty cards, broken images, or unsupported component shapes.

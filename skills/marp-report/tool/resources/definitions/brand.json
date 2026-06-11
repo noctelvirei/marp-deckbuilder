@@ -36,8 +36,6 @@
     "fallback": "Aptos"
   },
   "layouts": {
-    "companyLogo": { "x": 36, "y": 21, "w": 98, "h": 24 },
-    "customerLogo": { "x": 828, "y": 21, "w": 98, "h": 24 },
     "cover": {
       "title": { "x": 36, "y": 79, "w": 677, "h": 255, "font": "light", "size": 56, "color": "white" },
       "subtitle": { "x": 36, "y": 344, "w": 677, "h": 72, "font": "regular", "size": 18, "color": "CCCCCC" },
@@ -126,26 +124,8 @@
       "stepH": 74,
       "stepGap": 12,
       "stepPad": 8,
-      "fills": {
-        "blue": "E8F4FE",
-        "lightBlue": "E9F9FF",
-        "cyan": "E9F9FF",
-        "purple": "F0EDFE",
-        "green": "ECF9F1",
-        "orange": "FFF3EA",
-        "red": "FFF0F2",
-        "yellow": "FFF8DF"
-      },
-      "accents": {
-        "blue": "blue",
-        "lightBlue": "lightBlue",
-        "cyan": "lightBlue",
-        "purple": "purple",
-        "green": "green",
-        "orange": "orange",
-        "red": "red",
-        "yellow": "yellow"
-      },
+      "fills": { "blue": "E8F4FE", "purple": "F0EDFE", "green": "ECF9F1" },
+      "accents": { "blue": "blue", "purple": "purple", "green": "green" },
       "stepTitle": { "font": "medium", "size": 8, "color": "dark" },
       "stepBody": { "font": "regular", "size": 7, "color": "body" },
       "arrow": { "font": "medium", "size": 13, "color": "muted" }

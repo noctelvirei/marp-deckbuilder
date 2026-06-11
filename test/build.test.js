@@ -11,7 +11,7 @@ import { renderDeckHtml } from '../src/render.js'
 import { resolveSurfaceResourceFile } from '../src/resources.js'
 import { writePptx } from '../src/pptx.js'
 
-const tmpDir = path.resolve('.tmp', 'tests', String(process.pid))
+const tmpDir = path.resolve('.tmp', 'tests')
 
 test('renders Marp Deckbuilder HTML', async () => {
   const source = await readFile(new URL('../samples/demo.md', import.meta.url), 'utf8')
@@ -28,47 +28,6 @@ test('renders Marp Deckbuilder HTML', async () => {
   assert.match(rendered.document, /Marp Deckbuilder Demo/)
   assert.match(rendered.document, /@page/)
   assert.match(rendered.document, /<style data-deckbuilder-theme>/)
-})
-
-test('renders rich HTML showcase with renderer-owned runtime and print fallbacks', async () => {
-  const source = await readFile(new URL('../samples/rich-html-showcase.md', import.meta.url), 'utf8')
-  const definitions = await loadDefinitions(new URL('../resources/definitions', import.meta.url))
-  const deck = parseDeckMarkdown(source)
-  const rendered = renderDeckHtml(deck, { resourcesDir: 'resources', definitions })
-
-  assert.match(rendered.document, /<script data-deckbuilder-rich-html>/)
-  assert.match(rendered.document, /window\.deckRichHtml/)
-  assert.match(rendered.document, /deck-rich-printing/)
-  assert.match(rendered.document, /data-deck-rich-cover/)
-  assert.match(rendered.document, /data-deck-rich-book/)
-  assert.match(rendered.document, /book-print/)
-  assert.match(rendered.document, /data-deck-rich-radar/)
-  assert.match(rendered.document, /data-deck-rich-gauge/)
-  assert.match(rendered.document, /data-deck-rich-close/)
-  assert.match(rendered.document, /Renderer-owned rich HTML components/)
-  assert.match(rendered.document, /\.deck-rich \{/)
-  assert.match(rendered.document, /\.deck-rich \.book-scene/)
-  assert.doesNotMatch(rendered.css, /deck-rich/)
-  assert.doesNotMatch(rendered.css, /body\.deck-rich-printing/)
-  assert.doesNotMatch(rendered.document, /<deck-rich-cover\b/)
-  assert.doesNotMatch(rendered.document, /<deck-magazine-book\b/)
-  assert.doesNotMatch(rendered.document, /<deck-rich-card\b/)
-})
-
-test('renders repeated rich metric children as live HTML, not escaped text', async () => {
-  const definitions = await loadDefinitions(new URL('../resources/definitions', import.meta.url))
-  const deck = parseDeckMarkdown(`<deck-rich-stats eyebrow="Renderer-owned metrics" title="Animated|Runtime Signals">
-  <deck-rich-metric value="3" unit="" label="baseline skills" progress="75" color="blue"></deck-rich-metric>
-  <deck-rich-metric value="11" unit="" label="chunks per skill" progress="92" color="cyan"></deck-rich-metric>
-  <deck-rich-metric value="100" unit="%" label="custom tag source" progress="100" color="green"></deck-rich-metric>
-</deck-rich-stats>`)
-  const rendered = renderDeckHtml(deck, { resourcesDir: 'resources', definitions })
-
-  assert.equal((rendered.document.match(/<div class="ring-item">/g) || []).length, 3)
-  assert.match(rendered.document, /<div class="ring-lbl">chunks per skill<\/div>/)
-  assert.match(rendered.document, /<div class="ring-lbl">custom tag source<\/div>/)
-  assert.doesNotMatch(rendered.document, /&lt;\/div&gt;&lt;div class=/)
-  assert.doesNotMatch(rendered.document, /&lt;div class="ring-c"/)
 })
 
 test('writes editable fallback PPTX', async () => {
@@ -1252,10 +1211,6 @@ test('PPTX header eyebrow avoids the company logo slot', async () => {
     path.join(tmpDir, 'resources', 'logos', 'company-light.svg'),
     '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 24"><text x="0" y="18">Logo</text></svg>',
   )
-  await writeFile(
-    path.join(tmpDir, 'resources', 'logos', 'customer.svg'),
-    '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 24"><text x="0" y="18">Customer</text></svg>',
-  )
 
   const definitions = await loadDefinitions(new URL('../resources/definitions', import.meta.url))
   const brand = {
@@ -1268,14 +1223,9 @@ test('PPTX header eyebrow avoids the company logo slot', async () => {
     layouts: {
       ...definitions.brand.layouts,
       companyLogo: { x: 36, y: 21, w: 98, h: 24 },
-      customerLogo: { x: 828, y: 21, w: 98, h: 24 },
     },
   }
-  const deck = parseDeckMarkdown(`---
-customerLogo: resource:logos/customer.svg
----
-
-# Cover
+  const deck = parseDeckMarkdown(`# Cover
 
 ---
 

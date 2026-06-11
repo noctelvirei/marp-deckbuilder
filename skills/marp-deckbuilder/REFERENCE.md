@@ -166,7 +166,7 @@ customer:
 ---
 ```
 
-The corporate/company logo is always the brand logo and is placed top left. The customer
+The company logo is always the brand logo and is placed top left. The customer
 logo, when present, is placed top right. These slots are applied to both HTML and
 PPTX output. For compatibility, the parser can extract
 `<img class="deck-customer-logo" ...>` from a slide, but new decks should prefer
@@ -626,8 +626,6 @@ HTML-only slide.
 ## HTML Premium Slides
 
 HTML is the high-fidelity presentation format. Use raw HTML, inline SVG, and scoped CSS for slides that should feel more like a polished data story than a standard PowerPoint page. Keep the source compact enough that the user can ask Claude to change the data, labels, or emphasis.
-
-For renderer-owned rich effects such as cinematic covers, animated rings, bar/line/donut charts, magazine page flips, particle networks, neon/glass treatments, radar charts, gauges, and staged reveals, use the separate `marp-rich-html` reference. Those slides should contain content and custom tags only; the renderer owns CSS, JavaScript, animation behavior, print mode, and PDF-safe fallbacks.
 
 Use `deck-visual` when a rich SVG should also land in PPTX as a faithful visual. Use `deck-chart`, `deck-stat-grid`, `deck-card-grid`, or the other structured components when PowerPoint editability matters more than exact visual fidelity.
 

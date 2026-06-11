@@ -12,7 +12,6 @@ await rm(smokeRoot, { recursive: true, force: true })
 await mkdir(smokeRoot, { recursive: true })
 
 await smokeDeckSkill()
-await smokeRichHtmlSkill()
 await smokeReportSkill()
 
 console.log(`Skill smoke passed: ${smokeRoot}`)
@@ -30,10 +29,9 @@ async function smokeDeckSkill() {
     'output',
   ], skillRoot)
 
-  const htmlPath = join(outputDir, 'example.html')
-  await assertFile(htmlPath, 1000)
+  await assertFile(join(outputDir, 'example.html'), 1000)
   await assertFile(join(outputDir, 'example.pptx'), 1000)
-  await assertVendorInjection(htmlPath, 'data-marp-deckbuilder-vendor')
+  await assertVendorInjection(join(outputDir, 'example.html'), 'data-marp-deckbuilder-vendor')
 }
 
 async function smokeReportSkill() {
@@ -56,26 +54,6 @@ async function smokeReportSkill() {
     throw new Error(`Expected report HTML to include offline vendor scripts: ${htmlPath}`)
   }
   await assertVendorInjection(htmlPath, 'data-marp-report-vendor')
-  await assertRichComponentCss(htmlPath)
-}
-
-async function smokeRichHtmlSkill() {
-  const sourceRoot = resolve(repoRoot, 'skills', 'marp-rich-html')
-  const skillRoot = join(smokeRoot, 'marp-rich-html')
-  const outputDir = join(skillRoot, 'output')
-  await copySkill(sourceRoot, skillRoot)
-
-  await run(process.execPath, [
-    'scripts/build-rich-html.mjs',
-    'examples/example.md',
-    '--out-dir',
-    'output',
-  ], skillRoot)
-
-  const htmlPath = join(outputDir, 'example.html')
-  await assertFile(htmlPath, 1000)
-  await assertVendorInjection(htmlPath, 'data-marp-rich-html-vendor')
-  await assertRichComponentCss(htmlPath)
 }
 
 async function copySkill(sourceRoot, targetRoot) {
@@ -137,15 +115,5 @@ async function assertVendorInjection(path, markerAttribute) {
   }
   if (/cdn\.jsdelivr\.net|<script\s+src=/i.test(html)) {
     throw new Error(`Expected ${path} to be offline-safe with no CDN script tags.`)
-  }
-}
-
-async function assertRichComponentCss(path) {
-  const html = await readFile(path, 'utf8')
-  if (!html.includes('Renderer-owned rich HTML components')) {
-    throw new Error(`Expected ${path} to include renderer-owned rich component CSS.`)
-  }
-  if (!/\.deck-rich\s*\{/.test(html) || !html.includes('.deck-rich .book-scene')) {
-    throw new Error(`Expected ${path} to include raw deck-rich component selectors.`)
   }
 }

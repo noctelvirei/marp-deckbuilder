@@ -6,7 +6,6 @@ import JSZip from 'jszip'
 
 const skills = [
   { name: 'marp-deckbuilder', root: resolve('skills', 'marp-deckbuilder') },
-  { name: 'marp-rich-html', root: resolve('skills', 'marp-rich-html') },
   { name: 'marp-report', root: resolve('skills', 'marp-report') },
 ]
 

@@ -1,93 +1,72 @@
 ---
 name: marp-report
-description: Builds single-page, scrollable, brandable HTML reports from Markdown using renderer-owned report layout and rich HTML effect tags. Use when the user asks for a report, findings document, written analysis, or print-to-PDF output rather than slides.
+description: Builds long-form, scrollable, brandable HTML reports from source data. Use when the user asks for a report, findings document, written analysis, or print-to-PDF output rather than a slide deck.
 ---
 
 # Marp Report
 
-Use this baseline report skill to turn source material into one long-form HTML
-report: a single scrolling browser page designed for reading and Print to PDF. Use
-`marp-deckbuilder` instead when the user asks for slides, a presentation, or
-editable PPTX.
+Use this skill to turn source material into a long-form HTML report: a scrollable, self-contained document designed to be read in a browser and printed to PDF. Use `marp-deckbuilder` instead when the user asks for slides, a presentation, or editable PPTX.
 
 ## Core Rule
 
-Write `report.md` as Markdown plus renderer-owned component tags/classes. Do not
-paste custom report CSS, layout scaffolds, CDN scripts, or chart initialization
-JavaScript into the report source. The renderer owns the cover, report body
-layout, table of contents, theme CSS, rich HTML effects, print behavior, and
-offline vendor injection.
+Do not force reports into slides. Write `report.md` using normal Markdown plus the report component classes in `REFERENCE.md`, then run the bundled report wrapper. This skill includes its own bundled renderer and resources under `tool/`.
 
-Reports do not create slides. Rich effect tags render as in-flow report blocks
-inside one HTML page.
-
-## Baseline Skill Contract
-
-This is the `report` baseline. Corporate agents should populate
-`tool/resources/definitions/brand.json`, `tool/resources/definitions/theme.css`,
-and `tool/resources/` with corporate report styling, logos, backgrounds, fonts,
-and approved image assets. Preserve `tool/dist/`, `tool/resources/templates/`,
-and the build script from this upstream baseline.
-
-The report cover uses the corporate logo on the left. If report frontmatter
-provides `customerLogo` plus optional `customerName`, the customer logo appears
-on the right. Use one logical logo reference; the renderer prefers dark/light
-surface variants when present.
-
-When importing this baseline over an older branded copy, clean out old upstream
-runtime bundles first: remove the existing `tool/dist` directory, stale hashed
-chunk files, and old extracted baseline files that are not private corporate
-resources. Do not leave old and new renderer bundles side by side.
+The report wrapper injects Chart.js, Observable Plot, and D3 into the generated HTML head from local vendor files, so the final HTML works offline after generation. Do not paste minified library source into Markdown.
 
 ## Workflow
 
-1. Read the source material and identify purpose, audience, period, source data,
-   key findings, and required decisions.
-2. Create one output folder for the request. Prefer
-   `Documents/Presentations/YYYY-MM-DD/<report-title-slug>/` when the user has
-   not specified a location.
-3. Draft `report.md` with frontmatter, Markdown headings, prose, lists, and
-   tables. Use `surface: dark` for the dark report look or omit it for the
-   default light report.
-4. Use renderer-owned rich tags for visual effects: metric rings, bar/line/donut
-   charts, timelines, glass cards, radar charts, gauges, comparison reveals, and
-   staged reveals. See `REFERENCE.md` when writing those tags.
-5. Use small inline renderer classes only when Markdown cannot express the
-   element, such as table status badges: `<span class="r-badge green">Active</span>`.
+1. Read the source material and identify the report purpose, audience, period, source data, and required decisions.
+2. Ask for theme preference before drafting when the user has not already specified it:
+   `Dark navy report theme (recommended) or light print theme?`
+3. Create one output folder for the request. Prefer `Documents/Presentations/YYYY-MM-DD/<report-title-slug>/` when the user has not specified a location.
+4. Draft `report.md` in that folder. For dark navy, start with the full CSS setup from `REFERENCE.md`, then use the sticky sidebar skeleton for reports with four or more sections.
+5. Use report components for fidelity: metric grids, rate bars, callouts, accent cards, badges, chart wraps, tables, blockquotes, inline SVG, and JavaScript chart initializers.
 6. Build from this skill folder:
 
 ```bash
 node scripts/build-report.mjs <output-folder>/report.md --out-dir <output-folder>
 ```
 
-7. Return the generated `.html` and source `.md` paths. For PDF, tell the user to
-   open the HTML and use browser Print to PDF.
+7. Return the generated `.html` and source `.md` paths. For PDF, tell the user to open the HTML and use browser Print to PDF.
 
 ## Authoring Guidance
 
 - Write for a reader scrolling a document, not for a presenter advancing slides.
-- Let headings create structure; the renderer builds a sticky table of contents
-  when the report has enough sections.
-- Prefer Markdown tables for detailed data.
-- Prefer rich renderer tags over hand-built chart HTML.
-- Keep rich visual blocks focused on the finding they support.
-- Keep technical field names as plain text unless code formatting is truly
-  useful.
-- Do not use `deck-card-grid`, `deck-chart`, or other slide/PPTX components in
-  reports. Report mode accepts the rich HTML effect tags only.
-- Do not add `<style>` or `<script>` blocks to `report.md`.
-- Do not use CDN URLs or external network assets.
+- Use prose, headings, tables, and explanatory callouts freely.
+- Prefer a sticky sidebar for reports with four or more sections.
+- Use CSS variables for colors once the dark navy setup is present.
+- Keep technical field names as plain text in dark reports unless code formatting is truly necessary.
+- Use Chart.js for standard bar, stacked bar, line, and doughnut charts.
+- Use Observable Plot for concise dot, area, heatmap, and small-multiple charts.
+- Use D3 for bespoke SVG charts such as treemaps, custom arcs, Sankey-style flows, and force layouts.
+- Use inline SVG when the visual should be static, exact, and dependency-free.
+
+## Script Rules
+
+Follow these rules exactly for any report with JavaScript:
+
+1. Do not include CDN `<script src>` tags in `report.md`. The wrapper injects bundled vendor libraries into the final HTML head.
+2. Put chart containers in the relevant section body.
+3. Put one init `<script>` block as the last element inside `<main class="r-main">`, before `</main>` and `</div>`.
+4. Wrap every initializer in `document.addEventListener('DOMContentLoaded', function() { ... })`.
+5. Never put `<script>` tags after `</main></div>`. Some Markdown renderers will turn them into visible text.
+6. Never use em dashes or double-hyphen separators in JavaScript comments. Use simple comments such as `// Bar chart section`.
+
+## Dark-Mode Rules
+
+- Do not use light SVG fills such as `#f8fbff`, `#fdfdfd`, or white chart backgrounds on the navy theme.
+- SVG text on dark backgrounds should use `#C8D8F0`, `#8B9AB5`, or `#FFFFFF`, not near-black text.
+- Do not write raw library code into Markdown.
+- Do not rely on external network scripts for final output.
+- These are authoring choices, not CSS problems. Fix the source pattern instead of stacking override rules.
 
 ## Build Output
 
 `scripts/build-report.mjs` writes:
 
-- `report.html`: self-contained report HTML with brand resources, renderer CSS,
-  rich runtime, and offline vendor libraries inlined.
+- `report.html`: self-contained report HTML with brand resources and vendor chart libraries inlined.
 - `report.md`: unchanged source file.
 
-The skill intentionally does not bundle a browser engine. PDF export is done
-with browser Print to PDF.
+The skill intentionally does not bundle a browser engine. PDF export is done with browser Print to PDF.
 
-See [REFERENCE.md](REFERENCE.md) for supported frontmatter, rich effect tags, and
-small inline report classes.
+See [REFERENCE.md](REFERENCE.md) for the full report component library and working examples.
