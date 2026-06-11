@@ -4734,6 +4734,28 @@ function parseReportChart(chart, index = 0) {
     ariaLabel: chart.attr("aria-label") || title || `${type} chart`
   };
 }
+function parseReportMetricGrid(root, grid) {
+  const metrics = [];
+  grid.children("report-metric").each((_, element) => {
+    const metric = root(element);
+    const value = metric.attr("value") || cleanText(metric.find("value,strong").first().text());
+    const label = metric.attr("label") || cleanText(metric.find("label,span").first().text() || metric.text());
+    const sub = metric.attr("sub") || metric.attr("delta") || metric.attr("change") || "";
+    if (value || label || sub) {
+      metrics.push({
+        value,
+        label,
+        sub,
+        direction: normalizeMetricDirection(metric.attr("direction") || metric.attr("trend")),
+        accent: normalizeAccent(metric.attr("accent") || metric.attr("color"))
+      });
+    }
+  });
+  return {
+    type: "metric-grid",
+    metrics
+  };
+}
 function normalizeChartType(value = "bar") {
   const token = String(value || "bar").trim().toLowerCase();
   if (token === "column") return "bar";
@@ -4744,6 +4766,16 @@ function parseDimension(value, fallback) {
   if (!Number.isFinite(numeric)) return fallback;
   return Math.min(720, Math.max(180, numeric));
 }
+function normalizeMetricDirection(value = "") {
+  const token = String(value || "").trim().toLowerCase();
+  if (["down", "negative", "decrease", "bad"].includes(token)) return "down";
+  return "";
+}
+function normalizeAccent(value = "") {
+  const token = String(value || "").trim().toLowerCase();
+  if (["blue", "cyan", "purple", "green", "orange", "red"].includes(token)) return token;
+  return "";
+}
 
 // src/report-components/renderers.js
 function renderReportChartHtml(chart) {
@@ -4752,6 +4784,20 @@ function renderReportChartHtml(chart) {
   <div class="report-chart-stage" style="height:${chart.height}px">
     <canvas id="${escapeAttr(chart.id)}" role="img" aria-label="${escapeAttr(chart.ariaLabel)}"></canvas>
   </div>
+</div>`;
+}
+function renderReportMetricGridHtml(grid) {
+  return `<div class="report-metric-grid">
+${grid.metrics.map(renderReportMetricHtml).join("\n")}
+</div>`;
+}
+function renderReportMetricHtml(metric) {
+  const className = ["report-metric", metric.accent ? `report-metric-${metric.accent}` : ""].filter(Boolean).join(" ");
+  const subClass = ["report-metric-sub", metric.direction === "down" ? "down" : ""].filter(Boolean).join(" ");
+  return `<div class="${escapeAttr(className)}">
+  ${metric.value ? `<div class="report-metric-value">${escapeHtml2(metric.value)}</div>` : ""}
+  ${metric.label ? `<div class="report-metric-label">${escapeHtml2(metric.label)}</div>` : ""}
+  ${metric.sub ? `<div class="${escapeAttr(subClass)}">${escapeHtml2(metric.sub)}</div>` : ""}
 </div>`;
 }
 function renderReportChartScript(chart, context = {}) {
@@ -4815,7 +4861,7 @@ function normalizeChartColor(value = "") {
 }
 
 // src/report-components.js
-var knownReportTags = /* @__PURE__ */ new Set(["report-chart"]);
+var knownReportTags = /* @__PURE__ */ new Set(["report-chart", "report-metric-grid", "report-metric"]);
 function compileReportComponents(source, options = {}) {
   const context = reportComponentContext(options);
   validateReportComponentSyntax(source, context);
@@ -4823,8 +4869,15 @@ function compileReportComponents(source, options = {}) {
     decodeEntities: false,
     lowerCaseAttributeNames: true
   });
+  validateReportComponentTree(root, context);
   const scripts = [];
   const usedIds = /* @__PURE__ */ new Set();
+  root("report-metric-grid").each((_, element) => {
+    const metricGridElement = root(element);
+    const metricGrid = parseReportMetricGrid(root, metricGridElement);
+    validateReportMetricGrid(metricGrid, context);
+    metricGridElement.replaceWith(renderReportMetricGridHtml(metricGrid));
+  });
   root("report-chart").each((index, element) => {
     const chartElement = root(element);
     const chart = parseReportChart(chartElement, index);
@@ -4838,6 +4891,14 @@ function compileReportComponents(source, options = {}) {
     source: appendReportComponentScripts(compiledSource, scripts),
     scripts
   };
+}
+function validateReportComponentTree(root, context) {
+  root("report-metric").each((_, element) => {
+    const parent = root(element).parent();
+    if (!parent.is("report-metric-grid")) {
+      fail("<report-metric> must be placed directly inside <report-metric-grid>.", context);
+    }
+  });
 }
 function appendReportComponentScripts(source, scripts = []) {
   if (!scripts.length) return source;
@@ -4894,6 +4955,16 @@ function validateReportChart(chart, context) {
   if (chart.values.some((value) => !Number.isFinite(value))) {
     fail("report-chart values must all be numeric.", context);
   }
+}
+function validateReportMetricGrid(metricGrid, context) {
+  if (metricGrid.metrics.length === 0) {
+    fail("report-metric-grid must include at least one report-metric.", context);
+  }
+  metricGrid.metrics.forEach((metric, index) => {
+    if (!metric.value && !metric.label) {
+      fail(`report-metric at position ${index + 1} must include value and/or label.`, context);
+    }
+  });
 }
 function uniqueDomId(value, usedIds, prefix) {
   const base = sanitizeDomId(value) || prefix;
@@ -5333,6 +5404,55 @@ body {
   width: 100% !important;
   height: 100% !important;
 }
+
+.report-metric-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 14px;
+  margin: 22px 0;
+}
+
+.report-metric {
+  min-width: 0;
+  padding: 18px;
+  border: 1px solid var(--border, #dbe5f2);
+  border-radius: 8px;
+  background: var(--bg-card, #ffffff);
+  text-align: center;
+}
+
+.report-metric-value {
+  margin-bottom: 6px;
+  color: var(--text, #0b1220);
+  font-size: 31px;
+  font-weight: 300;
+  line-height: 1;
+}
+
+.report-metric-label {
+  color: var(--text-dim, #64748b);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.report-metric-sub {
+  margin-top: 8px;
+  color: var(--green, #16a34a);
+  font-size: 13px;
+}
+
+.report-metric-sub.down {
+  color: var(--red, #dc2626);
+}
+
+.report-metric-blue .report-metric-value { color: var(--blue, #0F82F5); }
+.report-metric-cyan .report-metric-value { color: var(--cyan, #59D6FD); }
+.report-metric-purple .report-metric-value { color: var(--purple, #5143D5); }
+.report-metric-green .report-metric-value { color: var(--green, #16a34a); }
+.report-metric-orange .report-metric-value { color: var(--orange, #F9935B); }
+.report-metric-red .report-metric-value { color: var(--red, #dc2626); }
 
 .report-layout {
   display: grid;

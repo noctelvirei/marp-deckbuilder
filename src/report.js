@@ -343,6 +343,55 @@ body {
   height: 100% !important;
 }
 
+.report-metric-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 14px;
+  margin: 22px 0;
+}
+
+.report-metric {
+  min-width: 0;
+  padding: 18px;
+  border: 1px solid var(--border, #dbe5f2);
+  border-radius: 8px;
+  background: var(--bg-card, #ffffff);
+  text-align: center;
+}
+
+.report-metric-value {
+  margin-bottom: 6px;
+  color: var(--text, #0b1220);
+  font-size: 31px;
+  font-weight: 300;
+  line-height: 1;
+}
+
+.report-metric-label {
+  color: var(--text-dim, #64748b);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.report-metric-sub {
+  margin-top: 8px;
+  color: var(--green, #16a34a);
+  font-size: 13px;
+}
+
+.report-metric-sub.down {
+  color: var(--red, #dc2626);
+}
+
+.report-metric-blue .report-metric-value { color: var(--blue, #0F82F5); }
+.report-metric-cyan .report-metric-value { color: var(--cyan, #59D6FD); }
+.report-metric-purple .report-metric-value { color: var(--purple, #5143D5); }
+.report-metric-green .report-metric-value { color: var(--green, #16a34a); }
+.report-metric-orange .report-metric-value { color: var(--orange, #F9935B); }
+.report-metric-red .report-metric-value { color: var(--red, #dc2626); }
+
 .report-layout {
   display: grid;
   grid-template-columns: minmax(160px, 200px) minmax(0, 1fr);

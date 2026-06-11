@@ -9,6 +9,26 @@ export function renderReportChartHtml(chart) {
 </div>`
 }
 
+export function renderReportMetricGridHtml(grid) {
+  return `<div class="report-metric-grid">
+${grid.metrics.map(renderReportMetricHtml).join('\n')}
+</div>`
+}
+
+function renderReportMetricHtml(metric) {
+  const className = ['report-metric', metric.accent ? `report-metric-${metric.accent}` : '']
+    .filter(Boolean)
+    .join(' ')
+  const subClass = ['report-metric-sub', metric.direction === 'down' ? 'down' : '']
+    .filter(Boolean)
+    .join(' ')
+  return `<div class="${escapeAttr(className)}">
+  ${metric.value ? `<div class="report-metric-value">${escapeHtml(metric.value)}</div>` : ''}
+  ${metric.label ? `<div class="report-metric-label">${escapeHtml(metric.label)}</div>` : ''}
+  ${metric.sub ? `<div class="${escapeAttr(subClass)}">${escapeHtml(metric.sub)}</div>` : ''}
+</div>`
+}
+
 export function renderReportChartScript(chart, context = {}) {
   const palette = chart.colors.length ? chart.colors : reportChartPalette(context.brand)
   const colors = chart.labels.map((_, index) => normalizeChartColor(palette[index % palette.length]))

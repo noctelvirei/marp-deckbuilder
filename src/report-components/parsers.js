@@ -25,6 +25,30 @@ export function parseReportChart(chart, index = 0) {
   }
 }
 
+export function parseReportMetricGrid(root, grid) {
+  const metrics = []
+  grid.children('report-metric').each((_, element) => {
+    const metric = root(element)
+    const value = metric.attr('value') || cleanText(metric.find('value,strong').first().text())
+    const label = metric.attr('label') || cleanText(metric.find('label,span').first().text() || metric.text())
+    const sub = metric.attr('sub') || metric.attr('delta') || metric.attr('change') || ''
+    if (value || label || sub) {
+      metrics.push({
+        value,
+        label,
+        sub,
+        direction: normalizeMetricDirection(metric.attr('direction') || metric.attr('trend')),
+        accent: normalizeAccent(metric.attr('accent') || metric.attr('color')),
+      })
+    }
+  })
+
+  return {
+    type: 'metric-grid',
+    metrics,
+  }
+}
+
 function normalizeChartType(value = 'bar') {
   const token = String(value || 'bar').trim().toLowerCase()
   if (token === 'column') return 'bar'
@@ -35,4 +59,16 @@ function parseDimension(value, fallback) {
   const numeric = Number.parseInt(value || fallback, 10)
   if (!Number.isFinite(numeric)) return fallback
   return Math.min(720, Math.max(180, numeric))
+}
+
+function normalizeMetricDirection(value = '') {
+  const token = String(value || '').trim().toLowerCase()
+  if (['down', 'negative', 'decrease', 'bad'].includes(token)) return 'down'
+  return ''
+}
+
+function normalizeAccent(value = '') {
+  const token = String(value || '').trim().toLowerCase()
+  if (['blue', 'cyan', 'purple', 'green', 'orange', 'red'].includes(token)) return token
+  return ''
 }

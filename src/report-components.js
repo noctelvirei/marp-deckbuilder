@@ -1,12 +1,16 @@
 import * as cheerio from 'cheerio'
 
-import { parseReportChart } from './report-components/parsers.js'
+import {
+  parseReportChart,
+  parseReportMetricGrid,
+} from './report-components/parsers.js'
 import {
   renderReportChartHtml,
   renderReportChartScript,
+  renderReportMetricGridHtml,
 } from './report-components/renderers.js'
 
-const knownReportTags = new Set(['report-chart'])
+const knownReportTags = new Set(['report-chart', 'report-metric-grid', 'report-metric'])
 
 export function compileReportComponents(source, options = {}) {
   const context = reportComponentContext(options)
@@ -16,9 +20,17 @@ export function compileReportComponents(source, options = {}) {
     decodeEntities: false,
     lowerCaseAttributeNames: true,
   })
+  validateReportComponentTree(root, context)
 
   const scripts = []
   const usedIds = new Set()
+
+  root('report-metric-grid').each((_, element) => {
+    const metricGridElement = root(element)
+    const metricGrid = parseReportMetricGrid(root, metricGridElement)
+    validateReportMetricGrid(metricGrid, context)
+    metricGridElement.replaceWith(renderReportMetricGridHtml(metricGrid))
+  })
 
   root('report-chart').each((index, element) => {
     const chartElement = root(element)
@@ -34,6 +46,15 @@ export function compileReportComponents(source, options = {}) {
     source: appendReportComponentScripts(compiledSource, scripts),
     scripts,
   }
+}
+
+function validateReportComponentTree(root, context) {
+  root('report-metric').each((_, element) => {
+    const parent = root(element).parent()
+    if (!parent.is('report-metric-grid')) {
+      fail('<report-metric> must be placed directly inside <report-metric-grid>.', context)
+    }
+  })
 }
 
 function appendReportComponentScripts(source, scripts = []) {
@@ -96,6 +117,17 @@ function validateReportChart(chart, context) {
   if (chart.values.some((value) => !Number.isFinite(value))) {
     fail('report-chart values must all be numeric.', context)
   }
+}
+
+function validateReportMetricGrid(metricGrid, context) {
+  if (metricGrid.metrics.length === 0) {
+    fail('report-metric-grid must include at least one report-metric.', context)
+  }
+  metricGrid.metrics.forEach((metric, index) => {
+    if (!metric.value && !metric.label) {
+      fail(`report-metric at position ${index + 1} must include value and/or label.`, context)
+    }
+  })
 }
 
 function uniqueDomId(value, usedIds, prefix) {

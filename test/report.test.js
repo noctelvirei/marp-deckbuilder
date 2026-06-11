@@ -154,6 +154,49 @@ This report uses generated dark report chrome.
   assert.doesNotMatch(rendered.document, /<report-chart/i)
 })
 
+test('expands report metric grid components into reusable metric cards', async () => {
+  const definitions = await loadDefinitions(new URL('../resources/definitions', import.meta.url))
+  const rendered = renderReportHtml(
+    `# Metric report
+
+<report-metric-grid>
+  <report-metric value="77,951" label="Total cases" sub="+12% vs prior"></report-metric>
+  <report-metric value="94.3%" label="Completion rate" sub="-1.1 pp" direction="down"></report-metric>
+</report-metric-grid>
+`,
+    {
+      resourcesDir: path.resolve('resources'),
+      definitions,
+      inlineAssets: true,
+    },
+  )
+
+  assert.doesNotMatch(rendered.document, /<report-metric/i)
+  assert.match(rendered.document, /class="report-metric-grid"/)
+  assert.match(rendered.document, /<div class="report-metric-value">77,951<\/div>/)
+  assert.match(rendered.document, /<div class="report-metric-label">Total cases<\/div>/)
+  assert.match(rendered.document, /<div class="report-metric-sub">[+]12% vs prior<\/div>/)
+  assert.match(rendered.document, /<div class="report-metric-sub down">-1\.1 pp<\/div>/)
+})
+
+test('report metric grids fail clearly when malformed', async () => {
+  const definitions = await loadDefinitions(new URL('../resources/definitions', import.meta.url))
+  const options = {
+    resourcesDir: path.resolve('resources'),
+    definitions,
+    inlineAssets: true,
+  }
+
+  assert.throws(
+    () => renderReportHtml('<report-metric-grid></report-metric-grid>', options),
+    /report-metric-grid must include at least one report-metric/,
+  )
+  assert.throws(
+    () => renderReportHtml('<report-metric value="1" label="Outside"></report-metric>', options),
+    /<report-metric> must be placed directly inside <report-metric-grid>/,
+  )
+})
+
 test('report chart components fail clearly when data is invalid', async () => {
   const definitions = await loadDefinitions(new URL('../resources/definitions', import.meta.url))
   const options = {

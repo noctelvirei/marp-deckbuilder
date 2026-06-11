@@ -157,6 +157,27 @@ Supported attributes:
 | `colors` | no | Comma-separated hex colors. Defaults to brand chart colors. |
 | `height` | no | Pixel height, clamped by the renderer. Defaults to `320`. |
 
+### Report Metric Grid
+
+Use `report-metric-grid` for KPI cards. Do not hand-author nested metric card `div` blocks.
+
+```html
+<report-metric-grid>
+  <report-metric value="77,951" label="Total cases" sub="+12% vs prior"></report-metric>
+  <report-metric value="94.3%" label="Completion rate" sub="-1.1 pp" direction="down"></report-metric>
+</report-metric-grid>
+```
+
+Supported `report-metric` attributes:
+
+| Attribute | Required | Notes |
+| --- | --- | --- |
+| `value` | no | Primary metric value. |
+| `label` | no | Metric label. |
+| `sub` | no | Supporting delta or note. Aliases: `delta`, `change`. |
+| `direction` | no | Use `down` for negative deltas. |
+| `accent` | no | Supports `blue`, `cyan`, `purple`, `green`, `orange`, `red`. |
+
 ## Legacy HTML Classes
 
 Some components are still in migration. Until their `report-*` versions exist, reports may use these HTML classes:
