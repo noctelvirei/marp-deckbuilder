@@ -14,10 +14,12 @@ export function renderReportChartScript(chart, context = {}) {
   const colors = chart.labels.map((_, index) => normalizeChartColor(palette[index % palette.length]))
 
   return `(() => {
-  const rootStyle = getComputedStyle(document.documentElement);
+  const canvas = document.getElementById(${jsString(chart.id)});
+  const themeRoot = canvas.closest(".deck-report") || document.body || document.documentElement;
+  const rootStyle = getComputedStyle(themeRoot);
   const tickColor = rootStyle.getPropertyValue("--text-dim").trim() || "#64748b";
   const gridColor = rootStyle.getPropertyValue("--border").trim() || "rgba(148, 163, 184, 0.28)";
-  new Chart(document.getElementById(${jsString(chart.id)}), {
+  new Chart(canvas, {
     type: "bar",
     data: {
       labels: ${jsValue(chart.labels)},

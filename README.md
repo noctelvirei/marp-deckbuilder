@@ -351,6 +351,8 @@ Use reports for:
 
 Reports can use:
 
+- Built-in dark report theme via `reportTheme: dark`.
+- Generated sticky navigation via `reportNav: true`.
 - Sticky sidebars.
 - Metric cards.
 - Rate bars.

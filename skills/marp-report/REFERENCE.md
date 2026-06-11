@@ -14,46 +14,35 @@ For PDF, open the generated HTML in a browser and use Print to PDF. No browser e
 
 ## Report Skeleton
 
-Use this shape for rich reports. For supported `report-*` components, the renderer generates the required HTML and JavaScript. Keep handwritten chart init scripts inside `<main>` before the closing tags only for temporary custom visuals that do not have a report component yet.
+Use this shape for rich reports. `reportTheme: dark` applies the built-in dark navy report theme. `reportNav: true` generates a sticky sidebar from section headings.
 
 ```md
 ---
 title: Usage Report
 subtitle: April 2026
+reportTheme: dark
+reportNav: true
 ---
 
-<style>
-/* Paste the dark navy CSS setup here. */
-</style>
-
-<div class="r-layout">
-<aside class="r-sidebar">
-<div class="r-sidebar-title">Contents</div>
-<nav>
-<a href="#summary">Summary</a>
-<a href="#volume">Volume</a>
-<a href="#findings">Findings</a>
-</nav>
-</aside>
-<main class="r-main">
-
-<h2 id="summary">Executive Summary</h2>
+## Executive Summary
 
 Report prose goes here.
 
-<script>
-document.addEventListener('DOMContentLoaded', function() {
-  // Custom init code goes here only when no report component exists yet.
-});
-</script>
+## Volume
 
-</main>
-</div>
+<report-chart title="Cases by journey" labels="J0107,J0106" values="52208,11119"></report-chart>
 ```
 
 ## Dark Navy CSS Setup
 
-Paste this at the top of `report.md` before the layout skeleton.
+Prefer the built-in frontmatter preset:
+
+```yaml
+reportTheme: dark
+reportNav: true
+```
+
+The historical raw CSS setup is retained below only for legacy Markdown that has not moved to renderer-owned theme/layout yet.
 
 ```html
 <style>

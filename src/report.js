@@ -2,6 +2,12 @@ import MarkdownIt from 'markdown-it'
 
 import { splitFrontmatter } from './markdown.js'
 import { compileReportComponents } from './report-components.js'
+import {
+  prepareReportPresentation,
+  reportArticleClass,
+  reportBodyClass,
+  reportMainClass,
+} from './report-layout.js'
 import { normalizeResourceReference } from './resources.js'
 import { resolveResourceUrls } from './render.js'
 
@@ -25,7 +31,8 @@ export function renderReportHtml(source, options = {}) {
   const subtitle = frontmatter.subtitle || ''
   const prepared = normalizeReportImageReferences(body)
   const compiled = compileReportComponents(prepared, { brand, reportName: title })
-  const content = resolveResourceUrls(markdown.render(compiled.source), options.resourcesDir, resolverOptions)
+  const presentation = prepareReportPresentation(markdown.render(compiled.source), frontmatter)
+  const content = resolveResourceUrls(presentation.content, options.resourcesDir, resolverOptions)
   const css = resolveResourceUrls(reportCss(brand), options.resourcesDir, resolverOptions)
   const logo = reportLogo(brand)
   const document = resolveResourceUrls(
@@ -36,6 +43,9 @@ export function renderReportHtml(source, options = {}) {
       css,
       logo,
       brandName: brand.name || 'Brand',
+      bodyClass: reportBodyClass(presentation.theme),
+      mainClass: reportMainClass(presentation.theme),
+      articleClass: reportArticleClass(presentation.hasLayout),
     }),
     options.resourcesDir,
     resolverOptions,
@@ -79,7 +89,11 @@ function reportDocument({
   css,
   logo = '',
   brandName = 'Brand',
+  bodyClass = '',
+  mainClass = 'deck-report',
+  articleClass = 'report-body',
 }) {
+  const bodyClassAttr = bodyClass ? ` class="${escapeHtmlAttr(bodyClass)}"` : ''
   return `<!doctype html>
 <html lang="en">
 <head>
@@ -88,15 +102,15 @@ function reportDocument({
   <title>${escapeHtml(title)}</title>
   <style>${css}</style>
 </head>
-<body>
-  <main class="deck-report">
+<body${bodyClassAttr}>
+  <main class="${escapeHtmlAttr(mainClass)}">
     <header class="report-cover">
       ${logo ? `<img class="report-logo" src="${escapeHtmlAttr(logo)}" alt="${escapeHtmlAttr(brandName)} logo">` : ''}
       <p class="report-kicker">Report</p>
       <h1>${escapeHtml(title)}</h1>
       ${subtitle ? `<p class="report-subtitle">${escapeHtml(subtitle)}</p>` : ''}
     </header>
-    <article class="report-body">
+    <article class="${escapeHtmlAttr(articleClass)}">
 ${content}
     </article>
   </main>
@@ -115,6 +129,9 @@ function reportCss(brand = {}) {
   const body = hex(colors.body, 'C8D8F0')
   const muted = hex(colors.muted, '8B9AB5')
   const border = hex(colors.border, '1E3A5F')
+  const darkBody = hex(colors.bodyOnDark || colors.reportBodyDark, 'C8D8F0')
+  const darkMuted = hex(colors.mutedOnDark || colors.reportMutedDark, '8B9AB5')
+  const darkBorder = hex(colors.borderDark || colors.reportBorderDark, '1E3A5F')
   const font = fontFamily(brand)
   const background = brand.assets?.backgrounds?.content || ''
   const backgroundRule = background
@@ -214,6 +231,10 @@ body {
 
 .report-body {
   padding: 54px 76px 76px;
+}
+
+.report-body.report-body-has-layout {
+  padding: 0;
 }
 
 .report-body > *:first-child {
@@ -322,6 +343,146 @@ body {
   height: 100% !important;
 }
 
+.report-layout {
+  display: grid;
+  grid-template-columns: minmax(160px, 200px) minmax(0, 1fr);
+  gap: 40px;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 32px;
+}
+
+.report-sidebar {
+  position: sticky;
+  top: 24px;
+  align-self: start;
+  padding: 20px;
+  border: 1px solid #dbe5f2;
+  border-radius: 8px;
+  background: #f8fbff;
+}
+
+.report-sidebar-title {
+  margin-bottom: 12px;
+  color: #64748b;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.report-sidebar a {
+  display: block;
+  padding: 7px 10px;
+  border-radius: 4px;
+  color: #475569;
+  font-size: 13px;
+  text-decoration: none;
+}
+
+.report-sidebar a:hover {
+  background: #e8f4fe;
+  color: #0F82F5;
+}
+
+.report-main {
+  min-width: 0;
+  padding: 32px 40px 60px;
+}
+
+body.report-theme-dark-page {
+  --bg: #060D18;
+  --bg-card: #${cardDark};
+  --bg-subtle: #071228;
+  --border: #${darkBorder};
+  --border-dim: rgba(30, 58, 95, 0.45);
+  --blue: #${blue};
+  --cyan: #${cyan};
+  --purple: #${hex(colors.purple, '5143D5')};
+  --green: #${hex(colors.green, '66CC8E')};
+  --orange: #${hex(colors.orange, 'F9935B')};
+  --red: #${hex(colors.red, 'FC5161')};
+  --white: #${white};
+  --text: #${darkBody};
+  --text-dim: #${darkMuted};
+  background: var(--bg);
+  color: var(--text);
+}
+
+.deck-report.report-theme-dark {
+  max-width: 1200px;
+  background: var(--bg-subtle);
+  color: var(--text);
+  box-shadow: none;
+}
+
+.deck-report.report-theme-dark .report-cover {
+  background: linear-gradient(135deg, var(--bg), #0a1730);
+}
+
+.deck-report.report-theme-dark .report-body h1,
+.deck-report.report-theme-dark .report-body h2,
+.deck-report.report-theme-dark .report-body h3 {
+  color: var(--cyan);
+}
+
+.deck-report.report-theme-dark .report-body h2 {
+  border-top: 0;
+  border-bottom: 1px solid var(--border);
+  font-size: 1.15rem;
+  font-weight: 500;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  padding-bottom: 8px;
+}
+
+.deck-report.report-theme-dark .report-body p,
+.deck-report.report-theme-dark .report-body li {
+  color: var(--text);
+}
+
+.deck-report.report-theme-dark .report-body table {
+  color: var(--text);
+  font-size: 14px;
+}
+
+.deck-report.report-theme-dark .report-body th {
+  border-color: var(--border);
+  background: var(--bg-card);
+  color: var(--white);
+}
+
+.deck-report.report-theme-dark .report-body td {
+  border-color: var(--border-dim);
+  color: var(--text);
+}
+
+.deck-report.report-theme-dark .report-body tr:nth-child(even) td {
+  background: rgba(13, 31, 56, 0.4);
+}
+
+.deck-report.report-theme-dark .report-sidebar {
+  border-color: var(--border);
+  background: var(--bg-card);
+}
+
+.deck-report.report-theme-dark .report-sidebar-title {
+  color: var(--text-dim);
+}
+
+.deck-report.report-theme-dark .report-sidebar a {
+  color: var(--text-dim);
+}
+
+.deck-report.report-theme-dark .report-sidebar a:hover {
+  background: rgba(89, 214, 253, 0.08);
+  color: var(--cyan);
+}
+
+.deck-report.report-theme-dark .report-chart {
+  box-shadow: none;
+}
+
 .report-body hr {
   margin: 42px 0;
   border: 0;
@@ -350,6 +511,34 @@ code {
 pre code {
   padding: 0;
   background: transparent;
+}
+
+@media (max-width: 760px) {
+  .report-cover {
+    padding: 54px 32px 60px;
+  }
+
+  .report-cover h1 {
+    font-size: 44px;
+  }
+
+  .report-body {
+    padding: 40px 32px 56px;
+  }
+
+  .report-layout {
+    display: block;
+    padding: 24px;
+  }
+
+  .report-sidebar {
+    position: static;
+    margin-bottom: 24px;
+  }
+
+  .report-main {
+    padding: 0;
+  }
 }
 
 ${backgroundRule}

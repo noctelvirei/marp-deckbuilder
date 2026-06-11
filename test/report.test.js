@@ -85,7 +85,8 @@ title: Chart Component Report
   assert.match(rendered.document, /class="report-chart report-chart-bar"/)
   assert.match(rendered.document, /<canvas id="report-chart-1"/)
   assert.match(rendered.document, /data-report-component-script="chart"/)
-  assert.match(rendered.document, /new Chart\(document\.getElementById\("report-chart-1"\)/)
+  assert.match(rendered.document, /const canvas = document\.getElementById\("report-chart-1"\)/)
+  assert.match(rendered.document, /new Chart\(canvas, /)
   assert.match(rendered.document, /labels:\s*\["J0107","J0106","J0101"\]/)
   assert.match(rendered.document, /data:\s*\[52208,11119,8648\]/)
 })
@@ -110,6 +111,47 @@ test('assigns unique generated IDs to multiple report charts', async () => {
   assert.match(rendered.document, /<canvas id="report-chart-2"/)
   assert.match(rendered.document, /document\.getElementById\("report-chart-1"\)/)
   assert.match(rendered.document, /document\.getElementById\("report-chart-2"\)/)
+})
+
+test('applies dark report theme and generated navigation from frontmatter', async () => {
+  const definitions = await loadDefinitions(new URL('../resources/definitions', import.meta.url))
+  const rendered = renderReportHtml(
+    `---
+title: Dark Navigation Report
+subtitle: Layout proof
+reportTheme: dark
+reportNav: true
+---
+
+## Executive Summary
+
+This report uses generated dark report chrome.
+
+## Volume Chart
+
+<report-chart title="Cases by journey" labels="J0107,J0106" values="52208,11119"></report-chart>
+
+## Next Steps
+
+1. Review the dominant journey.
+2. Track changes next month.
+`,
+    {
+      resourcesDir: path.resolve('resources'),
+      definitions,
+      inlineAssets: true,
+    },
+  )
+
+  assert.match(rendered.document, /<body class="report-theme-dark-page">/)
+  assert.match(rendered.document, /<main class="deck-report report-theme-dark">/)
+  assert.match(rendered.document, /<div class="report-layout">/)
+  assert.match(rendered.document, /<aside class="report-sidebar"/)
+  assert.match(rendered.document, /<a href="#executive-summary">Executive Summary<\/a>/)
+  assert.match(rendered.document, /<a href="#volume-chart">Volume Chart<\/a>/)
+  assert.match(rendered.document, /<h2 id="executive-summary">Executive Summary<\/h2>/)
+  assert.match(rendered.document, /<div class="report-main">/)
+  assert.doesNotMatch(rendered.document, /<report-chart/i)
 })
 
 test('report chart components fail clearly when data is invalid', async () => {

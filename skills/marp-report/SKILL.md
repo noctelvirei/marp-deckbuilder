@@ -19,7 +19,7 @@ The report wrapper injects Chart.js, Observable Plot, and D3 into the generated 
 2. Ask for theme preference before drafting when the user has not already specified it:
    `Dark navy report theme (recommended) or light print theme?`
 3. Create one output folder for the request. Prefer `Documents/Presentations/YYYY-MM-DD/<report-title-slug>/` when the user has not specified a location.
-4. Draft `report.md` in that folder. For dark navy, start with the full CSS setup from `REFERENCE.md`, then use the sticky sidebar skeleton for reports with four or more sections.
+4. Draft `report.md` in that folder. For dark navy, set `reportTheme: dark` in frontmatter. For reports with four or more sections, set `reportNav: true` to generate a sticky sidebar from headings.
 5. Use report components for fidelity. For standard bar charts, use `<report-chart type="bar">` with labels and values. For component types that are not implemented yet, use the class patterns in `REFERENCE.md` as a temporary fallback.
 6. Build from this skill folder:
 
@@ -33,8 +33,8 @@ node scripts/build-report.mjs <output-folder>/report.md --out-dir <output-folder
 
 - Write for a reader scrolling a document, not for a presenter advancing slides.
 - Use prose, headings, tables, and explanatory callouts freely.
-- Prefer a sticky sidebar for reports with four or more sections.
-- Use CSS variables for colors once the dark navy setup is present.
+- Prefer `reportNav: true` for reports with four or more sections.
+- Prefer `reportTheme: dark` for dark navy reports instead of pasting CSS into Markdown.
 - Keep technical field names as plain text in dark reports unless code formatting is truly necessary.
 - Use `<report-chart type="bar">` for standard Chart.js bar charts.
 - Use Chart.js manually only for chart types that are not yet supported as report components, such as stacked bar, line, and doughnut charts.
