@@ -32,3 +32,20 @@ test('report style boundary owns report CSS and rich component print overrides',
   assert.match(css, /\.report-rich-block \.deck-rich/)
   assert.match(css, /@media print/)
 })
+
+test('dark report surfaces use readable dark-mode prose tokens', () => {
+  const css = reportCss(
+    {
+      colors: {
+        body: '444444',
+        border: 'DEDEDE',
+        muted: '888888',
+      },
+    },
+    { surface: 'dark' },
+  )
+
+  assert.match(css, /--report-body: #C8D8F0/)
+  assert.match(css, /--report-muted: #8B9AB5/)
+  assert.match(css, /--report-border: #1E3A5F/)
+})

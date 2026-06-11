@@ -7,8 +7,11 @@ import {
   htmlDocument,
   renderDeckHtml,
   resolveResourceUrls,
-  shouldSkipHtml
-} from "./html-renderer-FIZY3BRO.mjs";
+  richHtmlCssEndMarker,
+  richHtmlCssMarker,
+  shouldSkipHtml,
+  splitRichHtmlCss
+} from "./html-renderer-X76SZ4BY.mjs";
 import "./markdown-components-E7NZLPZD.mjs";
 import "./node-deprecate-shim-ZA7UPLW5.mjs";
 import "./resource-resolver-YFTCHU5C.mjs";
@@ -20,5 +23,8 @@ export {
   htmlDocument,
   renderDeckHtml,
   resolveResourceUrls,
-  shouldSkipHtml
+  richHtmlCssEndMarker,
+  richHtmlCssMarker,
+  shouldSkipHtml,
+  splitRichHtmlCss
 };

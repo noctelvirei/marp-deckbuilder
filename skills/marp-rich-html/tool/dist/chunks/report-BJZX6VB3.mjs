@@ -4,7 +4,7 @@ import {
   require_punycode,
   resolveResourceUrls,
   richHtmlRuntimeScript
-} from "./html-renderer-FIZY3BRO.mjs";
+} from "./html-renderer-X76SZ4BY.mjs";
 import {
   compileDeckComponents,
   decodeHTML,
@@ -4889,14 +4889,15 @@ function escapeHtmlAttr2(value) {
 // src/report/styles.js
 function reportCss(brand = {}, frontmatter = {}, themeCss = "") {
   const colors = brand.colors || {};
+  const darkSurface = reportSurfaceToken(frontmatter) === "dark";
   const dark = hex(colors.dark, "060D18");
   const white = hex(colors.white, "FFFFFF");
   const blue = hex(colors.blue, "0F82F5");
   const cyan = hex(colors.cyan, "59D6FD");
   const cardDark = hex(colors.cardDark, "0D1D36");
-  const body = hex(colors.body, "C8D8F0");
-  const muted = hex(colors.muted, "8B9AB5");
-  const border = hex(colors.border, "1E3A5F");
+  const body = hex(darkSurface ? colors.bodyOnDark : colors.body, darkSurface ? "C8D8F0" : "444444");
+  const muted = hex(darkSurface ? colors.mutedOnDark : colors.muted, darkSurface ? "8B9AB5" : "64748B");
+  const border = hex(darkSurface ? colors.borderOnDark : colors.border, darkSurface ? "1E3A5F" : "DBE5F2");
   const font = fontFamily(brand);
   const background = brand.assets?.backgrounds?.content || "";
   const backgroundRule = background ? `
@@ -5401,9 +5402,7 @@ ${reportRichCss(themeCss)}
 `;
 }
 function reportRichCss(themeCss = "") {
-  const marker = "/* Renderer-owned rich HTML components.";
-  const markerIndex = String(themeCss || "").indexOf(marker);
-  const richCss = markerIndex >= 0 ? String(themeCss).slice(markerIndex) : "";
+  const richCss = richHtmlCssFromTheme(themeCss);
   return `
 ${richCss}
 
@@ -5472,6 +5471,19 @@ ${richCss}
   }
 }
 `;
+}
+function richHtmlCssFromTheme(themeCss = "") {
+  const marker = "/* Renderer-owned rich HTML components.";
+  const endMarker = "/* End renderer-owned rich HTML components. */";
+  const markerIndex = String(themeCss || "").indexOf(marker);
+  if (markerIndex < 0) return "";
+  const endMarkerIndex = String(themeCss).indexOf(endMarker, markerIndex);
+  if (endMarkerIndex < 0) return String(themeCss).slice(markerIndex).trimStart();
+  return String(themeCss).slice(markerIndex, endMarkerIndex + endMarker.length).trimStart();
+}
+function reportSurfaceToken(frontmatter = {}) {
+  const token = String(frontmatter.surface || frontmatter.reportSurface || frontmatter.reportTheme || frontmatter.theme || "").trim().toLowerCase();
+  return ["dark", "navy", "black"].includes(token) ? "dark" : "light";
 }
 function fontFamily(brand = {}) {
   const fonts = brand.fonts || {};

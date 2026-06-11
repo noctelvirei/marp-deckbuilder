@@ -30,9 +30,10 @@ async function smokeDeckSkill() {
     'output',
   ], skillRoot)
 
-  await assertFile(join(outputDir, 'example.html'), 1000)
+  const htmlPath = join(outputDir, 'example.html')
+  await assertFile(htmlPath, 1000)
   await assertFile(join(outputDir, 'example.pptx'), 1000)
-  await assertVendorInjection(join(outputDir, 'example.html'), 'data-marp-deckbuilder-vendor')
+  await assertVendorInjection(htmlPath, 'data-marp-deckbuilder-vendor')
 }
 
 async function smokeReportSkill() {
@@ -55,6 +56,7 @@ async function smokeReportSkill() {
     throw new Error(`Expected report HTML to include offline vendor scripts: ${htmlPath}`)
   }
   await assertVendorInjection(htmlPath, 'data-marp-report-vendor')
+  await assertRichComponentCss(htmlPath)
 }
 
 async function smokeRichHtmlSkill() {
@@ -70,8 +72,10 @@ async function smokeRichHtmlSkill() {
     'output',
   ], skillRoot)
 
-  await assertFile(join(outputDir, 'example.html'), 1000)
-  await assertVendorInjection(join(outputDir, 'example.html'), 'data-marp-rich-html-vendor')
+  const htmlPath = join(outputDir, 'example.html')
+  await assertFile(htmlPath, 1000)
+  await assertVendorInjection(htmlPath, 'data-marp-rich-html-vendor')
+  await assertRichComponentCss(htmlPath)
 }
 
 async function copySkill(sourceRoot, targetRoot) {
@@ -133,5 +137,15 @@ async function assertVendorInjection(path, markerAttribute) {
   }
   if (/cdn\.jsdelivr\.net|<script\s+src=/i.test(html)) {
     throw new Error(`Expected ${path} to be offline-safe with no CDN script tags.`)
+  }
+}
+
+async function assertRichComponentCss(path) {
+  const html = await readFile(path, 'utf8')
+  if (!html.includes('Renderer-owned rich HTML components')) {
+    throw new Error(`Expected ${path} to include renderer-owned rich component CSS.`)
+  }
+  if (!/\.deck-rich\s*\{/.test(html) || !html.includes('.deck-rich .book-scene')) {
+    throw new Error(`Expected ${path} to include raw deck-rich component selectors.`)
   }
 }

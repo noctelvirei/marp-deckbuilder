@@ -82,3 +82,15 @@ first:
 6. Preserve `templates/`, `vendor/`, and generated `dist/` runtime bundles in
    packaged skills. Brand changes should not require hand-editing renderer
    JavaScript.
+
+## Templates
+
+The `templates/` folder contains vendored Marp CLI/Bespoke presenter assets for
+HTML slideshows. It is part of the runtime, not the brand contract. Keep it when
+merging upstream skill updates.
+
+## Vendor
+
+Packaged skills keep a `vendor/` folder with minified browser chart libraries
+used by premium HTML output. Build wrappers inject those files into generated
+HTML so Chart.js, Observable Plot, and D3 visuals work offline after generation.

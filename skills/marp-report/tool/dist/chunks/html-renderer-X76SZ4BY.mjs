@@ -136501,6 +136501,34 @@ function resolveResourceUrls(source, resourcesDir = "resources", options = {}) {
   return resolvedSource;
 }
 
+// src/render/rich-css.js
+var richHtmlCssMarker = "/* Renderer-owned rich HTML components.";
+var richHtmlCssEndMarker = "/* End renderer-owned rich HTML components. */";
+function splitRichHtmlCss(themeCss = "") {
+  const css = String(themeCss || "");
+  const markerIndex = css.indexOf(richHtmlCssMarker);
+  if (markerIndex < 0) {
+    return {
+      themeCss: css,
+      richHtmlCss: ""
+    };
+  }
+  const endMarkerIndex = css.indexOf(richHtmlCssEndMarker, markerIndex);
+  if (endMarkerIndex >= 0) {
+    const richEndIndex = endMarkerIndex + richHtmlCssEndMarker.length;
+    const before = css.slice(0, markerIndex).trimEnd();
+    const after = css.slice(richEndIndex).trimStart();
+    return {
+      themeCss: [before, after].filter(Boolean).join("\n"),
+      richHtmlCss: css.slice(markerIndex, richEndIndex).trimStart()
+    };
+  }
+  return {
+    themeCss: css.slice(0, markerIndex).trimEnd(),
+    richHtmlCss: css.slice(markerIndex).trimStart()
+  };
+}
+
 // src/rich-html/runtime-charts.js
 function runtimeChartsScript() {
   return `
@@ -137114,9 +137142,10 @@ function renderDeckHtml(deck, options = {}) {
     inlineAssets: options.inlineAssets,
     assetUrlPrefix: options.assetUrlPrefix
   };
+  const splitTheme = splitRichHtmlCss(definitions.themeCss);
   const themeCss = resolveResourceUrls(
     [
-      definitions.themeCss,
+      splitTheme.themeCss,
       brandBackgroundCss(definitions.brand),
       brandSurfaceCss(definitions.brand),
       brandLogoCss(definitions.brand)
@@ -137124,6 +137153,8 @@ function renderDeckHtml(deck, options = {}) {
     options.resourcesDir,
     resolverOptions
   );
+  const richHtmlCss = resolveResourceUrls(splitTheme.richHtmlCss, options.resourcesDir, resolverOptions);
+  const deckbuilderCss = [themeCss, richHtmlCss].filter(Boolean).join("\n");
   marp.themeSet.add(themeCss);
   const markdown = resolveResourceUrls(
     buildMarpMarkdown(htmlDeck, { themeName: definitions.brand.themeName }),
@@ -137138,7 +137169,7 @@ function renderDeckHtml(deck, options = {}) {
     document: htmlDocument({
       html,
       css,
-      deckbuilderCss: themeCss,
+      deckbuilderCss,
       comments,
       bespokeCss: definitions.bespokeCss,
       bespokeJs: definitions.bespokeJs,
@@ -137160,6 +137191,9 @@ export {
   htmlDocument,
   shouldSkipHtml,
   resolveResourceUrls,
+  richHtmlCssMarker,
+  richHtmlCssEndMarker,
+  splitRichHtmlCss,
   richHtmlRuntimeScript,
   renderDeckHtml
 };

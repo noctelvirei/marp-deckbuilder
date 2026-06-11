@@ -91,6 +91,6 @@ merging upstream skill updates.
 
 ## Vendor
 
-The `vendor/` folder contains minified browser chart libraries used by premium
-HTML output. Build wrappers inject these files into generated HTML so Chart.js,
-Observable Plot, and D3 visuals work offline after generation.
+Packaged skills keep a `vendor/` folder with minified browser chart libraries
+used by premium HTML output. Build wrappers inject those files into generated
+HTML so Chart.js, Observable Plot, and D3 visuals work offline after generation.

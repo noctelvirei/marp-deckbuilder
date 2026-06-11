@@ -131,6 +131,9 @@ The report is a single scrolling HTML page. The source stays Markdown-first.
   assert.match(rendered.document, /data-deck-rich-donut/)
   assert.match(rendered.document, /<script data-deckbuilder-rich-html>/)
   assert.match(rendered.document, /deck-rich-printing/)
+  assert.match(rendered.document, /Renderer-owned rich HTML components/)
+  assert.match(rendered.document, /\.deck-rich \{/)
+  assert.match(rendered.document, /\.deck-rich \.book-scene/)
   assert.doesNotMatch(rendered.document, /<deck-rich-stats\b/)
 })
 

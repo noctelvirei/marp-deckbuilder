@@ -7,8 +7,10 @@ import { build } from 'esbuild'
 
 const repoRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..')
 const entryPoint = resolve(repoRoot, 'src', 'cli.js')
+const sourceResourcesDir = resolve(repoRoot, 'resources')
 const outputDir = resolve(repoRoot, 'skills', 'marp-deckbuilder', 'tool', 'dist')
 const deckToolDir = resolve(repoRoot, 'skills', 'marp-deckbuilder', 'tool')
+const deckResourcesDir = resolve(deckToolDir, 'resources')
 const reportToolDir = resolve(repoRoot, 'skills', 'marp-report', 'tool')
 const richHtmlToolDir = resolve(repoRoot, 'skills', 'marp-rich-html', 'tool')
 
@@ -34,6 +36,9 @@ await build({
 await renameGenericChunks(outputDir)
 
 console.log(`Bundled skill CLI: ${resolve(outputDir, 'deckbuilder.mjs')}`)
+
+await syncToolResources(deckResourcesDir)
+console.log(`Synced deckbuilder skill resources: ${deckResourcesDir}`)
 
 await rm(reportToolDir, { recursive: true, force: true })
 await cp(deckToolDir, reportToolDir, {
@@ -99,6 +104,24 @@ async function renameGenericChunks(distDir) {
     .map(([oldName, newName]) => `${oldName} -> ${newName}`)
     .join(', ')
   console.log(`Renamed generic chunks: ${renamed}`)
+}
+
+async function syncToolResources(targetDir) {
+  await mkdir(targetDir, { recursive: true })
+  await rm(join(targetDir, 'definitions'), { recursive: true, force: true })
+  await rm(join(targetDir, 'templates'), { recursive: true, force: true })
+  await rm(join(targetDir, 'README.md'), { force: true })
+  await cp(sourceResourcesDir, targetDir, {
+    recursive: true,
+    filter: (source) => !source.endsWith('.zip'),
+  })
+  await assertVendorResources(targetDir)
+}
+
+async function assertVendorResources(targetDir) {
+  for (const fileName of ['d3.min.js', 'plot.min.js', 'chart.min.js']) {
+    await readFile(join(targetDir, 'vendor', fileName), 'utf8')
+  }
 }
 
 function chunkRole(source) {

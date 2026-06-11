@@ -2986,3 +2986,4 @@ body.deck-rich-printing .deck-rich .book-print {
     background: radial-gradient(ellipse at 30% 40%, #0d1d36 0%, var(--dark) 70%) !important;
   }
 }
+/* End renderer-owned rich HTML components. */
