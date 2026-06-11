@@ -40,6 +40,7 @@ Use these renderer-backed component tags in `report.md`. They look like HTML tag
 | Metadata or context summary | `<report-key-values>` | `items`; optional `title`, `columns` |
 | Ranked distribution bars | `<report-rate-bars>` | `labels`, `values`; optional `shares` |
 | Formatted data table | `<report-data-table>` | `columns`, `rows`; optional `types`, `compact`, `align`, `totals`, `highlights`, `caption`, `source` |
+| Reusable dataset | `<report-dataset>` | `id`, `columns`, `rows`; referenced with `data-ref` |
 | Structured insight | `<report-insight>` | Finding/body text or `title`, `evidence`, `impact`, `action` |
 | Owned recommendation | `<report-recommendation>` | Body text or `title`; optional `owner`, `priority`, `due`, `status` |
 | Citation or methodology note | `<report-source-note>` | Body text and/or `source`; optional `title`, `date` |
@@ -107,6 +108,7 @@ Generate `report.md` in this order:
 - Use `<report-key-values>` for metadata, report context, parameters, and compact label/value summaries.
 - Use `<report-rate-bars>` for ranked distribution bars.
 - Use `<report-data-table>` for formatted tables with text, number, percent, status columns, compact mode, alignment, totals, and row/cell highlights.
+- Use `<report-dataset>` when the same rows should feed a table and a supported Chart.js chart. Reference it with `data-ref`; do not repeat the same data manually.
 - Use `<report-insight>` for structured finding, evidence, impact, and action narrative.
 - Use `<report-recommendation>` for owned actions with priority, due date, and status.
 - Use `<report-source-note>` for citations, methodology, assumptions, and data freshness notes.

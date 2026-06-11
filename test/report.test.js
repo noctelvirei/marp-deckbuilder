@@ -1057,6 +1057,49 @@ test('expands report data tables into formatted table components', async () => {
   assert.match(rendered.document, /<span class="report-data-table-source">Source: April journey export<\/span>/)
 })
 
+test('expands report datasets into referenced tables and charts', async () => {
+  const definitions = await loadDefinitions(new URL('../resources/definitions', import.meta.url))
+  const rendered = renderReportHtml(
+    `# Dataset report
+
+<report-dataset
+  id="journey-volume"
+  columns="Journey|Cases|Target"
+  rows="Digital|52208|55000;Assisted|11119|12000;Exceptions|3751|2500"
+></report-dataset>
+
+<report-data-table
+  title="Dataset-backed table"
+  data-ref="journey-volume"
+  types="text|number|number"
+  align="left|right|right"
+></report-data-table>
+
+<report-chart
+  type="bar"
+  title="Dataset-backed chart"
+  series="Cases"
+  data-ref="journey-volume"
+  label-column="Journey"
+  value-column="Cases"
+></report-chart>
+`,
+    {
+      resourcesDir: path.resolve('resources'),
+      definitions,
+      inlineAssets: true,
+    },
+  )
+
+  assert.doesNotMatch(rendered.document, /<report-dataset/i)
+  assert.doesNotMatch(rendered.document, /<report-data-table/i)
+  assert.doesNotMatch(rendered.document, /<report-chart/i)
+  assert.match(rendered.document, /<th scope="col" class="report-data-table-heading report-data-table-align-left">Journey<\/th>/)
+  assert.match(rendered.document, /<td class="report-data-table-cell report-data-table-cell-number report-data-table-align-right">52,208<\/td>/)
+  assert.match(rendered.document, /labels: \["Digital","Assisted","Exceptions"\]/)
+  assert.match(rendered.document, /data: \[52208,11119,3751\]/)
+})
+
 test('expands enhanced report data table options', async () => {
   const definitions = await loadDefinitions(new URL('../resources/definitions', import.meta.url))
   const rendered = renderReportHtml(
@@ -1149,6 +1192,46 @@ test('report data tables fail clearly when malformed', async () => {
   assert.throws(
     () => renderReportHtml('<report-data-table columns="A" rows="A" highlights="1:purple"></report-data-table>', options),
     /report-data-table highlight "purple" is not available/,
+  )
+  assert.throws(
+    () => renderReportHtml('<report-data-table data-ref="missing"></report-data-table>', options),
+    /report-data-table data-ref "missing" does not match a report-dataset id/,
+  )
+  assert.throws(
+    () =>
+      renderReportHtml(
+        '<report-dataset id="d" columns="A|B" rows="A|1"></report-dataset><report-data-table data-ref="d" columns="A" rows="A"></report-data-table>',
+        options,
+      ),
+    /report-data-table data-ref cannot be combined with columns or rows/,
+  )
+  assert.throws(
+    () => renderReportHtml('<report-dataset columns="A|B" rows="A|1"></report-dataset>', options),
+    /report-dataset requires an id attribute/,
+  )
+  assert.throws(
+    () => renderReportHtml('<report-dataset id="bad id" columns="A|B" rows="A|1"></report-dataset>', options),
+    /report-dataset id may contain only letters, numbers, hyphens, and underscores/,
+  )
+  assert.throws(
+    () => renderReportHtml('<report-dataset id="d" rows="A|1"></report-dataset>', options),
+    /report-dataset "d" requires columns or headers/,
+  )
+  assert.throws(
+    () => renderReportHtml('<report-dataset id="d" columns="A|B"></report-dataset>', options),
+    /report-dataset "d" requires at least one row/,
+  )
+  assert.throws(
+    () => renderReportHtml('<report-dataset id="d" columns="A|B" rows="A|1|extra"></report-dataset>', options),
+    /report-dataset "d" row 1 has 3 cell\(s\), but 2 column\(s\) were declared/,
+  )
+  assert.throws(
+    () =>
+      renderReportHtml(
+        '<report-dataset id="d" columns="A" rows="One"></report-dataset><report-dataset id="d" columns="A" rows="Two"></report-dataset>',
+        options,
+      ),
+    /Duplicate report-dataset id "d"/,
   )
 })
 
@@ -1782,6 +1865,42 @@ test('report chart components fail clearly when data is invalid', async () => {
   assert.throws(
     () => renderReportHtml('<report-chart labels="A" values="not-a-number"></report-chart>', options),
     /report-chart values must all be numeric/,
+  )
+  assert.throws(
+    () => renderReportHtml('<report-chart type="bar" data-ref="missing"></report-chart>', options),
+    /report-chart data-ref "missing" does not match a report-dataset id/,
+  )
+  assert.throws(
+    () =>
+      renderReportHtml(
+        '<report-dataset id="d" columns="Label|Value" rows="A|1"></report-dataset><report-chart type="treemap" data-ref="d"></report-chart>',
+        options,
+      ),
+    /report-chart data-ref currently supports bar, line, doughnut, waterfall, bullet, and pareto charts/,
+  )
+  assert.throws(
+    () =>
+      renderReportHtml(
+        '<report-dataset id="d" columns="Label|Value" rows="A|1"></report-dataset><report-chart type="bar" data-ref="d" label-column="Missing"></report-chart>',
+        options,
+      ),
+    /report dataset "d" does not include label-column "Missing"/,
+  )
+  assert.throws(
+    () =>
+      renderReportHtml(
+        '<report-dataset id="d" columns="Label|Value" rows="A|nope"></report-dataset><report-chart type="bar" data-ref="d"></report-chart>',
+        options,
+      ),
+    /report-chart values must all be numeric/,
+  )
+  assert.throws(
+    () =>
+      renderReportHtml(
+        '<report-dataset id="d" columns="Label|Value" rows="A|10"></report-dataset><report-chart type="bullet" data-ref="d"></report-chart>',
+        options,
+      ),
+    /report-chart data-ref requires target-column/,
   )
   assert.throws(
     () => renderReportHtml('<report-chart type="radar" labels="A" values="10"></report-chart>', options),

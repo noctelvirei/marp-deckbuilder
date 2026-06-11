@@ -4746,6 +4746,13 @@ function parseReportChart(chart, index = 0) {
   const valueSuffix = chart.attr("value-suffix") || chart.attr("suffix") || "";
   const xAxisLabel = chart.attr("x-label") || chart.attr("x-axis-label") || chart.attr("x-title") || "";
   const yAxisLabel = chart.attr("y-label") || chart.attr("y-axis-label") || chart.attr("y-title") || "";
+  const dataRef = chart.attr("data-ref") || chart.attr("dataset") || "";
+  const labelColumn = chart.attr("label-column") || chart.attr("label-field") || chart.attr("label") || "";
+  const valueColumn = chart.attr("value-column") || chart.attr("value-field") || chart.attr("value") || "";
+  const targetColumn = chart.attr("target-column") || chart.attr("target-field") || "";
+  const xColumn = chart.attr("x-column") || chart.attr("x-field") || "";
+  const yColumn = chart.attr("y-column") || chart.attr("y-field") || "";
+  const rColumn = chart.attr("r-column") || chart.attr("radius-column") || "";
   const binCount = Number.parseInt(chart.attr("bins") || chart.attr("bucket-count") || chart.attr("buckets") || "10", 10);
   const points = parseChartPoints(chart.attr("points") || chart.attr("data"));
   const links = parseChartLinks(chart.attr("links") || chart.attr("flows") || chart.attr("edges") || "");
@@ -4782,7 +4789,24 @@ function parseReportChart(chart, index = 0) {
     xAxisLabel,
     yAxisLabel,
     binCount,
+    dataRef,
+    labelColumn,
+    valueColumn,
+    targetColumn,
+    xColumn,
+    yColumn,
+    rColumn,
     ariaLabel: chart.attr("aria-label") || title || `${type} chart`
+  };
+}
+function parseReportDataset(dataset) {
+  const columns = splitPipe(dataset.attr("columns") || dataset.attr("headers"));
+  const rows = splitRows(dataset.attr("rows") || dataset.attr("data")).map((row) => splitPipe(row, { keepEmpty: true }));
+  return {
+    type: "dataset",
+    id: dataset.attr("id") || dataset.attr("name") || "",
+    columns,
+    rows
   };
 }
 function parseReportMetricGrid(root, grid) {
@@ -4834,6 +4858,7 @@ function parseReportDataTable(table2) {
     align: parseDataTableAlignments(table2.attr("align") || table2.attr("alignment")),
     totals,
     highlights: parseDataTableHighlights(table2.attr("highlights") || table2.attr("highlight")),
+    dataRef: table2.attr("data-ref") || table2.attr("dataset") || "",
     caption: table2.attr("caption") || "",
     source: table2.attr("source") || ""
   };
@@ -7060,6 +7085,7 @@ var knownReportTags = /* @__PURE__ */ new Set([
   "report-chart",
   "report-cite",
   "report-data-table",
+  "report-dataset",
   "report-figure",
   "report-insight",
   "report-key-values",
@@ -7085,6 +7111,13 @@ function compileReportComponents(source, options = {}) {
   const scripts = [];
   const usedIds = /* @__PURE__ */ new Set();
   const sourceRegistry = /* @__PURE__ */ new Map();
+  const datasetRegistry = /* @__PURE__ */ new Map();
+  root("report-dataset").each((_, element) => {
+    const datasetElement = root(element);
+    const dataset = parseReportDataset(datasetElement);
+    prepareReportDataset(dataset, datasetRegistry, context);
+    datasetElement.remove();
+  });
   root("report-metric-grid").each((_, element) => {
     const metricGridElement = root(element);
     const metricGrid = parseReportMetricGrid(root, metricGridElement);
@@ -7112,6 +7145,7 @@ function compileReportComponents(source, options = {}) {
   root("report-data-table").each((_, element) => {
     const tableElement = root(element);
     const table2 = parseReportDataTable(tableElement);
+    resolveReportDataTableDataset(table2, datasetRegistry, context);
     validateReportDataTable(table2, context);
     tableElement.replaceWith(renderReportDataTableHtml(table2));
   });
@@ -7183,6 +7217,7 @@ function compileReportComponents(source, options = {}) {
   root("report-chart").each((index, element) => {
     const chartElement = root(element);
     const chart = parseReportChart(chartElement, index);
+    resolveReportChartDataset(chart, datasetRegistry, context);
     chart.id = uniqueDomId(chart.id || chart.generatedId, usedIds, "report-chart");
     validateReportChart(chart, context);
     scripts.push(renderReportChartScript(chart, context));
@@ -7193,6 +7228,87 @@ function compileReportComponents(source, options = {}) {
     source: appendReportComponentScripts(compiledSource, scripts),
     scripts
   };
+}
+function prepareReportDataset(dataset, datasetRegistry, context) {
+  if (!dataset.id) {
+    fail("report-dataset requires an id attribute.", context);
+  }
+  if (!/^[a-z0-9_-]+$/i.test(dataset.id)) {
+    fail("report-dataset id may contain only letters, numbers, hyphens, and underscores.", context);
+  }
+  if (datasetRegistry.has(dataset.id)) {
+    fail(`Duplicate report-dataset id "${dataset.id}". Dataset ids must be unique.`, context);
+  }
+  if (dataset.columns.length === 0) {
+    fail(`report-dataset "${dataset.id}" requires columns or headers.`, context);
+  }
+  if (dataset.rows.length === 0) {
+    fail(`report-dataset "${dataset.id}" requires at least one row in rows or data.`, context);
+  }
+  dataset.rows.forEach((row, rowIndex) => {
+    if (row.length !== dataset.columns.length) {
+      fail(
+        `report-dataset "${dataset.id}" row ${rowIndex + 1} has ${row.length} cell(s), but ${dataset.columns.length} column(s) were declared.`,
+        context
+      );
+    }
+  });
+  datasetRegistry.set(dataset.id, dataset);
+}
+function resolveReportDataTableDataset(table2, datasetRegistry, context) {
+  if (!table2.dataRef) return;
+  const dataset = datasetRegistry.get(table2.dataRef);
+  if (!dataset) {
+    fail(`report-data-table data-ref "${table2.dataRef}" does not match a report-dataset id.`, context);
+  }
+  if (table2.columns.length > 0 || table2.rows.length > 0) {
+    fail("report-data-table data-ref cannot be combined with columns or rows. Use the dataset or inline table data, not both.", context);
+  }
+  table2.columns = [...dataset.columns];
+  table2.rows = dataset.rows.map((row) => [...row]);
+  if (table2.types.length === 0) {
+    table2.types = table2.columns.map(() => "text");
+  }
+}
+function resolveReportChartDataset(chart, datasetRegistry, context) {
+  if (!chart.dataRef) return;
+  const dataset = datasetRegistry.get(chart.dataRef);
+  if (!dataset) {
+    fail(`report-chart data-ref "${chart.dataRef}" does not match a report-dataset id.`, context);
+  }
+  const supportedChartDatasetTypes = /* @__PURE__ */ new Set(["bar", "line", "doughnut", "waterfall", "bullet", "pareto"]);
+  if (!supportedChartDatasetTypes.has(chart.chartType)) {
+    fail(
+      `report-chart data-ref currently supports bar, line, doughnut, waterfall, bullet, and pareto charts. Ask the skill maker to add dataset support for type "${chart.chartType}".`,
+      context
+    );
+  }
+  if (chart.labels.length > 0 || chart.values.length > 0 || chart.targets.length > 0) {
+    fail("report-chart data-ref cannot be combined with labels, values, or targets. Use the dataset or inline chart data, not both.", context);
+  }
+  const labelIndex = reportDatasetColumnIndex(dataset, chart.labelColumn || dataset.columns[0], "label-column", context);
+  const defaultValueColumn = chart.valueColumn || dataset.columns.find((column, index) => index !== labelIndex) || "";
+  const valueIndex = reportDatasetColumnIndex(dataset, defaultValueColumn, "value-column", context);
+  chart.labels = dataset.rows.map((row) => row[labelIndex]);
+  chart.values = dataset.rows.map((row) => parseDatasetNumber(row[valueIndex]));
+  if (chart.chartType === "bullet") {
+    const targetIndex = reportDatasetColumnIndex(dataset, chart.targetColumn, "target-column", context);
+    chart.targets = dataset.rows.map((row) => parseDatasetNumber(row[targetIndex]));
+  }
+}
+function reportDatasetColumnIndex(dataset, columnName, attributeName, context) {
+  const normalized = String(columnName || "").trim().toLowerCase();
+  if (!normalized) {
+    fail(`report-chart data-ref requires ${attributeName}.`, context);
+  }
+  const index = dataset.columns.findIndex((column) => column.trim().toLowerCase() === normalized);
+  if (index === -1) {
+    fail(`report dataset "${dataset.id}" does not include ${attributeName} "${columnName}".`, context);
+  }
+  return index;
+}
+function parseDatasetNumber(value) {
+  return Number(String(value || "").replace(/,/g, "").replace(/%$/, "").trim());
 }
 function validateReportComponentTree(root, context) {
   root("report-metric").each((_, element) => {

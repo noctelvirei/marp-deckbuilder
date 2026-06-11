@@ -62,6 +62,7 @@ Reports use normal Markdown plus compact `report-*` component tags. The renderer
 | Metadata or context summary | `report-key-values` | `items`; optional `title`, `columns` |
 | Ranked distribution bars | `report-rate-bars` | `labels`, `values`; optional `shares` |
 | Formatted data table | `report-data-table` | `columns`, `rows`; optional `types`, `compact`, `align`, `totals`, `highlights`, `caption`, `source` |
+| Reusable dataset | `report-dataset` | `id`, `columns`, `rows`; referenced with `data-ref` |
 | Structured insight | `report-insight` | Finding/body text or `title`, `evidence`, `impact`, `action` |
 | Owned recommendation | `report-recommendation` | Body text or `title`; optional `owner`, `priority`, `due`, `status` |
 | Citation or methodology note | `report-source-note` | Body text and/or `source`; optional `title`, `date` |
@@ -103,6 +104,42 @@ Use this sequence when creating `report.md`:
 5. Build with `node scripts/build-report.mjs report.md --out-dir output`.
 
 If the needed visual is not listed, do not create raw HTML or JavaScript in the Markdown. Tell the user to ask the skill maker to add a renderer-backed component.
+
+## Reusable Datasets
+
+Use `report-dataset` when a table and a supported Chart.js chart need the same rows. Dataset declarations are renderer-owned inputs: they are removed from the final HTML after referenced components consume them.
+
+```md
+<report-dataset
+  id="journey-volume"
+  columns="Journey|Cases|Share|Status"
+  rows="J0107|52208|67.1|Active;J0106|11119|14.3|Active"
+></report-dataset>
+
+<report-data-table
+  title="Journey breakdown"
+  data-ref="journey-volume"
+  types="text|number|percent|status"
+></report-data-table>
+
+<report-chart
+  type="bar"
+  title="Cases by journey"
+  data-ref="journey-volume"
+  label-column="Journey"
+  value-column="Cases"
+></report-chart>
+```
+
+Dataset `data-ref` support currently covers `report-data-table` and single-series Chart.js charts: `bar`, `line`, `doughnut`, `waterfall`, `bullet`, and `pareto`. For `bullet`, include `target-column`. If a chart type needs dataset support and is not listed, ask the skill maker to add it.
+
+Supported `report-dataset` attributes:
+
+| Attribute | Required | Notes |
+| --- | --- | --- |
+| `id` | yes | Unique dataset id. Letters, numbers, hyphens, and underscores only. Alias: `name`. |
+| `columns` | yes | Pipe-separated column names. Alias: `headers`. |
+| `rows` | yes | Semicolon-separated rows with pipe-separated cells. Alias: `data`. |
 
 ## Report Metadata And Page Breaks
 

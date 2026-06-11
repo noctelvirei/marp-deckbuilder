@@ -7,6 +7,7 @@ import {
   parseReportCardGrid,
   parseReportChart,
   parseReportDataTable,
+  parseReportDataset,
   parseReportFigure,
   parseReportInsight,
   parseReportKeyValues,
@@ -49,6 +50,7 @@ const knownReportTags = new Set([
   'report-chart',
   'report-cite',
   'report-data-table',
+  'report-dataset',
   'report-figure',
   'report-insight',
   'report-key-values',
@@ -77,6 +79,14 @@ export function compileReportComponents(source, options = {}) {
   const scripts = []
   const usedIds = new Set()
   const sourceRegistry = new Map()
+  const datasetRegistry = new Map()
+
+  root('report-dataset').each((_, element) => {
+    const datasetElement = root(element)
+    const dataset = parseReportDataset(datasetElement)
+    prepareReportDataset(dataset, datasetRegistry, context)
+    datasetElement.remove()
+  })
 
   root('report-metric-grid').each((_, element) => {
     const metricGridElement = root(element)
@@ -109,6 +119,7 @@ export function compileReportComponents(source, options = {}) {
   root('report-data-table').each((_, element) => {
     const tableElement = root(element)
     const table = parseReportDataTable(tableElement)
+    resolveReportDataTableDataset(table, datasetRegistry, context)
     validateReportDataTable(table, context)
     tableElement.replaceWith(renderReportDataTableHtml(table))
   })
@@ -192,6 +203,7 @@ export function compileReportComponents(source, options = {}) {
   root('report-chart').each((index, element) => {
     const chartElement = root(element)
     const chart = parseReportChart(chartElement, index)
+    resolveReportChartDataset(chart, datasetRegistry, context)
     chart.id = uniqueDomId(chart.id || chart.generatedId, usedIds, 'report-chart')
     validateReportChart(chart, context)
     scripts.push(renderReportChartScript(chart, context))
@@ -203,6 +215,92 @@ export function compileReportComponents(source, options = {}) {
     source: appendReportComponentScripts(compiledSource, scripts),
     scripts,
   }
+}
+
+function prepareReportDataset(dataset, datasetRegistry, context) {
+  if (!dataset.id) {
+    fail('report-dataset requires an id attribute.', context)
+  }
+  if (!/^[a-z0-9_-]+$/i.test(dataset.id)) {
+    fail('report-dataset id may contain only letters, numbers, hyphens, and underscores.', context)
+  }
+  if (datasetRegistry.has(dataset.id)) {
+    fail(`Duplicate report-dataset id "${dataset.id}". Dataset ids must be unique.`, context)
+  }
+  if (dataset.columns.length === 0) {
+    fail(`report-dataset "${dataset.id}" requires columns or headers.`, context)
+  }
+  if (dataset.rows.length === 0) {
+    fail(`report-dataset "${dataset.id}" requires at least one row in rows or data.`, context)
+  }
+  dataset.rows.forEach((row, rowIndex) => {
+    if (row.length !== dataset.columns.length) {
+      fail(
+        `report-dataset "${dataset.id}" row ${rowIndex + 1} has ${row.length} cell(s), but ${dataset.columns.length} column(s) were declared.`,
+        context,
+      )
+    }
+  })
+  datasetRegistry.set(dataset.id, dataset)
+}
+
+function resolveReportDataTableDataset(table, datasetRegistry, context) {
+  if (!table.dataRef) return
+  const dataset = datasetRegistry.get(table.dataRef)
+  if (!dataset) {
+    fail(`report-data-table data-ref "${table.dataRef}" does not match a report-dataset id.`, context)
+  }
+  if (table.columns.length > 0 || table.rows.length > 0) {
+    fail('report-data-table data-ref cannot be combined with columns or rows. Use the dataset or inline table data, not both.', context)
+  }
+  table.columns = [...dataset.columns]
+  table.rows = dataset.rows.map((row) => [...row])
+  if (table.types.length === 0) {
+    table.types = table.columns.map(() => 'text')
+  }
+}
+
+function resolveReportChartDataset(chart, datasetRegistry, context) {
+  if (!chart.dataRef) return
+  const dataset = datasetRegistry.get(chart.dataRef)
+  if (!dataset) {
+    fail(`report-chart data-ref "${chart.dataRef}" does not match a report-dataset id.`, context)
+  }
+  const supportedChartDatasetTypes = new Set(['bar', 'line', 'doughnut', 'waterfall', 'bullet', 'pareto'])
+  if (!supportedChartDatasetTypes.has(chart.chartType)) {
+    fail(
+      `report-chart data-ref currently supports bar, line, doughnut, waterfall, bullet, and pareto charts. Ask the skill maker to add dataset support for type "${chart.chartType}".`,
+      context,
+    )
+  }
+  if (chart.labels.length > 0 || chart.values.length > 0 || chart.targets.length > 0) {
+    fail('report-chart data-ref cannot be combined with labels, values, or targets. Use the dataset or inline chart data, not both.', context)
+  }
+  const labelIndex = reportDatasetColumnIndex(dataset, chart.labelColumn || dataset.columns[0], 'label-column', context)
+  const defaultValueColumn = chart.valueColumn || dataset.columns.find((column, index) => index !== labelIndex) || ''
+  const valueIndex = reportDatasetColumnIndex(dataset, defaultValueColumn, 'value-column', context)
+  chart.labels = dataset.rows.map((row) => row[labelIndex])
+  chart.values = dataset.rows.map((row) => parseDatasetNumber(row[valueIndex]))
+  if (chart.chartType === 'bullet') {
+    const targetIndex = reportDatasetColumnIndex(dataset, chart.targetColumn, 'target-column', context)
+    chart.targets = dataset.rows.map((row) => parseDatasetNumber(row[targetIndex]))
+  }
+}
+
+function reportDatasetColumnIndex(dataset, columnName, attributeName, context) {
+  const normalized = String(columnName || '').trim().toLowerCase()
+  if (!normalized) {
+    fail(`report-chart data-ref requires ${attributeName}.`, context)
+  }
+  const index = dataset.columns.findIndex((column) => column.trim().toLowerCase() === normalized)
+  if (index === -1) {
+    fail(`report dataset "${dataset.id}" does not include ${attributeName} "${columnName}".`, context)
+  }
+  return index
+}
+
+function parseDatasetNumber(value) {
+  return Number(String(value || '').replace(/,/g, '').replace(/%$/, '').trim())
 }
 
 function validateReportComponentTree(root, context) {

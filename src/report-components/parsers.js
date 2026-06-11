@@ -17,6 +17,13 @@ export function parseReportChart(chart, index = 0) {
   const valueSuffix = chart.attr('value-suffix') || chart.attr('suffix') || ''
   const xAxisLabel = chart.attr('x-label') || chart.attr('x-axis-label') || chart.attr('x-title') || ''
   const yAxisLabel = chart.attr('y-label') || chart.attr('y-axis-label') || chart.attr('y-title') || ''
+  const dataRef = chart.attr('data-ref') || chart.attr('dataset') || ''
+  const labelColumn = chart.attr('label-column') || chart.attr('label-field') || chart.attr('label') || ''
+  const valueColumn = chart.attr('value-column') || chart.attr('value-field') || chart.attr('value') || ''
+  const targetColumn = chart.attr('target-column') || chart.attr('target-field') || ''
+  const xColumn = chart.attr('x-column') || chart.attr('x-field') || ''
+  const yColumn = chart.attr('y-column') || chart.attr('y-field') || ''
+  const rColumn = chart.attr('r-column') || chart.attr('radius-column') || ''
   const binCount = Number.parseInt(chart.attr('bins') || chart.attr('bucket-count') || chart.attr('buckets') || '10', 10)
   const points = parseChartPoints(chart.attr('points') || chart.attr('data'))
   const links = parseChartLinks(chart.attr('links') || chart.attr('flows') || chart.attr('edges') || '')
@@ -59,7 +66,26 @@ export function parseReportChart(chart, index = 0) {
     xAxisLabel,
     yAxisLabel,
     binCount,
+    dataRef,
+    labelColumn,
+    valueColumn,
+    targetColumn,
+    xColumn,
+    yColumn,
+    rColumn,
     ariaLabel: chart.attr('aria-label') || title || `${type} chart`,
+  }
+}
+
+export function parseReportDataset(dataset) {
+  const columns = splitPipe(dataset.attr('columns') || dataset.attr('headers'))
+  const rows = splitRows(dataset.attr('rows') || dataset.attr('data')).map((row) => splitPipe(row, { keepEmpty: true }))
+
+  return {
+    type: 'dataset',
+    id: dataset.attr('id') || dataset.attr('name') || '',
+    columns,
+    rows,
   }
 }
 
@@ -116,6 +142,7 @@ export function parseReportDataTable(table) {
     align: parseDataTableAlignments(table.attr('align') || table.attr('alignment')),
     totals,
     highlights: parseDataTableHighlights(table.attr('highlights') || table.attr('highlight')),
+    dataRef: table.attr('data-ref') || table.attr('dataset') || '',
     caption: table.attr('caption') || '',
     source: table.attr('source') || '',
   }

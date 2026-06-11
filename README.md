@@ -370,6 +370,7 @@ Reports can use:
 - Accent cards via `report-accent-card`.
 - Badges via `report-badge`.
 - Captioned embedded images via `report-figure`.
+- Reusable datasets via `report-dataset` plus `data-ref`.
 - Tables.
 - Chart.js charts via `report-chart type="bar"`, `line`, and `doughnut`.
 - Chart.js grouped bars via `report-chart type="grouped-bar"`.
