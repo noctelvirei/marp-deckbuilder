@@ -132,9 +132,9 @@ code { background: var(--bg-card) !important; color: var(--cyan) !important; bor
 
 Reports use normal Markdown plus compact `report-*` component tags where supported. The renderer expands those tags into HTML, CSS hooks, and JavaScript initializers.
 
-### Report Chart: Chart.js And Observable Plot
+### Report Chart: Chart.js, Observable Plot, And D3
 
-Use `report-chart` for standard Chart.js bar, line, and doughnut charts, plus Observable Plot area charts. Do not write the `<canvas>`, chart container, or JavaScript initializer yourself. The renderer generates hover tooltips that show the represented value.
+Use `report-chart` for standard Chart.js bar, line, and doughnut charts, Observable Plot area charts, and D3 treemaps. Do not write the `<canvas>`, chart container, SVG, or JavaScript initializer yourself. The renderer generates hover tooltips that show the represented value.
 
 ```html
 <report-chart
@@ -175,15 +175,25 @@ Use `report-chart` for standard Chart.js bar, line, and doughnut charts, plus Ob
 ></report-chart>
 ```
 
+```html
+<report-chart
+  type="treemap"
+  title="Volume by journey"
+  series="Cases"
+  labels="J0107,J0106,J0101,J0116"
+  values="52208,11119,8648,3751"
+></report-chart>
+```
+
 Supported attributes:
 
 | Attribute | Required | Notes |
 | --- | --- | --- |
-| `type` | no | Supports `bar`, `line`, `doughnut`, and `area`. Defaults to `bar`. Alias: `donut`. |
+| `type` | no | Supports `bar`, `line`, `doughnut`, `area`, and `treemap`. Defaults to `bar`. Aliases: `donut`, `tree-map`. |
 | `title` | no | Rendered above the chart and used as the accessible label. |
 | `series` | no | Dataset label. |
-| `labels` | yes for Chart.js types | Comma-separated labels. For `area`, this can be used with `values` as a fallback. |
-| `values` | yes for Chart.js types | Comma-separated numeric values. Must match label count. For `area`, this can be used with `labels` as a fallback. |
+| `labels` | yes for Chart.js and `treemap` types | Comma-separated labels. For `area`, this can be used with `values` as a fallback. |
+| `values` | yes for Chart.js and `treemap` types | Comma-separated numeric values. Must match label count. For `area`, this can be used with `labels` as a fallback. |
 | `points` | yes for `area` | Comma-separated `x:y` or `x=y` points such as `2026-04-01:2200,2026-04-02:2600`. Alias: `data`. |
 | `colors` | no | Comma-separated hex colors. Defaults to brand chart colors. |
 | `height` | no | Pixel height, clamped by the renderer. Defaults to `320`. |
@@ -331,9 +341,9 @@ Use `report-accent-card` for standard accent cards. Keep this raw class pattern 
 
 ## JavaScript Charts
 
-The report wrapper injects Chart.js, Observable Plot, and D3 into the final HTML head from local vendor files. Do not include CDN script tags in Markdown. Only write the init script.
+The report wrapper injects Chart.js, Observable Plot, and D3 into the final HTML head from local vendor files. Use the structured `report-chart` component above for bar, line, doughnut, area, and treemap charts.
 
-Place the init script inside `<main class="r-main">` as the final element before `</main>`.
+Only write manual chart containers and init scripts for chart types that are not yet implemented as report components. When a manual chart is unavoidable, place the init script inside `<main class="r-main">` as the final element before `</main>`.
 
 ### Legacy Chart.js Bar
 
@@ -341,76 +351,11 @@ Use the structured `report-chart` component above instead of the legacy raw `<ca
 
 ### Observable Plot Area
 
-```html
-<div class="r-chart-wrap">
-  <div class="r-chart-title">Daily volume</div>
-  <div id="volumePlot"></div>
-</div>
-
-<script>
-document.addEventListener('DOMContentLoaded', function() {
-  const data = [
-    { day: 'W1', cases: 1200 },
-    { day: 'W2', cases: 1480 },
-    { day: 'W3', cases: 1390 },
-    { day: 'W4', cases: 1710 }
-  ];
-  const chart = Plot.plot({
-    width: 680,
-    height: 280,
-    style: { background: 'transparent', color: '#c8d8f0', fontFamily: 'Poppins,sans-serif' },
-    x: { label: null },
-    y: { grid: true, label: null, tickFormat: d => d.toLocaleString() },
-    marks: [
-      Plot.areaY(data, { x: 'day', y: 'cases', fill: '#0f82f5', fillOpacity: .25 }),
-      Plot.lineY(data, { x: 'day', y: 'cases', stroke: '#0f82f5', strokeWidth: 2 }),
-      Plot.ruleY([0], { stroke: '#1e3a5f' })
-    ]
-  });
-  document.getElementById('volumePlot').append(chart);
-});
-</script>
-```
+Use `<report-chart type="area">` above instead of a raw Observable Plot container and initializer.
 
 ### D3 Treemap
 
-```html
-<div class="r-chart-wrap">
-  <div class="r-chart-title">Volume by journey</div>
-  <div id="treemap"></div>
-</div>
-
-<script>
-document.addEventListener('DOMContentLoaded', function() {
-  const raw = [
-    { name: 'J0107', value: 52208 },
-    { name: 'J0106', value: 11119 },
-    { name: 'J0101', value: 8648 },
-    { name: 'J0116', value: 3751 }
-  ];
-  const colours = ['#0f82f5', '#59d6fd', '#5143d5', '#f99358'];
-  const width = 680;
-  const height = 300;
-  const root = d3.hierarchy({ children: raw }).sum(d => d.value);
-  d3.treemap().size([width, height]).padding(3)(root);
-  const svg = d3.select('#treemap').append('svg').attr('width', width).attr('height', height);
-  const cell = svg.selectAll('g').data(root.leaves()).join('g')
-    .attr('transform', d => `translate(${d.x0},${d.y0})`);
-  cell.append('rect')
-    .attr('width', d => d.x1 - d.x0)
-    .attr('height', d => d.y1 - d.y0)
-    .attr('fill', (_, i) => colours[i % colours.length])
-    .attr('rx', 4);
-  cell.append('text')
-    .attr('x', 8)
-    .attr('y', 20)
-    .attr('fill', '#ffffff')
-    .attr('font-size', 13)
-    .attr('font-family', 'Poppins,sans-serif')
-    .text(d => d.data.name);
-});
-</script>
-```
+Use `<report-chart type="treemap">` above instead of a raw D3 SVG container and initializer.
 
 ## Inline SVG
 

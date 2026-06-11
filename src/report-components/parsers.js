@@ -113,6 +113,7 @@ function normalizeChartType(value = 'bar') {
   const token = String(value || 'bar').trim().toLowerCase()
   if (token === 'column') return 'bar'
   if (token === 'donut') return 'doughnut'
+  if (token === 'tree-map') return 'treemap'
   return token
 }
 

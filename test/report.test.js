@@ -238,7 +238,38 @@ test('expands report area chart components into Observable Plot initializers', a
   assert.match(rendered.document, /const valueSuffix = " cases"/)
 })
 
-test('allows Chart.js and Observable Plot report charts to coexist', async () => {
+test('expands report treemap chart components into D3 treemap initializers', async () => {
+  const definitions = await loadDefinitions(new URL('../resources/definitions', import.meta.url))
+  const rendered = renderReportHtml(
+    `# Treemap chart report
+
+<report-chart
+  type="treemap"
+  title="Journey breakdown"
+  value-suffix=" cases"
+  labels="J0107,J0106,J0101"
+  values="52208,11119,8648"
+></report-chart>
+`,
+    {
+      resourcesDir: path.resolve('resources'),
+      definitions,
+      inlineAssets: true,
+    },
+  )
+
+  assert.doesNotMatch(rendered.document, /<report-chart/i)
+  assert.match(rendered.document, /class="report-chart report-chart-treemap"/)
+  assert.match(rendered.document, /<div id="report-chart-1" class="report-chart-plot" role="img"/)
+  assert.match(rendered.document, /d3\.hierarchy\(\{ children: data \}\)/)
+  assert.match(rendered.document, /d3\.treemap\(\)/)
+  assert.match(rendered.document, /svg\.selectAll\("g"\)/)
+  assert.match(rendered.document, /tooltip\.className = "report-chart-floating-tooltip"/)
+  assert.match(rendered.document, /cell\.on\("mousemove"/)
+  assert.match(rendered.document, /const valueSuffix = " cases"/)
+})
+
+test('allows Chart.js, Observable Plot, and D3 report charts to coexist', async () => {
   const definitions = await loadDefinitions(new URL('../resources/definitions', import.meta.url))
   const rendered = renderReportHtml(
     `# Mixed chart report
@@ -246,6 +277,8 @@ test('allows Chart.js and Observable Plot report charts to coexist', async () =>
 <report-chart title="Cases" labels="A,B" values="10,20"></report-chart>
 
 <report-chart type="area" title="Trend" points="2026-04-01:10,2026-04-02:20"></report-chart>
+
+<report-chart type="treemap" title="Mix" labels="A,B" values="10,20"></report-chart>
 `,
     {
       resourcesDir: path.resolve('resources'),
@@ -256,8 +289,10 @@ test('allows Chart.js and Observable Plot report charts to coexist', async () =>
 
   assert.match(rendered.document, /<canvas id="report-chart-1"/)
   assert.match(rendered.document, /<div id="report-chart-2" class="report-chart-plot"/)
+  assert.match(rendered.document, /<div id="report-chart-3" class="report-chart-plot"/)
   assert.match(rendered.document, /new Chart\(canvas, /)
   assert.match(rendered.document, /target\.append\(Plot\.plot\(/)
+  assert.match(rendered.document, /d3\.treemap\(\)/)
 })
 
 test('applies dark report theme and generated navigation from frontmatter', async () => {
@@ -763,7 +798,7 @@ test('report chart components fail clearly when data is invalid', async () => {
   )
   assert.throws(
     () => renderReportHtml('<report-chart type="radar" labels="A" values="10"></report-chart>', options),
-    /Unsupported report-chart type "radar". Supported types: bar, line, doughnut, area/,
+    /Unsupported report-chart type "radar". Supported types: bar, line, doughnut, area, treemap/,
   )
   assert.throws(
     () => renderReportHtml('<report-chart type="doughnut" labels="A,B" values="10,-1"></report-chart>', options),
@@ -776,6 +811,14 @@ test('report chart components fail clearly when data is invalid', async () => {
   assert.throws(
     () => renderReportHtml('<report-chart type="area" points="2026-04-01:nope"></report-chart>', options),
     /report-chart area points must be x:y pairs with numeric y values/,
+  )
+  assert.throws(
+    () => renderReportHtml('<report-chart type="treemap" labels="A,B" values="10,-1"></report-chart>', options),
+    /report-chart treemap values must be zero or positive/,
+  )
+  assert.throws(
+    () => renderReportHtml('<report-chart type="treemap" labels="A,B" values="0,0"></report-chart>', options),
+    /report-chart treemap values must sum to more than zero/,
   )
   assert.throws(
     () => renderReportHtml('<report-unknown></report-unknown>', options),

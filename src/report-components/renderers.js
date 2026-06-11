@@ -9,7 +9,7 @@ import {
 } from './utils.js'
 
 export function renderReportChartHtml(chart) {
-  if (chart.chartType === 'area') return renderReportPlotChartHtml(chart)
+  if (chart.chartType === 'area' || chart.chartType === 'treemap') return renderReportPlotChartHtml(chart)
   return `<div class="report-chart report-chart-${escapeAttr(chart.chartType)}">
   ${chart.title ? `<div class="report-chart-title">${escapeHtml(chart.title)}</div>` : ''}
   <div class="report-chart-stage" style="height:${chart.height}px">
@@ -102,6 +102,7 @@ function renderReportRateBar(row) {
 
 export function renderReportChartScript(chart, context = {}) {
   if (chart.chartType === 'area') return renderReportAreaChartScript(chart, context)
+  if (chart.chartType === 'treemap') return renderReportTreemapChartScript(chart, context)
 
   const palette = chart.colors.length ? chart.colors : reportChartPalette(context.brand)
   const colors = chart.labels.map((_, index) => normalizeChartColor(palette[index % palette.length]))
@@ -210,6 +211,110 @@ ${datasetOptions}
 ${chartScales}
     }
   });
+})();`
+}
+
+function renderReportTreemapChartScript(chart, context = {}) {
+  const palette = chart.colors.length ? chart.colors : reportChartPalette(context.brand)
+  const fallbackColor = normalizeChartColor(palette[0]) || '#0F82F5'
+  const data = chart.labels.map((label, index) => ({
+    label,
+    value: chart.values[index],
+    color: normalizeChartColor(palette[index % palette.length]) || fallbackColor,
+  }))
+
+  return `(() => {
+  const target = document.getElementById(${jsString(chart.id)});
+  const themeRoot = target.closest(".deck-report") || document.body || document.documentElement;
+  const rootStyle = getComputedStyle(themeRoot);
+  const textColor = rootStyle.getPropertyValue("--text").trim() || "#ffffff";
+  const gridColor = rootStyle.getPropertyValue("--border").trim() || "rgba(148, 163, 184, 0.28)";
+  const tooltipBg = rootStyle.getPropertyValue("--bg-card").trim() || "rgba(15, 23, 42, 0.92)";
+  const valuePrefix = ${jsString(chart.valuePrefix)};
+  const valueSuffix = ${jsString(chart.valueSuffix)};
+  const valueFormatter = new Intl.NumberFormat("en-US", { maximumFractionDigits: 2 });
+  const formatTooltipValue = (value) => {
+    const numeric = Number(value);
+    const formatted = Number.isFinite(numeric) ? valueFormatter.format(numeric) : String(value ?? "");
+    return valuePrefix + formatted + valueSuffix;
+  };
+  const data = ${jsValue(data)};
+  const width = Math.max(320, target.clientWidth || 720);
+  const height = ${chart.height};
+  const root = d3.hierarchy({ children: data })
+    .sum((node) => node.value)
+    .sort((a, b) => b.value - a.value);
+  d3.treemap()
+    .size([width, height])
+    .paddingInner(5)
+    .round(true)(root);
+  target.textContent = "";
+  const tooltip = document.createElement("div");
+  tooltip.className = "report-chart-floating-tooltip";
+  tooltip.hidden = true;
+  const svg = d3.create("svg")
+    .attr("viewBox", [0, 0, width, height].join(" "))
+    .attr("width", width)
+    .attr("height", height)
+    .attr("role", "img")
+    .attr("aria-label", ${jsString(chart.ariaLabel)})
+    .style("display", "block")
+    .style("width", "100%")
+    .style("height", "100%");
+  const cell = svg.selectAll("g")
+    .data(root.leaves())
+    .join("g")
+    .attr("transform", (node) => "translate(" + node.x0 + "," + node.y0 + ")");
+  cell.append("rect")
+    .attr("width", (node) => Math.max(0, node.x1 - node.x0))
+    .attr("height", (node) => Math.max(0, node.y1 - node.y0))
+    .attr("rx", 6)
+    .attr("fill", (node) => node.data.color)
+    .attr("fill-opacity", 0.88)
+    .attr("stroke", tooltipBg)
+    .attr("stroke-width", 1.5);
+  cell.append("text")
+    .attr("x", 12)
+    .attr("y", 18)
+    .attr("fill", textColor)
+    .attr("font-size", 12)
+    .attr("font-weight", 700)
+    .style("paint-order", "stroke")
+    .style("stroke", "rgba(0, 0, 0, 0.32)")
+    .style("stroke-linejoin", "round")
+    .style("stroke-width", "2px")
+    .style("pointer-events", "none")
+    .each(function(node) {
+      const cellWidth = node.x1 - node.x0;
+      const cellHeight = node.y1 - node.y0;
+      if (cellWidth < 76 || cellHeight < 42) return;
+      const text = d3.select(this);
+      text.append("tspan").attr("x", 12).text(node.data.label);
+      text.append("tspan")
+        .attr("x", 12)
+        .attr("dy", 18)
+        .attr("fill", textColor)
+        .attr("fill-opacity", 0.78)
+        .attr("font-weight", 600)
+        .text(formatTooltipValue(node.data.value));
+    });
+  cell.on("mousemove", (event, node) => {
+    const rect = target.getBoundingClientRect();
+    tooltip.textContent = node.data.label + ": " + formatTooltipValue(node.data.value);
+    tooltip.style.left = Math.min(rect.width - 8, Math.max(8, event.clientX - rect.left)) + "px";
+    tooltip.style.top = Math.min(rect.height - 8, Math.max(8, event.clientY - rect.top)) + "px";
+    tooltip.hidden = false;
+    d3.select(event.currentTarget).select("rect").attr("stroke", gridColor).attr("fill-opacity", 1);
+  });
+  cell.on("mouseleave", (event) => {
+    tooltip.hidden = true;
+    d3.select(event.currentTarget).select("rect").attr("stroke", tooltipBg).attr("fill-opacity", 0.88);
+  });
+  target.addEventListener("mouseleave", () => {
+    tooltip.hidden = true;
+  });
+  target.append(svg.node());
+  target.append(tooltip);
 })();`
 }
 

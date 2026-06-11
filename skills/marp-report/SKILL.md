@@ -21,7 +21,7 @@ The report wrapper injects Chart.js, Observable Plot, and D3 into the generated 
 3. Create one output folder for the request. Prefer `Documents/Presentations/YYYY-MM-DD/<report-title-slug>/` when the user has not specified a location.
 4. Draft `report.md` in that folder. For dark navy, set `reportTheme: dark` in frontmatter. For reports with four or more sections, set `reportNav: true` to generate a sticky sidebar from headings.
 5. Let the renderer own brand chrome. Corporate logos, colors, fonts, and report background assets come from `tool/resources/definitions/brand.json` and `tool/resources`; do not hand-place branding in report Markdown.
-6. Use report components for fidelity. Use `<report-metric-grid>` for KPI cards, `<report-rate-bars>` for ranked distributions, `<report-callout>` for findings or actions, `<report-accent-card>` for recommendation cards, `<report-badge>` for statuses, and `<report-chart type="bar">` for standard bar charts. For component types that are not implemented yet, use the class patterns in `REFERENCE.md` as a temporary fallback.
+6. Use report components for fidelity. Use `<report-metric-grid>` for KPI cards, `<report-rate-bars>` for ranked distributions, `<report-callout>` for findings or actions, `<report-accent-card>` for recommendation cards, `<report-badge>` for statuses, and `<report-chart>` for supported chart types. For component types that are not implemented yet, use the class patterns in `REFERENCE.md` as a temporary fallback.
 7. Build from this skill folder:
 
 ```bash
@@ -40,6 +40,7 @@ node scripts/build-report.mjs <output-folder>/report.md --out-dir <output-folder
 - Keep technical field names as plain text in dark reports unless code formatting is truly necessary.
 - Use `<report-chart type="bar">`, `<report-chart type="line">`, or `<report-chart type="doughnut">` for standard Chart.js charts with renderer-owned hover tooltips.
 - Use `<report-chart type="area">` for Observable Plot time-series area charts with renderer-owned hover tips.
+- Use `<report-chart type="treemap">` for D3 treemaps with renderer-owned sizing, brand colors, and hover tips.
 - Use `<report-metric-grid>` for KPI summaries.
 - Use `<report-rate-bars>` for ranked distribution bars.
 - Use `<report-callout>` for info, warning, success, and danger findings.
@@ -47,7 +48,7 @@ node scripts/build-report.mjs <output-folder>/report.md --out-dir <output-folder
 - Use `<report-badge>` for table statuses and small inline state labels.
 - Use Chart.js manually only for chart types that are not yet supported as report components, such as stacked bar and radar charts.
 - Use Observable Plot manually only for chart types that are not yet supported as report components, such as dot, heatmap, and small-multiple charts.
-- Use D3 for bespoke SVG charts such as treemaps, custom arcs, Sankey-style flows, and force layouts.
+- Use D3 manually only for bespoke SVG charts that are not yet supported as report components, such as custom arcs, Sankey-style flows, and force layouts.
 - Use inline SVG when the visual should be static, exact, and dependency-free.
 
 ## Script Rules

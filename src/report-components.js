@@ -146,9 +146,12 @@ function validateReportComponentSyntax(source, context) {
 }
 
 function validateReportChart(chart, context) {
-  const supportedTypes = new Set(['bar', 'line', 'doughnut', 'area'])
+  const supportedTypes = new Set(['bar', 'line', 'doughnut', 'area', 'treemap'])
   if (!supportedTypes.has(chart.chartType)) {
-    fail(`Unsupported report-chart type "${chart.chartType}". Supported types: bar, line, doughnut, area.`, context)
+    fail(
+      `Unsupported report-chart type "${chart.chartType}". Supported types: bar, line, doughnut, area, treemap.`,
+      context,
+    )
   }
   if (chart.chartType === 'area') {
     if (chart.points.length === 0) {
@@ -159,6 +162,28 @@ function validateReportChart(chart, context) {
     }
     return
   }
+  if (chart.chartType === 'treemap') {
+    validateReportChartLabelsAndValues(chart, context)
+    if (chart.values.some((value) => value < 0)) {
+      fail('report-chart treemap values must be zero or positive.', context)
+    }
+    if (chart.values.reduce((sum, value) => sum + value, 0) <= 0) {
+      fail('report-chart treemap values must sum to more than zero.', context)
+    }
+    return
+  }
+  validateReportChartLabelsAndValues(chart, context)
+  if (chart.chartType === 'doughnut') {
+    if (chart.values.some((value) => value < 0)) {
+      fail('report-chart doughnut values must be zero or positive.', context)
+    }
+    if (chart.values.reduce((sum, value) => sum + value, 0) <= 0) {
+      fail('report-chart doughnut values must sum to more than zero.', context)
+    }
+  }
+}
+
+function validateReportChartLabelsAndValues(chart, context) {
   if (chart.labels.length === 0 || chart.values.length === 0) {
     fail('report-chart requires non-empty labels and values attributes.', context)
   }
@@ -170,14 +195,6 @@ function validateReportChart(chart, context) {
   }
   if (chart.values.some((value) => !Number.isFinite(value))) {
     fail('report-chart values must all be numeric.', context)
-  }
-  if (chart.chartType === 'doughnut') {
-    if (chart.values.some((value) => value < 0)) {
-      fail('report-chart doughnut values must be zero or positive.', context)
-    }
-    if (chart.values.reduce((sum, value) => sum + value, 0) <= 0) {
-      fail('report-chart doughnut values must sum to more than zero.', context)
-    }
   }
 }
 
