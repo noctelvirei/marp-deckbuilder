@@ -135,9 +135,13 @@ April volume is concentrated in one dominant journey. The top three journeys acc
 
 <report-data-table
   title="Journey breakdown"
+  compact="true"
   columns="Journey|Cases|Share|Status"
   types="text|number|percent|status"
+  align="left|right|right|center"
   rows="J0107|52208|67.1|Active;J0106|11119|14.3|Active;J0101|8648|11.1|Active;J0116|3751|4.8|Review"
+  totals="Total|75726|97.3|"
+  highlights="4:orange;1.3:green"
   caption="Registered and unregistered journey volume."
   source="Source: April journey export"
 ></report-data-table>

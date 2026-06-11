@@ -4810,12 +4810,18 @@ function parseReportDataTable(table2) {
   const rawTypes = splitPipe(table2.attr("types") || table2.attr("formats"));
   const types = rawTypes.length ? rawTypes.map(normalizeDataTableType) : columns.map(() => "text");
   const rows = splitRows(table2.attr("rows") || table2.attr("data")).map((row) => splitPipe(row, { keepEmpty: true }));
+  const totalsValue = table2.attr("totals") || table2.attr("total") || table2.attr("footer") || "";
+  const totals = cleanText(totalsValue) ? splitPipe(totalsValue, { keepEmpty: true }) : [];
   return {
     type: "data-table",
     title: table2.attr("title") || cleanText(table2.find("caption,h2,h3").first().text()),
     columns,
     types,
     rows,
+    compact: normalizeBoolean(table2.attr("compact") || table2.attr("dense")),
+    align: parseDataTableAlignments(table2.attr("align") || table2.attr("alignment")),
+    totals,
+    highlights: parseDataTableHighlights(table2.attr("highlights") || table2.attr("highlight")),
     caption: table2.attr("caption") || "",
     source: table2.attr("source") || ""
   };
@@ -4934,6 +4940,31 @@ function normalizeFigureSize(value = "") {
 function normalizeDataTableType(value = "") {
   return String(value || "text").trim().toLowerCase();
 }
+function normalizeBoolean(value = "") {
+  const token = String(value || "").trim().toLowerCase();
+  return ["1", "true", "yes", "y", "on", "compact", "dense"].includes(token);
+}
+function parseDataTableAlignments(value = "") {
+  return splitPipe(value).map((item) => {
+    const token = String(item || "").trim().toLowerCase();
+    if (token === "middle") return "center";
+    if (["left", "center", "right"].includes(token)) return token;
+    return token;
+  });
+}
+function parseDataTableHighlights(value = "") {
+  return splitRows(value).map((item) => {
+    const separator = item.includes("=") ? "=" : ":";
+    const [target, ...rest] = item.split(separator);
+    const [row, column] = cleanText(target).split(".");
+    return {
+      row: Number.parseInt(row, 10),
+      column: column ? Number.parseInt(column, 10) : 0,
+      variant: normalizeBadgeVariant(rest.join(separator)),
+      rawVariant: cleanText(rest.join(separator))
+    };
+  });
+}
 function splitPipe(value = "", options = {}) {
   const keepEmpty = Boolean(options.keepEmpty);
   const items = String(value || "").split("|").map((item) => cleanText(item));
@@ -5046,20 +5077,26 @@ function renderReportFigureHtml(figure) {
 </figure>`;
 }
 function renderReportDataTableHtml(table2) {
+  const className = ["report-data-table", table2.compact ? "report-data-table-compact" : ""].filter(Boolean).join(" ");
   const caption = [
     table2.caption ? `<span class="report-data-table-caption">${escapeHtml2(table2.caption)}</span>` : "",
     table2.source ? `<span class="report-data-table-source">${escapeHtml2(table2.source)}</span>` : ""
   ].filter(Boolean).join("\n    ");
-  return `<figure class="report-data-table">
+  const footer = table2.totals.length ? `      <tfoot>
+${renderReportDataTableRow(table2.totals, table2.types, table2, "total")}
+      </tfoot>
+` : "";
+  return `<figure class="${escapeAttr(className)}">
   ${table2.title ? `<div class="report-data-table-title">${escapeHtml2(table2.title)}</div>` : ""}
   <div class="report-data-table-scroll">
     <table>
       <thead>
-        <tr>${table2.columns.map((column) => `<th scope="col">${escapeHtml2(column)}</th>`).join("")}</tr>
+        <tr>${table2.columns.map((column, index) => renderReportDataTableHeader(column, table2, index)).join("")}</tr>
       </thead>
       <tbody>
-${table2.rows.map((row) => renderReportDataTableRow(row, table2.types)).join("\n")}
+${table2.rows.map((row, index) => renderReportDataTableRow(row, table2.types, table2, index + 1)).join("\n")}
       </tbody>
+${footer.trimEnd()}
     </table>
   </div>
   ${caption ? `<figcaption>
@@ -5132,11 +5169,23 @@ function renderReportMetricHtml(metric) {
   ${metric.sub ? `<div class="${escapeAttr(subClass)}">${escapeHtml2(metric.sub)}</div>` : ""}
 </div>`;
 }
-function renderReportDataTableRow(row, types) {
-  return `        <tr>${row.map((value, index) => renderReportDataTableCell(value, types[index])).join("")}</tr>`;
+function renderReportDataTableHeader(column, table2, index) {
+  const className = ["report-data-table-heading", reportDataTableAlignClass(table2, index)].filter(Boolean).join(" ");
+  return `<th scope="col" class="${escapeAttr(className)}">${escapeHtml2(column)}</th>`;
 }
-function renderReportDataTableCell(value, type = "text") {
-  const className = ["report-data-table-cell", `report-data-table-cell-${type}`].join(" ");
+function renderReportDataTableRow(row, types, table2, rowIndex) {
+  const highlight = rowIndex === "total" ? "" : reportDataTableRowHighlight(table2, rowIndex);
+  const className = ["report-data-table-row", rowIndex === "total" ? "report-data-table-total-row" : "", highlight].filter(Boolean).join(" ");
+  return `        <tr class="${escapeAttr(className)}">${row.map((value, index) => renderReportDataTableCell(value, types[index], table2, rowIndex, index)).join("")}</tr>`;
+}
+function renderReportDataTableCell(value, type = "text", table2 = {}, rowIndex = 0, cellIndex = 0) {
+  const className = [
+    "report-data-table-cell",
+    `report-data-table-cell-${type}`,
+    reportDataTableAlignClass(table2, cellIndex),
+    rowIndex === "total" ? "report-data-table-total-cell" : "",
+    rowIndex === "total" ? "" : reportDataTableCellHighlight(table2, rowIndex, cellIndex + 1)
+  ].filter(Boolean).join(" ");
   if (type === "number") {
     return `<td class="${escapeAttr(className)}">${escapeHtml2(formatReportNumber(parseDataTableNumber(value)))}</td>`;
   }
@@ -5144,10 +5193,25 @@ function renderReportDataTableCell(value, type = "text") {
     return `<td class="${escapeAttr(className)}">${escapeHtml2(formatReportPercent(parseDataTableNumber(value)))}</td>`;
   }
   if (type === "status") {
+    if (!String(value || "").trim()) return `<td class="${escapeAttr(className)}"></td>`;
     const variant = dataTableStatusVariant(value);
     return `<td class="${escapeAttr(className)}"><span class="report-badge report-badge-${escapeAttr(variant)}">${escapeHtml2(value)}</span></td>`;
   }
   return `<td class="${escapeAttr(className)}">${escapeHtml2(value)}</td>`;
+}
+function reportDataTableAlignClass(table2 = {}, index = 0) {
+  const explicit = table2.align?.[index] || "";
+  const type = table2.types?.[index] || "text";
+  const align = explicit || (type === "number" || type === "percent" ? "right" : "left");
+  return ["left", "center", "right"].includes(align) ? `report-data-table-align-${align}` : "";
+}
+function reportDataTableRowHighlight(table2 = {}, rowIndex = 0) {
+  const highlight = table2.highlights?.find((item) => item.row === rowIndex && !item.column);
+  return highlight ? `report-data-table-highlight-${highlight.variant}` : "";
+}
+function reportDataTableCellHighlight(table2 = {}, rowIndex = 0, columnIndex = 0) {
+  const highlight = table2.highlights?.find((item) => item.row === rowIndex && item.column === columnIndex);
+  return highlight ? `report-data-table-highlight-${highlight.variant}` : "";
 }
 function renderReportKeyValueItem(item) {
   return `    <div class="report-key-value">
@@ -6190,6 +6254,8 @@ function validateReportFigure(figure, context) {
 }
 function validateReportDataTable(table2, context) {
   const supportedTypes = /* @__PURE__ */ new Set(["text", "number", "percent", "status"]);
+  const supportedAlignments = /* @__PURE__ */ new Set(["left", "center", "right"]);
+  const supportedHighlights = /* @__PURE__ */ new Set(["blue", "green", "orange", "red", "muted"]);
   if (table2.columns.length === 0) {
     fail("report-data-table requires columns or headers.", context);
   }
@@ -6206,6 +6272,45 @@ function validateReportDataTable(table2, context) {
     if (!supportedTypes.has(type)) {
       fail(
         `report-data-table type "${type}" is not available. Supported types: text, number, percent, status. Ask the skill maker to add missing table cell types.`,
+        context
+      );
+    }
+  });
+  if (table2.align.length > 0 && table2.align.length !== table2.columns.length) {
+    fail(
+      `report-data-table align/columns length mismatch: ${table2.align.length} alignment(s), ${table2.columns.length} column(s).`,
+      context
+    );
+  }
+  table2.align.forEach((align) => {
+    if (!supportedAlignments.has(align)) {
+      fail("report-data-table align supports only left, center, or right.", context);
+    }
+  });
+  if (table2.totals.length > 0) {
+    if (table2.totals.length !== table2.columns.length) {
+      fail(
+        `report-data-table totals row has ${table2.totals.length} cell(s), but ${table2.columns.length} column(s) were declared.`,
+        context
+      );
+    }
+    table2.totals.forEach((value, cellIndex) => {
+      const type = table2.types[cellIndex];
+      if ((type === "number" || type === "percent") && !Number.isFinite(parseDataTableNumber2(value))) {
+        fail(`report-data-table totals column "${table2.columns[cellIndex]}" must be numeric.`, context);
+      }
+    });
+  }
+  table2.highlights.forEach((highlight) => {
+    if (!Number.isInteger(highlight.row) || highlight.row < 1 || highlight.row > table2.rows.length) {
+      fail("report-data-table highlights must target an existing 1-based row number.", context);
+    }
+    if (highlight.column && (!Number.isInteger(highlight.column) || highlight.column < 1 || highlight.column > table2.columns.length)) {
+      fail("report-data-table cell highlights must target an existing 1-based column number.", context);
+    }
+    if (!supportedHighlights.has(highlight.variant)) {
+      fail(
+        `report-data-table highlight "${highlight.rawVariant}" is not available. Supported highlights: blue, green, orange, red, muted.`,
         context
       );
     }
@@ -6863,6 +6968,12 @@ body {
   vertical-align: middle;
 }
 
+.report-data-table-compact th,
+.report-data-table-compact td {
+  padding: 8px 10px;
+  font-size: 12px;
+}
+
 .report-data-table th {
   background: var(--bg-subtle, #071228);
   color: var(--white, #ffffff);
@@ -6872,7 +6983,7 @@ body {
   text-transform: uppercase;
 }
 
-.report-data-table tr:nth-child(even) td {
+.report-data-table tbody tr:nth-child(even) td {
   background: rgba(15, 130, 245, 0.04);
 }
 
@@ -6880,15 +6991,59 @@ body {
   border-bottom: 0;
 }
 
+.report-data-table tfoot td {
+  border-top: 2px solid var(--border, #dbe5f2);
+  border-bottom: 0;
+  background: rgba(15, 130, 245, 0.09);
+  color: var(--text, #0f172a);
+  font-weight: 750;
+}
+
 .report-data-table-cell-number,
 .report-data-table-cell-percent {
   font-family: Consolas, "SFMono-Regular", monospace;
-  text-align: right;
   white-space: nowrap;
+}
+
+.report-data-table .report-data-table-align-left {
+  text-align: left;
+}
+
+.report-data-table .report-data-table-align-center {
+  text-align: center;
+}
+
+.report-data-table .report-data-table-align-right {
+  text-align: right;
 }
 
 .report-data-table-cell-status {
   white-space: nowrap;
+}
+
+.report-data-table-highlight-blue td,
+.report-data-table-cell.report-data-table-highlight-blue {
+  background: rgba(15, 130, 245, 0.16);
+}
+
+.report-data-table-highlight-green td,
+.report-data-table-cell.report-data-table-highlight-green {
+  background: rgba(31, 169, 93, 0.16);
+}
+
+.report-data-table-highlight-orange td,
+.report-data-table-cell.report-data-table-highlight-orange {
+  background: rgba(245, 158, 11, 0.18);
+}
+
+.report-data-table-highlight-red td,
+.report-data-table-cell.report-data-table-highlight-red {
+  background: rgba(239, 68, 68, 0.16);
+}
+
+.report-data-table-highlight-muted td,
+.report-data-table-cell.report-data-table-highlight-muted {
+  background: rgba(100, 116, 139, 0.14);
 }
 
 .report-data-table figcaption {

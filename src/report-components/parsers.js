@@ -91,6 +91,8 @@ export function parseReportDataTable(table) {
   const rawTypes = splitPipe(table.attr('types') || table.attr('formats'))
   const types = rawTypes.length ? rawTypes.map(normalizeDataTableType) : columns.map(() => 'text')
   const rows = splitRows(table.attr('rows') || table.attr('data')).map((row) => splitPipe(row, { keepEmpty: true }))
+  const totalsValue = table.attr('totals') || table.attr('total') || table.attr('footer') || ''
+  const totals = cleanText(totalsValue) ? splitPipe(totalsValue, { keepEmpty: true }) : []
 
   return {
     type: 'data-table',
@@ -98,6 +100,10 @@ export function parseReportDataTable(table) {
     columns,
     types,
     rows,
+    compact: normalizeBoolean(table.attr('compact') || table.attr('dense')),
+    align: parseDataTableAlignments(table.attr('align') || table.attr('alignment')),
+    totals,
+    highlights: parseDataTableHighlights(table.attr('highlights') || table.attr('highlight')),
     caption: table.attr('caption') || '',
     source: table.attr('source') || '',
   }
@@ -229,6 +235,34 @@ function normalizeFigureSize(value = '') {
 
 function normalizeDataTableType(value = '') {
   return String(value || 'text').trim().toLowerCase()
+}
+
+function normalizeBoolean(value = '') {
+  const token = String(value || '').trim().toLowerCase()
+  return ['1', 'true', 'yes', 'y', 'on', 'compact', 'dense'].includes(token)
+}
+
+function parseDataTableAlignments(value = '') {
+  return splitPipe(value).map((item) => {
+    const token = String(item || '').trim().toLowerCase()
+    if (token === 'middle') return 'center'
+    if (['left', 'center', 'right'].includes(token)) return token
+    return token
+  })
+}
+
+function parseDataTableHighlights(value = '') {
+  return splitRows(value).map((item) => {
+    const separator = item.includes('=') ? '=' : ':'
+    const [target, ...rest] = item.split(separator)
+    const [row, column] = cleanText(target).split('.')
+    return {
+      row: Number.parseInt(row, 10),
+      column: column ? Number.parseInt(column, 10) : 0,
+      variant: normalizeBadgeVariant(rest.join(separator)),
+      rawVariant: cleanText(rest.join(separator)),
+    }
+  })
 }
 
 function splitPipe(value = '', options = {}) {

@@ -56,7 +56,7 @@ Reports use normal Markdown plus compact `report-*` component tags. The renderer
 | KPI card grid | `report-metric-grid` with `report-metric` children | Metric `value` and/or `label` |
 | Metadata or context summary | `report-key-values` | `items`; optional `title`, `columns` |
 | Ranked distribution bars | `report-rate-bars` | `labels`, `values`; optional `shares` |
-| Formatted data table | `report-data-table` | `columns`, `rows`; optional `types`, `caption`, `source` |
+| Formatted data table | `report-data-table` | `columns`, `rows`; optional `types`, `compact`, `align`, `totals`, `highlights`, `caption`, `source` |
 | Citation or methodology note | `report-source-note` | Body text and/or `source`; optional `title`, `date` |
 | Mixed insight/action card grid | `report-card-grid` with `report-card` children | Card `title` and/or body text |
 | Ordered milestones/events | `report-timeline` with `report-event` children | Event date/title/body |
@@ -272,9 +272,13 @@ Use `report-data-table` for compact formatted tables with renderer-owned number,
 ```md
 <report-data-table
   title="Journey breakdown"
+  compact="true"
   columns="Journey|Cases|Share|Status"
   types="text|number|percent|status"
+  align="left|right|right|center"
   rows="J0107|52208|67.1|Active;J0116|3751|4.8|Review"
+  totals="Total|55959|71.9|"
+  highlights="2:orange;1.3:green"
   caption="Registered and unregistered journey volume."
   source="Source: April journey export"
 ></report-data-table>
@@ -288,6 +292,10 @@ Supported attributes:
 | `columns` | yes | Pipe-separated column labels. Alias: `headers`. |
 | `types` | no | Pipe-separated cell types. Supports `text`, `number`, `percent`, `status`. Defaults to `text` for every column. Alias: `formats`. |
 | `rows` | yes | Semicolon-separated rows with pipe-separated cells. Alias: `data`. |
+| `compact` | no | Use `true` for denser report tables. Alias: `dense`. |
+| `align` | no | Pipe-separated column alignment. Supports `left`, `center`, `right`. Defaults numeric and percent columns to right alignment. Alias: `alignment`. |
+| `totals` | no | Pipe-separated footer row with the same number of cells as `columns`. Aliases: `total`, `footer`. |
+| `highlights` | no | Semicolon-separated row or cell highlights. Use `2:orange` for row 2 or `1.3:green` for row 1, column 3. Supports `blue`, `green`, `orange`, `red`, `muted`. Alias: `highlight`. |
 | `caption` | no | Visible caption below the table. |
 | `source` | no | Source note under the caption. |
 

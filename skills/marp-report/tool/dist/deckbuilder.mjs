@@ -88,7 +88,7 @@ async function reportCommand(argv) {
   }
   const [{ loadDefinitions }, { renderReportHtml }] = await Promise.all([
     import("./chunks/brand-6PXFCDA5.mjs"),
-    import("./chunks/report-Q7GGFFOE.mjs")
+    import("./chunks/report-VV4GCGZC.mjs")
   ]);
   const inputPath = path.resolve(argv.input);
   const projectRoot = process.cwd();

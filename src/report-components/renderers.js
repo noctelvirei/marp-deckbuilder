@@ -48,22 +48,30 @@ export function renderReportFigureHtml(figure) {
 }
 
 export function renderReportDataTableHtml(table) {
+  const className = ['report-data-table', table.compact ? 'report-data-table-compact' : ''].filter(Boolean).join(' ')
   const caption = [
     table.caption ? `<span class="report-data-table-caption">${escapeHtml(table.caption)}</span>` : '',
     table.source ? `<span class="report-data-table-source">${escapeHtml(table.source)}</span>` : '',
   ]
     .filter(Boolean)
     .join('\n    ')
-  return `<figure class="report-data-table">
+  const footer = table.totals.length
+    ? `      <tfoot>
+${renderReportDataTableRow(table.totals, table.types, table, 'total')}
+      </tfoot>
+`
+    : ''
+  return `<figure class="${escapeAttr(className)}">
   ${table.title ? `<div class="report-data-table-title">${escapeHtml(table.title)}</div>` : ''}
   <div class="report-data-table-scroll">
     <table>
       <thead>
-        <tr>${table.columns.map((column) => `<th scope="col">${escapeHtml(column)}</th>`).join('')}</tr>
+        <tr>${table.columns.map((column, index) => renderReportDataTableHeader(column, table, index)).join('')}</tr>
       </thead>
       <tbody>
-${table.rows.map((row) => renderReportDataTableRow(row, table.types)).join('\n')}
+${table.rows.map((row, index) => renderReportDataTableRow(row, table.types, table, index + 1)).join('\n')}
       </tbody>
+${footer.trimEnd()}
     </table>
   </div>
   ${caption ? `<figcaption>\n    ${caption}\n  </figcaption>` : ''}
@@ -147,12 +155,31 @@ function renderReportMetricHtml(metric) {
 </div>`
 }
 
-function renderReportDataTableRow(row, types) {
-  return `        <tr>${row.map((value, index) => renderReportDataTableCell(value, types[index])).join('')}</tr>`
+function renderReportDataTableHeader(column, table, index) {
+  const className = ['report-data-table-heading', reportDataTableAlignClass(table, index)].filter(Boolean).join(' ')
+  return `<th scope="col" class="${escapeAttr(className)}">${escapeHtml(column)}</th>`
 }
 
-function renderReportDataTableCell(value, type = 'text') {
-  const className = ['report-data-table-cell', `report-data-table-cell-${type}`].join(' ')
+function renderReportDataTableRow(row, types, table, rowIndex) {
+  const highlight = rowIndex === 'total' ? '' : reportDataTableRowHighlight(table, rowIndex)
+  const className = ['report-data-table-row', rowIndex === 'total' ? 'report-data-table-total-row' : '', highlight]
+    .filter(Boolean)
+    .join(' ')
+  return `        <tr class="${escapeAttr(className)}">${row
+    .map((value, index) => renderReportDataTableCell(value, types[index], table, rowIndex, index))
+    .join('')}</tr>`
+}
+
+function renderReportDataTableCell(value, type = 'text', table = {}, rowIndex = 0, cellIndex = 0) {
+  const className = [
+    'report-data-table-cell',
+    `report-data-table-cell-${type}`,
+    reportDataTableAlignClass(table, cellIndex),
+    rowIndex === 'total' ? 'report-data-table-total-cell' : '',
+    rowIndex === 'total' ? '' : reportDataTableCellHighlight(table, rowIndex, cellIndex + 1),
+  ]
+    .filter(Boolean)
+    .join(' ')
   if (type === 'number') {
     return `<td class="${escapeAttr(className)}">${escapeHtml(formatReportNumber(parseDataTableNumber(value)))}</td>`
   }
@@ -160,10 +187,28 @@ function renderReportDataTableCell(value, type = 'text') {
     return `<td class="${escapeAttr(className)}">${escapeHtml(formatReportPercent(parseDataTableNumber(value)))}</td>`
   }
   if (type === 'status') {
+    if (!String(value || '').trim()) return `<td class="${escapeAttr(className)}"></td>`
     const variant = dataTableStatusVariant(value)
     return `<td class="${escapeAttr(className)}"><span class="report-badge report-badge-${escapeAttr(variant)}">${escapeHtml(value)}</span></td>`
   }
   return `<td class="${escapeAttr(className)}">${escapeHtml(value)}</td>`
+}
+
+function reportDataTableAlignClass(table = {}, index = 0) {
+  const explicit = table.align?.[index] || ''
+  const type = table.types?.[index] || 'text'
+  const align = explicit || (type === 'number' || type === 'percent' ? 'right' : 'left')
+  return ['left', 'center', 'right'].includes(align) ? `report-data-table-align-${align}` : ''
+}
+
+function reportDataTableRowHighlight(table = {}, rowIndex = 0) {
+  const highlight = table.highlights?.find((item) => item.row === rowIndex && !item.column)
+  return highlight ? `report-data-table-highlight-${highlight.variant}` : ''
+}
+
+function reportDataTableCellHighlight(table = {}, rowIndex = 0, columnIndex = 0) {
+  const highlight = table.highlights?.find((item) => item.row === rowIndex && item.column === columnIndex)
+  return highlight ? `report-data-table-highlight-${highlight.variant}` : ''
 }
 
 function renderReportKeyValueItem(item) {

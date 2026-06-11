@@ -39,7 +39,7 @@ Use these renderer-backed component tags in `report.md`. They look like HTML tag
 | KPI cards | `<report-metric-grid>` with `<report-metric>` children | Metric `value` and/or `label` |
 | Metadata or context summary | `<report-key-values>` | `items`; optional `title`, `columns` |
 | Ranked distribution bars | `<report-rate-bars>` | `labels`, `values`; optional `shares` |
-| Formatted data table | `<report-data-table>` | `columns`, `rows`; optional `types`, `caption`, `source` |
+| Formatted data table | `<report-data-table>` | `columns`, `rows`; optional `types`, `compact`, `align`, `totals`, `highlights`, `caption`, `source` |
 | Citation or methodology note | `<report-source-note>` | Body text and/or `source`; optional `title`, `date` |
 | Mixed insight/action card grid | `<report-card-grid>` with `<report-card>` children | Card `title` and/or body text |
 | Ordered milestones/events | `<report-timeline>` with `<report-event>` children | Event date/title/body |
@@ -85,7 +85,7 @@ Generate `report.md` in this order:
 - Use `<report-metric-grid>` for KPI summaries.
 - Use `<report-key-values>` for metadata, report context, parameters, and compact label/value summaries.
 - Use `<report-rate-bars>` for ranked distribution bars.
-- Use `<report-data-table>` for formatted tables with text, number, percent, and status columns.
+- Use `<report-data-table>` for formatted tables with text, number, percent, status columns, compact mode, alignment, totals, and row/cell highlights.
 - Use `<report-source-note>` for citations, methodology, assumptions, and data freshness notes.
 - Use `<report-card-grid>` for grouped insights, action plans, ownership summaries, and mixed card layouts.
 - Use `<report-timeline>` for ordered milestones, delivery paths, decision logs, and event sequences.

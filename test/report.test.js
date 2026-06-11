@@ -731,9 +731,15 @@ test('expands report data tables into formatted table components', async () => {
   assert.doesNotMatch(rendered.document, /<report-data-table/i)
   assert.match(rendered.document, /<figure class="report-data-table">/)
   assert.match(rendered.document, /<div class="report-data-table-title">Journey breakdown<\/div>/)
-  assert.match(rendered.document, /<th scope="col">Journey<\/th>/)
-  assert.match(rendered.document, /<td class="report-data-table-cell report-data-table-cell-number">52,208<\/td>/)
-  assert.match(rendered.document, /<td class="report-data-table-cell report-data-table-cell-percent">67\.1%<\/td>/)
+  assert.match(rendered.document, /<th scope="col" class="report-data-table-heading report-data-table-align-left">Journey<\/th>/)
+  assert.match(
+    rendered.document,
+    /<td class="report-data-table-cell report-data-table-cell-number report-data-table-align-right">52,208<\/td>/,
+  )
+  assert.match(
+    rendered.document,
+    /<td class="report-data-table-cell report-data-table-cell-percent report-data-table-align-right">67\.1%<\/td>/,
+  )
   assert.match(rendered.document, /<span class="report-badge report-badge-green">Active<\/span>/)
   assert.match(rendered.document, /<span class="report-badge report-badge-orange">Review<\/span>/)
   assert.match(
@@ -741,6 +747,45 @@ test('expands report data tables into formatted table components', async () => {
     /<span class="report-data-table-caption">Registered and unregistered journey volume\.<\/span>/,
   )
   assert.match(rendered.document, /<span class="report-data-table-source">Source: April journey export<\/span>/)
+})
+
+test('expands enhanced report data table options', async () => {
+  const definitions = await loadDefinitions(new URL('../resources/definitions', import.meta.url))
+  const rendered = renderReportHtml(
+    `# Enhanced data table report
+
+<report-data-table
+  title="Operational summary"
+  compact="true"
+  columns="Journey|Cases|Share|Status"
+  types="text|number|percent|status"
+  align="left|right|right|center"
+  rows="J0107|52208|67.1|Active;J0116|3751|4.8|Review"
+  totals="Total|55959|71.9|"
+  highlights="2:orange;1.3:green"
+></report-data-table>
+`,
+    {
+      resourcesDir: path.resolve('resources'),
+      definitions,
+      inlineAssets: true,
+    },
+  )
+
+  assert.match(rendered.document, /<figure class="report-data-table report-data-table-compact">/)
+  assert.match(rendered.document, /<th scope="col" class="report-data-table-heading report-data-table-align-center">Status<\/th>/)
+  assert.match(rendered.document, /<tr class="report-data-table-row report-data-table-highlight-orange">/)
+  assert.match(
+    rendered.document,
+    /<td class="report-data-table-cell report-data-table-cell-percent report-data-table-align-right report-data-table-highlight-green">67\.1%<\/td>/,
+  )
+  assert.match(rendered.document, /<tfoot>/)
+  assert.match(rendered.document, /<tr class="report-data-table-row report-data-table-total-row">/)
+  assert.match(
+    rendered.document,
+    /<td class="report-data-table-cell report-data-table-cell-number report-data-table-align-right report-data-table-total-cell">55,959<\/td>/,
+  )
+  assert.doesNotMatch(rendered.document, /report-badge-muted"><\/span>/)
 })
 
 test('report data tables fail clearly when malformed', async () => {
@@ -780,6 +825,22 @@ test('report data tables fail clearly when malformed', async () => {
     () =>
       renderReportHtml('<report-data-table columns="A" types="number" rows="not-a-number"></report-data-table>', options),
     /report-data-table row 1 column "A" must be numeric/,
+  )
+  assert.throws(
+    () => renderReportHtml('<report-data-table columns="A|B" rows="A|1" align="left"></report-data-table>', options),
+    /report-data-table align\/columns length mismatch/,
+  )
+  assert.throws(
+    () => renderReportHtml('<report-data-table columns="A|B" rows="A|1" totals="Total"></report-data-table>', options),
+    /report-data-table totals row has 1 cell\(s\), but 2 column\(s\) were declared/,
+  )
+  assert.throws(
+    () => renderReportHtml('<report-data-table columns="A" rows="A" highlights="2:orange"></report-data-table>', options),
+    /report-data-table highlights must target an existing 1-based row number/,
+  )
+  assert.throws(
+    () => renderReportHtml('<report-data-table columns="A" rows="A" highlights="1:purple"></report-data-table>', options),
+    /report-data-table highlight "purple" is not available/,
   )
 })
 

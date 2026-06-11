@@ -390,6 +390,8 @@ function validateReportFigure(figure, context) {
 
 function validateReportDataTable(table, context) {
   const supportedTypes = new Set(['text', 'number', 'percent', 'status'])
+  const supportedAlignments = new Set(['left', 'center', 'right'])
+  const supportedHighlights = new Set(['blue', 'green', 'orange', 'red', 'muted'])
   if (table.columns.length === 0) {
     fail('report-data-table requires columns or headers.', context)
   }
@@ -406,6 +408,45 @@ function validateReportDataTable(table, context) {
     if (!supportedTypes.has(type)) {
       fail(
         `report-data-table type "${type}" is not available. Supported types: text, number, percent, status. Ask the skill maker to add missing table cell types.`,
+        context,
+      )
+    }
+  })
+  if (table.align.length > 0 && table.align.length !== table.columns.length) {
+    fail(
+      `report-data-table align/columns length mismatch: ${table.align.length} alignment(s), ${table.columns.length} column(s).`,
+      context,
+    )
+  }
+  table.align.forEach((align) => {
+    if (!supportedAlignments.has(align)) {
+      fail('report-data-table align supports only left, center, or right.', context)
+    }
+  })
+  if (table.totals.length > 0) {
+    if (table.totals.length !== table.columns.length) {
+      fail(
+        `report-data-table totals row has ${table.totals.length} cell(s), but ${table.columns.length} column(s) were declared.`,
+        context,
+      )
+    }
+    table.totals.forEach((value, cellIndex) => {
+      const type = table.types[cellIndex]
+      if ((type === 'number' || type === 'percent') && !Number.isFinite(parseDataTableNumber(value))) {
+        fail(`report-data-table totals column "${table.columns[cellIndex]}" must be numeric.`, context)
+      }
+    })
+  }
+  table.highlights.forEach((highlight) => {
+    if (!Number.isInteger(highlight.row) || highlight.row < 1 || highlight.row > table.rows.length) {
+      fail('report-data-table highlights must target an existing 1-based row number.', context)
+    }
+    if (highlight.column && (!Number.isInteger(highlight.column) || highlight.column < 1 || highlight.column > table.columns.length)) {
+      fail('report-data-table cell highlights must target an existing 1-based column number.', context)
+    }
+    if (!supportedHighlights.has(highlight.variant)) {
+      fail(
+        `report-data-table highlight "${highlight.rawVariant}" is not available. Supported highlights: blue, green, orange, red, muted.`,
         context,
       )
     }

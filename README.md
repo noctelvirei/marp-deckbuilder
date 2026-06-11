@@ -358,7 +358,7 @@ Reports can use:
 - Metric cards via `report-metric-grid`.
 - Metadata summaries via `report-key-values`.
 - Ranked rate bars via `report-rate-bars`.
-- Formatted data tables via `report-data-table`.
+- Formatted data tables with compact mode, totals, alignment, and highlights via `report-data-table`.
 - Source and methodology notes via `report-source-note`.
 - Mixed action/insight grids via `report-card-grid`.
 - Ordered milestones via `report-timeline`.
