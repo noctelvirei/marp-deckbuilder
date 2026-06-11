@@ -11,7 +11,7 @@ import { renderDeckHtml } from '../src/render.js'
 import { resolveSurfaceResourceFile } from '../src/resources.js'
 import { writePptx } from '../src/pptx.js'
 
-const tmpDir = path.resolve('.tmp', 'tests')
+const tmpDir = path.resolve('.tmp', 'tests', String(process.pid))
 
 test('renders Marp Deckbuilder HTML', async () => {
   const source = await readFile(new URL('../samples/demo.md', import.meta.url), 'utf8')
@@ -28,6 +28,26 @@ test('renders Marp Deckbuilder HTML', async () => {
   assert.match(rendered.document, /Marp Deckbuilder Demo/)
   assert.match(rendered.document, /@page/)
   assert.match(rendered.document, /<style data-deckbuilder-theme>/)
+})
+
+test('renders rich HTML showcase with renderer-owned runtime and print fallbacks', async () => {
+  const source = await readFile(new URL('../samples/rich-html-showcase.md', import.meta.url), 'utf8')
+  const definitions = await loadDefinitions(new URL('../resources/definitions', import.meta.url))
+  const deck = parseDeckMarkdown(source)
+  const rendered = renderDeckHtml(deck, { resourcesDir: 'resources', definitions })
+
+  assert.match(rendered.document, /<script data-deckbuilder-rich-html>/)
+  assert.match(rendered.document, /window\.deckRichHtml/)
+  assert.match(rendered.document, /deck-rich-printing/)
+  assert.match(rendered.document, /data-deck-rich-cover/)
+  assert.match(rendered.document, /data-deck-rich-book/)
+  assert.match(rendered.document, /book-print/)
+  assert.match(rendered.document, /data-deck-rich-radar/)
+  assert.match(rendered.document, /data-deck-rich-gauge/)
+  assert.match(rendered.document, /data-deck-rich-close/)
+  assert.doesNotMatch(rendered.document, /<deck-rich-cover\b/)
+  assert.doesNotMatch(rendered.document, /<deck-magazine-book\b/)
+  assert.doesNotMatch(rendered.document, /<deck-rich-card\b/)
 })
 
 test('writes editable fallback PPTX', async () => {

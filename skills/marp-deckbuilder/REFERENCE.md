@@ -627,6 +627,8 @@ HTML-only slide.
 
 HTML is the high-fidelity presentation format. Use raw HTML, inline SVG, and scoped CSS for slides that should feel more like a polished data story than a standard PowerPoint page. Keep the source compact enough that the user can ask Claude to change the data, labels, or emphasis.
 
+For renderer-owned rich effects such as cinematic covers, animated rings, bar/line/donut charts, magazine page flips, particle networks, neon/glass treatments, radar charts, gauges, and staged reveals, use the separate `marp-rich-html` reference. Those slides should contain content and custom tags only; the renderer owns CSS, JavaScript, animation behavior, print mode, and PDF-safe fallbacks.
+
 Use `deck-visual` when a rich SVG should also land in PPTX as a faithful visual. Use `deck-chart`, `deck-stat-grid`, `deck-card-grid`, or the other structured components when PowerPoint editability matters more than exact visual fidelity.
 
 For analytics, research, customer, and executive decks, do not default to a lowest-common-denominator slide. Make the HTML version the premium presentation: at least one main insight should use a richer HTML/SVG/JS treatment than the editable PPTX fallback.

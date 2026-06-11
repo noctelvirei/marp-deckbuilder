@@ -1,8 +1,9 @@
 # Marp Deckbuilder Agent Guide
 
-This repository builds two portable, brandable Markdown skills:
+This repository builds three portable, brandable Markdown skills:
 
 - `marp-deckbuilder`: builds presentation decks as HTML slideshows and editable PPTX files.
+- `marp-rich-html`: documents renderer-owned rich HTML deck tags for cinematic covers, animated charts, page flips, and browser-safe print fallbacks.
 - `marp-report`: builds long-form, scrollable HTML reports that can be printed to PDF.
 
 This README is written for coding agents. It explains the project shape, the safe editing surface, the branding contract, and how to make changes without confusing authored Markdown, generated bundles, brand assets, and runtime code.
@@ -33,6 +34,7 @@ There are three layers:
 | Need | Use | Output | Notes |
 | --- | --- | --- | --- |
 | A presentation, PowerPoint, slide deck, board deck, sales deck, or executive deck | `skills/marp-deckbuilder` | HTML slideshow plus editable PPTX | Use known `deck-*` components when PPTX editability matters. |
+| A cinematic rich HTML deck slide, animated chart, particle cover, page flip, radar, gauge, neon, or glass effect | `skills/marp-rich-html` with `skills/marp-deckbuilder` | HTML slideshow with renderer-owned runtime and print fallbacks | Author the rich custom tags only; build with deckbuilder. |
 | A written report, readout, analysis document, findings summary, or browser page to print | `skills/marp-report` | Single HTML report | Browser charts can be higher fidelity than PPTX. Print to PDF from the browser. |
 
 Keep these skills separate. They can share capabilities and visual language, but one creates decks and the other creates reports.
@@ -79,6 +81,8 @@ Portable skills:
 - `skills/marp-deckbuilder/scripts/build-deck.mjs`: deck build wrapper used inside the skill.
 - `skills/marp-deckbuilder/tool/dist/`: generated runtime bundle for the deck skill.
 - `skills/marp-deckbuilder/tool/resources/`: resources bundled with the deck skill.
+- `skills/marp-rich-html/SKILL.md`: concise authoring rules for renderer-owned rich deck tags.
+- `skills/marp-rich-html/REFERENCE.md`: rich tag syntax, child tags, print behavior, and examples.
 - `skills/marp-report/SKILL.md`: concise report skill instructions for agents.
 - `skills/marp-report/REFERENCE.md`: report component and chart reference.
 - `skills/marp-report/scripts/build-report.mjs`: report build wrapper used inside the skill.

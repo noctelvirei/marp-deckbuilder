@@ -35,6 +35,7 @@ node scripts/build-deck.mjs <output-folder>/deck.md --out-dir <output-folder>
 - Treat HTML as the premium presentation format and PPTX as the editable business handoff.
 - Use supported `deck-*` components when the slide must remain editable in PowerPoint.
 - Use `deck-visual` for rich inline SVG charts, maps, dashboards, and annotated diagrams. HTML keeps the SVG inline; PPTX embeds the SVG as a crisp visual image. Put essential fills, strokes, fonts, and labels inside the SVG because PPTX receives only the SVG.
+- Use the `marp-rich-html` reference for renderer-owned cinematic covers, animated charts, magazine page flips, particles, neon/glass effects, radar charts, gauges, and reveal slides. Author those effects with the provided custom tags only; do not paste effect CSS or animation JavaScript into Markdown.
 - Use browser-only HTML, scoped CSS, and JavaScript when the HTML slide needs richer behavior than PowerPoint can edit. Mark those slides with `<!-- pptx: skip -->` or `<!-- html-only: true -->`.
 - Pair each browser-only slide with a simpler editable fallback marked `<!-- html: skip -->`, `<!-- html-skip: true -->`, or `<!-- pptx-only: true -->` when the PPTX audience needs the same point.
 - Use Chart.js for standard bar, stacked bar, line, and doughnut slides.

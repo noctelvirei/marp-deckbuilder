@@ -1,5 +1,9 @@
 # Marp Report Reference
 
+Reports are single-page HTML documents. They are not slide decks. Authors write
+Markdown and renderer-owned rich effect tags; the renderer owns CSS, layout,
+runtime behavior, print behavior, and offline vendor injection.
+
 ## Build Command
 
 From the `skills/marp-report` folder:
@@ -8,355 +12,157 @@ From the `skills/marp-report` folder:
 node scripts/build-report.mjs report.md --out-dir output
 ```
 
-The wrapper calls the bundled renderer at `tool/dist/deckbuilder.mjs` and uses resources from `tool/resources`.
+For PDF, open the generated HTML in a browser and use Print to PDF.
 
-For PDF, open the generated HTML in a browser and use Print to PDF. No browser engine is bundled.
-
-## Report Skeleton
-
-Use this shape for rich reports. Keep chart init scripts inside `<main>` before the closing tags.
+## Frontmatter
 
 ```md
 ---
 title: Usage Report
-subtitle: April 2026
+subtitle: April 2026 journey volume
+surface: dark
 ---
-
-<style>
-/* Paste the dark navy CSS setup here. */
-</style>
-
-<div class="r-layout">
-<aside class="r-sidebar">
-<div class="r-sidebar-title">Contents</div>
-<nav>
-<a href="#summary">Summary</a>
-<a href="#volume">Volume</a>
-<a href="#findings">Findings</a>
-</nav>
-</aside>
-<main class="r-main">
-
-<h2 id="summary">Executive Summary</h2>
-
-Report prose goes here.
-
-<script>
-document.addEventListener('DOMContentLoaded', function() {
-  // Chart init code goes here.
-});
-</script>
-
-</main>
-</div>
 ```
 
-## Dark Navy CSS Setup
+Fields:
 
-Paste this at the top of `report.md` before the layout skeleton.
+| Field | Purpose |
+| --- | --- |
+| `title` | Report cover title and browser title |
+| `subtitle` | Report cover subtitle |
+| `surface: dark` | Use the Lightico dark report surface |
+| omit `surface` | Use the default light report surface |
 
-```html
-<style>
-:root {
-  --bg: #060D18;
-  --bg-card: #0D1D36;
-  --bg-subtle: #071228;
-  --border: #1E3A5F;
-  --border-dim: rgba(30,58,95,.45);
-  --blue: #0F82F5;
-  --cyan: #59D6FD;
-  --purple: #5143D5;
-  --green: #66CC8E;
-  --orange: #F99358;
-  --red: #FC5161;
-  --white: #FFFFFF;
-  --text: #C8D8F0;
-  --text-dim: #8B9AB5;
-  --font-mono: "Consolas", "SFMono-Regular", monospace;
-}
-body { background: var(--bg) !important; color: var(--text) !important; }
-.deck-report { background: var(--bg-subtle) !important; box-shadow: none !important; max-width: 1200px !important; }
-.report-body { padding: 0 !important; }
-.report-body h2 { color: var(--cyan) !important; border-top: none !important; border-bottom: 1px solid var(--border) !important; font-size: 1.15rem !important; font-weight: 500 !important; text-transform: uppercase; letter-spacing: .06em; padding-bottom: 8px; margin-top: 40px !important; }
-.report-body h3 { color: var(--cyan) !important; font-size: .8rem !important; font-weight: 600 !important; text-transform: uppercase; letter-spacing: .08em; }
-.report-body p, .report-body li { color: var(--text) !important; font-size: .93rem; }
-.report-body a { color: var(--cyan) !important; }
-.report-body hr { border-top-color: var(--border) !important; margin: 32px 0 !important; }
-.report-body table { font-size: .87rem; }
-.report-body thead tr { background: var(--bg-card) !important; border-top: 2px solid var(--blue) !important; }
-.report-body th { color: var(--white) !important; font-size: .72rem !important; text-transform: uppercase; letter-spacing: .06em; background: transparent !important; border-bottom: 1px solid var(--border) !important; }
-.report-body td { color: var(--text) !important; border-color: var(--border-dim) !important; vertical-align: middle; }
-.report-body tr:nth-child(even) td { background: rgba(13,31,56,.4) !important; }
-.report-body tr:hover td { background: rgba(89,214,253,.05) !important; }
-.report-body blockquote { background: var(--bg-card) !important; border-left: 4px solid var(--blue) !important; color: var(--text) !important; padding: 14px 18px !important; border-radius: 0 6px 6px 0; }
-code { background: var(--bg-card) !important; color: var(--cyan) !important; border: 1px solid var(--border) !important; font-family: var(--font-mono); padding: 1px 5px; border-radius: 3px; font-size: .85em; }
-.r-layout { display: grid; grid-template-columns: 200px 1fr; gap: 40px; max-width: 1200px; margin: 0 auto; padding: 32px; }
-.r-sidebar { position: sticky; top: 24px; background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px; padding: 20px; align-self: start; }
-.r-sidebar-title { font-size: .65rem; font-weight: 600; text-transform: uppercase; letter-spacing: .1em; color: var(--text-dim); margin-bottom: 12px; }
-.r-sidebar a { display: block; color: var(--text-dim); text-decoration: none; font-size: .82rem; padding: 7px 10px; border-radius: 4px; transition: all .15s; }
-.r-sidebar a:hover { color: var(--cyan); background: rgba(89,214,253,.08); }
-.r-main { min-width: 0; padding: 32px 40px 60px; }
-.r-metric-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px,1fr)); gap: 14px; margin: 18px 0; }
-.r-metric { background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px; padding: 18px; text-align: center; }
-.r-metric-value { font-size: 1.9rem; font-weight: 300; color: var(--white); line-height: 1; margin-bottom: 5px; }
-.r-metric-label { font-size: .7rem; font-weight: 500; text-transform: uppercase; letter-spacing: .08em; color: var(--text-dim); }
-.r-metric-sub { font-size: .76rem; margin-top: 7px; color: var(--green); }
-.r-metric-sub.down { color: var(--red); }
-.r-card { background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px; padding: 22px; margin-bottom: 14px; }
-.r-card-accent { background: var(--bg-card); border: 1px solid var(--border); border-top: 3px solid var(--blue); border-radius: 12px; padding: 22px; margin-bottom: 14px; }
-.r-card-accent.cyan { border-top-color: var(--cyan); }
-.r-card-accent.green { border-top-color: var(--green); }
-.r-card-accent.orange { border-top-color: var(--orange); }
-.r-card-accent.red { border-top-color: var(--red); }
-.r-card-accent.purple { border-top-color: var(--purple); }
-.r-chart-wrap { background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px; padding: 22px; margin: 18px 0; }
-.r-chart-title { font-size: .75rem; font-weight: 600; text-transform: uppercase; letter-spacing: .08em; color: var(--text-dim); margin-bottom: 16px; }
-.r-rate-bar { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
-.r-rate-label { font-size: .82rem; min-width: 110px; color: var(--text); }
-.r-rate-track { flex: 1; height: 22px; background: rgba(30,58,95,.6); border-radius: 4px; overflow: hidden; }
-.r-rate-fill { height: 100%; border-radius: 4px; display: flex; align-items: center; padding-left: 10px; font-size: .72rem; font-weight: 600; color: var(--white); white-space: nowrap; }
-.r-rate-pct { font-size: .76rem; font-family: var(--font-mono); color: var(--text-dim); min-width: 42px; text-align: right; }
-.r-callout { display: flex; gap: 14px; padding: 14px 18px; border-radius: 8px; margin: 16px 0; border: 1px solid; }
-.r-callout.info { background: rgba(15,130,245,.1); border-color: rgba(15,130,245,.3); color: #93c5fd; }
-.r-callout.warning { background: rgba(249,147,88,.1); border-color: rgba(249,147,88,.3); color: #fdba74; }
-.r-callout.success { background: rgba(102,204,142,.1); border-color: rgba(102,204,142,.3); color: #86efac; }
-.r-callout.danger { background: rgba(252,81,97,.1); border-color: rgba(252,81,97,.3); color: #fca5a5; }
-.r-badge { display: inline-flex; align-items: center; font-size: .66rem; font-weight: 600; text-transform: uppercase; letter-spacing: .07em; padding: 2px 7px; border-radius: 999px; border: 1px solid; }
-.r-badge.blue { background: rgba(15,130,245,.12); color: var(--blue); border-color: rgba(15,130,245,.35); }
-.r-badge.green { background: rgba(102,204,142,.12); color: var(--green); border-color: rgba(102,204,142,.35); }
-.r-badge.orange { background: rgba(249,147,88,.12); color: var(--orange); border-color: rgba(249,147,88,.35); }
-.r-badge.red { background: rgba(252,81,97,.12); color: var(--red); border-color: rgba(252,81,97,.35); }
-.r-badge.muted { background: rgba(139,154,181,.1); color: var(--text-dim); border-color: rgba(139,154,181,.25); }
-.r-two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
-.r-three-col { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
-.r-legend { display: flex; flex-wrap: wrap; gap: 16px; margin-top: 14px; font-size: .75rem; color: var(--text-dim); }
-.r-legend-item { display: flex; align-items: center; gap: 7px; }
-.r-legend-swatch { width: 20px; height: 3px; border-radius: 2px; display: inline-block; }
-::-webkit-scrollbar { width: 8px; }
-::-webkit-scrollbar-track { background: var(--bg); }
-::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
-</style>
+## Structure
+
+Use Markdown headings, prose, tables, lists, and blockquotes. The renderer wraps
+the content in a report page, creates the cover, and builds a sticky table of
+contents when there are four or more body headings.
+
+```md
+# Executive summary
+
+The report is one scrolling HTML page.
+
+## Volume
+
+The dominant journey accounts for most cases.
+
+## Breakdown
+
+| Journey | Cases | Status |
+| --- | ---: | --- |
+| J0107 | 52,208 | <span class="r-badge green">Active</span> |
+
+## Actions
+
+1. Confirm the data owner.
+2. Review the outlier journey.
 ```
 
-## Component Tags And Classes
+Do not write `<main>`, sidebars, layout wrappers, or report-level CSS. The
+renderer creates those.
 
-Reports use normal Markdown plus these HTML classes:
+## Rich Effect Tags
 
-| Pattern | Required classes | Optional modifiers |
+These tags are allowed inside reports. In report mode they render as in-flow
+blocks inside the single page, not as slides.
+
+| Tag | Use for | Child tags |
 | --- | --- | --- |
-| Sidebar layout | `r-layout`, `r-sidebar`, `r-sidebar-title`, `r-main` | none |
-| Metrics | `r-metric-grid`, `r-metric`, `r-metric-value`, `r-metric-label` | `r-metric-sub`, `down` |
-| Cards | `r-card`, `r-card-accent` | `cyan`, `green`, `orange`, `red`, `purple` |
-| Chart frame | `r-chart-wrap`, `r-chart-title` | `r-legend`, `r-legend-item`, `r-legend-swatch` |
-| Rate bars | `r-rate-bar`, `r-rate-label`, `r-rate-track`, `r-rate-fill`, `r-rate-pct` | inline `width` and `background` |
-| Callouts | `r-callout` | `info`, `warning`, `success`, `danger` |
-| Badges | `r-badge` | `blue`, `green`, `orange`, `red`, `muted` |
-| Grids | `r-two-col`, `r-three-col` | none |
+| `deck-rich-stats` or `deck-metric-rings` | Animated metric rings | `deck-rich-metric` |
+| `deck-rich-bars` | Animated grouped bar chart | `deck-rich-series` |
+| `deck-rich-line` | Animated SVG line chart | `deck-rich-series` |
+| `deck-rich-donut` | Animated donut chart | `deck-rich-segment` |
+| `deck-rich-timeline` | Staged timeline | `deck-rich-milestone` |
+| `deck-tilt-cards` | 3D tilt cards | `deck-rich-card` |
+| `deck-glass-cards` | Glass card grid | `deck-rich-card` |
+| `deck-radar-chart` | Radar chart | `deck-rich-axis` |
+| `deck-stagger-grid` | Staggered feature grid | `deck-rich-card` |
+| `deck-comparison-reveal` | Capability comparison | `deck-rich-column`, `deck-rich-row` |
+| `deck-gauge` | Gauge and metric bars | `deck-rich-metric` |
+| `deck-reveal-stack` | Staged narrative bridge | attributes only |
 
-Do not use `deck-*` tags in reports. They are presentation components.
+Report mode rejects slide-only components such as `deck-card-grid`,
+`deck-chart`, `deck-divider`, and `deck-close`.
 
-### Metric Grid
+### Metric Rings
 
-```html
-<div class="r-metric-grid">
-  <div class="r-metric">
-    <div class="r-metric-value">77,951</div>
-    <div class="r-metric-label">Total cases</div>
-    <div class="r-metric-sub">+12% vs prior</div>
-  </div>
-  <div class="r-metric">
-    <div class="r-metric-value">94.3%</div>
-    <div class="r-metric-label">Completion rate</div>
-    <div class="r-metric-sub down">-1.1 pp</div>
-  </div>
-</div>
+```md
+<deck-rich-stats eyebrow="Report metric rings" title="Operational|Highlights">
+  <deck-rich-metric value="99.9" unit="%" label="Availability" progress="99.9" color="blue"></deck-rich-metric>
+  <deck-rich-metric value="127" unit="k" label="Daily Users" progress="85" color="cyan"></deck-rich-metric>
+  <deck-rich-metric value="2.8" unit="s" label="Avg Completion" progress="70" color="green"></deck-rich-metric>
+</deck-rich-stats>
 ```
 
-### Rate Bars
+### Bars
 
-```html
-<div class="r-rate-bar">
-  <span class="r-rate-label">J0107</span>
-  <div class="r-rate-track">
-    <div class="r-rate-fill" style="width:67%;background:var(--blue)">52,208</div>
-  </div>
-  <span class="r-rate-pct">67.1%</span>
-</div>
+```md
+<deck-rich-bars title="Journey|Volume" labels="Q1,Q2,Q3,Q4">
+  <deck-rich-series name="Platform" values="65,72,68,85" color="blue"></deck-rich-series>
+  <deck-rich-series name="Mobile" values="40,55,62,74" color="cyan"></deck-rich-series>
+  <deck-rich-series name="Integration" values="30,38,52,61" color="purple"></deck-rich-series>
+</deck-rich-bars>
 ```
 
-### Callouts
+### Donut
 
-```html
-<div class="r-callout info"><div><strong>Info:</strong> Three journeys drive most volume.</div></div>
-<div class="r-callout warning"><div><strong>Warning:</strong> One journey is unregistered.</div></div>
-<div class="r-callout success"><div><strong>Success:</strong> Completion is above target.</div></div>
-<div class="r-callout danger"><div><strong>Action:</strong> A control is failing.</div></div>
+```md
+<deck-rich-donut title="Channel|Mix" total="486" total-label="Sessions">
+  <deck-rich-segment label="Digital" value="45" color="blue"></deck-rich-segment>
+  <deck-rich-segment label="Mobile" value="25" color="cyan"></deck-rich-segment>
+  <deck-rich-segment label="Assisted" value="20" color="orange"></deck-rich-segment>
+  <deck-rich-segment label="Partner" value="10" color="green"></deck-rich-segment>
+</deck-rich-donut>
 ```
 
-### Accent Cards
+### Radar And Gauge
 
-```html
-<div class="r-three-col">
-  <div class="r-card-accent"><h3>Primary</h3><p>Main finding.</p></div>
-  <div class="r-card-accent green"><h3>Positive</h3><p>Target met.</p></div>
-  <div class="r-card-accent orange"><h3>Watch</h3><p>Needs review.</p></div>
-</div>
+```md
+<deck-radar-chart title="Capability|Radar">
+  <deck-rich-axis label="Speed" value="92" baseline="70" color="blue"></deck-rich-axis>
+  <deck-rich-axis label="Accuracy" value="88" baseline="75" color="cyan"></deck-rich-axis>
+  <deck-rich-axis label="Scale" value="95" baseline="60" color="green"></deck-rich-axis>
+  <deck-rich-axis label="Security" value="98" baseline="80" color="orange"></deck-rich-axis>
+</deck-radar-chart>
+
+<deck-gauge title="Performance|Gauge" value="87" label="CSAT Score" sub="Customer Satisfaction">
+  <deck-rich-metric value="94" unit="%" label="Response Rate" progress="94" color="blue"></deck-rich-metric>
+  <deck-rich-metric value="87" unit="%" label="First Contact Resolution" progress="87" color="cyan"></deck-rich-metric>
+</deck-gauge>
 ```
 
-### Badges
+## Inline Report Classes
 
-```html
-<span class="r-badge blue">Live</span>
-<span class="r-badge green">Active</span>
-<span class="r-badge orange">Watch</span>
-<span class="r-badge red">Blocked</span>
-<span class="r-badge muted">Pending</span>
+Use these small classes only where Markdown needs a compact inline treatment.
+Do not recreate layout wrappers with them.
+
+| Class | Use |
+| --- | --- |
+| `r-badge blue` | Informational status |
+| `r-badge green` | Positive/active status |
+| `r-badge orange` | Watch/review status |
+| `r-badge red` | Blocked/risk status |
+| `r-badge muted` | Pending/neutral status |
+| `r-callout warning` | Optional short HTML callout if a blockquote is not specific enough |
+| `r-card-accent green/orange/red/purple` | Optional compact finding card |
+
+Prefer Markdown blockquotes before custom callout HTML:
+
+```md
+> Action: J0116 generated meaningful volume but is not in the registered journey profile.
 ```
 
-## JavaScript Charts
+## What Not To Write
 
-The report wrapper injects Chart.js, Observable Plot, and D3 into the final HTML head from local vendor files. Do not include CDN script tags in Markdown. Only write the init script.
+Do not put these in `report.md`:
 
-Place the init script inside `<main class="r-main">` as the final element before `</main>`.
+- `<style>` blocks
+- `<script>` blocks
+- CDN `<script src>` tags
+- layout skeletons such as `<main>`, `<aside>`, or sticky sidebar HTML
+- hand-authored Chart.js, D3, or Observable Plot initializers
+- slide-only deck components
 
-### Chart.js Bar
-
-```html
-<div class="r-chart-wrap">
-  <div class="r-chart-title">Cases by journey</div>
-  <div style="position:relative;height:320px">
-    <canvas id="journeyChart" role="img" aria-label="Cases by journey"></canvas>
-  </div>
-</div>
-
-<script>
-document.addEventListener('DOMContentLoaded', function() {
-  const gridColor = 'rgba(30,58,95,.5)';
-  const tickColor = '#8B9AB5';
-  new Chart(document.getElementById('journeyChart'), {
-    type: 'bar',
-    data: {
-      labels: ['J0107', 'J0106', 'J0101', 'J0116'],
-      datasets: [{
-        data: [52208, 11119, 8648, 3751],
-        backgroundColor: ['#0f82f5', '#59d6fd', '#5143d5', '#f99358'],
-        borderRadius: 4
-      }]
-    },
-    options: {
-      responsive: true,
-      maintainAspectRatio: false,
-      plugins: { legend: { display: false } },
-      scales: {
-        x: { ticks: { color: tickColor }, grid: { color: gridColor } },
-        y: { ticks: { color: tickColor, callback: v => v.toLocaleString() }, grid: { color: gridColor } }
-      }
-    }
-  });
-});
-</script>
-```
-
-### Observable Plot Area
-
-```html
-<div class="r-chart-wrap">
-  <div class="r-chart-title">Daily volume</div>
-  <div id="volumePlot"></div>
-</div>
-
-<script>
-document.addEventListener('DOMContentLoaded', function() {
-  const data = [
-    { day: 'W1', cases: 1200 },
-    { day: 'W2', cases: 1480 },
-    { day: 'W3', cases: 1390 },
-    { day: 'W4', cases: 1710 }
-  ];
-  const chart = Plot.plot({
-    width: 680,
-    height: 280,
-    style: { background: 'transparent', color: '#c8d8f0', fontFamily: 'Poppins,sans-serif' },
-    x: { label: null },
-    y: { grid: true, label: null, tickFormat: d => d.toLocaleString() },
-    marks: [
-      Plot.areaY(data, { x: 'day', y: 'cases', fill: '#0f82f5', fillOpacity: .25 }),
-      Plot.lineY(data, { x: 'day', y: 'cases', stroke: '#0f82f5', strokeWidth: 2 }),
-      Plot.ruleY([0], { stroke: '#1e3a5f' })
-    ]
-  });
-  document.getElementById('volumePlot').append(chart);
-});
-</script>
-```
-
-### D3 Treemap
-
-```html
-<div class="r-chart-wrap">
-  <div class="r-chart-title">Volume by journey</div>
-  <div id="treemap"></div>
-</div>
-
-<script>
-document.addEventListener('DOMContentLoaded', function() {
-  const raw = [
-    { name: 'J0107', value: 52208 },
-    { name: 'J0106', value: 11119 },
-    { name: 'J0101', value: 8648 },
-    { name: 'J0116', value: 3751 }
-  ];
-  const colours = ['#0f82f5', '#59d6fd', '#5143d5', '#f99358'];
-  const width = 680;
-  const height = 300;
-  const root = d3.hierarchy({ children: raw }).sum(d => d.value);
-  d3.treemap().size([width, height]).padding(3)(root);
-  const svg = d3.select('#treemap').append('svg').attr('width', width).attr('height', height);
-  const cell = svg.selectAll('g').data(root.leaves()).join('g')
-    .attr('transform', d => `translate(${d.x0},${d.y0})`);
-  cell.append('rect')
-    .attr('width', d => d.x1 - d.x0)
-    .attr('height', d => d.y1 - d.y0)
-    .attr('fill', (_, i) => colours[i % colours.length])
-    .attr('rx', 4);
-  cell.append('text')
-    .attr('x', 8)
-    .attr('y', 20)
-    .attr('fill', '#ffffff')
-    .attr('font-size', 13)
-    .attr('font-family', 'Poppins,sans-serif')
-    .text(d => d.data.name);
-});
-</script>
-```
-
-## Inline SVG
-
-Use inline SVG for exact static visuals. Keep fills dark and text readable on navy.
-
-```html
-<div class="r-chart-wrap">
-  <div class="r-chart-title">Completion funnel</div>
-  <svg viewBox="0 0 640 240" role="img" aria-label="Completion funnel" style="width:100%;max-width:640px">
-    <rect x="60" y="24" width="520" height="52" fill="#0f82f5" rx="4"/>
-    <text x="84" y="57" fill="#ffffff" font-family="Poppins,sans-serif" font-size="15">Invited</text>
-    <text x="552" y="57" fill="#ffffff" font-family="Poppins,sans-serif" font-size="15" text-anchor="end">8,420</text>
-    <rect x="100" y="94" width="440" height="52" fill="#5143d5" rx="4"/>
-    <text x="124" y="127" fill="#ffffff" font-family="Poppins,sans-serif" font-size="15">Started</text>
-    <text x="512" y="127" fill="#ffffff" font-family="Poppins,sans-serif" font-size="15" text-anchor="end">6,568</text>
-    <rect x="160" y="164" width="320" height="52" fill="#66cc8e" rx="4"/>
-    <text x="184" y="197" fill="#071228" font-family="Poppins,sans-serif" font-size="15">Completed</text>
-    <text x="452" y="197" fill="#071228" font-family="Poppins,sans-serif" font-size="15" text-anchor="end">5,136</text>
-  </svg>
-</div>
-```
-
-## Authoring Safety
-
-- No slide delimiters (`---`) unless you want a horizontal rule in report prose.
-- No `deck-*` tags.
-- No CDN script tags.
-- No minified library source in Markdown.
-- No init scripts after `</main></div>`.
-- No em dash or double-hyphen separators in JavaScript comments.
-- No light SVG islands on dark navy backgrounds.
+Use Markdown for narrative/data and the rich renderer tags for visual effects.
