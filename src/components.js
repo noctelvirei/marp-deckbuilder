@@ -193,7 +193,7 @@ export function compileDeckComponents(source, options = {}) {
     })
     if (!model) return
     components.push(model)
-    root(element).replaceWith(renderRichHtml(model))
+    root(element).replaceWith(asMarkdownHtmlBlock(renderRichHtml(model)))
   })
   root('deck-divider').each((_, element) => compileDivider(root, element, components, context))
   root('deck-close').each((_, element) => compileClose(root, element, components))
@@ -203,6 +203,10 @@ export function compileDeckComponents(source, options = {}) {
     source: root('root').html() || source,
     components,
   }
+}
+
+function asMarkdownHtmlBlock(html) {
+  return String(html || '').replace(/>\s+</g, '><').trim()
 }
 
 function compileStatGrid(root, element, components, context) {

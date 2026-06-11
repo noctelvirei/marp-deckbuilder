@@ -55,6 +55,22 @@ test('renders rich HTML showcase with renderer-owned runtime and print fallbacks
   assert.doesNotMatch(rendered.document, /<deck-rich-card\b/)
 })
 
+test('renders repeated rich metric children as live HTML, not escaped text', async () => {
+  const definitions = await loadDefinitions(new URL('../resources/definitions', import.meta.url))
+  const deck = parseDeckMarkdown(`<deck-rich-stats eyebrow="Renderer-owned metrics" title="Animated|Runtime Signals">
+  <deck-rich-metric value="3" unit="" label="baseline skills" progress="75" color="blue"></deck-rich-metric>
+  <deck-rich-metric value="11" unit="" label="chunks per skill" progress="92" color="cyan"></deck-rich-metric>
+  <deck-rich-metric value="100" unit="%" label="custom tag source" progress="100" color="green"></deck-rich-metric>
+</deck-rich-stats>`)
+  const rendered = renderDeckHtml(deck, { resourcesDir: 'resources', definitions })
+
+  assert.equal((rendered.document.match(/<div class="ring-item">/g) || []).length, 3)
+  assert.match(rendered.document, /<div class="ring-lbl">chunks per skill<\/div>/)
+  assert.match(rendered.document, /<div class="ring-lbl">custom tag source<\/div>/)
+  assert.doesNotMatch(rendered.document, /&lt;\/div&gt;&lt;div class=/)
+  assert.doesNotMatch(rendered.document, /&lt;div class="ring-c"/)
+})
+
 test('writes editable fallback PPTX', async () => {
   await rm(tmpDir, { recursive: true, force: true })
   await mkdir(tmpDir, { recursive: true })

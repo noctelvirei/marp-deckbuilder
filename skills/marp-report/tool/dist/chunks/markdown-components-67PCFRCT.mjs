@@ -48417,7 +48417,7 @@ function compileDeckComponents(source, options = {}) {
     });
     if (!model) return;
     components.push(model);
-    root2(element).replaceWith(renderRichHtml(model));
+    root2(element).replaceWith(asMarkdownHtmlBlock(renderRichHtml(model)));
   });
   root2("deck-divider").each((_, element) => compileDivider(root2, element, components, context));
   root2("deck-close").each((_, element) => compileClose(root2, element, components));
@@ -48426,6 +48426,9 @@ function compileDeckComponents(source, options = {}) {
     source: root2("root").html() || source,
     components
   };
+}
+function asMarkdownHtmlBlock(html3) {
+  return String(html3 || "").replace(/>\s+</g, "><").trim();
 }
 function compileStatGrid(root2, element, components, context) {
   const grid = root2(element);

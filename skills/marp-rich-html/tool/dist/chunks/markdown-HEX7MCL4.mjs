@@ -7,7 +7,7 @@ import {
   parseSlide,
   splitFrontmatter,
   splitSlides
-} from "./markdown-components-E7NZLPZD.mjs";
+} from "./markdown-components-67PCFRCT.mjs";
 import "./resource-resolver-YFTCHU5C.mjs";
 import "./module-interop-IDDWZGZI.mjs";
 export {

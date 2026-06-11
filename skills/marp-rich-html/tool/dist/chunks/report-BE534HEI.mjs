@@ -4,13 +4,13 @@ import {
   require_punycode,
   resolveResourceUrls,
   richHtmlRuntimeScript
-} from "./html-renderer-X76SZ4BY.mjs";
+} from "./html-renderer-6C377OUW.mjs";
 import {
   compileDeckComponents,
   decodeHTML,
   load,
   splitFrontmatter
-} from "./markdown-components-E7NZLPZD.mjs";
+} from "./markdown-components-67PCFRCT.mjs";
 import "./node-deprecate-shim-ZA7UPLW5.mjs";
 import {
   normalizeResourceReference,
