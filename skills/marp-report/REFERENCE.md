@@ -90,6 +90,7 @@ Reports use normal Markdown plus compact `report-*` component tags. The renderer
 | D3 treemap | `report-chart type="treemap"` | `labels`, `values` |
 | D3 funnel | `report-chart type="funnel"` | `labels`, `values` |
 | D3 heatmap | `report-chart type="heatmap"` | `x-labels`, `y-labels`, matrix `values` |
+| D3 Sankey flow | `report-chart type="sankey"` | `links` as `source>target:value` |
 
 ## Generating Report Markdown
 
@@ -129,7 +130,7 @@ Supported `report-page-break` attributes:
 
 ### Report Chart: Chart.js, Observable Plot, And D3
 
-Use `report-chart` for standard Chart.js bar, line, doughnut, grouped bar, stacked bar, waterfall, bullet, scatter, bubble, histogram, boxplot, and Pareto charts, Observable Plot area charts, D3 treemaps, D3 funnels, and D3 heatmaps. Do not write the `<canvas>`, chart container, SVG, or JavaScript initializer yourself. The renderer generates hover tooltips that show the represented value.
+Use `report-chart` for standard Chart.js bar, line, doughnut, grouped bar, stacked bar, waterfall, bullet, scatter, bubble, histogram, boxplot, and Pareto charts, Observable Plot area charts, D3 treemaps, D3 funnels, D3 heatmaps, and D3 Sankey flows. Do not write the `<canvas>`, chart container, SVG, or JavaScript initializer yourself. The renderer generates hover tooltips that show the represented value.
 
 ```md
 <report-chart
@@ -305,11 +306,21 @@ Use `report-chart` for standard Chart.js bar, line, doughnut, grouped bar, stack
 ></report-chart>
 ```
 
+```md
+<report-chart
+  type="sankey"
+  title="Journey flow"
+  series="Cases"
+  value-suffix=" cases"
+  links="Opened>Started:44120,Started>Completed:37980,Started>Exception:3751,Exception>Recovered:2160"
+></report-chart>
+```
+
 Supported attributes:
 
 | Attribute | Required | Notes |
 | --- | --- | --- |
-| `type` | no | Supports `bar`, `line`, `doughnut`, `grouped-bar`, `stacked-bar`, `waterfall`, `bullet`, `scatter`, `bubble`, `histogram`, `boxplot`, `pareto`, `area`, `treemap`, `funnel`, and `heatmap`. Defaults to `bar`. Aliases: `donut`, `tree-map`, `grouped`, `clustered-bar`, `stacked`. |
+| `type` | no | Supports `bar`, `line`, `doughnut`, `grouped-bar`, `stacked-bar`, `waterfall`, `bullet`, `scatter`, `bubble`, `histogram`, `boxplot`, `pareto`, `area`, `treemap`, `funnel`, `heatmap`, and `sankey`. Defaults to `bar`. Aliases: `donut`, `tree-map`, `grouped`, `clustered-bar`, `stacked`. |
 | `title` | no | Rendered above the chart and used as the accessible label. |
 | `series` | no | Dataset label for single-series charts. For `grouped-bar` and `stacked-bar`, use pipe-separated series names such as `Opened|Completed`. Aliases: `datasets`, `series-labels`. |
 | `labels` | yes for Chart.js, `treemap`, and `funnel` types | Comma-separated labels. For `area`, this can be used with `values` as an alternative to `points`. |
@@ -326,6 +337,7 @@ Supported attributes:
 | `x-labels` | yes for `heatmap` | Pipe-separated column labels. Aliases: `columns`, `x`. |
 | `y-labels` | yes for `heatmap` | Pipe-separated row labels. Aliases: `rows`, `y`. |
 | `values` for `heatmap` | yes | Semicolon-separated rows with pipe-separated numeric cells. Row count must match `y-labels`; cell count must match `x-labels`. Aliases: `matrix`, `series-values`. |
+| `links` for `sankey` | yes | Comma-separated flow links using `source>target:value`, `source->target:value`, or `source=>target:value`. Values must be greater than zero and links must not contain cycles. Aliases: `flows`, `edges`. |
 | `points` | yes for `area` | Comma-separated `x:y` or `x=y` points such as `2026-04-01:2200,2026-04-02:2600`. Alias: `data`. |
 | `colors` | no | Comma-separated hex colors. Defaults to brand chart colors. |
 | `height` | no | Pixel height, clamped by the renderer. Defaults to `320`. |

@@ -19,6 +19,7 @@ export function parseReportChart(chart, index = 0) {
   const yAxisLabel = chart.attr('y-label') || chart.attr('y-axis-label') || chart.attr('y-title') || ''
   const binCount = Number.parseInt(chart.attr('bins') || chart.attr('bucket-count') || chart.attr('buckets') || '10', 10)
   const points = parseChartPoints(chart.attr('points') || chart.attr('data'))
+  const links = parseChartLinks(chart.attr('links') || chart.attr('flows') || chart.attr('edges') || '')
   const seriesNames = splitPipe(chart.attr('series') || chart.attr('datasets') || chart.attr('series-labels'))
   const xLabels = splitPipe(chart.attr('x-labels') || chart.attr('columns') || chart.attr('x') || '')
   const yLabels = splitPipe(chart.attr('y-labels') || chart.attr('rows') || chart.attr('y') || '')
@@ -47,6 +48,7 @@ export function parseReportChart(chart, index = 0) {
     targets,
     colors,
     points: derivedPoints,
+    links,
     seriesNames,
     xLabels,
     yLabels,
@@ -384,6 +386,24 @@ function parseChartPoints(value = '') {
       x: cleanText(x),
       y: Number(String(y || '').trim()),
       r: rest.length ? Number(rest.join(separator).trim()) : undefined,
+    }
+  })
+}
+
+function parseChartLinks(value = '') {
+  return splitCsv(value).map((item) => {
+    const match = String(item || '').match(/^(.+?)(?:->|=>|>)(.+?)(?::|=)(.+)$/)
+    if (!match) {
+      return {
+        source: '',
+        target: '',
+        value: Number.NaN,
+      }
+    }
+    return {
+      source: cleanText(match[1]),
+      target: cleanText(match[2]),
+      value: Number(String(match[3] || '').trim().replace(/,/g, '')),
     }
   })
 }

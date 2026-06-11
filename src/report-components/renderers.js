@@ -9,7 +9,7 @@ import {
 } from './utils.js'
 
 export function renderReportChartHtml(chart) {
-  if (['area', 'treemap', 'funnel', 'heatmap'].includes(chart.chartType)) return renderReportPlotChartHtml(chart)
+  if (['area', 'treemap', 'funnel', 'heatmap', 'sankey'].includes(chart.chartType)) return renderReportPlotChartHtml(chart)
   return `<div class="report-chart report-chart-${escapeAttr(chart.chartType)}">
   ${chart.title ? `<div class="report-chart-title">${escapeHtml(chart.title)}</div>` : ''}
   <div class="report-chart-stage" style="height:${chart.height}px">
@@ -376,6 +376,7 @@ export function renderReportChartScript(chart, context = {}) {
   if (chart.chartType === 'treemap') return renderReportTreemapChartScript(chart, context)
   if (chart.chartType === 'funnel') return renderReportFunnelChartScript(chart, context)
   if (chart.chartType === 'heatmap') return renderReportHeatmapChartScript(chart, context)
+  if (chart.chartType === 'sankey') return renderReportSankeyChartScript(chart, context)
   if (chart.chartType === 'grouped-bar') return renderReportMultiBarChartScript(chart, context, { stacked: false })
   if (chart.chartType === 'stacked-bar') return renderReportMultiBarChartScript(chart, context, { stacked: true })
   if (chart.chartType === 'waterfall') return renderReportWaterfallChartScript(chart, context)
@@ -1562,6 +1563,197 @@ function renderReportFunnelChartScript(chart, context = {}) {
     tooltip.hidden = true;
     d3.select(event.currentTarget).select("path").attr("stroke", tooltipBg).attr("fill-opacity", 0.9);
   });
+  target.addEventListener("mouseleave", () => {
+    tooltip.hidden = true;
+  });
+  target.append(svg.node());
+  target.append(tooltip);
+})();`
+}
+
+function renderReportSankeyChartScript(chart, context = {}) {
+  const palette = chart.colors.length ? chart.colors : reportChartPalette(context.brand)
+  const fallbackColor = normalizeChartColor(palette[0]) || '#0F82F5'
+  const nodeColors = new Map()
+  const nodes = []
+  chart.links.forEach((link) => {
+    ;[link.source, link.target].forEach((label) => {
+      if (!nodeColors.has(label)) {
+        nodeColors.set(label, normalizeChartColor(palette[nodeColors.size % palette.length]) || fallbackColor)
+        nodes.push(label)
+      }
+    })
+  })
+  const data = {
+    nodes: nodes.map((label) => ({ label, color: nodeColors.get(label) })),
+    links: chart.links.map((link) => ({ ...link, color: nodeColors.get(link.source) || fallbackColor })),
+  }
+
+  return `(() => {
+  const target = document.getElementById(${jsString(chart.id)});
+  const themeRoot = target.closest(".deck-report") || document.body || document.documentElement;
+  const rootStyle = getComputedStyle(themeRoot);
+  const textColor = rootStyle.getPropertyValue("--text").trim() || "#ffffff";
+  const mutedColor = rootStyle.getPropertyValue("--text-dim").trim() || "#94a3b8";
+  const gridColor = rootStyle.getPropertyValue("--border").trim() || "rgba(148, 163, 184, 0.28)";
+  const tooltipBg = rootStyle.getPropertyValue("--bg-card").trim() || "rgba(15, 23, 42, 0.92)";
+  const valuePrefix = ${jsString(chart.valuePrefix)};
+  const valueSuffix = ${jsString(chart.valueSuffix)};
+  const valueFormatter = new Intl.NumberFormat("en-US", { maximumFractionDigits: 2 });
+  const formatTooltipValue = (value) => {
+    const numeric = Number(value);
+    const formatted = Number.isFinite(numeric) ? valueFormatter.format(numeric) : String(value ?? "");
+    return valuePrefix + formatted + valueSuffix;
+  };
+  const data = ${jsValue(data)};
+  const width = Math.max(320, target.clientWidth || 720);
+  const height = ${chart.height};
+  const nodeWidth = 18;
+  const margin = { top: 18, right: 28, bottom: 18, left: 28 };
+  const innerHeight = Math.max(120, height - margin.top - margin.bottom);
+  const innerWidth = Math.max(220, width - margin.left - margin.right - nodeWidth);
+  const nodeMap = new Map(data.nodes.map((node) => [node.label, {
+    ...node,
+    incoming: 0,
+    outgoing: 0,
+    depth: 0,
+    sourceLinks: [],
+    targetLinks: []
+  }]));
+  const links = data.links.map((link) => {
+    const source = nodeMap.get(link.source);
+    const target = nodeMap.get(link.target);
+    source.outgoing += link.value;
+    target.incoming += link.value;
+    const resolved = { ...link, source, target };
+    source.sourceLinks.push(resolved);
+    target.targetLinks.push(resolved);
+    return resolved;
+  });
+  for (let pass = 0; pass < nodeMap.size; pass += 1) {
+    links.forEach((link) => {
+      link.target.depth = Math.max(link.target.depth, link.source.depth + 1);
+    });
+  }
+  const maxDepth = Math.max(...Array.from(nodeMap.values(), (node) => node.depth), 1);
+  const columns = d3.group(Array.from(nodeMap.values()), (node) => node.depth);
+  columns.forEach((column) => {
+    column.sort((a, b) => Math.max(b.incoming, b.outgoing) - Math.max(a.incoming, a.outgoing));
+    const gap = column.length > 1 ? 12 : 0;
+    const available = Math.max(24, innerHeight - gap * Math.max(0, column.length - 1));
+    const totalWeight = d3.sum(column, (node) => Math.max(node.incoming, node.outgoing, 1));
+    const minHeight = column.length * 16 <= available ? 16 : Math.max(6, available / Math.max(1, column.length));
+    let y = margin.top;
+    column.forEach((node) => {
+      const weight = Math.max(node.incoming, node.outgoing, 1);
+      node.x = margin.left + (node.depth / maxDepth) * innerWidth;
+      node.y = y;
+      node.height = Math.max(minHeight, (weight / Math.max(totalWeight, 1)) * available);
+      node.width = nodeWidth;
+      y += node.height + gap;
+    });
+  });
+  const maxColumnWeight = Math.max(...Array.from(columns.values(), (column) =>
+    d3.sum(column, (node) => Math.max(node.incoming, node.outgoing, 1))
+  ), 1);
+  const linkScale = Math.max(1, innerHeight / maxColumnWeight);
+  nodeMap.forEach((node) => {
+    node.sourceLinks.sort((a, b) => a.target.y - b.target.y);
+    node.targetLinks.sort((a, b) => a.source.y - b.source.y);
+    let sourceOffset = 0;
+    node.sourceLinks.forEach((link) => {
+      link.width = Math.max(2, link.value * linkScale);
+      link.y0 = node.y + Math.min(node.height, sourceOffset + link.width / 2);
+      sourceOffset += link.width;
+    });
+    let targetOffset = 0;
+    node.targetLinks.forEach((link) => {
+      link.width = Math.max(2, link.value * linkScale);
+      link.y1 = node.y + Math.min(node.height, targetOffset + link.width / 2);
+      targetOffset += link.width;
+    });
+  });
+  target.textContent = "";
+  const tooltip = document.createElement("div");
+  tooltip.className = "report-chart-floating-tooltip";
+  tooltip.hidden = true;
+  const svg = d3.create("svg")
+    .attr("viewBox", [0, 0, width, height].join(" "))
+    .attr("width", width)
+    .attr("height", height)
+    .attr("role", "img")
+    .attr("aria-label", ${jsString(chart.ariaLabel)})
+    .style("display", "block")
+    .style("width", "100%")
+    .style("height", "100%");
+  const pathFor = (link) => {
+    const x0 = link.source.x + nodeWidth;
+    const x1 = link.target.x;
+    const mid = x0 + (x1 - x0) * 0.5;
+    return "M" + x0 + "," + link.y0 + "C" + mid + "," + link.y0 + " " + mid + "," + link.y1 + " " + x1 + "," + link.y1;
+  };
+  const linkSelection = svg.append("g")
+    .attr("fill", "none")
+    .selectAll("path")
+    .data(links)
+    .join("path")
+    .attr("class", "report-sankey-link")
+    .attr("d", pathFor)
+    .attr("stroke", (link) => link.color)
+    .attr("stroke-opacity", 0.36)
+    .attr("stroke-width", (link) => link.width)
+    .attr("stroke-linecap", "round");
+  linkSelection.on("mousemove", (event, link) => {
+    const rect = target.getBoundingClientRect();
+    tooltip.textContent = link.source.label + " -> " + link.target.label + ": " + formatTooltipValue(link.value);
+    tooltip.style.left = Math.min(rect.width - 8, Math.max(8, event.clientX - rect.left)) + "px";
+    tooltip.style.top = Math.min(rect.height - 8, Math.max(8, event.clientY - rect.top)) + "px";
+    tooltip.hidden = false;
+    d3.select(event.currentTarget).attr("stroke-opacity", 0.72);
+  });
+  linkSelection.on("mouseleave", (event) => {
+    tooltip.hidden = true;
+    d3.select(event.currentTarget).attr("stroke-opacity", 0.36);
+  });
+  const nodeSelection = svg.append("g")
+    .selectAll("g")
+    .data(Array.from(nodeMap.values()))
+    .join("g")
+    .attr("class", "report-sankey-node")
+    .attr("transform", (node) => "translate(" + node.x + "," + node.y + ")");
+  nodeSelection.append("rect")
+    .attr("width", nodeWidth)
+    .attr("height", (node) => node.height)
+    .attr("rx", 5)
+    .attr("fill", (node) => node.color)
+    .attr("stroke", gridColor)
+    .attr("stroke-width", 1);
+  nodeSelection.append("text")
+    .attr("x", (node) => node.depth === maxDepth ? -8 : nodeWidth + 8)
+    .attr("y", (node) => Math.max(12, node.height / 2))
+    .attr("dy", "0.35em")
+    .attr("text-anchor", (node) => node.depth === maxDepth ? "end" : "start")
+    .attr("fill", textColor)
+    .attr("font-size", 12)
+    .attr("font-weight", 700)
+    .text((node) => node.label)
+    .each(function() {
+      const text = d3.select(this);
+      const maxWidth = Math.max(54, width / (maxDepth + 1) - 48);
+      let label = text.text();
+      while (this.getComputedTextLength && this.getComputedTextLength() > maxWidth && label.length > 4) {
+        label = label.slice(0, -2).trim();
+        text.text(label + "...");
+      }
+    });
+  nodeSelection.append("title")
+    .text((node) => node.label + ": in " + formatTooltipValue(node.incoming) + ", out " + formatTooltipValue(node.outgoing));
+  svg.append("text")
+    .attr("x", margin.left)
+    .attr("y", height - 3)
+    .attr("fill", mutedColor)
+    .attr("font-size", 11)
+    .text(${jsString(chart.series || 'Flow')});
   target.addEventListener("mouseleave", () => {
     tooltip.hidden = true;
   });

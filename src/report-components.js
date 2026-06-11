@@ -297,13 +297,14 @@ function validateReportChart(chart, context) {
     'histogram',
     'boxplot',
     'pareto',
+    'sankey',
     'grouped-bar',
     'stacked-bar',
     'heatmap',
   ])
   if (!supportedTypes.has(chart.chartType)) {
     fail(
-      `report-chart type "${chart.chartType}" is not available. Supported types: bar, line, doughnut, area, treemap, funnel, grouped-bar, stacked-bar, heatmap, waterfall, bullet, scatter, bubble, histogram, boxplot, pareto. Ask the skill maker to add missing chart types.`,
+      `report-chart type "${chart.chartType}" is not available. Supported types: bar, line, doughnut, area, treemap, funnel, grouped-bar, stacked-bar, heatmap, waterfall, bullet, scatter, bubble, histogram, boxplot, pareto, sankey. Ask the skill maker to add missing chart types.`,
       context,
     )
   }
@@ -364,6 +365,10 @@ function validateReportChart(chart, context) {
     validateReportParetoChart(chart, context)
     return
   }
+  if (chart.chartType === 'sankey') {
+    validateReportSankeyChart(chart, context)
+    return
+  }
   validateReportChartLabelsAndValues(chart, context)
   if (chart.chartType === 'bullet') {
     validateReportBulletChart(chart, context)
@@ -404,6 +409,54 @@ function validateReportParetoChart(chart, context) {
   }
   if (chart.values.reduce((sum, value) => sum + value, 0) <= 0) {
     fail('report-chart pareto values must sum to more than zero.', context)
+  }
+}
+
+function validateReportSankeyChart(chart, context) {
+  if (chart.links.length === 0) {
+    fail('report-chart type="sankey" requires non-empty links.', context)
+  }
+  chart.links.forEach((link, index) => {
+    if (!link.source || !link.target) {
+      fail(`report-chart type="sankey" link ${index + 1} must use source>target:value syntax.`, context)
+    }
+    if (!Number.isFinite(link.value)) {
+      fail(`report-chart type="sankey" link ${index + 1} value must be numeric.`, context)
+    }
+    if (link.value <= 0) {
+      fail(`report-chart type="sankey" link ${index + 1} value must be greater than zero.`, context)
+    }
+    if (link.source === link.target) {
+      fail(`report-chart type="sankey" link ${index + 1} cannot connect a node to itself.`, context)
+    }
+  })
+  validateReportSankeyAcyclic(chart, context)
+}
+
+function validateReportSankeyAcyclic(chart, context) {
+  const graph = new Map()
+  chart.links.forEach((link) => {
+    if (!graph.has(link.source)) graph.set(link.source, [])
+    graph.get(link.source).push(link.target)
+    if (!graph.has(link.target)) graph.set(link.target, [])
+  })
+  const visiting = new Set()
+  const visited = new Set()
+  const visit = (node) => {
+    if (visiting.has(node)) return false
+    if (visited.has(node)) return true
+    visiting.add(node)
+    for (const next of graph.get(node) || []) {
+      if (!visit(next)) return false
+    }
+    visiting.delete(node)
+    visited.add(node)
+    return true
+  }
+  for (const node of graph.keys()) {
+    if (!visit(node)) {
+      fail('report-chart type="sankey" links must not contain cycles.', context)
+    }
   }
 }
 

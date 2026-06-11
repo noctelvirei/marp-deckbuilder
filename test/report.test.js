@@ -359,6 +359,36 @@ test('expands report funnel chart components into D3 funnel initializers', async
   assert.match(rendered.document, /const valueSuffix = " cases"/)
 })
 
+test('expands report sankey charts into D3 flow diagrams', async () => {
+  const definitions = await loadDefinitions(new URL('../resources/definitions', import.meta.url))
+  const rendered = renderReportHtml(
+    `# Sankey chart report
+
+<report-chart
+  type="sankey"
+  title="Journey flow"
+  series="Cases"
+  value-suffix=" cases"
+  links="Opened>Started:44120,Started>Completed:37980,Started>Exception:3751,Exception>Recovered:2160"
+></report-chart>
+`,
+    {
+      resourcesDir: path.resolve('resources'),
+      definitions,
+      inlineAssets: true,
+    },
+  )
+
+  assert.doesNotMatch(rendered.document, /<report-chart/i)
+  assert.match(rendered.document, /class="report-chart report-chart-sankey"/)
+  assert.match(rendered.document, /<div id="report-chart-1" class="report-chart-plot" role="img"/)
+  assert.match(rendered.document, /"source":"Opened","target":"Started","value":44120/)
+  assert.match(rendered.document, /class", "report-sankey-link"/)
+  assert.match(rendered.document, /class", "report-sankey-node"/)
+  assert.match(rendered.document, /tooltip\.textContent = link\.source\.label \+ " -> " \+ link\.target\.label/)
+  assert.match(rendered.document, /const valueSuffix = " cases"/)
+})
+
 test('expands report grouped bar charts into Chart.js multi-dataset bars', async () => {
   const definitions = await loadDefinitions(new URL('../resources/definitions', import.meta.url))
   const rendered = renderReportHtml(
@@ -1755,7 +1785,31 @@ test('report chart components fail clearly when data is invalid', async () => {
   )
   assert.throws(
     () => renderReportHtml('<report-chart type="radar" labels="A" values="10"></report-chart>', options),
-    /report-chart type "radar" is not available\. Supported types: bar, line, doughnut, area, treemap, funnel, grouped-bar, stacked-bar, heatmap, waterfall, bullet, scatter, bubble, histogram, boxplot, pareto\. Ask the skill maker to add missing chart types/,
+    /report-chart type "radar" is not available\. Supported types: bar, line, doughnut, area, treemap, funnel, grouped-bar, stacked-bar, heatmap, waterfall, bullet, scatter, bubble, histogram, boxplot, pareto, sankey\. Ask the skill maker to add missing chart types/,
+  )
+  assert.throws(
+    () => renderReportHtml('<report-chart type="sankey"></report-chart>', options),
+    /report-chart type="sankey" requires non-empty links/,
+  )
+  assert.throws(
+    () => renderReportHtml('<report-chart type="sankey" links="A-B:10"></report-chart>', options),
+    /report-chart type="sankey" link 1 must use source>target:value syntax/,
+  )
+  assert.throws(
+    () => renderReportHtml('<report-chart type="sankey" links="A>B:nope"></report-chart>', options),
+    /report-chart type="sankey" link 1 value must be numeric/,
+  )
+  assert.throws(
+    () => renderReportHtml('<report-chart type="sankey" links="A>B:0"></report-chart>', options),
+    /report-chart type="sankey" link 1 value must be greater than zero/,
+  )
+  assert.throws(
+    () => renderReportHtml('<report-chart type="sankey" links="A>A:10"></report-chart>', options),
+    /report-chart type="sankey" link 1 cannot connect a node to itself/,
+  )
+  assert.throws(
+    () => renderReportHtml('<report-chart type="sankey" links="A>B:10,B>A:5"></report-chart>', options),
+    /report-chart type="sankey" links must not contain cycles/,
   )
   assert.throws(
     () => renderReportHtml('<report-chart type="pareto" labels="A,B" values="10,-1"></report-chart>', options),
