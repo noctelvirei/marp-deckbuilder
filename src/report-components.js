@@ -290,13 +290,14 @@ function validateReportChart(chart, context) {
     'area',
     'treemap',
     'funnel',
+    'waterfall',
     'grouped-bar',
     'stacked-bar',
     'heatmap',
   ])
   if (!supportedTypes.has(chart.chartType)) {
     fail(
-      `report-chart type "${chart.chartType}" is not available. Supported types: bar, line, doughnut, area, treemap, funnel, grouped-bar, stacked-bar, heatmap. Ask the skill maker to add missing chart types.`,
+      `report-chart type "${chart.chartType}" is not available. Supported types: bar, line, doughnut, area, treemap, funnel, grouped-bar, stacked-bar, heatmap, waterfall. Ask the skill maker to add missing chart types.`,
       context,
     )
   }
@@ -338,6 +339,9 @@ function validateReportChart(chart, context) {
     return
   }
   validateReportChartLabelsAndValues(chart, context)
+  if (chart.chartType === 'waterfall') {
+    return
+  }
   if (chart.chartType === 'doughnut') {
     if (chart.values.some((value) => value < 0)) {
       fail('report-chart doughnut values must be zero or positive.', context)

@@ -79,6 +79,7 @@ Reports use normal Markdown plus compact `report-*` component tags. The renderer
 | Chart.js doughnut chart | `report-chart type="doughnut"` | `labels`, `values` |
 | Chart.js grouped bar chart | `report-chart type="grouped-bar"` | `labels`, `series`, matrix `values` |
 | Chart.js stacked bar chart | `report-chart type="stacked-bar"` | `labels`, `series`, matrix `values` |
+| Chart.js waterfall chart | `report-chart type="waterfall"` | `labels`, `values` as sequential deltas |
 | Observable Plot area chart | `report-chart type="area"` | `points` as `x:y` pairs, or `labels`, `values` |
 | D3 treemap | `report-chart type="treemap"` | `labels`, `values` |
 | D3 funnel | `report-chart type="funnel"` | `labels`, `values` |
@@ -178,6 +179,17 @@ Use `report-chart` for standard Chart.js bar, line, doughnut, grouped bar, and s
 
 ```md
 <report-chart
+  type="waterfall"
+  title="Monthly movement"
+  series="Cases"
+  value-suffix=" cases"
+  labels="Opening,New cases,Exceptions,Recoveries"
+  values="52000,6400,-1200,3750"
+></report-chart>
+```
+
+```md
+<report-chart
   type="area"
   title="Daily volume"
   series="Cases"
@@ -221,11 +233,12 @@ Supported attributes:
 
 | Attribute | Required | Notes |
 | --- | --- | --- |
-| `type` | no | Supports `bar`, `line`, `doughnut`, `grouped-bar`, `stacked-bar`, `area`, `treemap`, `funnel`, and `heatmap`. Defaults to `bar`. Aliases: `donut`, `tree-map`, `grouped`, `clustered-bar`, `stacked`. |
+| `type` | no | Supports `bar`, `line`, `doughnut`, `grouped-bar`, `stacked-bar`, `waterfall`, `area`, `treemap`, `funnel`, and `heatmap`. Defaults to `bar`. Aliases: `donut`, `tree-map`, `grouped`, `clustered-bar`, `stacked`. |
 | `title` | no | Rendered above the chart and used as the accessible label. |
 | `series` | no | Dataset label for single-series charts. For `grouped-bar` and `stacked-bar`, use pipe-separated series names such as `Opened|Completed`. Aliases: `datasets`, `series-labels`. |
 | `labels` | yes for Chart.js, `treemap`, and `funnel` types | Comma-separated labels. For `area`, this can be used with `values` as an alternative to `points`. |
 | `values` | yes for Chart.js, `treemap`, and `funnel` types | Comma-separated numeric values. Must match label count. For `area`, this can be used with `labels` as an alternative to `points`. |
+| `values` for `waterfall` | yes | Comma-separated sequential deltas. Positive values move the running total up; negative values move it down. |
 | `values` for `grouped-bar` and `stacked-bar` | yes | Semicolon-separated label rows with pipe-separated series values, such as `10|20;12|24`. Aliases: `matrix`, `series-values`. |
 | `x-labels` | yes for `heatmap` | Pipe-separated column labels. Aliases: `columns`, `x`. |
 | `y-labels` | yes for `heatmap` | Pipe-separated row labels. Aliases: `rows`, `y`. |

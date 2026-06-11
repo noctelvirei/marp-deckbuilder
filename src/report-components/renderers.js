@@ -378,6 +378,7 @@ export function renderReportChartScript(chart, context = {}) {
   if (chart.chartType === 'heatmap') return renderReportHeatmapChartScript(chart, context)
   if (chart.chartType === 'grouped-bar') return renderReportMultiBarChartScript(chart, context, { stacked: false })
   if (chart.chartType === 'stacked-bar') return renderReportMultiBarChartScript(chart, context, { stacked: true })
+  if (chart.chartType === 'waterfall') return renderReportWaterfallChartScript(chart, context)
 
   const palette = chart.colors.length ? chart.colors : reportChartPalette(context.brand)
   const colors = chart.labels.map((_, index) => normalizeChartColor(palette[index % palette.length]))
@@ -605,6 +606,95 @@ function renderReportHeatmapChartScript(chart, context = {}) {
   });
   target.append(svg.node());
   target.append(tooltip);
+})();`
+}
+
+function renderReportWaterfallChartScript(chart, context = {}) {
+  const palette = chart.colors.length ? chart.colors : reportChartPalette(context.brand)
+  const positiveColor = normalizeChartColor(palette[4]) || '#66CC8E'
+  const negativeColor = normalizeChartColor(palette[5]) || '#FC5161'
+  let runningTotal = 0
+  const ranges = chart.values.map((value) => {
+    const start = runningTotal
+    runningTotal += value
+    return [Math.min(start, runningTotal), Math.max(start, runningTotal)]
+  })
+  const colors = chart.values.map((value) => (value < 0 ? negativeColor : positiveColor))
+  const deltas = chart.values
+
+  return `(() => {
+  const canvas = document.getElementById(${jsString(chart.id)});
+  const themeRoot = canvas.closest(".deck-report") || document.body || document.documentElement;
+  const rootStyle = getComputedStyle(themeRoot);
+  const tickColor = rootStyle.getPropertyValue("--text-dim").trim() || "#64748b";
+  const gridColor = rootStyle.getPropertyValue("--border").trim() || "rgba(148, 163, 184, 0.28)";
+  const tooltipBg = rootStyle.getPropertyValue("--bg-card").trim() || "rgba(15, 23, 42, 0.92)";
+  const tooltipText = rootStyle.getPropertyValue("--text").trim() || "#ffffff";
+  const tooltipMuted = rootStyle.getPropertyValue("--text-dim").trim() || "#cbd5e1";
+  const valuePrefix = ${jsString(chart.valuePrefix)};
+  const valueSuffix = ${jsString(chart.valueSuffix)};
+  const deltas = ${jsValue(deltas)};
+  const valueFormatter = new Intl.NumberFormat("en-US", { maximumFractionDigits: 2 });
+  const formatTooltipValue = (value) => {
+    const numeric = Number(value);
+    const formatted = Number.isFinite(numeric) ? valueFormatter.format(numeric) : String(value ?? "");
+    return valuePrefix + formatted + valueSuffix;
+  };
+  new Chart(canvas, {
+    type: "bar",
+    data: {
+      labels: ${jsValue(chart.labels)},
+      datasets: [{
+        label: ${jsString(chart.series || 'Change')},
+        data: ${jsValue(ranges)},
+        backgroundColor: ${jsValue(colors)},
+        borderRadius: 5,
+        borderSkipped: false
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      interaction: {
+        mode: "index",
+        intersect: false
+      },
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          enabled: true,
+          mode: "index",
+          intersect: false,
+          backgroundColor: tooltipBg,
+          titleColor: tooltipText,
+          bodyColor: tooltipMuted,
+          borderColor: gridColor,
+          borderWidth: 1,
+          displayColors: true,
+          padding: 12,
+          callbacks: {
+            label: (context) => {
+              const delta = deltas[context.dataIndex];
+              return "Change: " + formatTooltipValue(delta);
+            }
+          }
+        }
+      },
+      scales: {
+        x: {
+          ticks: { color: tickColor },
+          grid: { color: gridColor }
+        },
+        y: {
+          ticks: {
+            color: tickColor,
+            callback: value => Number(value).toLocaleString()
+          },
+          grid: { color: gridColor }
+        }
+      }
+    }
+  });
 })();`
 }
 

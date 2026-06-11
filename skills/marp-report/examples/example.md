@@ -85,6 +85,17 @@ April volume is concentrated in one dominant journey. The top three journeys acc
   values="11420|2450|2020|620;12680|2680|2240|720;13750|2940|2330|760;14358|3049|2058|810"
 ></report-chart>
 
+## Monthly Movement
+
+<report-chart
+  type="waterfall"
+  title="Monthly volume movement"
+  series="Cases"
+  value-suffix=" cases"
+  labels="Opening,New cases,Exceptions,Recoveries"
+  values="52000,6400,-1200,3750"
+></report-chart>
+
 ## Completion Funnel
 
 <report-chart

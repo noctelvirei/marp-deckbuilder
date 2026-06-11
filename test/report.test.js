@@ -451,6 +451,36 @@ test('expands report heatmap charts into D3 heatmap initializers', async () => {
   assert.match(rendered.document, /const valueSuffix = " cases"/)
 })
 
+test('expands report waterfall charts into Chart.js floating bars', async () => {
+  const definitions = await loadDefinitions(new URL('../resources/definitions', import.meta.url))
+  const rendered = renderReportHtml(
+    `# Waterfall chart report
+
+<report-chart
+  type="waterfall"
+  title="Monthly movement"
+  series="Cases"
+  value-suffix=" cases"
+  labels="Opening,New cases,Exceptions,Recoveries"
+  values="52000,6400,-1200,3750"
+></report-chart>
+`,
+    {
+      resourcesDir: path.resolve('resources'),
+      definitions,
+      inlineAssets: true,
+    },
+  )
+
+  assert.doesNotMatch(rendered.document, /<report-chart/i)
+  assert.match(rendered.document, /class="report-chart report-chart-waterfall"/)
+  assert.match(rendered.document, /new Chart\(canvas, /)
+  assert.match(rendered.document, /data:\s*\[\[0,52000\],\[52000,58400\],\[57200,58400\],\[57200,60950\]\]/)
+  assert.match(rendered.document, /const deltas = \[52000,6400,-1200,3750\]/)
+  assert.match(rendered.document, /return "Change: " \+ formatTooltipValue\(delta\)/)
+  assert.match(rendered.document, /borderSkipped:\s*false/)
+})
+
 test('allows Chart.js, Observable Plot, and D3 report charts to coexist', async () => {
   const definitions = await loadDefinitions(new URL('../resources/definitions', import.meta.url))
   const rendered = renderReportHtml(
@@ -1536,7 +1566,7 @@ test('report chart components fail clearly when data is invalid', async () => {
   )
   assert.throws(
     () => renderReportHtml('<report-chart type="radar" labels="A" values="10"></report-chart>', options),
-    /report-chart type "radar" is not available\. Supported types: bar, line, doughnut, area, treemap, funnel, grouped-bar, stacked-bar, heatmap\. Ask the skill maker to add missing chart types/,
+    /report-chart type "radar" is not available\. Supported types: bar, line, doughnut, area, treemap, funnel, grouped-bar, stacked-bar, heatmap, waterfall\. Ask the skill maker to add missing chart types/,
   )
   assert.throws(
     () => renderReportHtml('<report-chart type="doughnut" labels="A,B" values="10,-1"></report-chart>', options),
