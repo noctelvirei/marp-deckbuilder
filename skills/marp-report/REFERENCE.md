@@ -15,6 +15,7 @@ For PDF, open the generated HTML in a browser and use Print to PDF. No browser e
 ## Report Skeleton
 
 Use this shape for rich reports. `reportTheme: dark` applies the built-in dark navy report theme. `reportNav: true` generates a sticky sidebar from section headings.
+The corporate logo is renderer-owned and comes from the bundled brand resources; do not add logo `<img>` tags to report Markdown.
 
 ```md
 ---

@@ -20,14 +20,15 @@ The report wrapper injects Chart.js, Observable Plot, and D3 into the generated 
    `Dark navy report theme (recommended) or light print theme?`
 3. Create one output folder for the request. Prefer `Documents/Presentations/YYYY-MM-DD/<report-title-slug>/` when the user has not specified a location.
 4. Draft `report.md` in that folder. For dark navy, set `reportTheme: dark` in frontmatter. For reports with four or more sections, set `reportNav: true` to generate a sticky sidebar from headings.
-5. Use report components for fidelity. Use `<report-metric-grid>` for KPI cards, `<report-rate-bars>` for ranked distributions, and `<report-chart type="bar">` for standard bar charts. For component types that are not implemented yet, use the class patterns in `REFERENCE.md` as a temporary fallback.
-6. Build from this skill folder:
+5. Let the renderer own brand chrome. The corporate logo comes from the bundled brand resources; do not hand-place it in report Markdown.
+6. Use report components for fidelity. Use `<report-metric-grid>` for KPI cards, `<report-rate-bars>` for ranked distributions, and `<report-chart type="bar">` for standard bar charts. For component types that are not implemented yet, use the class patterns in `REFERENCE.md` as a temporary fallback.
+7. Build from this skill folder:
 
 ```bash
 node scripts/build-report.mjs <output-folder>/report.md --out-dir <output-folder>
 ```
 
-7. Return the generated `.html` and source `.md` paths. For PDF, tell the user to open the HTML and use browser Print to PDF.
+8. Return the generated `.html` and source `.md` paths. For PDF, tell the user to open the HTML and use browser Print to PDF.
 
 ## Authoring Guidance
 
@@ -35,6 +36,7 @@ node scripts/build-report.mjs <output-folder>/report.md --out-dir <output-folder
 - Use prose, headings, tables, and explanatory callouts freely.
 - Prefer `reportNav: true` for reports with four or more sections.
 - Prefer `reportTheme: dark` for dark navy reports instead of pasting CSS into Markdown.
+- Keep the corporate logo renderer-owned through brand definitions and resources.
 - Keep technical field names as plain text in dark reports unless code formatting is truly necessary.
 - Use `<report-chart type="bar">` for standard Chart.js bar charts.
 - Use `<report-metric-grid>` for KPI summaries.

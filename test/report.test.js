@@ -154,6 +154,53 @@ This report uses generated dark report chrome.
   assert.doesNotMatch(rendered.document, /<report-chart/i)
 })
 
+test('dark report components preserve renderer-owned corporate logo', async () => {
+  const logoDir = path.join(tmpDir, 'logo-retention', 'resources')
+  await mkdir(logoDir, { recursive: true })
+  await writeFile(path.join(logoDir, 'logo.svg'), '<svg xmlns="http://www.w3.org/2000/svg"><title>Logo</title></svg>')
+  const baseDefinitions = await loadDefinitions(new URL('../resources/definitions', import.meta.url))
+  const definitions = {
+    ...baseDefinitions,
+    brand: {
+      ...baseDefinitions.brand,
+      name: 'Acme',
+      assets: {
+        logo: {
+          report: 'resource:logo.svg',
+        },
+      },
+    },
+  }
+  const rendered = renderReportHtml(
+    `---
+title: Logo Retention Report
+reportTheme: dark
+reportNav: true
+---
+
+## Summary
+
+<report-metric-grid>
+  <report-metric value="42" label="Retained assets"></report-metric>
+</report-metric-grid>
+
+## Detail
+
+The report body uses compact components while brand chrome remains renderer-owned.
+`,
+    {
+      resourcesDir: logoDir,
+      definitions,
+      inlineAssets: true,
+    },
+  )
+
+  assert.match(rendered.document, /<body class="report-theme-dark-page">/)
+  assert.match(rendered.document, /<img class="report-logo" src="data:image\/svg\+xml;base64,[^"]+" alt="Acme logo">/)
+  assert.doesNotMatch(rendered.document, /resource:logo\.svg/)
+  assert.doesNotMatch(rendered.document, /<report-metric/i)
+})
+
 test('expands report metric grid components into reusable metric cards', async () => {
   const definitions = await loadDefinitions(new URL('../resources/definitions', import.meta.url))
   const rendered = renderReportHtml(

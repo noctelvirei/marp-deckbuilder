@@ -12,6 +12,7 @@ Durable decisions that apply across all phases:
 - **Source modularity**: Keep parsing, validation, rendering, CSS, and script generation in modular source files so new components can be added one at a time. The distributable skill can still ship as the existing bundled single runtime file.
 - **Vendor boundary**: Keep D3, Observable Plot, and Chart.js injected by the report build wrapper from local vendor files. Component code should only generate initializers that assume those globals exist in the final HTML.
 - **Generated output**: Continue producing one self-contained report HTML file. The source `report.md` remains unchanged after build.
+- **Brand chrome retention**: Corporate logo rendering remains renderer-owned and must be preserved while Markdown moves to compact report components. Authors should not hand-place the corporate logo in report Markdown.
 - **Verification loop**: Every component slice must include focused tests, a generated sample Markdown file, a rendered HTML output, and browser visual inspection with screenshots stored under `.tmp/`.
 - **Skill packaging**: Runtime changes are made in `src/`, then propagated through `npm run bundle:skill`. Do not hand-edit generated `tool/dist/` files.
 
@@ -89,6 +90,7 @@ reportNav: true
 - [ ] Authors no longer paste the dark navy `<style>` block.
 - [ ] Reports with four or more sections can get a sticky sidebar without hand-authored layout HTML.
 - [ ] Existing light/default report output remains available.
+- [ ] Corporate logo assets from brand definitions still render in the report cover and are preserved in dark themed reports.
 - [ ] Chart components render correctly inside the themed layout.
 - [ ] Browser screenshots cover desktop and a narrow viewport.
 
@@ -216,3 +218,4 @@ Rebuild and smoke-test the portable skills after the component slices are comple
 - [ ] `npm run bundle:skill` passes and updates generated skill runtime output.
 - [ ] `npm run smoke:skill` passes for both deck and report skills.
 - [ ] Final report sample has compact Markdown, self-contained HTML, injected local vendors, and screenshot proof.
+- [ ] Corporate logo rendering is covered by regression tests and remains renderer-owned.
