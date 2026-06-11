@@ -11,7 +11,8 @@ import {
 } from "./chunk-IMJWZKGS.mjs";
 import "./chunk-ZA7UPLW5.mjs";
 import {
-  normalizeResourceReference
+  normalizeResourceReference,
+  resolveSurfaceResourceFile
 } from "./chunk-YFTCHU5C.mjs";
 import {
   __export,
@@ -5265,7 +5266,7 @@ function renderReportHtml(source, options = {}) {
   const presentation = prepareReportPresentation(markdown.render(compiled.source), frontmatter);
   const content = resolveResourceUrls(presentation.content, options.resourcesDir, resolverOptions);
   const css = resolveResourceUrls(reportCss(brand), options.resourcesDir, resolverOptions);
-  const logo = reportLogo(brand);
+  const logo = reportLogo(brand, presentation.theme || "light", options.resourcesDir);
   const document = resolveResourceUrls(
     reportDocument({
       title,
@@ -5301,11 +5302,20 @@ function normalizeReportImageReferences(source) {
     }
   );
 }
-function reportLogo(brand = {}) {
+function reportLogo(brand = {}, surface = "light", resourcesDir = "resources") {
   const logo = brand.assets?.logo;
   if (!logo) return "";
-  if (typeof logo === "string") return logo;
-  return logo.report || logo.default || logo.content || logo.cover || "";
+  if (typeof logo === "string") return surfaceResourceReference(logo, resourcesDir, surface);
+  const candidate = surface === "dark" ? logo.reportDark || logo.reportOnDark || logo.companyDark || logo.contentDark || logo.dark || logo.report || logo.content || logo.cover || logo.default || "" : logo.reportLight || logo.reportOnLight || logo.companyLight || logo.contentLight || logo.light || logo.report || logo.content || logo.default || logo.cover || "";
+  return surfaceResourceReference(candidate, resourcesDir, surface);
+}
+function surfaceResourceReference(src, resourcesDir, surface = "light") {
+  if (!src || /^(data|https?|file):/i.test(String(src))) return src;
+  try {
+    return `resource:${resolveSurfaceResourceFile(src, resourcesDir, surface).relativePath}`;
+  } catch {
+    return src;
+  }
 }
 function reportDocument({
   title,

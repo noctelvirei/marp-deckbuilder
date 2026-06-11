@@ -201,6 +201,75 @@ The report body uses compact components while brand chrome remains renderer-owne
   assert.doesNotMatch(rendered.document, /<report-metric/i)
 })
 
+test('report corporate logo follows dark and light report modes', async () => {
+  const logoDir = path.join(tmpDir, 'logo-modes', 'resources')
+  await mkdir(path.join(logoDir, 'logos'), { recursive: true })
+  await writeFile(
+    path.join(logoDir, 'logos', 'fake-logo-dark.svg'),
+    '<svg xmlns="http://www.w3.org/2000/svg"><text fill="#fff">Fake white text logo</text></svg>',
+  )
+  await writeFile(
+    path.join(logoDir, 'logos', 'fake-logo-light.svg'),
+    '<svg xmlns="http://www.w3.org/2000/svg"><text fill="#000">Fake black text logo</text></svg>',
+  )
+  const baseDefinitions = await loadDefinitions(new URL('../resources/definitions', import.meta.url))
+  const definitions = {
+    ...baseDefinitions,
+    brand: {
+      ...baseDefinitions.brand,
+      name: 'Mode Test',
+      assets: {
+        logo: {
+          dark: 'resource:logos/fake-logo-dark.svg',
+          light: 'resource:logos/fake-logo-light.svg',
+        },
+      },
+    },
+  }
+  const darkRendered = renderReportHtml(
+    `---
+title: Dark Logo Report
+reportTheme: dark
+---
+
+## Summary
+
+Dark report content.
+`,
+    {
+      resourcesDir: logoDir,
+      definitions,
+      collectResources: true,
+      inlineAssets: false,
+      assetUrlPrefix: 'assets',
+    },
+  )
+  const lightRendered = renderReportHtml(
+    `---
+title: Light Logo Report
+---
+
+## Summary
+
+Light report content.
+`,
+    {
+      resourcesDir: logoDir,
+      definitions,
+      collectResources: true,
+      inlineAssets: false,
+      assetUrlPrefix: 'assets',
+    },
+  )
+
+  assert.match(darkRendered.document, /src="assets\/logos\/fake-logo-dark\.svg"/)
+  assert.doesNotMatch(darkRendered.document, /fake-logo-light\.svg/)
+  assert.deepEqual(darkRendered.assets.map((asset) => asset.relativePath), ['logos/fake-logo-dark.svg'])
+  assert.match(lightRendered.document, /src="assets\/logos\/fake-logo-light\.svg"/)
+  assert.doesNotMatch(lightRendered.document, /fake-logo-dark\.svg/)
+  assert.deepEqual(lightRendered.assets.map((asset) => asset.relativePath), ['logos/fake-logo-light.svg'])
+})
+
 test('expands report metric grid components into reusable metric cards', async () => {
   const definitions = await loadDefinitions(new URL('../resources/definitions', import.meta.url))
   const rendered = renderReportHtml(
