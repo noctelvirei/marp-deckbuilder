@@ -1231,6 +1231,10 @@ test('PPTX header eyebrow avoids the company logo slot', async () => {
     path.join(tmpDir, 'resources', 'logos', 'company-light.svg'),
     '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 24"><text x="0" y="18">Logo</text></svg>',
   )
+  await writeFile(
+    path.join(tmpDir, 'resources', 'logos', 'customer.svg'),
+    '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 24"><text x="0" y="18">Customer</text></svg>',
+  )
 
   const definitions = await loadDefinitions(new URL('../resources/definitions', import.meta.url))
   const brand = {
@@ -1243,9 +1247,14 @@ test('PPTX header eyebrow avoids the company logo slot', async () => {
     layouts: {
       ...definitions.brand.layouts,
       companyLogo: { x: 36, y: 21, w: 98, h: 24 },
+      customerLogo: { x: 828, y: 21, w: 98, h: 24 },
     },
   }
-  const deck = parseDeckMarkdown(`# Cover
+  const deck = parseDeckMarkdown(`---
+customerLogo: resource:logos/customer.svg
+---
+
+# Cover
 
 ---
 

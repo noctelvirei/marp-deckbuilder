@@ -1,7 +1,7 @@
 import yaml from 'js-yaml'
 
 import { compileDeckComponents } from './components.js'
-import { richHtmlLayout } from './components/rich-html.js'
+import { richHtmlLayout } from './components/rich-html-definitions.js'
 
 export function parseDeckMarkdown(source) {
   const { frontmatter, body } = splitFrontmatter(source)

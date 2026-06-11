@@ -3,7 +3,7 @@
 This repository builds three portable, brandable Markdown skills:
 
 - `marp-deckbuilder`: builds presentation decks as HTML slideshows and editable PPTX files.
-- `marp-rich-html`: documents renderer-owned rich HTML deck tags for cinematic covers, animated charts, page flips, and browser-safe print fallbacks.
+- `marp-rich-html`: builds renderer-owned rich HTML deck tags for cinematic covers, animated charts, page flips, and browser-safe print fallbacks.
 - `marp-report`: builds long-form, scrollable HTML reports that can be printed to PDF.
 
 This README is written for coding agents. It explains the project shape, the safe editing surface, the branding contract, and how to make changes without confusing authored Markdown, generated bundles, brand assets, and runtime code.
@@ -34,7 +34,7 @@ There are three layers:
 | Need | Use | Output | Notes |
 | --- | --- | --- | --- |
 | A presentation, PowerPoint, slide deck, board deck, sales deck, or executive deck | `skills/marp-deckbuilder` | HTML slideshow plus editable PPTX | Use known `deck-*` components when PPTX editability matters. |
-| A cinematic rich HTML deck slide, animated chart, particle cover, page flip, radar, gauge, neon, or glass effect | `skills/marp-rich-html` with `skills/marp-deckbuilder` | HTML slideshow with renderer-owned runtime and print fallbacks | Author the rich custom tags only; build with deckbuilder. |
+| A cinematic rich HTML deck slide, animated chart, particle cover, page flip, radar, gauge, neon, or glass effect | `skills/marp-rich-html` | HTML slideshow with renderer-owned runtime and print fallbacks | Author the rich custom tags only; build with the rich HTML wrapper. |
 | A written report, readout, analysis document, findings summary, or browser page to print | `skills/marp-report` | Single HTML report | Browser charts can be higher fidelity than PPTX. Print to PDF from the browser. |
 
 Keep these skills separate. They can share capabilities and visual language, but one creates decks and the other creates reports.
@@ -83,6 +83,9 @@ Portable skills:
 - `skills/marp-deckbuilder/tool/resources/`: resources bundled with the deck skill.
 - `skills/marp-rich-html/SKILL.md`: concise authoring rules for renderer-owned rich deck tags.
 - `skills/marp-rich-html/REFERENCE.md`: rich tag syntax, child tags, print behavior, and examples.
+- `skills/marp-rich-html/scripts/build-rich-html.mjs`: rich HTML build wrapper used inside the skill.
+- `skills/marp-rich-html/tool/dist/`: generated runtime bundle for the rich HTML skill.
+- `skills/marp-rich-html/tool/resources/`: resources bundled with the rich HTML skill.
 - `skills/marp-report/SKILL.md`: concise report skill instructions for agents.
 - `skills/marp-report/REFERENCE.md`: report component and chart reference.
 - `skills/marp-report/scripts/build-report.mjs`: report build wrapper used inside the skill.
@@ -91,7 +94,7 @@ Portable skills:
 
 Packaging and tests:
 
-- `scripts/bundle-skill.mjs`: bundles source runtime into both skills.
+- `scripts/bundle-skill.mjs`: bundles source runtime into all three baseline skills.
 - `scripts/smoke-skill.mjs`: runs isolated skill smoke tests.
 - `scripts/package-skill.mjs`: packages the skills and checks size limits.
 - `test/`: node tests for parsing, rendering, branding, and PPTX behaviour.
@@ -128,6 +131,12 @@ Build through the report skill wrapper:
 node skills\marp-report\scripts\build-report.mjs skills\marp-report\examples\example.md --out-dir dist\skill-report
 ```
 
+Build through the rich HTML skill wrapper:
+
+```powershell
+node skills\marp-rich-html\scripts\build-rich-html.mjs skills\marp-rich-html\examples\example.md --out-dir dist\skill-rich-html
+```
+
 Run validation:
 
 ```powershell
@@ -144,6 +153,87 @@ npm run package:skill
 ```
 
 `package:skill` rebuilds the skill runtimes, runs isolated smoke tests, excludes output/cache folders, and fails if a skill exceeds the package size limit.
+
+## Syncing Packages To Work
+
+Bundle files are not generated automatically on every source edit. An agent must
+run one of these commands deliberately:
+
+- `npm run bundle:skill`: rebuilds `skills/*/tool/dist/` and syncs the shared
+  tool into the `report` and `richhtml` baselines.
+- `npm run package:skill`: rebuilds tool bundles, smoke-tests all three skills,
+  and writes distributable zip files under `dist/`.
+
+The root `dist/` folder is ignored by Git because those zip files are portable
+handoff artifacts. If you sync by Git, commit the tracked source files and the
+tracked skill `tool/dist/` bundles. If you sync by artifact, copy these files to
+the work machine:
+
+- `dist/marp-deckbuilder-skill.zip`
+- `dist/marp-report-skill.zip`
+- `dist/marp-rich-html-skill.zip`
+
+Give the work agent this import instruction:
+
+```text
+Import the three upstream baseline skill zips: marp-deckbuilder, marp-report,
+and marp-rich-html. Treat them as renderer-owned present/report/richhtml
+baselines. Preserve or reapply our private corporate resources, then update the
+local branded skills so agents write Markdown, supported custom tags, and
+approved small classes only.
+
+Before unpacking over an existing branded skill, clean out old upstream runtime
+bundles: remove the old tool/dist directory, stale hashed chunk files, and any
+old extracted baseline files that are not private corporate resources. Do not
+leave old and new renderer bundles side by side.
+
+Do not hand-edit tool/dist. Do not paste custom CSS, layout HTML, animation
+JavaScript, CDN scripts, or generated chart libraries into authored Markdown.
+Put corporate branding in tool/resources/definitions/brand.json,
+tool/resources/definitions/theme.css, and tool/resources/. Corporate/company
+logo belongs in assets.logo and renders top left. Customer logos belong in
+deck/report frontmatter and render top right. Provide light and dark logo and
+background variants next to the logical assets so the renderer can pick the
+right surface.
+
+After importing, build and verify one presentation, one rich HTML deck, and one
+single-page report. Check light and dark surfaces, HTML print/PDF behavior, and
+PPTX editability for structured deck components.
+```
+
+## Plugging In Corporate Branding
+
+Use this checklist when a corporate agent turns the public baselines into
+branded `present`, `report`, and `richhtml` skills. The agent should change
+brand resources, not renderer logic.
+
+1. Start from the three baseline skill folders: `skills/marp-deckbuilder`,
+   `skills/marp-report`, and `skills/marp-rich-html`.
+2. Put corporate brand tokens in each skill's
+   `tool/resources/definitions/brand.json`: colours, fonts, `assets.logo`,
+   `assets.backgrounds`, and any approved layout geometry.
+3. Put brand CSS tokens and renderer theme variables in
+   `tool/resources/definitions/theme.css`. Do not paste per-deck CSS into
+   authored Markdown.
+4. Put approved logos, backgrounds, screenshots, icons, fonts, and customer logo
+   variants under each skill's `tool/resources/` folder.
+5. Keep corporate/company logos in `assets.logo`; the renderer places them top
+   left. Keep customer logos in deck/report frontmatter; the renderer places
+   them top right.
+6. Provide light and dark logo/background variants next to the logical asset so
+   authors can reference one `resource:` path and let the renderer choose the
+   right surface variant.
+7. Preserve `tool/dist/`, `tool/resources/templates/`, `tool/resources/vendor/`,
+   and the build wrappers. Rebuild bundles from source; do not hand-edit
+   generated runtime files.
+8. Validate all three capabilities: build a presentation, build a rich HTML
+   deck, build a report, check light and dark surfaces, and print/PDF the HTML
+   where that is part of the workflow.
+
+The skill authoring contract stays the same after branding: agents write
+Markdown, supported custom tags, and approved small classes. They do not write
+custom layout HTML, inline animation JavaScript, or ad hoc CSS to apply the
+brand.
 
 ## Authoring Decks
 
@@ -305,6 +395,9 @@ Allowed branded changes:
 - `skills/marp-deckbuilder/tool/resources/definitions/brand.json`
 - `skills/marp-deckbuilder/tool/resources/definitions/theme.css`
 - `skills/marp-deckbuilder/tool/resources/`
+- `skills/marp-rich-html/tool/resources/definitions/brand.json`
+- `skills/marp-rich-html/tool/resources/definitions/theme.css`
+- `skills/marp-rich-html/tool/resources/`
 - `skills/marp-report/tool/resources/definitions/brand.json`
 - `skills/marp-report/tool/resources/definitions/theme.css`
 - `skills/marp-report/tool/resources/`
@@ -326,8 +419,8 @@ Safe branded merge pattern:
 3. Preserve branded `tool/resources/definitions/` and private assets.
 4. Accept upstream `tool/dist/`, `templates/`, scripts, tests, examples, and docs where applicable.
 5. Carefully merge `SKILL.md` so branded workflow notes stay but upstream component guidance is not lost.
-6. Build a representative deck and report.
-7. Check both HTML and PPTX before packaging.
+6. Build a representative presentation, rich HTML deck, and report.
+7. Check HTML, PPTX, and browser Print to PDF before packaging.
 
 See `skills/marp-deckbuilder/BRANDING.md` for the shorter branded-fork contract.
 
@@ -336,7 +429,7 @@ See `skills/marp-deckbuilder/BRANDING.md` for the shorter branded-fork contract.
 When importing this upstream into a branded fork, give the local agent an explicit rewrite instruction like this:
 
 ```text
-Read the upstream README.md and skills/marp-deckbuilder/BRANDING.md. Rewrite this branded fork's local branding/import documentation to match the upstream renderer contract, component guidance, slide-surface model, logo rules, and safe merge process. Preserve all business-specific requirements, private brand names, colours, assets, client-specific workflow notes, and internal distribution instructions. Do not copy public placeholder branding over private branding. Do not edit generated tool/dist files by hand.
+Read the upstream README.md and skills/marp-deckbuilder/BRANDING.md. Rewrite this branded fork's local branding/import documentation to match the upstream renderer contract, baseline present/report/richhtml skill layout, component guidance, slide-surface model, logo rules, and safe merge process. Preserve all business-specific requirements, private brand names, colours, assets, client-specific workflow notes, and internal distribution instructions. Do not copy public placeholder branding over private branding. Do not edit generated tool/dist files by hand.
 ```
 
 Use this prompt after pulling upstream but before asking the agent to change branded resources. It prevents the branded fork from keeping stale rules such as "all headers are dark and all content slides are white" when the upstream renderer now supports independent dark and light surfaces.

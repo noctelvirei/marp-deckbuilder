@@ -6,6 +6,8 @@ dist/
 !skills/marp-deckbuilder/tool/dist/deckbuilder.cjs
 !skills/marp-report/tool/
 !skills/marp-report/tool/**
+!skills/marp-rich-html/tool/
+!skills/marp-rich-html/tool/**
 skills/*/tool/dist.zip
 skills/*/output*/
 coverage/

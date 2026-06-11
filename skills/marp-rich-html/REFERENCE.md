@@ -15,10 +15,10 @@ Use the deckbuilder renderer:
 node src/cli.js build samples/rich-html-showcase.md --html dist/rich-html-showcase.html --resources resources
 ```
 
-Inside the portable deckbuilder skill, use:
+Inside the portable rich HTML baseline skill, use:
 
 ```powershell
-node scripts/build-deck.mjs deck.md --out-dir output
+node scripts/build-rich-html.mjs deck.md --out-dir output
 ```
 
 ## Parent Tags
@@ -48,6 +48,14 @@ node scripts/build-deck.mjs deck.md --out-dir output
 
 Use `|` in title-like attributes when you want the renderer to insert a designed
 line break or title accent.
+
+## Brand Chrome And Surfaces
+
+Corporate-branded rich HTML baselines should populate
+`tool/resources/definitions/brand.json`, `theme.css`, and `tool/resources/`.
+The renderer places the corporate logo from `assets.logo` top left and the
+customer logo from deck frontmatter top right. Use light and dark logo variants
+in the resource folder and reference one logical logo from Markdown.
 
 ## Child Tags
 

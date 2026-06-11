@@ -12,6 +12,7 @@ await rm(smokeRoot, { recursive: true, force: true })
 await mkdir(smokeRoot, { recursive: true })
 
 await smokeDeckSkill()
+await smokeRichHtmlSkill()
 await smokeReportSkill()
 
 console.log(`Skill smoke passed: ${smokeRoot}`)
@@ -54,6 +55,23 @@ async function smokeReportSkill() {
     throw new Error(`Expected report HTML to include offline vendor scripts: ${htmlPath}`)
   }
   await assertVendorInjection(htmlPath, 'data-marp-report-vendor')
+}
+
+async function smokeRichHtmlSkill() {
+  const sourceRoot = resolve(repoRoot, 'skills', 'marp-rich-html')
+  const skillRoot = join(smokeRoot, 'marp-rich-html')
+  const outputDir = join(skillRoot, 'output')
+  await copySkill(sourceRoot, skillRoot)
+
+  await run(process.execPath, [
+    'scripts/build-rich-html.mjs',
+    'examples/example.md',
+    '--out-dir',
+    'output',
+  ], skillRoot)
+
+  await assertFile(join(outputDir, 'example.html'), 1000)
+  await assertVendorInjection(join(outputDir, 'example.html'), 'data-marp-rich-html-vendor')
 }
 
 async function copySkill(sourceRoot, targetRoot) {

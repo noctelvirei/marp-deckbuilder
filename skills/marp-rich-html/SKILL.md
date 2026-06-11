@@ -5,19 +5,41 @@ description: Authors renderer-owned rich HTML presentation slides using custom t
 
 # Marp Rich HTML
 
-Use this skill when a deck needs the renderer-owned rich HTML components. Write
-Markdown custom tags and content only. The renderer owns CSS, JavaScript,
-animation behavior, print mode, and PDF-safe fallbacks.
+Use this baseline rich HTML skill when a deck needs the renderer-owned rich HTML
+components. Write Markdown custom tags and content only. The renderer owns CSS,
+JavaScript, animation behavior, print mode, and PDF-safe fallbacks.
 
-Build rich HTML decks with the `marp-deckbuilder` renderer. Do not hand-author
-inline `<style>` blocks or custom animation `<script>` blocks for these effects.
+Build rich HTML decks with the bundled renderer. Do not hand-author inline
+`<style>` blocks or custom animation `<script>` blocks for these effects.
+
+## Baseline Skill Contract
+
+This is the `richhtml` baseline. Corporate agents should populate
+`tool/resources/definitions/brand.json`, `tool/resources/definitions/theme.css`,
+and `tool/resources/` with corporate palettes, backgrounds, logos, fonts, and
+rich-effect assets. Preserve `tool/dist/`, `tool/resources/templates/`, and the
+build wrapper from this upstream baseline.
+
+The renderer owns logo placement and surface variants. Corporate logo is top
+left; customer logo, when supplied by frontmatter, is top right. Authors should
+reference one logical logo and let the renderer choose dark/light variants.
+
+When importing this baseline over an older branded copy, clean out old upstream
+runtime bundles first: remove the existing `tool/dist` directory, stale hashed
+chunk files, and old extracted baseline files that are not private corporate
+resources. Do not leave old and new renderer bundles side by side.
 
 ## Workflow
 
 1. Choose the rich component tag that matches the requested effect.
 2. Author a Marp slide using that tag and its allowed child tags.
 3. Keep the slide content compact and data-driven.
-4. Build with the deckbuilder CLI or skill wrapper.
+4. Build from this skill folder:
+
+```bash
+node scripts/build-rich-html.mjs <output-folder>/deck.md --out-dir <output-folder>
+```
+
 5. Verify the HTML in a browser and check Print to PDF when the deck will be shared as PDF.
 
 ## Available Tags

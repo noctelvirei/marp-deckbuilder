@@ -7,8 +7,8 @@ import {
   loadDefinitions,
   ptToIn,
   pxToIn
-} from "./chunk-OR5XALJV.mjs";
-import "./chunk-IDDWZGZI.mjs";
+} from "./brand-definitions-OR5XALJV.mjs";
+import "./module-interop-IDDWZGZI.mjs";
 export {
   color,
   cssColorToHex,

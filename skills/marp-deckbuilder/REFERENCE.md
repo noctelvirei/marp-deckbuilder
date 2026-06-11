@@ -166,7 +166,7 @@ customer:
 ---
 ```
 
-The company logo is always the brand logo and is placed top left. The customer
+The corporate/company logo is always the brand logo and is placed top left. The customer
 logo, when present, is placed top right. These slots are applied to both HTML and
 PPTX output. For compatibility, the parser can extract
 `<img class="deck-customer-logo" ...>` from a slide, but new decks should prefer

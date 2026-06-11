@@ -61,8 +61,9 @@ overwriting private brand context.
 Brand backgrounds and logos should be declared in `brand.json` when both HTML
 and PPTX should use image assets. HTML embeds those `resource:` assets into the
 generated file by default; PPTX inserts them into slides as native image media.
-The renderer positions the company logo using `layouts.companyLogo` (or legacy
-`layouts.logo`) and the customer logo using `layouts.customerLogo`.
+The renderer positions the corporate/company logo top left using
+`layouts.companyLogo` (or legacy `layouts.logo`) and the customer logo top right
+using `layouts.customerLogo`.
 Customer logos should be supplied as transparent PNGs prepared for the chosen
 surface. For dark slides, export the customer logo with light/white wordmark text
 and no white rectangle behind it. A branded fork may set

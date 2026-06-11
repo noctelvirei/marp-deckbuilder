@@ -36,6 +36,8 @@
     "fallback": "Aptos"
   },
   "layouts": {
+    "companyLogo": { "x": 36, "y": 21, "w": 98, "h": 24 },
+    "customerLogo": { "x": 828, "y": 21, "w": 98, "h": 24 },
     "cover": {
       "title": { "x": 36, "y": 79, "w": 677, "h": 255, "font": "light", "size": 56, "color": "white" },
       "subtitle": { "x": 36, "y": 344, "w": 677, "h": 72, "font": "regular", "size": 18, "color": "CCCCCC" },

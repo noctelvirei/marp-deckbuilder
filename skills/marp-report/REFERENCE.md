@@ -21,6 +21,8 @@ For PDF, open the generated HTML in a browser and use Print to PDF.
 title: Usage Report
 subtitle: April 2026 journey volume
 surface: dark
+customerName: Example Bank
+customerLogo: resource:logos/example-bank.svg
 ---
 ```
 
@@ -30,8 +32,21 @@ Fields:
 | --- | --- |
 | `title` | Report cover title and browser title |
 | `subtitle` | Report cover subtitle |
-| `surface: dark` | Use the Lightico dark report surface |
+| `surface: dark` | Use the dark report surface |
 | omit `surface` | Use the default light report surface |
+| `customerLogo` | Optional customer logo on the report cover, top right |
+| `customerName` | Optional customer logo alt text/name |
+
+The corporate logo comes from `tool/resources/definitions/brand.json` and is
+placed top left. When `customerLogo` is provided, the renderer places it top
+right. Reference one logical logo and let the renderer resolve `.dark`,
+`-on-dark`, `.light`, or `-on-light` sibling variants for the chosen report
+surface.
+
+Corporate-branded report baselines should keep `assets.logo` for the corporate
+logo and expose customer logos through report frontmatter. Do not write logo
+HTML in the report body; the renderer owns both cover logo positions and the
+print view.
 
 ## Structure
 

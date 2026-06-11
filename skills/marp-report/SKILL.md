@@ -5,8 +5,8 @@ description: Builds single-page, scrollable, brandable HTML reports from Markdow
 
 # Marp Report
 
-Use this skill to turn source material into one long-form HTML report: a single
-scrolling browser page designed for reading and Print to PDF. Use
+Use this baseline report skill to turn source material into one long-form HTML
+report: a single scrolling browser page designed for reading and Print to PDF. Use
 `marp-deckbuilder` instead when the user asks for slides, a presentation, or
 editable PPTX.
 
@@ -21,6 +21,24 @@ offline vendor injection.
 Reports do not create slides. Rich effect tags render as in-flow report blocks
 inside one HTML page.
 
+## Baseline Skill Contract
+
+This is the `report` baseline. Corporate agents should populate
+`tool/resources/definitions/brand.json`, `tool/resources/definitions/theme.css`,
+and `tool/resources/` with corporate report styling, logos, backgrounds, fonts,
+and approved image assets. Preserve `tool/dist/`, `tool/resources/templates/`,
+and the build script from this upstream baseline.
+
+The report cover uses the corporate logo on the left. If report frontmatter
+provides `customerLogo` plus optional `customerName`, the customer logo appears
+on the right. Use one logical logo reference; the renderer prefers dark/light
+surface variants when present.
+
+When importing this baseline over an older branded copy, clean out old upstream
+runtime bundles first: remove the existing `tool/dist` directory, stale hashed
+chunk files, and old extracted baseline files that are not private corporate
+resources. Do not leave old and new renderer bundles side by side.
+
 ## Workflow
 
 1. Read the source material and identify purpose, audience, period, source data,
@@ -29,8 +47,8 @@ inside one HTML page.
    `Documents/Presentations/YYYY-MM-DD/<report-title-slug>/` when the user has
    not specified a location.
 3. Draft `report.md` with frontmatter, Markdown headings, prose, lists, and
-   tables. Use `surface: dark` for the Lightico dark report look or omit it for
-   the default light report.
+   tables. Use `surface: dark` for the dark report look or omit it for the
+   default light report.
 4. Use renderer-owned rich tags for visual effects: metric rings, bar/line/donut
    charts, timelines, glass cards, radar charts, gauges, comparison reveals, and
    staged reveals. See `REFERENCE.md` when writing those tags.
