@@ -355,7 +355,7 @@ Reports can use:
 - Generated sticky navigation via `reportNav: true`.
 - Sticky sidebars.
 - Metric cards.
-- Rate bars.
+- Ranked rate bars.
 - Callouts.
 - Badges.
 - Tables.

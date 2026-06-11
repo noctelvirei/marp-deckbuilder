@@ -178,6 +178,28 @@ Supported `report-metric` attributes:
 | `direction` | no | Use `down` for negative deltas. |
 | `accent` | no | Supports `blue`, `cyan`, `purple`, `green`, `orange`, `red`. |
 
+### Report Rate Bars
+
+Use `report-rate-bars` for ranked distributions. Do not hand-author inline-width rate bar HTML.
+
+```html
+<report-rate-bars
+  title="Journey distribution"
+  labels="J0107,J0106,J0101,J0116"
+  values="52208,11119,8648,3751"
+></report-rate-bars>
+```
+
+Supported attributes:
+
+| Attribute | Required | Notes |
+| --- | --- | --- |
+| `title` | no | Rendered above the rate bars and used as the accessible label. |
+| `labels` | yes | Comma-separated item labels. |
+| `values` | yes | Comma-separated numeric values. Must match label count. |
+| `shares` | no | Comma-separated percentages. Aliases: `percentages`, `percents`. When omitted, shares are computed from `values`. |
+| `colors` | no | Comma-separated six-digit hex colors. Defaults to brand chart colors. |
+
 ## Legacy HTML Classes
 
 Some components are still in migration. Until their `report-*` versions exist, reports may use these HTML classes:
@@ -188,7 +210,6 @@ Some components are still in migration. Until their `report-*` versions exist, r
 | Metrics | `r-metric-grid`, `r-metric`, `r-metric-value`, `r-metric-label` | `r-metric-sub`, `down` |
 | Cards | `r-card`, `r-card-accent` | `cyan`, `green`, `orange`, `red`, `purple` |
 | Chart frame | `r-chart-wrap`, `r-chart-title` | `r-legend`, `r-legend-item`, `r-legend-swatch` |
-| Rate bars | `r-rate-bar`, `r-rate-label`, `r-rate-track`, `r-rate-fill`, `r-rate-pct` | inline `width` and `background` |
 | Callouts | `r-callout` | `info`, `warning`, `success`, `danger` |
 | Badges | `r-badge` | `blue`, `green`, `orange`, `red`, `muted` |
 | Grids | `r-two-col`, `r-three-col` | none |
@@ -209,18 +230,6 @@ Do not use `deck-*` tags in reports. They are presentation components.
     <div class="r-metric-label">Completion rate</div>
     <div class="r-metric-sub down">-1.1 pp</div>
   </div>
-</div>
-```
-
-### Rate Bars
-
-```html
-<div class="r-rate-bar">
-  <span class="r-rate-label">J0107</span>
-  <div class="r-rate-track">
-    <div class="r-rate-fill" style="width:67%;background:var(--blue)">52,208</div>
-  </div>
-  <span class="r-rate-pct">67.1%</span>
 </div>
 ```
 

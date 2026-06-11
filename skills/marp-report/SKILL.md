@@ -20,7 +20,7 @@ The report wrapper injects Chart.js, Observable Plot, and D3 into the generated 
    `Dark navy report theme (recommended) or light print theme?`
 3. Create one output folder for the request. Prefer `Documents/Presentations/YYYY-MM-DD/<report-title-slug>/` when the user has not specified a location.
 4. Draft `report.md` in that folder. For dark navy, set `reportTheme: dark` in frontmatter. For reports with four or more sections, set `reportNav: true` to generate a sticky sidebar from headings.
-5. Use report components for fidelity. Use `<report-metric-grid>` for KPI cards and `<report-chart type="bar">` for standard bar charts. For component types that are not implemented yet, use the class patterns in `REFERENCE.md` as a temporary fallback.
+5. Use report components for fidelity. Use `<report-metric-grid>` for KPI cards, `<report-rate-bars>` for ranked distributions, and `<report-chart type="bar">` for standard bar charts. For component types that are not implemented yet, use the class patterns in `REFERENCE.md` as a temporary fallback.
 6. Build from this skill folder:
 
 ```bash
@@ -38,6 +38,7 @@ node scripts/build-report.mjs <output-folder>/report.md --out-dir <output-folder
 - Keep technical field names as plain text in dark reports unless code formatting is truly necessary.
 - Use `<report-chart type="bar">` for standard Chart.js bar charts.
 - Use `<report-metric-grid>` for KPI summaries.
+- Use `<report-rate-bars>` for ranked distribution bars.
 - Use Chart.js manually only for chart types that are not yet supported as report components, such as stacked bar, line, and doughnut charts.
 - Use Observable Plot for concise dot, area, heatmap, and small-multiple charts.
 - Use D3 for bespoke SVG charts such as treemaps, custom arcs, Sankey-style flows, and force layouts.

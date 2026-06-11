@@ -392,6 +392,73 @@ body {
 .report-metric-orange .report-metric-value { color: var(--orange, #F9935B); }
 .report-metric-red .report-metric-value { color: var(--red, #dc2626); }
 
+.report-rate-bars {
+  margin: 28px 0;
+}
+
+.report-rate-bars-title {
+  margin: 0 0 16px;
+  color: var(--text-dim, #334155);
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.report-rate-bar {
+  display: grid;
+  grid-template-columns: minmax(84px, 128px) minmax(0, 1fr) max-content;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.report-rate-label {
+  min-width: 0;
+  color: var(--text, #0f172a);
+  font-size: 13px;
+  overflow-wrap: anywhere;
+}
+
+.report-rate-track {
+  position: relative;
+  min-width: 0;
+  height: 24px;
+  border: 1px solid var(--border, #dbe5f2);
+  border-radius: 5px;
+  background: var(--bg-subtle, #e8f4fe);
+  overflow: hidden;
+}
+
+.report-rate-fill {
+  width: var(--report-rate-width, 0%);
+  height: 100%;
+  border-radius: 4px;
+  background: var(--report-rate-color, var(--report-blue, #0F82F5));
+}
+
+.report-rate-value {
+  position: absolute;
+  inset: 0 auto 0 10px;
+  display: flex;
+  align-items: center;
+  max-width: calc(100% - 20px);
+  color: var(--white, #ffffff);
+  font-size: 12px;
+  font-weight: 700;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.report-rate-pct {
+  min-width: 46px;
+  color: var(--text-dim, #64748b);
+  font-family: "Consolas", "SFMono-Regular", monospace;
+  font-size: 12px;
+  text-align: right;
+}
+
 .report-layout {
   display: grid;
   grid-template-columns: minmax(160px, 200px) minmax(0, 1fr);

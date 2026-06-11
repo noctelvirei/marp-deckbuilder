@@ -197,6 +197,87 @@ test('report metric grids fail clearly when malformed', async () => {
   )
 })
 
+test('expands report rate bars with computed shares', async () => {
+  const definitions = await loadDefinitions(new URL('../resources/definitions', import.meta.url))
+  const rendered = renderReportHtml(
+    `# Rate bar report
+
+<report-rate-bars
+  title="Journey distribution"
+  labels="J0107,J0106,J0101"
+  values="52208,11119,8648"
+></report-rate-bars>
+`,
+    {
+      resourcesDir: path.resolve('resources'),
+      definitions,
+      inlineAssets: true,
+    },
+  )
+
+  assert.doesNotMatch(rendered.document, /<report-rate-bars/i)
+  assert.match(rendered.document, /class="report-rate-bars"/)
+  assert.match(rendered.document, /<div class="report-rate-bars-title">Journey distribution<\/div>/)
+  assert.match(rendered.document, /<span class="report-rate-label">J0107<\/span>/)
+  assert.match(rendered.document, /<div class="report-rate-fill" style="--report-rate-width:72\.5%;--report-rate-color:#0F82F5"><\/div>/)
+  assert.match(rendered.document, /<span class="report-rate-value">52,208<\/span>/)
+  assert.match(rendered.document, /<span class="report-rate-pct">72\.5%<\/span>/)
+})
+
+test('report rate bars support explicit shares and clamp widths', async () => {
+  const definitions = await loadDefinitions(new URL('../resources/definitions', import.meta.url))
+  const rendered = renderReportHtml(
+    `# Explicit share report
+
+<report-rate-bars
+  labels="Overflow,Small"
+  values="120,8"
+  shares="125,6.25"
+  colors="FC5161,59D6FD"
+></report-rate-bars>
+`,
+    {
+      resourcesDir: path.resolve('resources'),
+      definitions,
+      inlineAssets: true,
+    },
+  )
+
+  assert.match(rendered.document, /--report-rate-width:100%;--report-rate-color:#FC5161/)
+  assert.match(rendered.document, /<span class="report-rate-pct">125%<\/span>/)
+  assert.match(rendered.document, /--report-rate-width:6\.3%;--report-rate-color:#59D6FD/)
+})
+
+test('report rate bars fail clearly when data is malformed', async () => {
+  const definitions = await loadDefinitions(new URL('../resources/definitions', import.meta.url))
+  const options = {
+    resourcesDir: path.resolve('resources'),
+    definitions,
+    inlineAssets: true,
+  }
+
+  assert.throws(
+    () => renderReportHtml('<report-rate-bars labels="A,B" values="10"></report-rate-bars>', options),
+    /report-rate-bars labels\/values length mismatch/,
+  )
+  assert.throws(
+    () => renderReportHtml('<report-rate-bars labels="A" values="not-a-number"></report-rate-bars>', options),
+    /report-rate-bars values must all be numeric/,
+  )
+  assert.throws(
+    () => renderReportHtml('<report-rate-bars labels="A,B" values="0,0"></report-rate-bars>', options),
+    /report-rate-bars values must sum to more than zero/,
+  )
+  assert.throws(
+    () => renderReportHtml('<report-rate-bars labels="A" values="1" shares="nope"></report-rate-bars>', options),
+    /report-rate-bars shares must all be numeric/,
+  )
+  assert.throws(
+    () => renderReportHtml('<report-rate-bars labels="A" values="1" colors="javascript:bad"></report-rate-bars>', options),
+    /report-rate-bars colors must be six-digit hex colors/,
+  )
+})
+
 test('report chart components fail clearly when data is invalid', async () => {
   const definitions = await loadDefinitions(new URL('../resources/definitions', import.meta.url))
   const options = {

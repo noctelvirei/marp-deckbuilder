@@ -22,6 +22,27 @@ export function escapeAttr(value = '') {
   return escapeHtml(value)
 }
 
+export function formatReportNumber(value) {
+  const numeric = Number(value)
+  if (!Number.isFinite(numeric)) return String(value || '')
+  return new Intl.NumberFormat('en-US', {
+    maximumFractionDigits: 2,
+  }).format(numeric)
+}
+
+export function formatReportPercent(value) {
+  const numeric = Number(value)
+  if (!Number.isFinite(numeric)) return '0%'
+  const rounded = (Math.round(numeric * 10) / 10).toFixed(1)
+  return `${rounded.replace(/\.0$/, '')}%`
+}
+
+export function normalizeHexColor(value = '') {
+  const token = String(value || '').trim()
+  const hex = token.match(/^#?([0-9a-f]{6})$/i)
+  return hex ? `#${hex[1].toUpperCase()}` : ''
+}
+
 export function jsString(value = '') {
   return JSON.stringify(String(value || ''))
 }

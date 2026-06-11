@@ -4703,6 +4703,24 @@ function escapeHtml2(value = "") {
 function escapeAttr(value = "") {
   return escapeHtml2(value);
 }
+function formatReportNumber(value) {
+  const numeric = Number(value);
+  if (!Number.isFinite(numeric)) return String(value || "");
+  return new Intl.NumberFormat("en-US", {
+    maximumFractionDigits: 2
+  }).format(numeric);
+}
+function formatReportPercent(value) {
+  const numeric = Number(value);
+  if (!Number.isFinite(numeric)) return "0%";
+  const rounded = (Math.round(numeric * 10) / 10).toFixed(1);
+  return `${rounded.replace(/\.0$/, "")}%`;
+}
+function normalizeHexColor(value = "") {
+  const token = String(value || "").trim();
+  const hex2 = token.match(/^#?([0-9a-f]{6})$/i);
+  return hex2 ? `#${hex2[1].toUpperCase()}` : "";
+}
 function jsString(value = "") {
   return JSON.stringify(String(value || ""));
 }
@@ -4756,6 +4774,19 @@ function parseReportMetricGrid(root, grid) {
     metrics
   };
 }
+function parseReportRateBars(rateBars) {
+  return {
+    type: "rate-bars",
+    title: rateBars.attr("title") || cleanText(rateBars.find("h2,h3,figcaption").first().text()),
+    labels: splitCsv(rateBars.attr("labels")),
+    values: splitCsv(rateBars.attr("values")).map((value) => Number(value)),
+    shares: splitCsv(rateBars.attr("shares") || rateBars.attr("percentages") || rateBars.attr("percents")).map(
+      (value) => Number(value)
+    ),
+    colors: splitCsv(rateBars.attr("colors")),
+    ariaLabel: rateBars.attr("aria-label") || rateBars.attr("title") || "Ranked distribution"
+  };
+}
 function normalizeChartType(value = "bar") {
   const token = String(value || "bar").trim().toLowerCase();
   if (token === "column") return "bar";
@@ -4798,6 +4829,38 @@ function renderReportMetricHtml(metric) {
   ${metric.value ? `<div class="report-metric-value">${escapeHtml2(metric.value)}</div>` : ""}
   ${metric.label ? `<div class="report-metric-label">${escapeHtml2(metric.label)}</div>` : ""}
   ${metric.sub ? `<div class="${escapeAttr(subClass)}">${escapeHtml2(metric.sub)}</div>` : ""}
+</div>`;
+}
+function renderReportRateBarsHtml(rateBars, context = {}) {
+  const palette = rateBars.colors.length ? rateBars.colors : reportChartPalette(context.brand);
+  const total = rateBars.values.reduce((sum, value) => sum + value, 0);
+  const rows = rateBars.labels.map((label, index) => {
+    const value = rateBars.values[index];
+    const share = rateBars.shares.length ? rateBars.shares[index] : value / total * 100;
+    const width = clampPercent(share);
+    const color = normalizeHexColor(palette[index % palette.length]) || "#0F82F5";
+    return renderReportRateBar({
+      label,
+      value,
+      share,
+      width,
+      color
+    });
+  });
+  return `<div class="report-rate-bars" role="list" aria-label="${escapeAttr(rateBars.ariaLabel)}">
+  ${rateBars.title ? `<div class="report-rate-bars-title">${escapeHtml2(rateBars.title)}</div>` : ""}
+${rows.join("\n")}
+</div>`;
+}
+function renderReportRateBar(row) {
+  const style = `--report-rate-width:${formatReportPercent(row.width)};--report-rate-color:${row.color}`;
+  return `<div class="report-rate-bar" role="listitem">
+  <span class="report-rate-label">${escapeHtml2(row.label)}</span>
+  <div class="report-rate-track">
+    <div class="report-rate-fill" style="${escapeAttr(style)}"></div>
+    <span class="report-rate-value">${escapeHtml2(formatReportNumber(row.value))}</span>
+  </div>
+  <span class="report-rate-pct">${escapeHtml2(formatReportPercent(row.share))}</span>
 </div>`;
 }
 function renderReportChartScript(chart, context = {}) {
@@ -4859,9 +4922,14 @@ function normalizeChartColor(value = "") {
   const hex2 = token.match(/^#?([0-9a-f]{6})$/i);
   return hex2 ? `#${hex2[1]}` : token;
 }
+function clampPercent(value) {
+  const numeric = Number(value);
+  if (!Number.isFinite(numeric)) return 0;
+  return Math.max(0, Math.min(100, numeric));
+}
 
 // src/report-components.js
-var knownReportTags = /* @__PURE__ */ new Set(["report-chart", "report-metric-grid", "report-metric"]);
+var knownReportTags = /* @__PURE__ */ new Set(["report-chart", "report-metric-grid", "report-metric", "report-rate-bars"]);
 function compileReportComponents(source, options = {}) {
   const context = reportComponentContext(options);
   validateReportComponentSyntax(source, context);
@@ -4877,6 +4945,12 @@ function compileReportComponents(source, options = {}) {
     const metricGrid = parseReportMetricGrid(root, metricGridElement);
     validateReportMetricGrid(metricGrid, context);
     metricGridElement.replaceWith(renderReportMetricGridHtml(metricGrid));
+  });
+  root("report-rate-bars").each((_, element) => {
+    const rateBarsElement = root(element);
+    const rateBars = parseReportRateBars(rateBarsElement);
+    validateReportRateBars(rateBars, context);
+    rateBarsElement.replaceWith(renderReportRateBarsHtml(rateBars, context));
   });
   root("report-chart").each((index, element) => {
     const chartElement = root(element);
@@ -4966,6 +5040,42 @@ function validateReportMetricGrid(metricGrid, context) {
     }
   });
 }
+function validateReportRateBars(rateBars, context) {
+  if (rateBars.labels.length === 0 || rateBars.values.length === 0) {
+    fail("report-rate-bars requires non-empty labels and values attributes.", context);
+  }
+  if (rateBars.labels.length !== rateBars.values.length) {
+    fail(
+      `report-rate-bars labels/values length mismatch: ${rateBars.labels.length} label(s), ${rateBars.values.length} value(s).`,
+      context
+    );
+  }
+  if (rateBars.values.some((value) => !Number.isFinite(value))) {
+    fail("report-rate-bars values must all be numeric.", context);
+  }
+  if (rateBars.values.some((value) => value < 0)) {
+    fail("report-rate-bars values must be zero or positive.", context);
+  }
+  if (rateBars.shares.length > 0) {
+    if (rateBars.shares.length !== rateBars.labels.length) {
+      fail(
+        `report-rate-bars shares length mismatch: ${rateBars.shares.length} share(s), ${rateBars.labels.length} label(s).`,
+        context
+      );
+    }
+    if (rateBars.shares.some((share) => !Number.isFinite(share))) {
+      fail("report-rate-bars shares must all be numeric.", context);
+    }
+    if (rateBars.shares.some((share) => share < 0)) {
+      fail("report-rate-bars shares must be zero or positive.", context);
+    }
+  } else if (rateBars.values.reduce((sum, value) => sum + value, 0) <= 0) {
+    fail("report-rate-bars values must sum to more than zero when shares are omitted.", context);
+  }
+  if (rateBars.colors.some((color) => !isSixDigitHexColor(color))) {
+    fail("report-rate-bars colors must be six-digit hex colors.", context);
+  }
+}
 function uniqueDomId(value, usedIds, prefix) {
   const base = sanitizeDomId(value) || prefix;
   let candidate = base;
@@ -4979,6 +5089,9 @@ function uniqueDomId(value, usedIds, prefix) {
 }
 function sanitizeDomId(value) {
   return String(value || "").trim().replace(/[^a-z0-9_-]+/gi, "-").replace(/^-+|-+$/g, "");
+}
+function isSixDigitHexColor(value) {
+  return /^#?[0-9a-f]{6}$/i.test(String(value || "").trim());
 }
 function indent(source, spaces) {
   const padding = " ".repeat(spaces);
@@ -5453,6 +5566,73 @@ body {
 .report-metric-green .report-metric-value { color: var(--green, #16a34a); }
 .report-metric-orange .report-metric-value { color: var(--orange, #F9935B); }
 .report-metric-red .report-metric-value { color: var(--red, #dc2626); }
+
+.report-rate-bars {
+  margin: 28px 0;
+}
+
+.report-rate-bars-title {
+  margin: 0 0 16px;
+  color: var(--text-dim, #334155);
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.report-rate-bar {
+  display: grid;
+  grid-template-columns: minmax(84px, 128px) minmax(0, 1fr) max-content;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.report-rate-label {
+  min-width: 0;
+  color: var(--text, #0f172a);
+  font-size: 13px;
+  overflow-wrap: anywhere;
+}
+
+.report-rate-track {
+  position: relative;
+  min-width: 0;
+  height: 24px;
+  border: 1px solid var(--border, #dbe5f2);
+  border-radius: 5px;
+  background: var(--bg-subtle, #e8f4fe);
+  overflow: hidden;
+}
+
+.report-rate-fill {
+  width: var(--report-rate-width, 0%);
+  height: 100%;
+  border-radius: 4px;
+  background: var(--report-rate-color, var(--report-blue, #0F82F5));
+}
+
+.report-rate-value {
+  position: absolute;
+  inset: 0 auto 0 10px;
+  display: flex;
+  align-items: center;
+  max-width: calc(100% - 20px);
+  color: var(--white, #ffffff);
+  font-size: 12px;
+  font-weight: 700;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.report-rate-pct {
+  min-width: 46px;
+  color: var(--text-dim, #64748b);
+  font-family: "Consolas", "SFMono-Regular", monospace;
+  font-size: 12px;
+  text-align: right;
+}
 
 .report-layout {
   display: grid;

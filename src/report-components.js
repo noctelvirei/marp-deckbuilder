@@ -3,14 +3,16 @@ import * as cheerio from 'cheerio'
 import {
   parseReportChart,
   parseReportMetricGrid,
+  parseReportRateBars,
 } from './report-components/parsers.js'
 import {
   renderReportChartHtml,
   renderReportChartScript,
   renderReportMetricGridHtml,
+  renderReportRateBarsHtml,
 } from './report-components/renderers.js'
 
-const knownReportTags = new Set(['report-chart', 'report-metric-grid', 'report-metric'])
+const knownReportTags = new Set(['report-chart', 'report-metric-grid', 'report-metric', 'report-rate-bars'])
 
 export function compileReportComponents(source, options = {}) {
   const context = reportComponentContext(options)
@@ -30,6 +32,13 @@ export function compileReportComponents(source, options = {}) {
     const metricGrid = parseReportMetricGrid(root, metricGridElement)
     validateReportMetricGrid(metricGrid, context)
     metricGridElement.replaceWith(renderReportMetricGridHtml(metricGrid))
+  })
+
+  root('report-rate-bars').each((_, element) => {
+    const rateBarsElement = root(element)
+    const rateBars = parseReportRateBars(rateBarsElement)
+    validateReportRateBars(rateBars, context)
+    rateBarsElement.replaceWith(renderReportRateBarsHtml(rateBars, context))
   })
 
   root('report-chart').each((index, element) => {
@@ -130,6 +139,43 @@ function validateReportMetricGrid(metricGrid, context) {
   })
 }
 
+function validateReportRateBars(rateBars, context) {
+  if (rateBars.labels.length === 0 || rateBars.values.length === 0) {
+    fail('report-rate-bars requires non-empty labels and values attributes.', context)
+  }
+  if (rateBars.labels.length !== rateBars.values.length) {
+    fail(
+      `report-rate-bars labels/values length mismatch: ${rateBars.labels.length} label(s), ${rateBars.values.length} value(s).`,
+      context,
+    )
+  }
+  if (rateBars.values.some((value) => !Number.isFinite(value))) {
+    fail('report-rate-bars values must all be numeric.', context)
+  }
+  if (rateBars.values.some((value) => value < 0)) {
+    fail('report-rate-bars values must be zero or positive.', context)
+  }
+  if (rateBars.shares.length > 0) {
+    if (rateBars.shares.length !== rateBars.labels.length) {
+      fail(
+        `report-rate-bars shares length mismatch: ${rateBars.shares.length} share(s), ${rateBars.labels.length} label(s).`,
+        context,
+      )
+    }
+    if (rateBars.shares.some((share) => !Number.isFinite(share))) {
+      fail('report-rate-bars shares must all be numeric.', context)
+    }
+    if (rateBars.shares.some((share) => share < 0)) {
+      fail('report-rate-bars shares must be zero or positive.', context)
+    }
+  } else if (rateBars.values.reduce((sum, value) => sum + value, 0) <= 0) {
+    fail('report-rate-bars values must sum to more than zero when shares are omitted.', context)
+  }
+  if (rateBars.colors.some((color) => !isSixDigitHexColor(color))) {
+    fail('report-rate-bars colors must be six-digit hex colors.', context)
+  }
+}
+
 function uniqueDomId(value, usedIds, prefix) {
   const base = sanitizeDomId(value) || prefix
   let candidate = base
@@ -147,6 +193,10 @@ function sanitizeDomId(value) {
     .trim()
     .replace(/[^a-z0-9_-]+/gi, '-')
     .replace(/^-+|-+$/g, '')
+}
+
+function isSixDigitHexColor(value) {
+  return /^#?[0-9a-f]{6}$/i.test(String(value || '').trim())
 }
 
 function indent(source, spaces) {

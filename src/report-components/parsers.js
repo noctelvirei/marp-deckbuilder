@@ -49,6 +49,20 @@ export function parseReportMetricGrid(root, grid) {
   }
 }
 
+export function parseReportRateBars(rateBars) {
+  return {
+    type: 'rate-bars',
+    title: rateBars.attr('title') || cleanText(rateBars.find('h2,h3,figcaption').first().text()),
+    labels: splitCsv(rateBars.attr('labels')),
+    values: splitCsv(rateBars.attr('values')).map((value) => Number(value)),
+    shares: splitCsv(rateBars.attr('shares') || rateBars.attr('percentages') || rateBars.attr('percents')).map((value) =>
+      Number(value),
+    ),
+    colors: splitCsv(rateBars.attr('colors')),
+    ariaLabel: rateBars.attr('aria-label') || rateBars.attr('title') || 'Ranked distribution',
+  }
+}
+
 function normalizeChartType(value = 'bar') {
   const token = String(value || 'bar').trim().toLowerCase()
   if (token === 'column') return 'bar'

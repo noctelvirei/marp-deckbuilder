@@ -25,6 +25,15 @@ April volume is concentrated in one dominant journey. The top three journeys acc
   values="52208,11119,8648,3751"
 ></report-chart>
 
+## Distribution
+
+<report-rate-bars
+  title="Share by journey"
+  labels="J0107,J0106,J0101,J0116"
+  values="52208,11119,8648,3751"
+  shares="67.1,14.3,11.1,4.8"
+></report-rate-bars>
+
 ## Breakdown
 
 | Journey | Cases | Share | Status |

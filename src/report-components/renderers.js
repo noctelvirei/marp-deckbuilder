@@ -1,4 +1,12 @@
-import { escapeAttr, escapeHtml, jsString, jsValue } from './utils.js'
+import {
+  escapeAttr,
+  escapeHtml,
+  formatReportNumber,
+  formatReportPercent,
+  jsString,
+  jsValue,
+  normalizeHexColor,
+} from './utils.js'
 
 export function renderReportChartHtml(chart) {
   return `<div class="report-chart report-chart-${escapeAttr(chart.chartType)}">
@@ -26,6 +34,41 @@ function renderReportMetricHtml(metric) {
   ${metric.value ? `<div class="report-metric-value">${escapeHtml(metric.value)}</div>` : ''}
   ${metric.label ? `<div class="report-metric-label">${escapeHtml(metric.label)}</div>` : ''}
   ${metric.sub ? `<div class="${escapeAttr(subClass)}">${escapeHtml(metric.sub)}</div>` : ''}
+</div>`
+}
+
+export function renderReportRateBarsHtml(rateBars, context = {}) {
+  const palette = rateBars.colors.length ? rateBars.colors : reportChartPalette(context.brand)
+  const total = rateBars.values.reduce((sum, value) => sum + value, 0)
+  const rows = rateBars.labels.map((label, index) => {
+    const value = rateBars.values[index]
+    const share = rateBars.shares.length ? rateBars.shares[index] : (value / total) * 100
+    const width = clampPercent(share)
+    const color = normalizeHexColor(palette[index % palette.length]) || '#0F82F5'
+    return renderReportRateBar({
+      label,
+      value,
+      share,
+      width,
+      color,
+    })
+  })
+
+  return `<div class="report-rate-bars" role="list" aria-label="${escapeAttr(rateBars.ariaLabel)}">
+  ${rateBars.title ? `<div class="report-rate-bars-title">${escapeHtml(rateBars.title)}</div>` : ''}
+${rows.join('\n')}
+</div>`
+}
+
+function renderReportRateBar(row) {
+  const style = `--report-rate-width:${formatReportPercent(row.width)};--report-rate-color:${row.color}`
+  return `<div class="report-rate-bar" role="listitem">
+  <span class="report-rate-label">${escapeHtml(row.label)}</span>
+  <div class="report-rate-track">
+    <div class="report-rate-fill" style="${escapeAttr(style)}"></div>
+    <span class="report-rate-value">${escapeHtml(formatReportNumber(row.value))}</span>
+  </div>
+  <span class="report-rate-pct">${escapeHtml(formatReportPercent(row.share))}</span>
 </div>`
 }
 
@@ -90,4 +133,10 @@ function normalizeChartColor(value = '') {
   const token = String(value || '').trim()
   const hex = token.match(/^#?([0-9a-f]{6})$/i)
   return hex ? `#${hex[1]}` : token
+}
+
+function clampPercent(value) {
+  const numeric = Number(value)
+  if (!Number.isFinite(numeric)) return 0
+  return Math.max(0, Math.min(100, numeric))
 }
