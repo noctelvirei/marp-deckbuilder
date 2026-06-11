@@ -158,6 +158,12 @@ J0116 generated meaningful volume but is not in the registered journey profile.
   <report-card title="Calibrate" accent="green">Tune operational monitoring around the dominant journey.</report-card>
 </report-card-grid>
 
+<report-timeline title="Delivery path">
+  <report-event date="Week 1" title="Confirm journey mapping" status="watch">Resolve whether J0116 is a new journey or a data quality issue.</report-event>
+  <report-event date="Week 2" title="Add monthly tracking" status="active">Add month-over-month monitoring for the top three journeys.</report-event>
+  <report-event date="Week 3" title="Tune monitoring" status="pending">Calibrate operational monitoring around the dominant journey.</report-event>
+</report-timeline>
+
 <report-accent-card accent="green" title="Recommended focus">
 Prioritise monitoring for J0107 while validating whether J0116 is a real journey or a data quality issue.
 </report-accent-card>

@@ -92,6 +92,15 @@ ${grid.cards.map(renderReportCardGridItem).join('\n')}
 </section>`
 }
 
+export function renderReportTimelineHtml(timeline) {
+  return `<section class="report-timeline" aria-label="${escapeAttr(timeline.title || 'Timeline')}">
+  ${timeline.title ? `<div class="report-timeline-title">${escapeHtml(timeline.title)}</div>` : ''}
+  <ol>
+${timeline.events.map(renderReportTimelineEvent).join('\n')}
+  </ol>
+</section>`
+}
+
 export function renderReportSourceNoteHtml(sourceNote) {
   const meta = [
     sourceNote.source ? `<span>Source: ${escapeHtml(sourceNote.source)}</span>` : '',
@@ -169,6 +178,20 @@ function renderReportCardGridItem(card) {
       ${card.title ? `<div class="report-card-grid-card-title">${escapeHtml(card.title)}</div>` : ''}
       ${card.body ? `<div class="report-card-grid-card-body">${escapeHtml(card.body)}</div>` : ''}
     </article>`
+}
+
+function renderReportTimelineEvent(event) {
+  return `    <li class="report-timeline-event report-timeline-event-${escapeAttr(event.status)}">
+      <div class="report-timeline-marker" aria-hidden="true"></div>
+      <div class="report-timeline-content">
+        <div class="report-timeline-meta">
+          ${event.date ? `<span class="report-timeline-date">${escapeHtml(event.date)}</span>` : ''}
+          <span class="report-badge report-badge-${escapeAttr(event.status)}">${escapeHtml(event.rawStatus)}</span>
+        </div>
+        ${event.title ? `<div class="report-timeline-event-title">${escapeHtml(event.title)}</div>` : ''}
+        ${event.body ? `<div class="report-timeline-event-body">${escapeHtml(event.body)}</div>` : ''}
+      </div>
+    </li>`
 }
 
 function parseDataTableNumber(value) {

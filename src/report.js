@@ -640,6 +640,103 @@ body {
 .report-card-grid-card-orange { --report-card-accent: var(--orange, #F9935B); }
 .report-card-grid-card-red { --report-card-accent: var(--red, #dc2626); }
 
+.report-timeline {
+  margin: 28px 0;
+}
+
+.report-timeline-title {
+  margin: 0 0 16px;
+  color: var(--text-dim, #334155);
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.report-timeline ol {
+  position: relative;
+  display: grid;
+  gap: 14px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.report-timeline ol::before {
+  content: "";
+  position: absolute;
+  top: 16px;
+  bottom: 16px;
+  left: 11px;
+  width: 2px;
+  background: var(--border, #dbe5f2);
+}
+
+.report-timeline-event {
+  position: relative;
+  display: grid;
+  grid-template-columns: 24px minmax(0, 1fr);
+  gap: 14px;
+  min-width: 0;
+}
+
+.report-timeline-marker {
+  position: relative;
+  z-index: 1;
+  width: 24px;
+  height: 24px;
+  border: 4px solid var(--bg, #ffffff);
+  border-radius: 999px;
+  background: var(--report-timeline-color, var(--blue, #0F82F5));
+  box-shadow: 0 0 0 1px var(--border, #dbe5f2);
+}
+
+.report-timeline-content {
+  min-width: 0;
+  padding: 14px 16px;
+  border: 1px solid var(--border, #dbe5f2);
+  border-radius: 8px;
+  background: var(--bg-card, #ffffff);
+  box-shadow: 0 10px 26px rgba(15, 23, 42, 0.06);
+}
+
+.report-timeline-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 7px;
+}
+
+.report-timeline-date {
+  color: var(--text-dim, #64748b);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.report-timeline-event-title {
+  color: var(--text, #0f172a);
+  font-size: 15px;
+  font-weight: 700;
+  line-height: 1.25;
+}
+
+.report-timeline-event-body {
+  margin-top: 5px;
+  color: var(--text, #334155);
+  font-size: 14px;
+  line-height: 1.45;
+  overflow-wrap: anywhere;
+}
+
+.report-timeline-event-blue { --report-timeline-color: var(--blue, #0F82F5); }
+.report-timeline-event-green { --report-timeline-color: var(--green, #16a34a); }
+.report-timeline-event-orange { --report-timeline-color: var(--orange, #F9935B); }
+.report-timeline-event-red { --report-timeline-color: var(--red, #dc2626); }
+.report-timeline-event-muted { --report-timeline-color: var(--text-dim, #64748b); }
+
 .report-chart {
   margin: 28px 0;
   padding: 22px;
@@ -1097,6 +1194,10 @@ body.report-theme-dark-page {
 }
 
 .deck-report.report-theme-dark .report-card-grid-card {
+  box-shadow: none;
+}
+
+.deck-report.report-theme-dark .report-timeline-content {
   box-shadow: none;
 }
 

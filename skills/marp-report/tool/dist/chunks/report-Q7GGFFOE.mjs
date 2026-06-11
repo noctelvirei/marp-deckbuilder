@@ -4847,6 +4847,25 @@ function parseReportCardGrid(root, grid) {
     cards
   };
 }
+function parseReportTimeline(root, timeline) {
+  const events = [];
+  timeline.children("report-event").each((_, element) => {
+    const event = root(element);
+    const rawStatus = event.attr("status") || event.attr("variant") || event.attr("tone") || "muted";
+    events.push({
+      date: event.attr("date") || event.attr("time") || event.attr("period") || "",
+      title: event.attr("title") || cleanText(event.find("h3,strong,b").first().text()),
+      body: event.attr("body") || event.attr("text") || cleanText(event.text()),
+      status: normalizeBadgeVariant(rawStatus),
+      rawStatus
+    });
+  });
+  return {
+    type: "timeline",
+    title: timeline.attr("title") || cleanText(timeline.find("h2,h3").first().text()),
+    events
+  };
+}
 function parseReportSourceNote(sourceNote) {
   return {
     type: "source-note",
@@ -5068,6 +5087,14 @@ ${grid.cards.map(renderReportCardGridItem).join("\n")}
   </div>
 </section>`;
 }
+function renderReportTimelineHtml(timeline) {
+  return `<section class="report-timeline" aria-label="${escapeAttr(timeline.title || "Timeline")}">
+  ${timeline.title ? `<div class="report-timeline-title">${escapeHtml2(timeline.title)}</div>` : ""}
+  <ol>
+${timeline.events.map(renderReportTimelineEvent).join("\n")}
+  </ol>
+</section>`;
+}
 function renderReportSourceNoteHtml(sourceNote) {
   const meta = [
     sourceNote.source ? `<span>Source: ${escapeHtml2(sourceNote.source)}</span>` : "",
@@ -5133,6 +5160,19 @@ function renderReportCardGridItem(card) {
       ${card.title ? `<div class="report-card-grid-card-title">${escapeHtml2(card.title)}</div>` : ""}
       ${card.body ? `<div class="report-card-grid-card-body">${escapeHtml2(card.body)}</div>` : ""}
     </article>`;
+}
+function renderReportTimelineEvent(event) {
+  return `    <li class="report-timeline-event report-timeline-event-${escapeAttr(event.status)}">
+      <div class="report-timeline-marker" aria-hidden="true"></div>
+      <div class="report-timeline-content">
+        <div class="report-timeline-meta">
+          ${event.date ? `<span class="report-timeline-date">${escapeHtml2(event.date)}</span>` : ""}
+          <span class="report-badge report-badge-${escapeAttr(event.status)}">${escapeHtml2(event.rawStatus)}</span>
+        </div>
+        ${event.title ? `<div class="report-timeline-event-title">${escapeHtml2(event.title)}</div>` : ""}
+        ${event.body ? `<div class="report-timeline-event-body">${escapeHtml2(event.body)}</div>` : ""}
+      </div>
+    </li>`;
 }
 function parseDataTableNumber(value) {
   return Number(String(value || "").replace(/,/g, "").replace(/%$/, "").trim());
@@ -5832,7 +5872,9 @@ var knownReportTags = /* @__PURE__ */ new Set([
   "report-metric-grid",
   "report-metric",
   "report-rate-bars",
-  "report-source-note"
+  "report-source-note",
+  "report-timeline",
+  "report-event"
 ]);
 function compileReportComponents(source, options = {}) {
   const context = reportComponentContext(options);
@@ -5892,6 +5934,12 @@ function compileReportComponents(source, options = {}) {
     validateReportSourceNote(sourceNote, context);
     sourceNoteElement.replaceWith(renderReportSourceNoteHtml(sourceNote));
   });
+  root("report-timeline").each((_, element) => {
+    const timelineElement = root(element);
+    const timeline = parseReportTimeline(root, timelineElement);
+    validateReportTimeline(timeline, context);
+    timelineElement.replaceWith(renderReportTimelineHtml(timeline));
+  });
   root("report-accent-card").each((_, element) => {
     const cardElement = root(element);
     const card = parseReportAccentCard(cardElement);
@@ -5929,6 +5977,12 @@ function validateReportComponentTree(root, context) {
     const parent = root(element).parent();
     if (!parent.is("report-card-grid")) {
       fail("<report-card> must be placed directly inside <report-card-grid>.", context);
+    }
+  });
+  root("report-event").each((_, element) => {
+    const parent = root(element).parent();
+    if (!parent.is("report-timeline")) {
+      fail("<report-event> must be placed directly inside <report-timeline>.", context);
     }
   });
 }
@@ -6206,6 +6260,23 @@ function validateReportCardGrid(cardGrid, context) {
     }
     if (!card.title && !card.body) {
       fail(`report-card at position ${index + 1} must include title and/or body text.`, context);
+    }
+  });
+}
+function validateReportTimeline(timeline, context) {
+  const variants = /* @__PURE__ */ new Set(["blue", "green", "orange", "red", "muted"]);
+  if (timeline.events.length === 0) {
+    fail("report-timeline must include at least one report-event.", context);
+  }
+  timeline.events.forEach((event, index) => {
+    if (!variants.has(event.status)) {
+      fail(
+        `Unsupported report-event status "${event.rawStatus}". Supported statuses map to blue, green, orange, red, or muted.`,
+        context
+      );
+    }
+    if (!event.date && !event.title && !event.body) {
+      fail(`report-event at position ${index + 1} must include date, title, and/or body text.`, context);
     }
   });
 }
@@ -7001,6 +7072,103 @@ body {
 .report-card-grid-card-orange { --report-card-accent: var(--orange, #F9935B); }
 .report-card-grid-card-red { --report-card-accent: var(--red, #dc2626); }
 
+.report-timeline {
+  margin: 28px 0;
+}
+
+.report-timeline-title {
+  margin: 0 0 16px;
+  color: var(--text-dim, #334155);
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.report-timeline ol {
+  position: relative;
+  display: grid;
+  gap: 14px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.report-timeline ol::before {
+  content: "";
+  position: absolute;
+  top: 16px;
+  bottom: 16px;
+  left: 11px;
+  width: 2px;
+  background: var(--border, #dbe5f2);
+}
+
+.report-timeline-event {
+  position: relative;
+  display: grid;
+  grid-template-columns: 24px minmax(0, 1fr);
+  gap: 14px;
+  min-width: 0;
+}
+
+.report-timeline-marker {
+  position: relative;
+  z-index: 1;
+  width: 24px;
+  height: 24px;
+  border: 4px solid var(--bg, #ffffff);
+  border-radius: 999px;
+  background: var(--report-timeline-color, var(--blue, #0F82F5));
+  box-shadow: 0 0 0 1px var(--border, #dbe5f2);
+}
+
+.report-timeline-content {
+  min-width: 0;
+  padding: 14px 16px;
+  border: 1px solid var(--border, #dbe5f2);
+  border-radius: 8px;
+  background: var(--bg-card, #ffffff);
+  box-shadow: 0 10px 26px rgba(15, 23, 42, 0.06);
+}
+
+.report-timeline-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 7px;
+}
+
+.report-timeline-date {
+  color: var(--text-dim, #64748b);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.report-timeline-event-title {
+  color: var(--text, #0f172a);
+  font-size: 15px;
+  font-weight: 700;
+  line-height: 1.25;
+}
+
+.report-timeline-event-body {
+  margin-top: 5px;
+  color: var(--text, #334155);
+  font-size: 14px;
+  line-height: 1.45;
+  overflow-wrap: anywhere;
+}
+
+.report-timeline-event-blue { --report-timeline-color: var(--blue, #0F82F5); }
+.report-timeline-event-green { --report-timeline-color: var(--green, #16a34a); }
+.report-timeline-event-orange { --report-timeline-color: var(--orange, #F9935B); }
+.report-timeline-event-red { --report-timeline-color: var(--red, #dc2626); }
+.report-timeline-event-muted { --report-timeline-color: var(--text-dim, #64748b); }
+
 .report-chart {
   margin: 28px 0;
   padding: 22px;
@@ -7458,6 +7626,10 @@ body.report-theme-dark-page {
 }
 
 .deck-report.report-theme-dark .report-card-grid-card {
+  box-shadow: none;
+}
+
+.deck-report.report-theme-dark .report-timeline-content {
   box-shadow: none;
 }
 

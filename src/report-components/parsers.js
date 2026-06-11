@@ -133,6 +133,27 @@ export function parseReportCardGrid(root, grid) {
   }
 }
 
+export function parseReportTimeline(root, timeline) {
+  const events = []
+  timeline.children('report-event').each((_, element) => {
+    const event = root(element)
+    const rawStatus = event.attr('status') || event.attr('variant') || event.attr('tone') || 'muted'
+    events.push({
+      date: event.attr('date') || event.attr('time') || event.attr('period') || '',
+      title: event.attr('title') || cleanText(event.find('h3,strong,b').first().text()),
+      body: event.attr('body') || event.attr('text') || cleanText(event.text()),
+      status: normalizeBadgeVariant(rawStatus),
+      rawStatus,
+    })
+  })
+
+  return {
+    type: 'timeline',
+    title: timeline.attr('title') || cleanText(timeline.find('h2,h3').first().text()),
+    events,
+  }
+}
+
 export function parseReportSourceNote(sourceNote) {
   return {
     type: 'source-note',

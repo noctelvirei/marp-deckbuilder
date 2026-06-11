@@ -361,6 +361,7 @@ Reports can use:
 - Formatted data tables via `report-data-table`.
 - Source and methodology notes via `report-source-note`.
 - Mixed action/insight grids via `report-card-grid`.
+- Ordered milestones via `report-timeline`.
 - Callouts via `report-callout`.
 - Accent cards via `report-accent-card`.
 - Badges via `report-badge`.

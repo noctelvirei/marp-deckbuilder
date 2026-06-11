@@ -12,6 +12,7 @@ import {
   parseReportMetricGrid,
   parseReportRateBars,
   parseReportSourceNote,
+  parseReportTimeline,
 } from './report-components/parsers.js'
 import {
   renderReportAccentCardHtml,
@@ -26,6 +27,7 @@ import {
   renderReportMetricGridHtml,
   renderReportRateBarsHtml,
   renderReportSourceNoteHtml,
+  renderReportTimelineHtml,
 } from './report-components/renderers.js'
 
 const knownReportTags = new Set([
@@ -42,6 +44,8 @@ const knownReportTags = new Set([
   'report-metric',
   'report-rate-bars',
   'report-source-note',
+  'report-timeline',
+  'report-event',
 ])
 
 export function compileReportComponents(source, options = {}) {
@@ -113,6 +117,13 @@ export function compileReportComponents(source, options = {}) {
     sourceNoteElement.replaceWith(renderReportSourceNoteHtml(sourceNote))
   })
 
+  root('report-timeline').each((_, element) => {
+    const timelineElement = root(element)
+    const timeline = parseReportTimeline(root, timelineElement)
+    validateReportTimeline(timeline, context)
+    timelineElement.replaceWith(renderReportTimelineHtml(timeline))
+  })
+
   root('report-accent-card').each((_, element) => {
     const cardElement = root(element)
     const card = parseReportAccentCard(cardElement)
@@ -154,6 +165,12 @@ function validateReportComponentTree(root, context) {
     const parent = root(element).parent()
     if (!parent.is('report-card-grid')) {
       fail('<report-card> must be placed directly inside <report-card-grid>.', context)
+    }
+  })
+  root('report-event').each((_, element) => {
+    const parent = root(element).parent()
+    if (!parent.is('report-timeline')) {
+      fail('<report-event> must be placed directly inside <report-timeline>.', context)
     }
   })
 }
@@ -446,6 +463,24 @@ function validateReportCardGrid(cardGrid, context) {
     }
     if (!card.title && !card.body) {
       fail(`report-card at position ${index + 1} must include title and/or body text.`, context)
+    }
+  })
+}
+
+function validateReportTimeline(timeline, context) {
+  const variants = new Set(['blue', 'green', 'orange', 'red', 'muted'])
+  if (timeline.events.length === 0) {
+    fail('report-timeline must include at least one report-event.', context)
+  }
+  timeline.events.forEach((event, index) => {
+    if (!variants.has(event.status)) {
+      fail(
+        `Unsupported report-event status "${event.rawStatus}". Supported statuses map to blue, green, orange, red, or muted.`,
+        context,
+      )
+    }
+    if (!event.date && !event.title && !event.body) {
+      fail(`report-event at position ${index + 1} must include date, title, and/or body text.`, context)
     }
   })
 }

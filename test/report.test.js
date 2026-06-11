@@ -935,6 +935,60 @@ test('report card grids fail clearly when malformed', async () => {
   )
 })
 
+test('expands report timelines into ordered event layouts', async () => {
+  const definitions = await loadDefinitions(new URL('../resources/definitions', import.meta.url))
+  const rendered = renderReportHtml(
+    `# Timeline report
+
+<report-timeline title="Delivery path">
+  <report-event date="Week 1" title="Confirm" status="complete">Validate the journey mapping.</report-event>
+  <report-event date="Week 2" title="Monitor" status="watch">Add trend monitoring.</report-event>
+</report-timeline>
+`,
+    {
+      resourcesDir: path.resolve('resources'),
+      definitions,
+      inlineAssets: true,
+    },
+  )
+
+  assert.doesNotMatch(rendered.document, /<report-timeline/i)
+  assert.doesNotMatch(rendered.document, /<report-event/i)
+  assert.match(rendered.document, /<section class="report-timeline"/)
+  assert.match(rendered.document, /<div class="report-timeline-title">Delivery path<\/div>/)
+  assert.match(rendered.document, /class="report-timeline-event report-timeline-event-green"/)
+  assert.match(rendered.document, /class="report-timeline-event report-timeline-event-orange"/)
+  assert.match(rendered.document, /<span class="report-timeline-date">Week 1<\/span>/)
+  assert.match(rendered.document, /<div class="report-timeline-event-title">Confirm<\/div>/)
+  assert.match(rendered.document, /<div class="report-timeline-event-body">Validate the journey mapping\.<\/div>/)
+})
+
+test('report timelines fail clearly when malformed', async () => {
+  const definitions = await loadDefinitions(new URL('../resources/definitions', import.meta.url))
+  const options = {
+    resourcesDir: path.resolve('resources'),
+    definitions,
+    inlineAssets: true,
+  }
+
+  assert.throws(
+    () => renderReportHtml('<report-event title="Outside"></report-event>', options),
+    /<report-event> must be placed directly inside <report-timeline>/,
+  )
+  assert.throws(
+    () => renderReportHtml('<report-timeline></report-timeline>', options),
+    /report-timeline must include at least one report-event/,
+  )
+  assert.throws(
+    () => renderReportHtml('<report-timeline><report-event status="purple">Body</report-event></report-timeline>', options),
+    /Unsupported report-event status "purple"/,
+  )
+  assert.throws(
+    () => renderReportHtml('<report-timeline><report-event></report-event></report-timeline>', options),
+    /report-event at position 1 must include date, title, and\/or body text/,
+  )
+})
+
 test('expands report metric grid components into reusable metric cards', async () => {
   const definitions = await loadDefinitions(new URL('../resources/definitions', import.meta.url))
   const rendered = renderReportHtml(

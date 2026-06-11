@@ -42,6 +42,7 @@ Use these renderer-backed component tags in `report.md`. They look like HTML tag
 | Formatted data table | `<report-data-table>` | `columns`, `rows`; optional `types`, `caption`, `source` |
 | Citation or methodology note | `<report-source-note>` | Body text and/or `source`; optional `title`, `date` |
 | Mixed insight/action card grid | `<report-card-grid>` with `<report-card>` children | Card `title` and/or body text |
+| Ordered milestones/events | `<report-timeline>` with `<report-event>` children | Event date/title/body |
 | Findings and actions | `<report-callout>` | Body text or `text`; optional `variant`, `title` |
 | Recommendation or insight card | `<report-accent-card>` | Body text or `body`; optional `accent`, `title` |
 | Captioned embedded image | `<report-figure>` | `src`, `alt`; optional `caption`, `source`, `size` |
@@ -87,6 +88,7 @@ Generate `report.md` in this order:
 - Use `<report-data-table>` for formatted tables with text, number, percent, and status columns.
 - Use `<report-source-note>` for citations, methodology, assumptions, and data freshness notes.
 - Use `<report-card-grid>` for grouped insights, action plans, ownership summaries, and mixed card layouts.
+- Use `<report-timeline>` for ordered milestones, delivery paths, decision logs, and event sequences.
 - Use `<report-callout>` for info, warning, success, and danger findings.
 - Use `<report-accent-card>` for highlighted recommendations, risks, or ownership notes.
 - Use `<report-figure>` for captioned images, screenshots, and diagrams stored under resources.
