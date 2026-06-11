@@ -660,6 +660,55 @@ test('report data tables fail clearly when malformed', async () => {
   )
 })
 
+test('expands report key values into definition-list summaries', async () => {
+  const definitions = await loadDefinitions(new URL('../resources/definitions', import.meta.url))
+  const rendered = renderReportHtml(
+    `# Key values report
+
+<report-key-values
+  title="Report context"
+  columns="3"
+  items="Period: April 2026; Source: Journey export; Owner=Operations"
+></report-key-values>
+`,
+    {
+      resourcesDir: path.resolve('resources'),
+      definitions,
+      inlineAssets: true,
+    },
+  )
+
+  assert.doesNotMatch(rendered.document, /<report-key-values/i)
+  assert.match(rendered.document, /<section class="report-key-values report-key-values-3"/)
+  assert.match(rendered.document, /<div class="report-key-values-title">Report context<\/div>/)
+  assert.match(rendered.document, /<dt>Period<\/dt>/)
+  assert.match(rendered.document, /<dd>April 2026<\/dd>/)
+  assert.match(rendered.document, /<dt>Owner<\/dt>/)
+  assert.match(rendered.document, /<dd>Operations<\/dd>/)
+})
+
+test('report key values fail clearly when malformed', async () => {
+  const definitions = await loadDefinitions(new URL('../resources/definitions', import.meta.url))
+  const options = {
+    resourcesDir: path.resolve('resources'),
+    definitions,
+    inlineAssets: true,
+  }
+
+  assert.throws(
+    () => renderReportHtml('<report-key-values></report-key-values>', options),
+    /report-key-values requires at least one item/,
+  )
+  assert.throws(
+    () => renderReportHtml('<report-key-values columns="5" items="Period: April"></report-key-values>', options),
+    /report-key-values columns must be between 1 and 4/,
+  )
+  assert.throws(
+    () => renderReportHtml('<report-key-values items="Period only"></report-key-values>', options),
+    /report-key-values item 1 must use "Label: Value" or "Label=Value"/,
+  )
+})
+
 test('expands report metric grid components into reusable metric cards', async () => {
   const definitions = await loadDefinitions(new URL('../resources/definitions', import.meta.url))
   const rendered = renderReportHtml(

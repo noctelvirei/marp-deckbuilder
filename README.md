@@ -356,6 +356,7 @@ Reports can use:
 - Sticky sidebars.
 - Compact `report-*` component tags that the renderer expands into HTML, CSS, and JavaScript.
 - Metric cards via `report-metric-grid`.
+- Metadata summaries via `report-key-values`.
 - Ranked rate bars via `report-rate-bars`.
 - Formatted data tables via `report-data-table`.
 - Callouts via `report-callout`.

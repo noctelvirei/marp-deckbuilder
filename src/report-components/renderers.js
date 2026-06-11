@@ -70,6 +70,17 @@ ${table.rows.map((row) => renderReportDataTableRow(row, table.types)).join('\n')
 </figure>`
 }
 
+export function renderReportKeyValuesHtml(keyValues) {
+  return `<section class="report-key-values report-key-values-${escapeAttr(keyValues.columns)}" aria-label="${escapeAttr(
+    keyValues.title || 'Key details',
+  )}">
+  ${keyValues.title ? `<div class="report-key-values-title">${escapeHtml(keyValues.title)}</div>` : ''}
+  <dl>
+${keyValues.items.map(renderReportKeyValueItem).join('\n')}
+  </dl>
+</section>`
+}
+
 export function renderReportCalloutHtml(callout) {
   return `<div class="report-callout report-callout-${escapeAttr(callout.variant)}" role="note">
   ${callout.title ? `<div class="report-callout-title">${escapeHtml(callout.title)}</div>` : ''}
@@ -119,6 +130,13 @@ function renderReportDataTableCell(value, type = 'text') {
     return `<td class="${escapeAttr(className)}"><span class="report-badge report-badge-${escapeAttr(variant)}">${escapeHtml(value)}</span></td>`
   }
   return `<td class="${escapeAttr(className)}">${escapeHtml(value)}</td>`
+}
+
+function renderReportKeyValueItem(item) {
+  return `    <div class="report-key-value">
+      <dt>${escapeHtml(item.key)}</dt>
+      <dd>${escapeHtml(item.value)}</dd>
+    </div>`
 }
 
 function parseDataTableNumber(value) {

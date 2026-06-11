@@ -91,6 +91,15 @@ export function parseReportDataTable(table) {
   }
 }
 
+export function parseReportKeyValues(keyValues) {
+  return {
+    type: 'key-values',
+    title: keyValues.attr('title') || cleanText(keyValues.find('h2,h3').first().text()),
+    items: parseKeyValueItems(keyValues.attr('items') || keyValues.attr('data') || cleanText(keyValues.text())),
+    columns: normalizeKeyValueColumns(keyValues.attr('columns') || keyValues.attr('cols') || ''),
+  }
+}
+
 export function parseReportCallout(callout) {
   return {
     type: 'callout',
@@ -169,6 +178,23 @@ function splitRows(value = '') {
     .split(';')
     .map((row) => row.trim())
     .filter(Boolean)
+}
+
+function parseKeyValueItems(value = '') {
+  return splitRows(value).map((item) => {
+    const separator = item.includes('=') ? '=' : ':'
+    const [key, ...rest] = item.split(separator)
+    return {
+      key: cleanText(key),
+      value: cleanText(rest.join(separator)),
+    }
+  })
+}
+
+function normalizeKeyValueColumns(value = '') {
+  const numeric = Number.parseInt(value || 2, 10)
+  if (!Number.isFinite(numeric)) return 2
+  return numeric
 }
 
 function parseChartPoints(value = '') {

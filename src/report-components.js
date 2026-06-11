@@ -7,6 +7,7 @@ import {
   parseReportChart,
   parseReportDataTable,
   parseReportFigure,
+  parseReportKeyValues,
   parseReportMetricGrid,
   parseReportRateBars,
 } from './report-components/parsers.js'
@@ -18,6 +19,7 @@ import {
   renderReportChartScript,
   renderReportDataTableHtml,
   renderReportFigureHtml,
+  renderReportKeyValuesHtml,
   renderReportMetricGridHtml,
   renderReportRateBarsHtml,
 } from './report-components/renderers.js'
@@ -29,6 +31,7 @@ const knownReportTags = new Set([
   'report-chart',
   'report-data-table',
   'report-figure',
+  'report-key-values',
   'report-metric-grid',
   'report-metric',
   'report-rate-bars',
@@ -80,6 +83,13 @@ export function compileReportComponents(source, options = {}) {
     const table = parseReportDataTable(tableElement)
     validateReportDataTable(table, context)
     tableElement.replaceWith(renderReportDataTableHtml(table))
+  })
+
+  root('report-key-values').each((_, element) => {
+    const keyValuesElement = root(element)
+    const keyValues = parseReportKeyValues(keyValuesElement)
+    validateReportKeyValues(keyValues, context)
+    keyValuesElement.replaceWith(renderReportKeyValuesHtml(keyValues))
   })
 
   root('report-accent-card').each((_, element) => {
@@ -283,6 +293,20 @@ function validateReportDataTable(table, context) {
         fail(`report-data-table row ${index + 1} column "${table.columns[cellIndex]}" must be numeric.`, context)
       }
     })
+  })
+}
+
+function validateReportKeyValues(keyValues, context) {
+  if (keyValues.items.length === 0) {
+    fail('report-key-values requires at least one item in items or data.', context)
+  }
+  if (keyValues.columns < 1 || keyValues.columns > 4) {
+    fail('report-key-values columns must be between 1 and 4.', context)
+  }
+  keyValues.items.forEach((item, index) => {
+    if (!item.key || !item.value) {
+      fail(`report-key-values item ${index + 1} must use "Label: Value" or "Label=Value".`, context)
+    }
   })
 }
 

@@ -54,6 +54,7 @@ Reports use normal Markdown plus compact `report-*` component tags. The renderer
 | Need | Component | Required data |
 | --- | --- | --- |
 | KPI card grid | `report-metric-grid` with `report-metric` children | Metric `value` and/or `label` |
+| Metadata or context summary | `report-key-values` | `items`; optional `title`, `columns` |
 | Ranked distribution bars | `report-rate-bars` | `labels`, `values`; optional `shares` |
 | Formatted data table | `report-data-table` | `columns`, `rows`; optional `types`, `caption`, `source` |
 | Finding, risk, or action block | `report-callout` | Body text or `text`; optional `variant`, `title` |
@@ -166,6 +167,26 @@ Supported `report-metric` attributes:
 | `sub` | no | Supporting delta or note. Aliases: `delta`, `change`. |
 | `direction` | no | Use `down` for negative deltas. |
 | `accent` | no | Supports `blue`, `cyan`, `purple`, `green`, `orange`, `red`. |
+
+### Report Key Values
+
+Use `report-key-values` for report context, parameters, ownership, and other compact label/value summaries. Do not hand-author definition-list HTML or card grids for this standard display.
+
+```md
+<report-key-values
+  title="Report context"
+  columns="3"
+  items="Period: April 2026; Source: Journey export; Owner: Operations"
+></report-key-values>
+```
+
+Supported attributes:
+
+| Attribute | Required | Notes |
+| --- | --- | --- |
+| `title` | no | Rendered above the key/value grid. |
+| `items` | yes | Semicolon-separated `Label: Value` or `Label=Value` pairs. Alias: `data`. |
+| `columns` | no | Number of columns from `1` to `4`. Alias: `cols`. Defaults to `2`. |
 
 ### Report Rate Bars
 

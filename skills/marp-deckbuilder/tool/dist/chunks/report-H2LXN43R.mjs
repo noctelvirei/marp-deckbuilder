@@ -4810,6 +4810,14 @@ function parseReportDataTable(table2) {
     source: table2.attr("source") || ""
   };
 }
+function parseReportKeyValues(keyValues) {
+  return {
+    type: "key-values",
+    title: keyValues.attr("title") || cleanText(keyValues.find("h2,h3").first().text()),
+    items: parseKeyValueItems(keyValues.attr("items") || keyValues.attr("data") || cleanText(keyValues.text())),
+    columns: normalizeKeyValueColumns(keyValues.attr("columns") || keyValues.attr("cols") || "")
+  };
+}
 function parseReportCallout(callout) {
   return {
     type: "callout",
@@ -4874,6 +4882,21 @@ function splitPipe(value = "", options = {}) {
 }
 function splitRows(value = "") {
   return String(value || "").split(";").map((row) => row.trim()).filter(Boolean);
+}
+function parseKeyValueItems(value = "") {
+  return splitRows(value).map((item) => {
+    const separator = item.includes("=") ? "=" : ":";
+    const [key, ...rest] = item.split(separator);
+    return {
+      key: cleanText(key),
+      value: cleanText(rest.join(separator))
+    };
+  });
+}
+function normalizeKeyValueColumns(value = "") {
+  const numeric = Number.parseInt(value || 2, 10);
+  if (!Number.isFinite(numeric)) return 2;
+  return numeric;
 }
 function parseChartPoints(value = "") {
   return splitCsv(value).map((item) => {
@@ -4977,6 +5000,16 @@ ${table2.rows.map((row) => renderReportDataTableRow(row, table2.types)).join("\n
   </figcaption>` : ""}
 </figure>`;
 }
+function renderReportKeyValuesHtml(keyValues) {
+  return `<section class="report-key-values report-key-values-${escapeAttr(keyValues.columns)}" aria-label="${escapeAttr(
+    keyValues.title || "Key details"
+  )}">
+  ${keyValues.title ? `<div class="report-key-values-title">${escapeHtml2(keyValues.title)}</div>` : ""}
+  <dl>
+${keyValues.items.map(renderReportKeyValueItem).join("\n")}
+  </dl>
+</section>`;
+}
 function renderReportCalloutHtml(callout) {
   return `<div class="report-callout report-callout-${escapeAttr(callout.variant)}" role="note">
   ${callout.title ? `<div class="report-callout-title">${escapeHtml2(callout.title)}</div>` : ""}
@@ -5017,6 +5050,12 @@ function renderReportDataTableCell(value, type = "text") {
     return `<td class="${escapeAttr(className)}"><span class="report-badge report-badge-${escapeAttr(variant)}">${escapeHtml2(value)}</span></td>`;
   }
   return `<td class="${escapeAttr(className)}">${escapeHtml2(value)}</td>`;
+}
+function renderReportKeyValueItem(item) {
+  return `    <div class="report-key-value">
+      <dt>${escapeHtml2(item.key)}</dt>
+      <dd>${escapeHtml2(item.value)}</dd>
+    </div>`;
 }
 function parseDataTableNumber(value) {
   return Number(String(value || "").replace(/,/g, "").replace(/%$/, "").trim());
@@ -5407,6 +5446,7 @@ var knownReportTags = /* @__PURE__ */ new Set([
   "report-chart",
   "report-data-table",
   "report-figure",
+  "report-key-values",
   "report-metric-grid",
   "report-metric",
   "report-rate-bars"
@@ -5450,6 +5490,12 @@ function compileReportComponents(source, options = {}) {
     const table2 = parseReportDataTable(tableElement);
     validateReportDataTable(table2, context);
     tableElement.replaceWith(renderReportDataTableHtml(table2));
+  });
+  root("report-key-values").each((_, element) => {
+    const keyValuesElement = root(element);
+    const keyValues = parseReportKeyValues(keyValuesElement);
+    validateReportKeyValues(keyValues, context);
+    keyValuesElement.replaceWith(renderReportKeyValuesHtml(keyValues));
   });
   root("report-accent-card").each((_, element) => {
     const cardElement = root(element);
@@ -5638,6 +5684,19 @@ function validateReportDataTable(table2, context) {
         fail(`report-data-table row ${index + 1} column "${table2.columns[cellIndex]}" must be numeric.`, context);
       }
     });
+  });
+}
+function validateReportKeyValues(keyValues, context) {
+  if (keyValues.items.length === 0) {
+    fail("report-key-values requires at least one item in items or data.", context);
+  }
+  if (keyValues.columns < 1 || keyValues.columns > 4) {
+    fail("report-key-values columns must be between 1 and 4.", context);
+  }
+  keyValues.items.forEach((item, index) => {
+    if (!item.key || !item.value) {
+      fail(`report-key-values item ${index + 1} must use "Label: Value" or "Label=Value".`, context);
+    }
   });
 }
 function validateReportRateBars(rateBars, context) {
@@ -6270,6 +6329,69 @@ body {
   font-size: 12px;
 }
 
+.report-key-values {
+  margin: 24px 0;
+  padding: 18px;
+  border: 1px solid var(--border, #dbe5f2);
+  border-radius: 8px;
+  background: var(--bg-card, #ffffff);
+  box-shadow: 0 12px 30px rgba(15, 23, 42, 0.07);
+}
+
+.report-key-values-title {
+  margin: 0 0 14px;
+  color: var(--text-dim, #334155);
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.report-key-values dl {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  margin: 0;
+}
+
+.report-key-values-1 dl {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.report-key-values-3 dl {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.report-key-values-4 dl {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.report-key-value {
+  min-width: 0;
+  padding: 12px 14px;
+  border: 1px solid var(--border-dim, #e2e8f0);
+  border-radius: 6px;
+  background: var(--bg-subtle, #f8fbff);
+}
+
+.report-key-value dt {
+  margin: 0 0 5px;
+  color: var(--text-dim, #64748b);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.report-key-value dd {
+  min-width: 0;
+  margin: 0;
+  color: var(--text, #0f172a);
+  font-size: 15px;
+  font-weight: 650;
+  overflow-wrap: anywhere;
+}
+
 .report-chart {
   margin: 28px 0;
   padding: 22px;
@@ -6722,6 +6844,10 @@ body.report-theme-dark-page {
   box-shadow: none;
 }
 
+.deck-report.report-theme-dark .report-key-values {
+  box-shadow: none;
+}
+
 .deck-report.report-theme-dark .report-accent-card {
   box-shadow: none;
 }
@@ -6781,6 +6907,12 @@ pre code {
 
   .report-main {
     padding: 0;
+  }
+
+  .report-key-values dl,
+  .report-key-values-3 dl,
+  .report-key-values-4 dl {
+    grid-template-columns: minmax(0, 1fr);
   }
 }
 

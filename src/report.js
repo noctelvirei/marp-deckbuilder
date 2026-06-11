@@ -478,6 +478,69 @@ body {
   font-size: 12px;
 }
 
+.report-key-values {
+  margin: 24px 0;
+  padding: 18px;
+  border: 1px solid var(--border, #dbe5f2);
+  border-radius: 8px;
+  background: var(--bg-card, #ffffff);
+  box-shadow: 0 12px 30px rgba(15, 23, 42, 0.07);
+}
+
+.report-key-values-title {
+  margin: 0 0 14px;
+  color: var(--text-dim, #334155);
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.report-key-values dl {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  margin: 0;
+}
+
+.report-key-values-1 dl {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.report-key-values-3 dl {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.report-key-values-4 dl {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.report-key-value {
+  min-width: 0;
+  padding: 12px 14px;
+  border: 1px solid var(--border-dim, #e2e8f0);
+  border-radius: 6px;
+  background: var(--bg-subtle, #f8fbff);
+}
+
+.report-key-value dt {
+  margin: 0 0 5px;
+  color: var(--text-dim, #64748b);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.report-key-value dd {
+  min-width: 0;
+  margin: 0;
+  color: var(--text, #0f172a);
+  font-size: 15px;
+  font-weight: 650;
+  overflow-wrap: anywhere;
+}
+
 .report-chart {
   margin: 28px 0;
   padding: 22px;
@@ -930,6 +993,10 @@ body.report-theme-dark-page {
   box-shadow: none;
 }
 
+.deck-report.report-theme-dark .report-key-values {
+  box-shadow: none;
+}
+
 .deck-report.report-theme-dark .report-accent-card {
   box-shadow: none;
 }
@@ -989,6 +1056,12 @@ pre code {
 
   .report-main {
     padding: 0;
+  }
+
+  .report-key-values dl,
+  .report-key-values-3 dl,
+  .report-key-values-4 dl {
+    grid-template-columns: minmax(0, 1fr);
   }
 }
 

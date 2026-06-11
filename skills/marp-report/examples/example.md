@@ -9,6 +9,12 @@ reportNav: true
 
 April volume is concentrated in one dominant journey. The top three journeys account for 92.4% of activity, while one unregistered journey requires follow-up.
 
+<report-key-values
+  title="Report context"
+  columns="3"
+  items="Period: April 2026; Source: Journey export; Owner: Operations"
+></report-key-values>
+
 <report-metric-grid>
   <report-metric value="77,951" label="Total cases"></report-metric>
   <report-metric value="67.1%" label="J0107 share" accent="blue"></report-metric>
