@@ -155,6 +155,17 @@ April volume is concentrated in one dominant journey. The top three journeys acc
   values="5|6|7|7|8|10|12;8|10|11|12|14|15|18;14|16|18|21|23|24|28"
 ></report-chart>
 
+## Exception Drivers
+
+<report-chart
+  type="pareto"
+  title="Exception drivers"
+  series="Cases"
+  value-suffix=" cases"
+  labels="Identity,Address,Income,Consent"
+  values="42,18,27,13"
+></report-chart>
+
 ## Completion Funnel
 
 <report-chart

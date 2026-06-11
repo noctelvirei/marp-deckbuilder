@@ -380,6 +380,7 @@ Reports can use:
 - Chart.js bubble charts via `report-chart type="bubble"`.
 - Chart.js histograms via `report-chart type="histogram"`.
 - Chart.js boxplots via `report-chart type="boxplot"`.
+- Chart.js Pareto charts via `report-chart type="pareto"`.
 - Observable Plot charts via `report-chart type="area"`.
 - D3 charts via `report-chart type="treemap"`.
 - D3 funnels via `report-chart type="funnel"`.

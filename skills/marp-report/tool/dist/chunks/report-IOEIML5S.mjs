@@ -5440,6 +5440,7 @@ function renderReportChartScript(chart, context = {}) {
   if (chart.chartType === "bubble") return renderReportBubbleChartScript(chart, context);
   if (chart.chartType === "histogram") return renderReportHistogramChartScript(chart, context);
   if (chart.chartType === "boxplot") return renderReportBoxplotChartScript(chart, context);
+  if (chart.chartType === "pareto") return renderReportParetoChartScript(chart, context);
   const palette = chart.colors.length ? chart.colors : reportChartPalette(context.brand);
   const colors = chart.labels.map((_, index) => normalizeChartColor(palette[index % palette.length]));
   const primaryColor = normalizeChartColor(palette[0]) || "#0F82F5";
@@ -5533,6 +5534,116 @@ ${datasetOptions}
         }
       }
 ${chartScales}
+    }
+  });
+})();`;
+}
+function renderReportParetoChartScript(chart, context = {}) {
+  const palette = chart.colors.length ? chart.colors : reportChartPalette(context.brand);
+  const barColor = normalizeChartColor(palette[0]) || "#0F82F5";
+  const lineColor = normalizeChartColor(palette[5]) || "#FC5161";
+  const rows = chart.labels.map((label, index) => ({ label, value: chart.values[index] })).sort((left, right) => right.value - left.value);
+  const total = rows.reduce((sum, row) => sum + row.value, 0);
+  let running = 0;
+  const cumulative = rows.map((row) => {
+    running += row.value;
+    return Math.round(running / total * 1e4) / 100;
+  });
+  return `(() => {
+  const canvas = document.getElementById(${jsString(chart.id)});
+  const themeRoot = canvas.closest(".deck-report") || document.body || document.documentElement;
+  const rootStyle = getComputedStyle(themeRoot);
+  const tickColor = rootStyle.getPropertyValue("--text-dim").trim() || "#64748b";
+  const gridColor = rootStyle.getPropertyValue("--border").trim() || "rgba(148, 163, 184, 0.28)";
+  const tooltipBg = rootStyle.getPropertyValue("--bg-card").trim() || "rgba(15, 23, 42, 0.92)";
+  const tooltipText = rootStyle.getPropertyValue("--text").trim() || "#ffffff";
+  const tooltipMuted = rootStyle.getPropertyValue("--text-dim").trim() || "#cbd5e1";
+  const valuePrefix = ${jsString(chart.valuePrefix)};
+  const valueSuffix = ${jsString(chart.valueSuffix)};
+  const valueFormatter = new Intl.NumberFormat("en-US", { maximumFractionDigits: 2 });
+  const formatTooltipValue = (value) => {
+    const numeric = Number(value);
+    const formatted = Number.isFinite(numeric) ? valueFormatter.format(numeric) : String(value ?? "");
+    return valuePrefix + formatted + valueSuffix;
+  };
+  new Chart(canvas, {
+    data: {
+      labels: ${jsValue(rows.map((row) => row.label))},
+      datasets: [{
+        type: "bar",
+        label: ${jsString(chart.series || "Value")},
+        data: ${jsValue(rows.map((row) => row.value))},
+        yAxisID: "y",
+        backgroundColor: ${jsString(hexToRgba(barColor, 0.82))},
+        borderColor: ${jsString(barColor)},
+        borderWidth: 1,
+        borderRadius: 5
+      }, {
+        type: "line",
+        label: "Cumulative %",
+        data: ${jsValue(cumulative)},
+        yAxisID: "yPercent",
+        borderColor: ${jsString(lineColor)},
+        backgroundColor: ${jsString(lineColor)},
+        borderWidth: 3,
+        pointRadius: 4,
+        pointHoverRadius: 6,
+        tension: 0.25
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      interaction: {
+        mode: "index",
+        intersect: false
+      },
+      plugins: {
+        legend: { display: true, position: "top", labels: { color: tickColor } },
+        tooltip: {
+          enabled: true,
+          mode: "index",
+          intersect: false,
+          backgroundColor: tooltipBg,
+          titleColor: tooltipText,
+          bodyColor: tooltipMuted,
+          borderColor: gridColor,
+          borderWidth: 1,
+          displayColors: true,
+          padding: 12,
+          callbacks: {
+            label: (context) => {
+              if (context.dataset.yAxisID === "yPercent") return "Cumulative: " + valueFormatter.format(context.parsed.y) + "%";
+              return context.dataset.label + ": " + formatTooltipValue(context.parsed.y);
+            }
+          }
+        }
+      },
+      scales: {
+        x: {
+          ticks: { color: tickColor },
+          grid: { color: gridColor }
+        },
+        y: {
+          beginAtZero: true,
+          position: "left",
+          ticks: {
+            color: tickColor,
+            callback: value => Number(value).toLocaleString()
+          },
+          grid: { color: gridColor }
+        },
+        yPercent: {
+          beginAtZero: true,
+          max: 100,
+          position: "right",
+          ticks: {
+            color: tickColor,
+            callback: value => Number(value).toLocaleString() + "%"
+          },
+          grid: { drawOnChartArea: false }
+        }
+      }
     }
   });
 })();`;
@@ -6958,13 +7069,14 @@ function validateReportChart(chart, context) {
     "bubble",
     "histogram",
     "boxplot",
+    "pareto",
     "grouped-bar",
     "stacked-bar",
     "heatmap"
   ]);
   if (!supportedTypes.has(chart.chartType)) {
     fail(
-      `report-chart type "${chart.chartType}" is not available. Supported types: bar, line, doughnut, area, treemap, funnel, grouped-bar, stacked-bar, heatmap, waterfall, bullet, scatter, bubble, histogram, boxplot. Ask the skill maker to add missing chart types.`,
+      `report-chart type "${chart.chartType}" is not available. Supported types: bar, line, doughnut, area, treemap, funnel, grouped-bar, stacked-bar, heatmap, waterfall, bullet, scatter, bubble, histogram, boxplot, pareto. Ask the skill maker to add missing chart types.`,
       context
     );
   }
@@ -7021,6 +7133,10 @@ function validateReportChart(chart, context) {
     validateReportBoxplotChart(chart, context);
     return;
   }
+  if (chart.chartType === "pareto") {
+    validateReportParetoChart(chart, context);
+    return;
+  }
   validateReportChartLabelsAndValues(chart, context);
   if (chart.chartType === "bullet") {
     validateReportBulletChart(chart, context);
@@ -7050,6 +7166,15 @@ function validateReportChartLabelsAndValues(chart, context) {
   }
   if (chart.values.some((value) => !Number.isFinite(value))) {
     fail("report-chart values must all be numeric.", context);
+  }
+}
+function validateReportParetoChart(chart, context) {
+  validateReportChartLabelsAndValues(chart, context);
+  if (chart.values.some((value) => value < 0)) {
+    fail("report-chart pareto values must be zero or positive.", context);
+  }
+  if (chart.values.reduce((sum, value) => sum + value, 0) <= 0) {
+    fail("report-chart pareto values must sum to more than zero.", context);
   }
 }
 function validateReportBoxplotChart(chart, context) {

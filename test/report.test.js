@@ -640,6 +640,36 @@ test('expands report boxplot charts into Chart.js quartile plots', async () => {
   assert.match(rendered.document, /borderSkipped:\s*false/)
 })
 
+test('expands report pareto charts into sorted bars and cumulative line', async () => {
+  const definitions = await loadDefinitions(new URL('../resources/definitions', import.meta.url))
+  const rendered = renderReportHtml(
+    `# Pareto chart report
+
+<report-chart
+  type="pareto"
+  title="Exception drivers"
+  series="Cases"
+  value-suffix=" cases"
+  labels="Identity,Address,Income,Consent"
+  values="42,18,27,13"
+></report-chart>
+`,
+    {
+      resourcesDir: path.resolve('resources'),
+      definitions,
+      inlineAssets: true,
+    },
+  )
+
+  assert.doesNotMatch(rendered.document, /<report-chart/i)
+  assert.match(rendered.document, /class="report-chart report-chart-pareto"/)
+  assert.match(rendered.document, /labels: \["Identity","Income","Address","Consent"\]/)
+  assert.match(rendered.document, /data: \[42,27,18,13\]/)
+  assert.match(rendered.document, /data: \[42,69,87,100\]/)
+  assert.match(rendered.document, /yAxisID: "yPercent"/)
+  assert.match(rendered.document, /"Cumulative: " \+ valueFormatter\.format\(context\.parsed\.y\) \+ "%"/)
+})
+
 test('allows Chart.js, Observable Plot, and D3 report charts to coexist', async () => {
   const definitions = await loadDefinitions(new URL('../resources/definitions', import.meta.url))
   const rendered = renderReportHtml(
@@ -1725,7 +1755,15 @@ test('report chart components fail clearly when data is invalid', async () => {
   )
   assert.throws(
     () => renderReportHtml('<report-chart type="radar" labels="A" values="10"></report-chart>', options),
-    /report-chart type "radar" is not available\. Supported types: bar, line, doughnut, area, treemap, funnel, grouped-bar, stacked-bar, heatmap, waterfall, bullet, scatter, bubble, histogram, boxplot\. Ask the skill maker to add missing chart types/,
+    /report-chart type "radar" is not available\. Supported types: bar, line, doughnut, area, treemap, funnel, grouped-bar, stacked-bar, heatmap, waterfall, bullet, scatter, bubble, histogram, boxplot, pareto\. Ask the skill maker to add missing chart types/,
+  )
+  assert.throws(
+    () => renderReportHtml('<report-chart type="pareto" labels="A,B" values="10,-1"></report-chart>', options),
+    /report-chart pareto values must be zero or positive/,
+  )
+  assert.throws(
+    () => renderReportHtml('<report-chart type="pareto" labels="A,B" values="0,0"></report-chart>', options),
+    /report-chart pareto values must sum to more than zero/,
   )
   assert.throws(
     () => renderReportHtml('<report-chart type="boxplot" values="1|2|3|4|5"></report-chart>', options),

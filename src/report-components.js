@@ -296,13 +296,14 @@ function validateReportChart(chart, context) {
     'bubble',
     'histogram',
     'boxplot',
+    'pareto',
     'grouped-bar',
     'stacked-bar',
     'heatmap',
   ])
   if (!supportedTypes.has(chart.chartType)) {
     fail(
-      `report-chart type "${chart.chartType}" is not available. Supported types: bar, line, doughnut, area, treemap, funnel, grouped-bar, stacked-bar, heatmap, waterfall, bullet, scatter, bubble, histogram, boxplot. Ask the skill maker to add missing chart types.`,
+      `report-chart type "${chart.chartType}" is not available. Supported types: bar, line, doughnut, area, treemap, funnel, grouped-bar, stacked-bar, heatmap, waterfall, bullet, scatter, bubble, histogram, boxplot, pareto. Ask the skill maker to add missing chart types.`,
       context,
     )
   }
@@ -359,6 +360,10 @@ function validateReportChart(chart, context) {
     validateReportBoxplotChart(chart, context)
     return
   }
+  if (chart.chartType === 'pareto') {
+    validateReportParetoChart(chart, context)
+    return
+  }
   validateReportChartLabelsAndValues(chart, context)
   if (chart.chartType === 'bullet') {
     validateReportBulletChart(chart, context)
@@ -389,6 +394,16 @@ function validateReportChartLabelsAndValues(chart, context) {
   }
   if (chart.values.some((value) => !Number.isFinite(value))) {
     fail('report-chart values must all be numeric.', context)
+  }
+}
+
+function validateReportParetoChart(chart, context) {
+  validateReportChartLabelsAndValues(chart, context)
+  if (chart.values.some((value) => value < 0)) {
+    fail('report-chart pareto values must be zero or positive.', context)
+  }
+  if (chart.values.reduce((sum, value) => sum + value, 0) <= 0) {
+    fail('report-chart pareto values must sum to more than zero.', context)
   }
 }
 
