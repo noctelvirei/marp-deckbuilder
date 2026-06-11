@@ -8,9 +8,11 @@ import {
   parseReportChart,
   parseReportDataTable,
   parseReportFigure,
+  parseReportInsight,
   parseReportKeyValues,
   parseReportMetricGrid,
   parseReportRateBars,
+  parseReportRecommendation,
   parseReportSourceNote,
   parseReportTimeline,
 } from './report-components/parsers.js'
@@ -23,9 +25,11 @@ import {
   renderReportChartScript,
   renderReportDataTableHtml,
   renderReportFigureHtml,
+  renderReportInsightHtml,
   renderReportKeyValuesHtml,
   renderReportMetricGridHtml,
   renderReportRateBarsHtml,
+  renderReportRecommendationHtml,
   renderReportSourceNoteHtml,
   renderReportTimelineHtml,
 } from './report-components/renderers.js'
@@ -39,10 +43,12 @@ const knownReportTags = new Set([
   'report-chart',
   'report-data-table',
   'report-figure',
+  'report-insight',
   'report-key-values',
   'report-metric-grid',
   'report-metric',
   'report-rate-bars',
+  'report-recommendation',
   'report-source-note',
   'report-timeline',
   'report-event',
@@ -101,6 +107,20 @@ export function compileReportComponents(source, options = {}) {
     const keyValues = parseReportKeyValues(keyValuesElement)
     validateReportKeyValues(keyValues, context)
     keyValuesElement.replaceWith(renderReportKeyValuesHtml(keyValues))
+  })
+
+  root('report-insight').each((_, element) => {
+    const insightElement = root(element)
+    const insight = parseReportInsight(insightElement)
+    validateReportInsight(insight, context)
+    insightElement.replaceWith(renderReportInsightHtml(insight))
+  })
+
+  root('report-recommendation').each((_, element) => {
+    const recommendationElement = root(element)
+    const recommendation = parseReportRecommendation(recommendationElement)
+    validateReportRecommendation(recommendation, context)
+    recommendationElement.replaceWith(renderReportRecommendationHtml(recommendation))
   })
 
   root('report-card-grid').each((_, element) => {
@@ -479,6 +499,32 @@ function validateReportKeyValues(keyValues, context) {
       fail(`report-key-values item ${index + 1} must use "Label: Value" or "Label=Value".`, context)
     }
   })
+}
+
+function validateReportInsight(insight, context) {
+  const supportedVariants = new Set(['info', 'warning', 'success', 'danger'])
+  if (!supportedVariants.has(insight.variant)) {
+    fail(
+      `report-insight variant "${insight.rawVariant}" is not available. Supported variants: info, warning, success, danger. Ask the skill maker to add missing insight variants.`,
+      context,
+    )
+  }
+  if (!insight.title && !insight.finding && !insight.evidence && !insight.impact && !insight.action) {
+    fail('report-insight requires title, finding/body text, evidence, impact, or action.', context)
+  }
+}
+
+function validateReportRecommendation(recommendation, context) {
+  const supportedPriorities = new Set(['', 'critical', 'high', 'medium', 'low'])
+  if (!recommendation.title && !recommendation.body) {
+    fail('report-recommendation requires title or body text.', context)
+  }
+  if (!supportedPriorities.has(recommendation.priority)) {
+    fail(
+      `report-recommendation priority "${recommendation.rawPriority}" is not available. Supported priorities: critical, high, medium, low. Ask the skill maker to add missing recommendation priorities.`,
+      context,
+    )
+  }
 }
 
 function validateReportSourceNote(sourceNote, context) {

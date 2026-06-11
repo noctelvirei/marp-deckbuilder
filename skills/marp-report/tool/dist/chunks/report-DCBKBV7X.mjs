@@ -4834,6 +4834,31 @@ function parseReportKeyValues(keyValues) {
     columns: normalizeKeyValueColumns(keyValues.attr("columns") || keyValues.attr("cols") || "")
   };
 }
+function parseReportInsight(insight) {
+  return {
+    type: "insight",
+    variant: normalizeCalloutVariant(insight.attr("variant") || insight.attr("type") || insight.attr("tone") || "info"),
+    rawVariant: insight.attr("variant") || insight.attr("type") || insight.attr("tone") || "info",
+    title: insight.attr("title") || cleanText(insight.find("h3,strong,b").first().text()),
+    finding: insight.attr("finding") || insight.attr("text") || insight.attr("body") || cleanText(insight.text()),
+    evidence: insight.attr("evidence") || "",
+    impact: insight.attr("impact") || "",
+    action: insight.attr("action") || insight.attr("next") || ""
+  };
+}
+function parseReportRecommendation(recommendation) {
+  return {
+    type: "recommendation",
+    title: recommendation.attr("title") || cleanText(recommendation.find("h3,strong,b").first().text()),
+    body: recommendation.attr("body") || recommendation.attr("text") || cleanText(recommendation.text()),
+    owner: recommendation.attr("owner") || "",
+    priority: normalizeRecommendationPriority(recommendation.attr("priority") || ""),
+    rawPriority: recommendation.attr("priority") || "",
+    due: recommendation.attr("due") || recommendation.attr("date") || "",
+    status: normalizeBadgeVariant(recommendation.attr("status") || recommendation.attr("state") || "pending"),
+    rawStatus: recommendation.attr("status") || recommendation.attr("state") || "pending"
+  };
+}
 function parseReportCardGrid(root, grid) {
   const cards = [];
   grid.children("report-card").each((_, element) => {
@@ -5023,6 +5048,11 @@ function normalizeCalloutVariant(value = "info") {
   if (token === "positive") return "success";
   return token;
 }
+function normalizeRecommendationPriority(value = "") {
+  const token = String(value || "").trim().toLowerCase();
+  if (["critical", "high", "medium", "low"].includes(token)) return token;
+  return token;
+}
 function normalizeBadgeVariant(value = "muted") {
   const token = String(value || "muted").trim().toLowerCase();
   if (["green", "success", "active", "approved", "done", "complete", "completed", "pass"].includes(token)) {
@@ -5113,6 +5143,35 @@ function renderReportKeyValuesHtml(keyValues) {
 ${keyValues.items.map(renderReportKeyValueItem).join("\n")}
   </dl>
 </section>`;
+}
+function renderReportInsightHtml(insight) {
+  const sections = [
+    ["Finding", insight.finding],
+    ["Evidence", insight.evidence],
+    ["Impact", insight.impact],
+    ["Action", insight.action]
+  ].filter(([, value]) => value);
+  return `<article class="report-insight report-insight-${escapeAttr(insight.variant)}" role="note">
+  ${insight.title ? `<div class="report-insight-title">${escapeHtml2(insight.title)}</div>` : ""}
+  <dl>
+${sections.map(renderReportInsightSection).join("\n")}
+  </dl>
+</article>`;
+}
+function renderReportRecommendationHtml(recommendation) {
+  const meta = [
+    recommendation.owner ? `<span class="report-recommendation-meta-item">Owner: ${escapeHtml2(recommendation.owner)}</span>` : "",
+    recommendation.priority ? `<span class="report-recommendation-priority report-recommendation-priority-${escapeAttr(recommendation.priority)}">${escapeHtml2(recommendation.rawPriority || recommendation.priority)}</span>` : "",
+    recommendation.due ? `<span class="report-recommendation-meta-item">Due: ${escapeHtml2(recommendation.due)}</span>` : "",
+    recommendation.rawStatus ? `<span class="report-badge report-badge-${escapeAttr(recommendation.status)}">${escapeHtml2(recommendation.rawStatus)}</span>` : ""
+  ].filter(Boolean).join("\n    ");
+  return `<article class="report-recommendation">
+  ${recommendation.title ? `<div class="report-recommendation-title">${escapeHtml2(recommendation.title)}</div>` : ""}
+  ${recommendation.body ? `<div class="report-recommendation-body">${escapeHtml2(recommendation.body)}</div>` : ""}
+  ${meta ? `<div class="report-recommendation-meta">
+    ${meta}
+  </div>` : ""}
+</article>`;
 }
 function renderReportCardGridHtml(grid) {
   return `<section class="report-card-grid report-card-grid-${escapeAttr(grid.columns)}" aria-label="${escapeAttr(
@@ -5217,6 +5276,12 @@ function renderReportKeyValueItem(item) {
   return `    <div class="report-key-value">
       <dt>${escapeHtml2(item.key)}</dt>
       <dd>${escapeHtml2(item.value)}</dd>
+    </div>`;
+}
+function renderReportInsightSection([label, value]) {
+  return `    <div class="report-insight-section">
+      <dt>${escapeHtml2(label)}</dt>
+      <dd>${escapeHtml2(value)}</dd>
     </div>`;
 }
 function renderReportCardGridItem(card) {
@@ -5932,10 +5997,12 @@ var knownReportTags = /* @__PURE__ */ new Set([
   "report-chart",
   "report-data-table",
   "report-figure",
+  "report-insight",
   "report-key-values",
   "report-metric-grid",
   "report-metric",
   "report-rate-bars",
+  "report-recommendation",
   "report-source-note",
   "report-timeline",
   "report-event"
@@ -5985,6 +6052,18 @@ function compileReportComponents(source, options = {}) {
     const keyValues = parseReportKeyValues(keyValuesElement);
     validateReportKeyValues(keyValues, context);
     keyValuesElement.replaceWith(renderReportKeyValuesHtml(keyValues));
+  });
+  root("report-insight").each((_, element) => {
+    const insightElement = root(element);
+    const insight = parseReportInsight(insightElement);
+    validateReportInsight(insight, context);
+    insightElement.replaceWith(renderReportInsightHtml(insight));
+  });
+  root("report-recommendation").each((_, element) => {
+    const recommendationElement = root(element);
+    const recommendation = parseReportRecommendation(recommendationElement);
+    validateReportRecommendation(recommendation, context);
+    recommendationElement.replaceWith(renderReportRecommendationHtml(recommendation));
   });
   root("report-card-grid").each((_, element) => {
     const cardGridElement = root(element);
@@ -6342,6 +6421,30 @@ function validateReportKeyValues(keyValues, context) {
       fail(`report-key-values item ${index + 1} must use "Label: Value" or "Label=Value".`, context);
     }
   });
+}
+function validateReportInsight(insight, context) {
+  const supportedVariants = /* @__PURE__ */ new Set(["info", "warning", "success", "danger"]);
+  if (!supportedVariants.has(insight.variant)) {
+    fail(
+      `report-insight variant "${insight.rawVariant}" is not available. Supported variants: info, warning, success, danger. Ask the skill maker to add missing insight variants.`,
+      context
+    );
+  }
+  if (!insight.title && !insight.finding && !insight.evidence && !insight.impact && !insight.action) {
+    fail("report-insight requires title, finding/body text, evidence, impact, or action.", context);
+  }
+}
+function validateReportRecommendation(recommendation, context) {
+  const supportedPriorities = /* @__PURE__ */ new Set(["", "critical", "high", "medium", "low"]);
+  if (!recommendation.title && !recommendation.body) {
+    fail("report-recommendation requires title or body text.", context);
+  }
+  if (!supportedPriorities.has(recommendation.priority)) {
+    fail(
+      `report-recommendation priority "${recommendation.rawPriority}" is not available. Supported priorities: critical, high, medium, low. Ask the skill maker to add missing recommendation priorities.`,
+      context
+    );
+  }
 }
 function validateReportSourceNote(sourceNote, context) {
   if (!sourceNote.title && !sourceNote.body && !sourceNote.source && !sourceNote.date) {
@@ -7128,6 +7231,120 @@ body {
   overflow-wrap: anywhere;
 }
 
+.report-insight,
+.report-recommendation {
+  margin: 24px 0;
+  padding: 18px;
+  border: 1px solid var(--border, #dbe5f2);
+  border-radius: 8px;
+  background: var(--bg-card, #ffffff);
+  box-shadow: 0 12px 30px rgba(15, 23, 42, 0.07);
+}
+
+.report-insight {
+  border-left: 4px solid var(--blue, var(--report-blue, #0F82F5));
+}
+
+.report-insight-warning {
+  border-left-color: var(--orange, #f59e0b);
+}
+
+.report-insight-success {
+  border-left-color: var(--green, #1FA95D);
+}
+
+.report-insight-danger {
+  border-left-color: #ef4444;
+}
+
+.report-insight-title,
+.report-recommendation-title {
+  margin: 0 0 12px;
+  color: var(--text, #0f172a);
+  font-size: 17px;
+  font-weight: 750;
+  line-height: 1.25;
+}
+
+.report-insight dl {
+  display: grid;
+  gap: 12px;
+  margin: 0;
+}
+
+.report-insight-section {
+  display: grid;
+  grid-template-columns: minmax(90px, 0.28fr) minmax(0, 1fr);
+  gap: 12px;
+  align-items: start;
+}
+
+.report-insight-section dt {
+  margin: 0;
+  color: var(--text-dim, #64748b);
+  font-size: 11px;
+  font-weight: 750;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.report-insight-section dd {
+  min-width: 0;
+  margin: 0;
+  color: var(--text, #334155);
+  font-size: 14px;
+  line-height: 1.45;
+}
+
+.report-recommendation {
+  border-top: 4px solid var(--green, #1FA95D);
+}
+
+.report-recommendation-body {
+  color: var(--text, #334155);
+  font-size: 15px;
+  line-height: 1.45;
+}
+
+.report-recommendation-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 14px;
+}
+
+.report-recommendation-meta-item,
+.report-recommendation-priority {
+  display: inline-flex;
+  align-items: center;
+  min-height: 24px;
+  padding: 4px 9px;
+  border: 1px solid var(--border-dim, #e2e8f0);
+  border-radius: 999px;
+  color: var(--text-dim, #64748b);
+  font-size: 12px;
+  font-weight: 650;
+}
+
+.report-recommendation-priority-critical,
+.report-recommendation-priority-high {
+  border-color: rgba(239, 68, 68, 0.35);
+  background: rgba(239, 68, 68, 0.12);
+  color: #b91c1c;
+}
+
+.report-recommendation-priority-medium {
+  border-color: rgba(245, 158, 11, 0.35);
+  background: rgba(245, 158, 11, 0.12);
+  color: #92400e;
+}
+
+.report-recommendation-priority-low {
+  border-color: rgba(31, 169, 93, 0.35);
+  background: rgba(31, 169, 93, 0.12);
+  color: #166534;
+}
+
 .report-source-note {
   margin: 22px 0;
   padding: 13px 16px;
@@ -7780,6 +7997,11 @@ body.report-theme-dark-page {
   box-shadow: none;
 }
 
+.deck-report.report-theme-dark .report-insight,
+.deck-report.report-theme-dark .report-recommendation {
+  box-shadow: none;
+}
+
 .deck-report.report-theme-dark .report-card-grid-card {
   box-shadow: none;
 }
@@ -7852,6 +8074,7 @@ pre code {
   .report-key-values dl,
   .report-key-values-3 dl,
   .report-key-values-4 dl,
+  .report-insight-section,
   .report-card-grid-items,
   .report-card-grid-2 .report-card-grid-items,
   .report-card-grid-4 .report-card-grid-items {

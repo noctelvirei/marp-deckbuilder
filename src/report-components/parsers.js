@@ -118,6 +118,33 @@ export function parseReportKeyValues(keyValues) {
   }
 }
 
+export function parseReportInsight(insight) {
+  return {
+    type: 'insight',
+    variant: normalizeCalloutVariant(insight.attr('variant') || insight.attr('type') || insight.attr('tone') || 'info'),
+    rawVariant: insight.attr('variant') || insight.attr('type') || insight.attr('tone') || 'info',
+    title: insight.attr('title') || cleanText(insight.find('h3,strong,b').first().text()),
+    finding: insight.attr('finding') || insight.attr('text') || insight.attr('body') || cleanText(insight.text()),
+    evidence: insight.attr('evidence') || '',
+    impact: insight.attr('impact') || '',
+    action: insight.attr('action') || insight.attr('next') || '',
+  }
+}
+
+export function parseReportRecommendation(recommendation) {
+  return {
+    type: 'recommendation',
+    title: recommendation.attr('title') || cleanText(recommendation.find('h3,strong,b').first().text()),
+    body: recommendation.attr('body') || recommendation.attr('text') || cleanText(recommendation.text()),
+    owner: recommendation.attr('owner') || '',
+    priority: normalizeRecommendationPriority(recommendation.attr('priority') || ''),
+    rawPriority: recommendation.attr('priority') || '',
+    due: recommendation.attr('due') || recommendation.attr('date') || '',
+    status: normalizeBadgeVariant(recommendation.attr('status') || recommendation.attr('state') || 'pending'),
+    rawStatus: recommendation.attr('status') || recommendation.attr('state') || 'pending',
+  }
+}
+
 export function parseReportCardGrid(root, grid) {
   const cards = []
   grid.children('report-card').each((_, element) => {
@@ -335,6 +362,12 @@ function normalizeCalloutVariant(value = 'info') {
   if (token === 'danger' || token === 'error') return 'danger'
   if (token === 'warn') return 'warning'
   if (token === 'positive') return 'success'
+  return token
+}
+
+function normalizeRecommendationPriority(value = '') {
+  const token = String(value || '').trim().toLowerCase()
+  if (['critical', 'high', 'medium', 'low'].includes(token)) return token
   return token
 }
 

@@ -89,6 +89,41 @@ ${keyValues.items.map(renderReportKeyValueItem).join('\n')}
 </section>`
 }
 
+export function renderReportInsightHtml(insight) {
+  const sections = [
+    ['Finding', insight.finding],
+    ['Evidence', insight.evidence],
+    ['Impact', insight.impact],
+    ['Action', insight.action],
+  ].filter(([, value]) => value)
+  return `<article class="report-insight report-insight-${escapeAttr(insight.variant)}" role="note">
+  ${insight.title ? `<div class="report-insight-title">${escapeHtml(insight.title)}</div>` : ''}
+  <dl>
+${sections.map(renderReportInsightSection).join('\n')}
+  </dl>
+</article>`
+}
+
+export function renderReportRecommendationHtml(recommendation) {
+  const meta = [
+    recommendation.owner ? `<span class="report-recommendation-meta-item">Owner: ${escapeHtml(recommendation.owner)}</span>` : '',
+    recommendation.priority
+      ? `<span class="report-recommendation-priority report-recommendation-priority-${escapeAttr(recommendation.priority)}">${escapeHtml(recommendation.rawPriority || recommendation.priority)}</span>`
+      : '',
+    recommendation.due ? `<span class="report-recommendation-meta-item">Due: ${escapeHtml(recommendation.due)}</span>` : '',
+    recommendation.rawStatus
+      ? `<span class="report-badge report-badge-${escapeAttr(recommendation.status)}">${escapeHtml(recommendation.rawStatus)}</span>`
+      : '',
+  ]
+    .filter(Boolean)
+    .join('\n    ')
+  return `<article class="report-recommendation">
+  ${recommendation.title ? `<div class="report-recommendation-title">${escapeHtml(recommendation.title)}</div>` : ''}
+  ${recommendation.body ? `<div class="report-recommendation-body">${escapeHtml(recommendation.body)}</div>` : ''}
+  ${meta ? `<div class="report-recommendation-meta">\n    ${meta}\n  </div>` : ''}
+</article>`
+}
+
 export function renderReportCardGridHtml(grid) {
   return `<section class="report-card-grid report-card-grid-${escapeAttr(grid.columns)}" aria-label="${escapeAttr(
     grid.title || 'Report cards',
@@ -215,6 +250,13 @@ function renderReportKeyValueItem(item) {
   return `    <div class="report-key-value">
       <dt>${escapeHtml(item.key)}</dt>
       <dd>${escapeHtml(item.value)}</dd>
+    </div>`
+}
+
+function renderReportInsightSection([label, value]) {
+  return `    <div class="report-insight-section">
+      <dt>${escapeHtml(label)}</dt>
+      <dd>${escapeHtml(value)}</dd>
     </div>`
 }
 

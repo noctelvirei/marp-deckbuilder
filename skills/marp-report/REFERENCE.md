@@ -57,6 +57,8 @@ Reports use normal Markdown plus compact `report-*` component tags. The renderer
 | Metadata or context summary | `report-key-values` | `items`; optional `title`, `columns` |
 | Ranked distribution bars | `report-rate-bars` | `labels`, `values`; optional `shares` |
 | Formatted data table | `report-data-table` | `columns`, `rows`; optional `types`, `compact`, `align`, `totals`, `highlights`, `caption`, `source` |
+| Structured insight | `report-insight` | Finding/body text or `title`, `evidence`, `impact`, `action` |
+| Owned recommendation | `report-recommendation` | Body text or `title`; optional `owner`, `priority`, `due`, `status` |
 | Citation or methodology note | `report-source-note` | Body text and/or `source`; optional `title`, `date` |
 | Mixed insight/action card grid | `report-card-grid` with `report-card` children | Card `title` and/or body text |
 | Ordered milestones/events | `report-timeline` with `report-event` children | Event date/title/body |
@@ -300,6 +302,61 @@ Supported attributes:
 | `source` | no | Source note under the caption. |
 
 For a cell type that is not supported, do not write raw HTML. Ask the skill maker to add the missing table cell type.
+
+### Report Insight
+
+Use `report-insight` for finding, evidence, impact, and action narrative. Do not hand-author insight card HTML.
+
+```md
+<report-insight
+  variant="warning"
+  title="Journey concentration"
+  finding="One journey dominates April activity."
+  evidence="J0107 accounts for 67.1% of observed volume."
+  impact="Monitoring should be tuned around this journey."
+  action="Validate J0116 while calibrating J0107 thresholds."
+></report-insight>
+```
+
+Supported attributes:
+
+| Attribute | Required | Notes |
+| --- | --- | --- |
+| `title` | no | Short insight title. |
+| `finding` | no | Primary finding. Aliases: `text`, `body`; otherwise use the tag body. |
+| `evidence` | no | Data or observation supporting the finding. |
+| `impact` | no | Why the finding matters. |
+| `action` | no | Recommended next action. Alias: `next`. |
+| `variant` | no | Supports `info`, `warning`, `success`, `danger`. Aliases: `type`, `tone`. Defaults to `info`. |
+
+The component must include at least one of title, finding/body text, evidence, impact, or action.
+
+### Report Recommendation
+
+Use `report-recommendation` for owned actions, decisions, and next steps. Do not hand-author recommendation card HTML.
+
+```md
+<report-recommendation
+  title="Validate the unregistered journey"
+  owner="Operations"
+  priority="High"
+  due="Week 1"
+  status="Watch"
+>Confirm whether J0116 is a new journey or a data quality issue.</report-recommendation>
+```
+
+Supported attributes:
+
+| Attribute | Required | Notes |
+| --- | --- | --- |
+| `title` | no | Short recommendation title. |
+| `body` | no | Action detail when you prefer attribute-only authoring. Alias: `text`; otherwise use the tag body. |
+| `owner` | no | Responsible person, team, or function. |
+| `priority` | no | Supports `critical`, `high`, `medium`, `low`. |
+| `due` | no | Due date, period, or sequence label. Alias: `date`. |
+| `status` | no | Status badge value. Alias: `state`. |
+
+The component must include title or body text.
 
 ### Report Source Note
 

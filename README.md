@@ -359,6 +359,8 @@ Reports can use:
 - Metadata summaries via `report-key-values`.
 - Ranked rate bars via `report-rate-bars`.
 - Formatted data tables with compact mode, totals, alignment, and highlights via `report-data-table`.
+- Structured finding/evidence/impact/action blocks via `report-insight`.
+- Owned action cards via `report-recommendation`.
 - Source and methodology notes via `report-source-note`.
 - Mixed action/insight grids via `report-card-grid`.
 - Ordered milestones via `report-timeline`.

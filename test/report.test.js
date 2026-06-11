@@ -893,6 +893,102 @@ test('report key values fail clearly when malformed', async () => {
   )
 })
 
+test('expands report insights into structured narrative blocks', async () => {
+  const definitions = await loadDefinitions(new URL('../resources/definitions', import.meta.url))
+  const rendered = renderReportHtml(
+    `# Insight report
+
+<report-insight
+  variant="warning"
+  title="Journey concentration"
+  finding="One journey dominates April volume."
+  evidence="J0107 accounts for 67.1% of cases."
+  impact="Monitoring thresholds should be calibrated around this journey."
+  action="Tune operational alerts before the next monthly run."
+></report-insight>
+`,
+    {
+      resourcesDir: path.resolve('resources'),
+      definitions,
+      inlineAssets: true,
+    },
+  )
+
+  assert.doesNotMatch(rendered.document, /<report-insight/i)
+  assert.match(rendered.document, /<article class="report-insight report-insight-warning" role="note">/)
+  assert.match(rendered.document, /<div class="report-insight-title">Journey concentration<\/div>/)
+  assert.match(rendered.document, /<dt>Finding<\/dt>/)
+  assert.match(rendered.document, /<dd>One journey dominates April volume\.<\/dd>/)
+  assert.match(rendered.document, /<dt>Action<\/dt>/)
+  assert.match(rendered.document, /Tune operational alerts before the next monthly run/)
+})
+
+test('report insights fail clearly when malformed', async () => {
+  const definitions = await loadDefinitions(new URL('../resources/definitions', import.meta.url))
+  const options = {
+    resourcesDir: path.resolve('resources'),
+    definitions,
+    inlineAssets: true,
+  }
+
+  assert.throws(
+    () => renderReportHtml('<report-insight></report-insight>', options),
+    /report-insight requires title, finding\/body text, evidence, impact, or action/,
+  )
+  assert.throws(
+    () => renderReportHtml('<report-insight variant="purple" title="Finding"></report-insight>', options),
+    /report-insight variant "purple" is not available/,
+  )
+})
+
+test('expands report recommendations into owner action blocks', async () => {
+  const definitions = await loadDefinitions(new URL('../resources/definitions', import.meta.url))
+  const rendered = renderReportHtml(
+    `# Recommendation report
+
+<report-recommendation
+  title="Validate J0116"
+  owner="Operations"
+  priority="High"
+  due="Week 1"
+  status="Watch"
+>Confirm whether J0116 is a new journey or a data quality issue.</report-recommendation>
+`,
+    {
+      resourcesDir: path.resolve('resources'),
+      definitions,
+      inlineAssets: true,
+    },
+  )
+
+  assert.doesNotMatch(rendered.document, /<report-recommendation/i)
+  assert.match(rendered.document, /<article class="report-recommendation">/)
+  assert.match(rendered.document, /<div class="report-recommendation-title">Validate J0116<\/div>/)
+  assert.match(rendered.document, /<div class="report-recommendation-body">Confirm whether J0116 is a new journey or a data quality issue\.<\/div>/)
+  assert.match(rendered.document, /<span class="report-recommendation-meta-item">Owner: Operations<\/span>/)
+  assert.match(rendered.document, /<span class="report-recommendation-priority report-recommendation-priority-high">High<\/span>/)
+  assert.match(rendered.document, /<span class="report-recommendation-meta-item">Due: Week 1<\/span>/)
+  assert.match(rendered.document, /<span class="report-badge report-badge-orange">Watch<\/span>/)
+})
+
+test('report recommendations fail clearly when malformed', async () => {
+  const definitions = await loadDefinitions(new URL('../resources/definitions', import.meta.url))
+  const options = {
+    resourcesDir: path.resolve('resources'),
+    definitions,
+    inlineAssets: true,
+  }
+
+  assert.throws(
+    () => renderReportHtml('<report-recommendation></report-recommendation>', options),
+    /report-recommendation requires title or body text/,
+  )
+  assert.throws(
+    () => renderReportHtml('<report-recommendation title="Action" priority="urgent"></report-recommendation>', options),
+    /report-recommendation priority "urgent" is not available/,
+  )
+})
+
 test('expands report source notes into renderer-owned asides', async () => {
   const definitions = await loadDefinitions(new URL('../resources/definitions', import.meta.url))
   const rendered = renderReportHtml(

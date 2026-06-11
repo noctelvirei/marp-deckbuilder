@@ -21,6 +21,15 @@ April volume is concentrated in one dominant journey. The top three journeys acc
   <report-metric value="92.4%" label="Top 3 journeys" accent="cyan"></report-metric>
 </report-metric-grid>
 
+<report-insight
+  variant="warning"
+  title="Journey concentration"
+  finding="One journey dominates April activity."
+  evidence="J0107 accounts for 67.1% of observed volume."
+  impact="Operational monitoring should be tuned around the dominant journey before month-end review."
+  action="Validate whether J0116 is a real journey while calibrating J0107 thresholds."
+></report-insight>
+
 <report-figure
   src="images/journey-volume.svg"
   alt="Sample journey volume snapshot"
@@ -171,6 +180,14 @@ J0116 generated meaningful volume but is not in the registered journey profile.
 <report-accent-card accent="green" title="Recommended focus">
 Prioritise monitoring for J0107 while validating whether J0116 is a real journey or a data quality issue.
 </report-accent-card>
+
+<report-recommendation
+  title="Validate the unregistered journey"
+  owner="Operations"
+  priority="High"
+  due="Week 1"
+  status="Watch"
+>Confirm whether J0116 is a new production journey or a data quality issue before the next monitoring cycle.</report-recommendation>
 
 1. Confirm whether J0116 is a new journey or a data quality issue.
 2. Add month-over-month tracking for the top three journeys.
