@@ -134,7 +134,7 @@ Reports use normal Markdown plus compact `report-*` component tags where support
 
 ### Report Chart: Chart.js Bar
 
-Use `report-chart` for standard bar charts. Do not write the `<canvas>` or Chart.js initializer yourself.
+Use `report-chart` for standard bar charts. Do not write the `<canvas>` or Chart.js initializer yourself. The renderer generates Chart.js hover tooltips that show the represented value.
 
 ```html
 <report-chart
@@ -157,6 +157,8 @@ Supported attributes:
 | `values` | yes | Comma-separated numeric values. Must match label count. |
 | `colors` | no | Comma-separated hex colors. Defaults to brand chart colors. |
 | `height` | no | Pixel height, clamped by the renderer. Defaults to `320`. |
+| `value-prefix` | no | Prefix shown in tooltips, such as `$`. Alias: `prefix`. |
+| `value-suffix` | no | Suffix shown in tooltips, such as `%` or ` cases`. Alias: `suffix`. |
 
 ### Report Metric Grid
 

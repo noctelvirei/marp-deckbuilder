@@ -9,6 +9,8 @@ export function parseReportChart(chart, index = 0) {
   const colors = splitCsv(chart.attr('colors'))
   const height = parseDimension(chart.attr('height'), 320)
   const requestedId = chart.attr('id') || chart.attr('chart-id') || ''
+  const valuePrefix = chart.attr('value-prefix') || chart.attr('prefix') || ''
+  const valueSuffix = chart.attr('value-suffix') || chart.attr('suffix') || ''
 
   return {
     type: 'chart',
@@ -21,6 +23,8 @@ export function parseReportChart(chart, index = 0) {
     values,
     colors,
     height,
+    valuePrefix,
+    valueSuffix,
     ariaLabel: chart.attr('aria-label') || title || `${type} chart`,
   }
 }

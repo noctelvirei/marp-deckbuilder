@@ -38,7 +38,7 @@ node scripts/build-report.mjs <output-folder>/report.md --out-dir <output-folder
 - Prefer `reportTheme: dark` for dark navy reports instead of pasting CSS into Markdown.
 - Keep branding renderer-owned through `brand.json` and bundled resources; report Markdown should not declare corporate logos, brand colors, fonts, or background chrome.
 - Keep technical field names as plain text in dark reports unless code formatting is truly necessary.
-- Use `<report-chart type="bar">` for standard Chart.js bar charts.
+- Use `<report-chart type="bar">` for standard Chart.js bar charts with renderer-owned hover tooltips.
 - Use `<report-metric-grid>` for KPI summaries.
 - Use `<report-rate-bars>` for ranked distribution bars.
 - Use `<report-callout>` for info, warning, success, and danger findings.

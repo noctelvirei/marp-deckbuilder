@@ -99,6 +99,7 @@ title: Chart Component Report
   type="bar"
   title="Cases by journey"
   series="Cases"
+  value-suffix=" cases"
   labels="J0107,J0106,J0101"
   values="52208,11119,8648"
 ></report-chart>
@@ -118,6 +119,10 @@ title: Chart Component Report
   assert.match(rendered.document, /new Chart\(canvas, /)
   assert.match(rendered.document, /labels:\s*\["J0107","J0106","J0101"\]/)
   assert.match(rendered.document, /data:\s*\[52208,11119,8648\]/)
+  assert.match(rendered.document, /interaction:\s*\{\s*mode:\s*"index",\s*intersect:\s*false\s*\}/)
+  assert.match(rendered.document, /tooltip:\s*\{[\s\S]*enabled:\s*true/)
+  assert.match(rendered.document, /label:\s*\(context\)\s*=>\s*\{[\s\S]*formatTooltipValue\(context\.parsed\.y\)/)
+  assert.match(rendered.document, /const valueSuffix = " cases"/)
 })
 
 test('assigns unique generated IDs to multiple report charts', async () => {

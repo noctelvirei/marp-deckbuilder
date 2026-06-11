@@ -4739,6 +4739,8 @@ function parseReportChart(chart, index = 0) {
   const colors = splitCsv(chart.attr("colors"));
   const height = parseDimension(chart.attr("height"), 320);
   const requestedId = chart.attr("id") || chart.attr("chart-id") || "";
+  const valuePrefix = chart.attr("value-prefix") || chart.attr("prefix") || "";
+  const valueSuffix = chart.attr("value-suffix") || chart.attr("suffix") || "";
   return {
     type: "chart",
     chartType: type,
@@ -4750,6 +4752,8 @@ function parseReportChart(chart, index = 0) {
     values,
     colors,
     height,
+    valuePrefix,
+    valueSuffix,
     ariaLabel: chart.attr("aria-label") || title || `${type} chart`
   };
 }
@@ -4919,6 +4923,17 @@ function renderReportChartScript(chart, context = {}) {
   const rootStyle = getComputedStyle(themeRoot);
   const tickColor = rootStyle.getPropertyValue("--text-dim").trim() || "#64748b";
   const gridColor = rootStyle.getPropertyValue("--border").trim() || "rgba(148, 163, 184, 0.28)";
+  const tooltipBg = rootStyle.getPropertyValue("--bg-card").trim() || "rgba(15, 23, 42, 0.92)";
+  const tooltipText = rootStyle.getPropertyValue("--text").trim() || "#ffffff";
+  const tooltipMuted = rootStyle.getPropertyValue("--text-dim").trim() || "#cbd5e1";
+  const valuePrefix = ${jsString(chart.valuePrefix)};
+  const valueSuffix = ${jsString(chart.valueSuffix)};
+  const valueFormatter = new Intl.NumberFormat("en-US", { maximumFractionDigits: 2 });
+  const formatTooltipValue = (value) => {
+    const numeric = Number(value);
+    const formatted = Number.isFinite(numeric) ? valueFormatter.format(numeric) : String(value ?? "");
+    return valuePrefix + formatted + valueSuffix;
+  };
   new Chart(canvas, {
     type: "bar",
     data: {
@@ -4933,8 +4948,34 @@ function renderReportChartScript(chart, context = {}) {
     options: {
       responsive: true,
       maintainAspectRatio: false,
+      interaction: {
+        mode: "index",
+        intersect: false
+      },
+      hover: {
+        mode: "nearest",
+        intersect: true
+      },
       plugins: {
-        legend: { display: ${chart.series && chart.series !== chart.title ? "true" : "false"} }
+        legend: { display: ${chart.series && chart.series !== chart.title ? "true" : "false"} },
+        tooltip: {
+          enabled: true,
+          mode: "index",
+          intersect: false,
+          backgroundColor: tooltipBg,
+          titleColor: tooltipText,
+          bodyColor: tooltipMuted,
+          borderColor: gridColor,
+          borderWidth: 1,
+          displayColors: true,
+          padding: 12,
+          callbacks: {
+            label: (context) => {
+              const label = context.dataset.label ? context.dataset.label + ": " : "";
+              return label + formatTooltipValue(context.parsed.y);
+            }
+          }
+        }
       },
       scales: {
         x: {
