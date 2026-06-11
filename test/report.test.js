@@ -86,6 +86,65 @@ test('report command rejects copied sidecar assets', async () => {
   )
 })
 
+test('renders report metadata from frontmatter into cover chrome', async () => {
+  const definitions = await loadDefinitions(new URL('../resources/definitions', import.meta.url))
+  const rendered = renderReportHtml(
+    `---
+title: Metadata Report
+subtitle: Operating pack
+reportDate: 2026-06-11
+preparedFor: Customer Operations
+preparedBy: Analytics
+classification: Confidential
+version: v1.2
+---
+
+## Summary
+
+Metadata should be renderer-owned.
+`,
+    {
+      resourcesDir: path.resolve('resources'),
+      definitions,
+      inlineAssets: true,
+    },
+  )
+
+  assert.match(rendered.document, /<dl class="report-cover-meta">/)
+  assert.match(rendered.document, /<dt>Report date<\/dt>\s*<dd>2026-06-11<\/dd>/)
+  assert.match(rendered.document, /<dt>Prepared for<\/dt>\s*<dd>Customer Operations<\/dd>/)
+  assert.match(rendered.document, /<dt>Prepared by<\/dt>\s*<dd>Analytics<\/dd>/)
+  assert.match(rendered.document, /<dt>Classification<\/dt>\s*<dd>Confidential<\/dd>/)
+  assert.match(rendered.document, /<dt>Version<\/dt>\s*<dd>v1\.2<\/dd>/)
+})
+
+test('expands report page breaks into print-aware separators', async () => {
+  const definitions = await loadDefinitions(new URL('../resources/definitions', import.meta.url))
+  const rendered = renderReportHtml(
+    `# Page Break Report
+
+## Summary
+
+First page.
+
+<report-page-break label="Appendix"></report-page-break>
+
+## Appendix
+
+Second page.
+`,
+    {
+      resourcesDir: path.resolve('resources'),
+      definitions,
+      inlineAssets: true,
+    },
+  )
+
+  assert.doesNotMatch(rendered.document, /<report-page-break/i)
+  assert.match(rendered.document, /<div class="report-page-break" role="separator" aria-label="Appendix"><span>Appendix<\/span><\/div>/)
+  assert.match(rendered.document, /page-break-after:\s*always/)
+})
+
 test('expands report bar chart components into chart HTML and initializer', async () => {
   const definitions = await loadDefinitions(new URL('../resources/definitions', import.meta.url))
   const rendered = renderReportHtml(

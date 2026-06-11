@@ -145,6 +145,13 @@ export function parseReportRecommendation(recommendation) {
   }
 }
 
+export function parseReportPageBreak(pageBreak) {
+  return {
+    type: 'page-break',
+    label: pageBreak.attr('label') || pageBreak.attr('title') || '',
+  }
+}
+
 export function parseReportCardGrid(root, grid) {
   const cards = []
   grid.children('report-card').each((_, element) => {

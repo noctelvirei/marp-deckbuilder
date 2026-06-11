@@ -363,6 +363,7 @@ Reports can use:
 - Owned action cards via `report-recommendation`.
 - Source and methodology notes via `report-source-note`.
 - Reusable numbered sources and inline citations via `report-source-list`, `report-source`, and `report-cite`.
+- Cover metadata and print/PDF page breaks via report frontmatter and `report-page-break`.
 - Mixed action/insight grids via `report-card-grid`.
 - Ordered milestones via `report-timeline`.
 - Callouts via `report-callout`.

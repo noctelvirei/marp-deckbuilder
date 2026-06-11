@@ -1,6 +1,11 @@
 ---
 title: Sample Usage Report
 subtitle: April 2026 journey volume
+reportDate: 2026-06-11
+preparedFor: Customer Operations
+preparedBy: Analytics
+classification: Internal
+version: v1.0
 reportTheme: dark
 reportNav: true
 ---
@@ -167,6 +172,8 @@ Cases are counted from completed journey records and exclude test journeys and d
 <report-callout variant="warning" title="Action">
 J0116 generated meaningful volume but is not in the registered journey profile.
 </report-callout>
+
+<report-page-break label="Next steps"></report-page-break>
 
 ## Next Steps
 

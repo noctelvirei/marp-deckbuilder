@@ -11,6 +11,7 @@ import {
   parseReportInsight,
   parseReportKeyValues,
   parseReportMetricGrid,
+  parseReportPageBreak,
   parseReportRateBars,
   parseReportRecommendation,
   parseReportCite,
@@ -30,6 +31,7 @@ import {
   renderReportInsightHtml,
   renderReportKeyValuesHtml,
   renderReportMetricGridHtml,
+  renderReportPageBreakHtml,
   renderReportRateBarsHtml,
   renderReportRecommendationHtml,
   renderReportCiteHtml,
@@ -52,6 +54,7 @@ const knownReportTags = new Set([
   'report-key-values',
   'report-metric-grid',
   'report-metric',
+  'report-page-break',
   'report-rate-bars',
   'report-recommendation',
   'report-source-list',
@@ -129,6 +132,12 @@ export function compileReportComponents(source, options = {}) {
     const recommendation = parseReportRecommendation(recommendationElement)
     validateReportRecommendation(recommendation, context)
     recommendationElement.replaceWith(renderReportRecommendationHtml(recommendation))
+  })
+
+  root('report-page-break').each((_, element) => {
+    const pageBreakElement = root(element)
+    const pageBreak = parseReportPageBreak(pageBreakElement)
+    pageBreakElement.replaceWith(renderReportPageBreakHtml(pageBreak))
   })
 
   root('report-card-grid').each((_, element) => {

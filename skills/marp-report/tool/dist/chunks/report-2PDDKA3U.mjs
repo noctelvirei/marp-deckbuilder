@@ -4859,6 +4859,12 @@ function parseReportRecommendation(recommendation) {
     rawStatus: recommendation.attr("status") || recommendation.attr("state") || "pending"
   };
 }
+function parseReportPageBreak(pageBreak) {
+  return {
+    type: "page-break",
+    label: pageBreak.attr("label") || pageBreak.attr("title") || ""
+  };
+}
 function parseReportCardGrid(root, grid) {
   const cards = [];
   grid.children("report-card").each((_, element) => {
@@ -5198,6 +5204,11 @@ function renderReportRecommendationHtml(recommendation) {
     ${meta}
   </div>` : ""}
 </article>`;
+}
+function renderReportPageBreakHtml(pageBreak) {
+  return `<div class="report-page-break" role="separator" aria-label="${escapeAttr(
+    pageBreak.label || "Page break"
+  )}">${pageBreak.label ? `<span>${escapeHtml2(pageBreak.label)}</span>` : ""}</div>`;
 }
 function renderReportCardGridHtml(grid) {
   return `<section class="report-card-grid report-card-grid-${escapeAttr(grid.columns)}" aria-label="${escapeAttr(
@@ -6059,6 +6070,7 @@ var knownReportTags = /* @__PURE__ */ new Set([
   "report-key-values",
   "report-metric-grid",
   "report-metric",
+  "report-page-break",
   "report-rate-bars",
   "report-recommendation",
   "report-source-list",
@@ -6125,6 +6137,11 @@ function compileReportComponents(source, options = {}) {
     const recommendation = parseReportRecommendation(recommendationElement);
     validateReportRecommendation(recommendation, context);
     recommendationElement.replaceWith(renderReportRecommendationHtml(recommendation));
+  });
+  root("report-page-break").each((_, element) => {
+    const pageBreakElement = root(element);
+    const pageBreak = parseReportPageBreak(pageBreakElement);
+    pageBreakElement.replaceWith(renderReportPageBreakHtml(pageBreak));
   });
   root("report-card-grid").each((_, element) => {
     const cardGridElement = root(element);
@@ -6818,6 +6835,7 @@ function renderReportHtml(source, options = {}) {
   };
   const title = frontmatter.title || firstHeading(body) || "Report";
   const subtitle = frontmatter.subtitle || "";
+  const metadata = reportMetadata(frontmatter);
   const prepared = normalizeReportImageReferences(body);
   const compiled = compileReportComponents(prepared, { brand, reportName: title });
   const presentation = prepareReportPresentation(markdown.render(compiled.source), frontmatter);
@@ -6828,6 +6846,7 @@ function renderReportHtml(source, options = {}) {
     reportDocument({
       title,
       subtitle,
+      metadata,
       content,
       css,
       logo,
@@ -6877,6 +6896,7 @@ function surfaceResourceReference(src, resourcesDir, surface = "light") {
 function reportDocument({
   title,
   subtitle = "",
+  metadata = [],
   content,
   css,
   logo = "",
@@ -6901,6 +6921,7 @@ function reportDocument({
       <p class="report-kicker">Report</p>
       <h1>${escapeHtml4(title)}</h1>
       ${subtitle ? `<p class="report-subtitle">${escapeHtml4(subtitle)}</p>` : ""}
+      ${metadata.length ? renderReportMetadata(metadata) : ""}
     </header>
     <article class="${escapeHtmlAttr(articleClass)}">
 ${content}
@@ -6909,6 +6930,31 @@ ${content}
 </body>
 </html>
 `;
+}
+function reportMetadata(frontmatter = {}) {
+  return [
+    ["Report date", frontmatter.reportDate],
+    ["Prepared for", frontmatter.preparedFor],
+    ["Prepared by", frontmatter.preparedBy],
+    ["Classification", frontmatter.classification],
+    ["Version", frontmatter.version]
+  ].filter(([, value]) => value !== void 0 && value !== null && String(value).trim()).map(([label, value]) => ({ label, value: reportMetadataValue(value) }));
+}
+function reportMetadataValue(value) {
+  if (value instanceof Date && Number.isFinite(value.getTime())) {
+    return value.toISOString().slice(0, 10);
+  }
+  return String(value).trim();
+}
+function renderReportMetadata(metadata = []) {
+  return `<dl class="report-cover-meta">
+${metadata.map(
+    (item) => `        <div>
+          <dt>${escapeHtml4(item.label)}</dt>
+          <dd>${escapeHtml4(item.value)}</dd>
+        </div>`
+  ).join("\n")}
+      </dl>`;
 }
 function reportCss(brand = {}) {
   const colors = brand.colors || {};
@@ -7015,6 +7061,38 @@ body {
   margin: 22px 0 0;
   color: var(--report-body);
   font-size: 21px;
+}
+
+.report-cover-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  max-width: 860px;
+  margin: 30px 0 0;
+}
+
+.report-cover-meta div {
+  min-width: 135px;
+  padding: 10px 12px;
+  border: 1px solid rgba(200, 216, 240, 0.2);
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.report-cover-meta dt {
+  margin: 0 0 4px;
+  color: var(--report-muted);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.report-cover-meta dd {
+  margin: 0;
+  color: var(--report-white);
+  font-size: 13px;
+  font-weight: 650;
 }
 
 .report-body {
@@ -7584,6 +7662,29 @@ body {
 
 .report-cite:hover {
   background: rgba(89, 214, 253, 0.2);
+}
+
+.report-page-break {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 42px 0;
+  color: var(--text-dim, #64748b);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.report-page-break::before,
+.report-page-break::after {
+  content: "";
+  flex: 1 1 auto;
+  border-top: 1px dashed var(--border-dim, #e2e8f0);
+}
+
+.report-page-break:empty::after {
+  display: none;
 }
 
 .report-card-grid {
@@ -8261,6 +8362,11 @@ pre code {
     font-size: 44px;
   }
 
+  .report-cover-meta {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+  }
+
   .report-body {
     padding: 40px 32px 56px;
   }
@@ -8327,6 +8433,20 @@ ${backgroundRule}
   .report-body h1,
   .report-body h2 {
     break-after: avoid;
+  }
+
+  .report-page-break {
+    break-after: page;
+    page-break-after: always;
+    height: 0;
+    margin: 0;
+    overflow: hidden;
+  }
+
+  .report-page-break::before,
+  .report-page-break::after,
+  .report-page-break span {
+    display: none;
   }
 
   .report-body table,

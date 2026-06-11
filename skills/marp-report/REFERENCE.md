@@ -23,6 +23,11 @@ title: Usage Report
 subtitle: April 2026
 reportTheme: dark
 reportNav: true
+reportDate: 2026-06-11
+preparedFor: Customer Operations
+preparedBy: Analytics
+classification: Internal
+version: v1.0
 ---
 
 ## Executive Summary
@@ -62,6 +67,7 @@ Reports use normal Markdown plus compact `report-*` component tags. The renderer
 | Citation or methodology note | `report-source-note` | Body text and/or `source`; optional `title`, `date` |
 | Reusable source list | `report-source-list` with `report-source` children | Source `id` and descriptive source data |
 | Inline source citation | `report-cite` | `source` matching a declared `report-source` id |
+| Print/PDF page break | `report-page-break` | Optional `label` |
 | Mixed insight/action card grid | `report-card-grid` with `report-card` children | Card `title` and/or body text |
 | Ordered milestones/events | `report-timeline` with `report-event` children | Event date/title/body |
 | Finding, risk, or action block | `report-callout` | Body text or `text`; optional `variant`, `title` |
@@ -82,13 +88,37 @@ Reports use normal Markdown plus compact `report-*` component tags. The renderer
 
 Use this sequence when creating `report.md`:
 
-1. Add frontmatter for `title`, optional `subtitle`, optional `reportTheme: dark`, and optional `reportNav: true`.
+1. Add frontmatter for `title`, optional `subtitle`, optional `reportTheme: dark`, optional `reportNav: true`, and optional report metadata fields.
 2. Add Markdown headings for sections.
 3. Add narrative content with plain Markdown paragraphs, lists, and tables.
 4. Add visuals only through the available `report-*` component tags below.
 5. Build with `node scripts/build-report.mjs report.md --out-dir output`.
 
 If the needed visual is not listed, do not create raw HTML or JavaScript in the Markdown. Tell the user to ask the skill maker to add a renderer-backed component.
+
+## Report Metadata And Page Breaks
+
+Use renderer-owned frontmatter for cover metadata:
+
+```yaml
+reportDate: 2026-06-11
+preparedFor: Customer Operations
+preparedBy: Analytics
+classification: Internal
+version: v1.0
+```
+
+Use `report-page-break` for deliberate print/PDF boundaries. Do not paste page-break CSS into Markdown.
+
+```md
+<report-page-break label="Appendix"></report-page-break>
+```
+
+Supported `report-page-break` attributes:
+
+| Attribute | Required | Notes |
+| --- | --- | --- |
+| `label` | no | Optional screen-visible separator label. Alias: `title`. |
 
 ### Report Chart: Chart.js, Observable Plot, And D3
 

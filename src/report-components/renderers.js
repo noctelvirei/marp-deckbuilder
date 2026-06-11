@@ -124,6 +124,12 @@ export function renderReportRecommendationHtml(recommendation) {
 </article>`
 }
 
+export function renderReportPageBreakHtml(pageBreak) {
+  return `<div class="report-page-break" role="separator" aria-label="${escapeAttr(
+    pageBreak.label || 'Page break',
+  )}">${pageBreak.label ? `<span>${escapeHtml(pageBreak.label)}</span>` : ''}</div>`
+}
+
 export function renderReportCardGridHtml(grid) {
   return `<section class="report-card-grid report-card-grid-${escapeAttr(grid.columns)}" aria-label="${escapeAttr(
     grid.title || 'Report cards',
