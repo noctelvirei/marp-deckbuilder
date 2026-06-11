@@ -576,6 +576,38 @@ test('expands report bubble charts into Chart.js radius point plots', async () =
   assert.match(rendered.document, /", Size: " \+ formatAxisValue\(raw\.r\)/)
 })
 
+test('expands report histogram charts into computed Chart.js bins', async () => {
+  const definitions = await loadDefinitions(new URL('../resources/definitions', import.meta.url))
+  const rendered = renderReportHtml(
+    `# Histogram chart report
+
+<report-chart
+  type="histogram"
+  title="Cycle time distribution"
+  series="Journeys"
+  x-label="Days"
+  y-label="Journeys"
+  bins="3"
+  values="10,12,13,18,22,25"
+></report-chart>
+`,
+    {
+      resourcesDir: path.resolve('resources'),
+      definitions,
+      inlineAssets: true,
+    },
+  )
+
+  assert.doesNotMatch(rendered.document, /<report-chart/i)
+  assert.match(rendered.document, /class="report-chart report-chart-histogram"/)
+  assert.match(rendered.document, /const ranges = \["10-15","15-20","20-25"\]/)
+  assert.match(rendered.document, /const counts = \[3,1,2\]/)
+  assert.match(rendered.document, /label: "Journeys"/)
+  assert.match(rendered.document, /title: \(items\) =>/)
+  assert.match(rendered.document, /"Range: " \+ ranges\[index\]/)
+  assert.match(rendered.document, /"Count: " \+ valueFormatter\.format\(context\.parsed\.y\)/)
+})
+
 test('allows Chart.js, Observable Plot, and D3 report charts to coexist', async () => {
   const definitions = await loadDefinitions(new URL('../resources/definitions', import.meta.url))
   const rendered = renderReportHtml(
@@ -1661,7 +1693,19 @@ test('report chart components fail clearly when data is invalid', async () => {
   )
   assert.throws(
     () => renderReportHtml('<report-chart type="radar" labels="A" values="10"></report-chart>', options),
-    /report-chart type "radar" is not available\. Supported types: bar, line, doughnut, area, treemap, funnel, grouped-bar, stacked-bar, heatmap, waterfall, bullet, scatter, bubble\. Ask the skill maker to add missing chart types/,
+    /report-chart type "radar" is not available\. Supported types: bar, line, doughnut, area, treemap, funnel, grouped-bar, stacked-bar, heatmap, waterfall, bullet, scatter, bubble, histogram\. Ask the skill maker to add missing chart types/,
+  )
+  assert.throws(
+    () => renderReportHtml('<report-chart type="histogram"></report-chart>', options),
+    /report-chart type="histogram" requires non-empty numeric values/,
+  )
+  assert.throws(
+    () => renderReportHtml('<report-chart type="histogram" values="1,nope"></report-chart>', options),
+    /report-chart type="histogram" values must all be numeric/,
+  )
+  assert.throws(
+    () => renderReportHtml('<report-chart type="histogram" values="1,2" bins="1"></report-chart>', options),
+    /report-chart type="histogram" bins must be an integer between 2 and 30/,
   )
   assert.throws(
     () => renderReportHtml('<report-chart type="bubble"></report-chart>', options),

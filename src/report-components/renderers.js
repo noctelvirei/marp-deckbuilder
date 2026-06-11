@@ -382,6 +382,7 @@ export function renderReportChartScript(chart, context = {}) {
   if (chart.chartType === 'bullet') return renderReportBulletChartScript(chart, context)
   if (chart.chartType === 'scatter') return renderReportScatterChartScript(chart, context)
   if (chart.chartType === 'bubble') return renderReportBubbleChartScript(chart, context)
+  if (chart.chartType === 'histogram') return renderReportHistogramChartScript(chart, context)
 
   const palette = chart.colors.length ? chart.colors : reportChartPalette(context.brand)
   const colors = chart.labels.map((_, index) => normalizeChartColor(palette[index % palette.length]))
@@ -488,6 +489,117 @@ ${datasetOptions}
         }
       }
 ${chartScales}
+    }
+  });
+})();`
+}
+
+function renderReportHistogramChartScript(chart, context = {}) {
+  const palette = chart.colors.length ? chart.colors : reportChartPalette(context.brand)
+  const barColor = normalizeChartColor(palette[2] || palette[0]) || '#5A49F8'
+  const minValue = Math.min(...chart.values)
+  const maxValue = Math.max(...chart.values)
+  const binCount = chart.binCount
+  const span = maxValue - minValue
+  const width = span === 0 ? 1 : span / binCount
+  const bins = Array.from({ length: binCount }, (_, index) => {
+    const start = span === 0 ? minValue - 0.5 + index * width : minValue + index * width
+    const end = start + width
+    return {
+      start,
+      end,
+      count: 0,
+    }
+  })
+  chart.values.forEach((value) => {
+    const rawIndex = span === 0 ? Math.floor(binCount / 2) : Math.floor((value - minValue) / width)
+    const index = Math.max(0, Math.min(binCount - 1, rawIndex))
+    bins[index].count += 1
+  })
+  const labels = bins.map((bin) => `${formatBinLabel(bin.start)}-${formatBinLabel(bin.end)}`)
+  const counts = bins.map((bin) => bin.count)
+
+  return `(() => {
+  const canvas = document.getElementById(${jsString(chart.id)});
+  const themeRoot = canvas.closest(".deck-report") || document.body || document.documentElement;
+  const rootStyle = getComputedStyle(themeRoot);
+  const tickColor = rootStyle.getPropertyValue("--text-dim").trim() || "#64748b";
+  const gridColor = rootStyle.getPropertyValue("--border").trim() || "rgba(148, 163, 184, 0.28)";
+  const tooltipBg = rootStyle.getPropertyValue("--bg-card").trim() || "rgba(15, 23, 42, 0.92)";
+  const tooltipText = rootStyle.getPropertyValue("--text").trim() || "#ffffff";
+  const tooltipMuted = rootStyle.getPropertyValue("--text-dim").trim() || "#cbd5e1";
+  const ranges = ${jsValue(labels)};
+  const counts = ${jsValue(counts)};
+  const valueFormatter = new Intl.NumberFormat("en-US", { maximumFractionDigits: 2 });
+  new Chart(canvas, {
+    type: "bar",
+    data: {
+      labels: ranges,
+      datasets: [{
+        label: ${jsString(chart.series || 'Frequency')},
+        data: counts,
+        backgroundColor: ${jsString(hexToRgba(barColor, 0.82))},
+        borderColor: ${jsString(barColor)},
+        borderWidth: 1,
+        borderRadius: 4,
+        barPercentage: 1,
+        categoryPercentage: 1
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      interaction: {
+        mode: "index",
+        intersect: false
+      },
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          enabled: true,
+          mode: "index",
+          intersect: false,
+          backgroundColor: tooltipBg,
+          titleColor: tooltipText,
+          bodyColor: tooltipMuted,
+          borderColor: gridColor,
+          borderWidth: 1,
+          displayColors: false,
+          padding: 12,
+          callbacks: {
+            title: (items) => {
+              const index = items && items.length ? items[0].dataIndex : 0;
+              return "Range: " + ranges[index];
+            },
+            label: (context) => "Count: " + valueFormatter.format(context.parsed.y)
+          }
+        }
+      },
+      scales: {
+        x: {
+          title: {
+            display: ${chart.xAxisLabel ? 'true' : 'false'},
+            text: ${jsString(chart.xAxisLabel)},
+            color: tickColor
+          },
+          ticks: { color: tickColor, maxRotation: 45, minRotation: 0 },
+          grid: { color: gridColor }
+        },
+        y: {
+          beginAtZero: true,
+          title: {
+            display: ${chart.yAxisLabel ? 'true' : 'false'},
+            text: ${jsString(chart.yAxisLabel)},
+            color: tickColor
+          },
+          ticks: {
+            color: tickColor,
+            precision: 0,
+            callback: value => Number(value).toLocaleString()
+          },
+          grid: { color: gridColor }
+        }
+      }
     }
   });
 })();`
@@ -1436,6 +1548,12 @@ function hexToRgba(value, alpha = 1) {
   const green = (numeric >> 8) & 255
   const blue = numeric & 255
   return `rgba(${red}, ${green}, ${blue}, ${alpha})`
+}
+
+function formatBinLabel(value) {
+  if (!Number.isFinite(value)) return String(value)
+  const rounded = Math.round(value * 100) / 100
+  return Number.isInteger(rounded) ? String(rounded) : rounded.toFixed(2).replace(/0+$/, '').replace(/\.$/, '')
 }
 
 function clampPercent(value) {

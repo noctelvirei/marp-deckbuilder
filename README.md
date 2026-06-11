@@ -378,6 +378,7 @@ Reports can use:
 - Chart.js bullet charts via `report-chart type="bullet"`.
 - Chart.js scatter charts via `report-chart type="scatter"`.
 - Chart.js bubble charts via `report-chart type="bubble"`.
+- Chart.js histograms via `report-chart type="histogram"`.
 - Observable Plot charts via `report-chart type="area"`.
 - D3 charts via `report-chart type="treemap"`.
 - D3 funnels via `report-chart type="funnel"`.
