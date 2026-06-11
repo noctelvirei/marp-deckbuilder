@@ -5061,10 +5061,11 @@ function normalizeCardGridColumns(value = "") {
 function parseChartPoints(value = "") {
   return splitCsv(value).map((item) => {
     const separator = item.includes("=") ? "=" : ":";
-    const [x, ...rest] = item.split(separator);
+    const [x, y, ...rest] = item.split(separator);
     return {
       x: cleanText(x),
-      y: Number(rest.join(separator).trim())
+      y: Number(String(y || "").trim()),
+      r: rest.length ? Number(rest.join(separator).trim()) : void 0
     };
   });
 }
@@ -5434,6 +5435,7 @@ function renderReportChartScript(chart, context = {}) {
   if (chart.chartType === "waterfall") return renderReportWaterfallChartScript(chart, context);
   if (chart.chartType === "bullet") return renderReportBulletChartScript(chart, context);
   if (chart.chartType === "scatter") return renderReportScatterChartScript(chart, context);
+  if (chart.chartType === "bubble") return renderReportBubbleChartScript(chart, context);
   const palette = chart.colors.length ? chart.colors : reportChartPalette(context.brand);
   const colors = chart.labels.map((_, index) => normalizeChartColor(palette[index % palette.length]));
   const primaryColor = normalizeChartColor(palette[0]) || "#0F82F5";
@@ -5527,6 +5529,105 @@ ${datasetOptions}
         }
       }
 ${chartScales}
+    }
+  });
+})();`;
+}
+function renderReportBubbleChartScript(chart, context = {}) {
+  const palette = chart.colors.length ? chart.colors : reportChartPalette(context.brand);
+  const bubbleColor = normalizeChartColor(palette[1] || palette[0]) || "#66D9EF";
+  const points = chart.points.map((point) => ({
+    x: Number(point.x),
+    y: point.y,
+    r: point.r
+  }));
+  return `(() => {
+  const canvas = document.getElementById(${jsString(chart.id)});
+  const themeRoot = canvas.closest(".deck-report") || document.body || document.documentElement;
+  const rootStyle = getComputedStyle(themeRoot);
+  const tickColor = rootStyle.getPropertyValue("--text-dim").trim() || "#64748b";
+  const gridColor = rootStyle.getPropertyValue("--border").trim() || "rgba(148, 163, 184, 0.28)";
+  const tooltipBg = rootStyle.getPropertyValue("--bg-card").trim() || "rgba(15, 23, 42, 0.92)";
+  const tooltipText = rootStyle.getPropertyValue("--text").trim() || "#ffffff";
+  const tooltipMuted = rootStyle.getPropertyValue("--text-dim").trim() || "#cbd5e1";
+  const valuePrefix = ${jsString(chart.valuePrefix)};
+  const valueSuffix = ${jsString(chart.valueSuffix)};
+  const valueFormatter = new Intl.NumberFormat("en-US", { maximumFractionDigits: 2 });
+  const formatAxisValue = (value) => {
+    const numeric = Number(value);
+    return Number.isFinite(numeric) ? valueFormatter.format(numeric) : String(value ?? "");
+  };
+  const formatTooltipValue = (value) => {
+    const formatted = formatAxisValue(value);
+    return valuePrefix + formatted + valueSuffix;
+  };
+  new Chart(canvas, {
+    type: "bubble",
+    data: {
+      datasets: [{
+        label: ${jsString(chart.series || chart.title || "Series 1")},
+        data: ${jsValue(points)},
+        backgroundColor: ${jsString(hexToRgba(bubbleColor, 0.42))},
+        borderColor: ${jsString(bubbleColor)},
+        borderWidth: 2,
+        hoverBorderWidth: 3
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      interaction: {
+        mode: "nearest",
+        intersect: true
+      },
+      plugins: {
+        legend: { display: ${chart.series && chart.series !== chart.title ? "true" : "false"}, position: "top", labels: { color: tickColor } },
+        tooltip: {
+          enabled: true,
+          mode: "nearest",
+          intersect: true,
+          backgroundColor: tooltipBg,
+          titleColor: tooltipText,
+          bodyColor: tooltipMuted,
+          borderColor: gridColor,
+          borderWidth: 1,
+          displayColors: false,
+          padding: 12,
+          callbacks: {
+            label: (context) => {
+              const raw = context.raw || {};
+              return "X: " + formatAxisValue(raw.x) + ", Y: " + formatTooltipValue(raw.y) + ", Size: " + formatAxisValue(raw.r);
+            }
+          }
+        }
+      },
+      scales: {
+        x: {
+          type: "linear",
+          title: {
+            display: ${chart.xAxisLabel ? "true" : "false"},
+            text: ${jsString(chart.xAxisLabel)},
+            color: tickColor
+          },
+          ticks: {
+            color: tickColor,
+            callback: value => Number(value).toLocaleString()
+          },
+          grid: { color: gridColor }
+        },
+        y: {
+          title: {
+            display: ${chart.yAxisLabel ? "true" : "false"},
+            text: ${jsString(chart.yAxisLabel)},
+            color: tickColor
+          },
+          ticks: {
+            color: tickColor,
+            callback: value => Number(value).toLocaleString()
+          },
+          grid: { color: gridColor }
+        }
+      }
     }
   });
 })();`;
@@ -6588,13 +6689,14 @@ function validateReportChart(chart, context) {
     "waterfall",
     "bullet",
     "scatter",
+    "bubble",
     "grouped-bar",
     "stacked-bar",
     "heatmap"
   ]);
   if (!supportedTypes.has(chart.chartType)) {
     fail(
-      `report-chart type "${chart.chartType}" is not available. Supported types: bar, line, doughnut, area, treemap, funnel, grouped-bar, stacked-bar, heatmap, waterfall, bullet, scatter. Ask the skill maker to add missing chart types.`,
+      `report-chart type "${chart.chartType}" is not available. Supported types: bar, line, doughnut, area, treemap, funnel, grouped-bar, stacked-bar, heatmap, waterfall, bullet, scatter, bubble. Ask the skill maker to add missing chart types.`,
       context
     );
   }
@@ -6639,6 +6741,10 @@ function validateReportChart(chart, context) {
     validateReportScatterChart(chart, context);
     return;
   }
+  if (chart.chartType === "bubble") {
+    validateReportBubbleChart(chart, context);
+    return;
+  }
   validateReportChartLabelsAndValues(chart, context);
   if (chart.chartType === "bullet") {
     validateReportBulletChart(chart, context);
@@ -6668,6 +6774,17 @@ function validateReportChartLabelsAndValues(chart, context) {
   }
   if (chart.values.some((value) => !Number.isFinite(value))) {
     fail("report-chart values must all be numeric.", context);
+  }
+}
+function validateReportBubbleChart(chart, context) {
+  if (chart.points.length === 0) {
+    fail('report-chart type="bubble" requires non-empty points as numeric x:y:r triples.', context);
+  }
+  if (chart.points.some((point) => !Number.isFinite(Number(point.x)) || !Number.isFinite(point.y) || !Number.isFinite(point.r))) {
+    fail('report-chart type="bubble" points must be numeric x:y:r triples.', context);
+  }
+  if (chart.points.some((point) => point.r <= 0)) {
+    fail('report-chart type="bubble" point radii must be greater than zero.', context);
   }
 }
 function validateReportScatterChart(chart, context) {

@@ -377,10 +377,11 @@ function normalizeCardGridColumns(value = '') {
 function parseChartPoints(value = '') {
   return splitCsv(value).map((item) => {
     const separator = item.includes('=') ? '=' : ':'
-    const [x, ...rest] = item.split(separator)
+    const [x, y, ...rest] = item.split(separator)
     return {
       x: cleanText(x),
-      y: Number(rest.join(separator).trim()),
+      y: Number(String(y || '').trim()),
+      r: rest.length ? Number(rest.join(separator).trim()) : undefined,
     }
   })
 }

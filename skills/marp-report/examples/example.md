@@ -120,6 +120,18 @@ April volume is concentrated in one dominant journey. The top three journeys acc
   points="2:93,4:88,7:72,9:61"
 ></report-chart>
 
+## Impact Concentration
+
+<report-chart
+  type="bubble"
+  title="Journey effort, completion, and impact"
+  series="Journeys"
+  x-label="Touches"
+  y-label="Completion"
+  value-suffix="%"
+  points="2:93:10,4:88:14,7:72:18,9:61:9"
+></report-chart>
+
 ## Completion Funnel
 
 <report-chart

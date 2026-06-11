@@ -293,13 +293,14 @@ function validateReportChart(chart, context) {
     'waterfall',
     'bullet',
     'scatter',
+    'bubble',
     'grouped-bar',
     'stacked-bar',
     'heatmap',
   ])
   if (!supportedTypes.has(chart.chartType)) {
     fail(
-      `report-chart type "${chart.chartType}" is not available. Supported types: bar, line, doughnut, area, treemap, funnel, grouped-bar, stacked-bar, heatmap, waterfall, bullet, scatter. Ask the skill maker to add missing chart types.`,
+      `report-chart type "${chart.chartType}" is not available. Supported types: bar, line, doughnut, area, treemap, funnel, grouped-bar, stacked-bar, heatmap, waterfall, bullet, scatter, bubble. Ask the skill maker to add missing chart types.`,
       context,
     )
   }
@@ -344,6 +345,10 @@ function validateReportChart(chart, context) {
     validateReportScatterChart(chart, context)
     return
   }
+  if (chart.chartType === 'bubble') {
+    validateReportBubbleChart(chart, context)
+    return
+  }
   validateReportChartLabelsAndValues(chart, context)
   if (chart.chartType === 'bullet') {
     validateReportBulletChart(chart, context)
@@ -374,6 +379,18 @@ function validateReportChartLabelsAndValues(chart, context) {
   }
   if (chart.values.some((value) => !Number.isFinite(value))) {
     fail('report-chart values must all be numeric.', context)
+  }
+}
+
+function validateReportBubbleChart(chart, context) {
+  if (chart.points.length === 0) {
+    fail('report-chart type="bubble" requires non-empty points as numeric x:y:r triples.', context)
+  }
+  if (chart.points.some((point) => !Number.isFinite(Number(point.x)) || !Number.isFinite(point.y) || !Number.isFinite(point.r))) {
+    fail('report-chart type="bubble" points must be numeric x:y:r triples.', context)
+  }
+  if (chart.points.some((point) => point.r <= 0)) {
+    fail('report-chart type="bubble" point radii must be greater than zero.', context)
   }
 }
 

@@ -381,6 +381,7 @@ export function renderReportChartScript(chart, context = {}) {
   if (chart.chartType === 'waterfall') return renderReportWaterfallChartScript(chart, context)
   if (chart.chartType === 'bullet') return renderReportBulletChartScript(chart, context)
   if (chart.chartType === 'scatter') return renderReportScatterChartScript(chart, context)
+  if (chart.chartType === 'bubble') return renderReportBubbleChartScript(chart, context)
 
   const palette = chart.colors.length ? chart.colors : reportChartPalette(context.brand)
   const colors = chart.labels.map((_, index) => normalizeChartColor(palette[index % palette.length]))
@@ -487,6 +488,107 @@ ${datasetOptions}
         }
       }
 ${chartScales}
+    }
+  });
+})();`
+}
+
+function renderReportBubbleChartScript(chart, context = {}) {
+  const palette = chart.colors.length ? chart.colors : reportChartPalette(context.brand)
+  const bubbleColor = normalizeChartColor(palette[1] || palette[0]) || '#66D9EF'
+  const points = chart.points.map((point) => ({
+    x: Number(point.x),
+    y: point.y,
+    r: point.r,
+  }))
+
+  return `(() => {
+  const canvas = document.getElementById(${jsString(chart.id)});
+  const themeRoot = canvas.closest(".deck-report") || document.body || document.documentElement;
+  const rootStyle = getComputedStyle(themeRoot);
+  const tickColor = rootStyle.getPropertyValue("--text-dim").trim() || "#64748b";
+  const gridColor = rootStyle.getPropertyValue("--border").trim() || "rgba(148, 163, 184, 0.28)";
+  const tooltipBg = rootStyle.getPropertyValue("--bg-card").trim() || "rgba(15, 23, 42, 0.92)";
+  const tooltipText = rootStyle.getPropertyValue("--text").trim() || "#ffffff";
+  const tooltipMuted = rootStyle.getPropertyValue("--text-dim").trim() || "#cbd5e1";
+  const valuePrefix = ${jsString(chart.valuePrefix)};
+  const valueSuffix = ${jsString(chart.valueSuffix)};
+  const valueFormatter = new Intl.NumberFormat("en-US", { maximumFractionDigits: 2 });
+  const formatAxisValue = (value) => {
+    const numeric = Number(value);
+    return Number.isFinite(numeric) ? valueFormatter.format(numeric) : String(value ?? "");
+  };
+  const formatTooltipValue = (value) => {
+    const formatted = formatAxisValue(value);
+    return valuePrefix + formatted + valueSuffix;
+  };
+  new Chart(canvas, {
+    type: "bubble",
+    data: {
+      datasets: [{
+        label: ${jsString(chart.series || chart.title || 'Series 1')},
+        data: ${jsValue(points)},
+        backgroundColor: ${jsString(hexToRgba(bubbleColor, 0.42))},
+        borderColor: ${jsString(bubbleColor)},
+        borderWidth: 2,
+        hoverBorderWidth: 3
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      interaction: {
+        mode: "nearest",
+        intersect: true
+      },
+      plugins: {
+        legend: { display: ${chart.series && chart.series !== chart.title ? 'true' : 'false'}, position: "top", labels: { color: tickColor } },
+        tooltip: {
+          enabled: true,
+          mode: "nearest",
+          intersect: true,
+          backgroundColor: tooltipBg,
+          titleColor: tooltipText,
+          bodyColor: tooltipMuted,
+          borderColor: gridColor,
+          borderWidth: 1,
+          displayColors: false,
+          padding: 12,
+          callbacks: {
+            label: (context) => {
+              const raw = context.raw || {};
+              return "X: " + formatAxisValue(raw.x) + ", Y: " + formatTooltipValue(raw.y) + ", Size: " + formatAxisValue(raw.r);
+            }
+          }
+        }
+      },
+      scales: {
+        x: {
+          type: "linear",
+          title: {
+            display: ${chart.xAxisLabel ? 'true' : 'false'},
+            text: ${jsString(chart.xAxisLabel)},
+            color: tickColor
+          },
+          ticks: {
+            color: tickColor,
+            callback: value => Number(value).toLocaleString()
+          },
+          grid: { color: gridColor }
+        },
+        y: {
+          title: {
+            display: ${chart.yAxisLabel ? 'true' : 'false'},
+            text: ${jsString(chart.yAxisLabel)},
+            color: tickColor
+          },
+          ticks: {
+            color: tickColor,
+            callback: value => Number(value).toLocaleString()
+          },
+          grid: { color: gridColor }
+        }
+      }
     }
   });
 })();`

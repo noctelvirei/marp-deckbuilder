@@ -544,6 +544,38 @@ test('expands report scatter charts into Chart.js numeric point plots', async ()
   assert.match(rendered.document, /"X: " \+ formatAxisValue\(context\.parsed\.x\) \+ ", Y: " \+ formatTooltipValue\(context\.parsed\.y\)/)
 })
 
+test('expands report bubble charts into Chart.js radius point plots', async () => {
+  const definitions = await loadDefinitions(new URL('../resources/definitions', import.meta.url))
+  const rendered = renderReportHtml(
+    `# Bubble chart report
+
+<report-chart
+  type="bubble"
+  title="Impact by effort"
+  series="Journeys"
+  x-label="Touches"
+  y-label="Completion"
+  value-suffix="%"
+  points="2:93:10,4:88:14,7:72:18,9:61:9"
+></report-chart>
+`,
+    {
+      resourcesDir: path.resolve('resources'),
+      definitions,
+      inlineAssets: true,
+    },
+  )
+
+  assert.doesNotMatch(rendered.document, /<report-chart/i)
+  assert.match(rendered.document, /class="report-chart report-chart-bubble"/)
+  assert.match(rendered.document, /type: "bubble"/)
+  assert.match(
+    rendered.document,
+    /data: \[\{"x":2,"y":93,"r":10\},\{"x":4,"y":88,"r":14\},\{"x":7,"y":72,"r":18\},\{"x":9,"y":61,"r":9\}\]/,
+  )
+  assert.match(rendered.document, /", Size: " \+ formatAxisValue\(raw\.r\)/)
+})
+
 test('allows Chart.js, Observable Plot, and D3 report charts to coexist', async () => {
   const definitions = await loadDefinitions(new URL('../resources/definitions', import.meta.url))
   const rendered = renderReportHtml(
@@ -1629,7 +1661,19 @@ test('report chart components fail clearly when data is invalid', async () => {
   )
   assert.throws(
     () => renderReportHtml('<report-chart type="radar" labels="A" values="10"></report-chart>', options),
-    /report-chart type "radar" is not available\. Supported types: bar, line, doughnut, area, treemap, funnel, grouped-bar, stacked-bar, heatmap, waterfall, bullet, scatter\. Ask the skill maker to add missing chart types/,
+    /report-chart type "radar" is not available\. Supported types: bar, line, doughnut, area, treemap, funnel, grouped-bar, stacked-bar, heatmap, waterfall, bullet, scatter, bubble\. Ask the skill maker to add missing chart types/,
+  )
+  assert.throws(
+    () => renderReportHtml('<report-chart type="bubble"></report-chart>', options),
+    /report-chart type="bubble" requires non-empty points as numeric x:y:r triples/,
+  )
+  assert.throws(
+    () => renderReportHtml('<report-chart type="bubble" points="1:2"></report-chart>', options),
+    /report-chart type="bubble" points must be numeric x:y:r triples/,
+  )
+  assert.throws(
+    () => renderReportHtml('<report-chart type="bubble" points="1:2:0"></report-chart>', options),
+    /report-chart type="bubble" point radii must be greater than zero/,
   )
   assert.throws(
     () => renderReportHtml('<report-chart type="scatter"></report-chart>', options),
