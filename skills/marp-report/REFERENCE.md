@@ -57,6 +57,7 @@ Reports use normal Markdown plus compact `report-*` component tags. The renderer
 | Ranked distribution bars | `report-rate-bars` | `labels`, `values`; optional `shares` |
 | Finding, risk, or action block | `report-callout` | Body text or `text`; optional `variant`, `title` |
 | Highlighted recommendation card | `report-accent-card` | Body text or `body`; optional `accent`, `title` |
+| Captioned embedded image | `report-figure` | `src`, `alt`; optional `caption`, `source`, `size` |
 | Inline status label | `report-badge` | Body text or `label`; optional `status`, `variant` |
 | Chart.js bar chart | `report-chart type="bar"` | `labels`, `values` |
 | Chart.js line chart | `report-chart type="line"` | `labels`, `values` |
@@ -239,6 +240,30 @@ Supported attributes:
 | `variant` | no | Supports `blue`, `green`, `orange`, `red`, `muted`. Aliases: `color`, `tone`. |
 | `status` | no | Maps common statuses such as `active`, `review`, `blocked`, and `pending` to badge colors. |
 | `label` | no | Badge text when you prefer attribute-only authoring. Otherwise use the tag body. |
+
+### Report Figure
+
+Use `report-figure` for screenshots, diagrams, and other embedded report images. Store image files under resources and reference them through `src`.
+
+```md
+<report-figure
+  src="images/journey-volume.svg"
+  alt="Sample journey volume snapshot"
+  caption="Journey volume is concentrated in J0107."
+  source="Source: April journey export"
+  size="wide"
+></report-figure>
+```
+
+Supported attributes:
+
+| Attribute | Required | Notes |
+| --- | --- | --- |
+| `src` | yes | Resource path to the image. Alias: `image`. |
+| `alt` | yes | Accessible image description. |
+| `caption` | no | Visible caption under the image. Otherwise the tag body is used. |
+| `source` | no | Source note under the caption. |
+| `size` | no | Supports `narrow`, `normal`, and `wide`. Defaults to `normal`. |
 
 ## Unsupported Capabilities
 

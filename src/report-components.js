@@ -5,6 +5,7 @@ import {
   parseReportBadge,
   parseReportCallout,
   parseReportChart,
+  parseReportFigure,
   parseReportMetricGrid,
   parseReportRateBars,
 } from './report-components/parsers.js'
@@ -14,6 +15,7 @@ import {
   renderReportCalloutHtml,
   renderReportChartHtml,
   renderReportChartScript,
+  renderReportFigureHtml,
   renderReportMetricGridHtml,
   renderReportRateBarsHtml,
 } from './report-components/renderers.js'
@@ -23,6 +25,7 @@ const knownReportTags = new Set([
   'report-badge',
   'report-callout',
   'report-chart',
+  'report-figure',
   'report-metric-grid',
   'report-metric',
   'report-rate-bars',
@@ -60,6 +63,13 @@ export function compileReportComponents(source, options = {}) {
     const callout = parseReportCallout(calloutElement)
     validateReportCallout(callout, context)
     calloutElement.replaceWith(renderReportCalloutHtml(callout))
+  })
+
+  root('report-figure').each((_, element) => {
+    const figureElement = root(element)
+    const figure = parseReportFigure(figureElement)
+    validateReportFigure(figure, context)
+    figureElement.replaceWith(renderReportFigureHtml(figure))
   })
 
   root('report-accent-card').each((_, element) => {
@@ -213,6 +223,19 @@ function validateReportMetricGrid(metricGrid, context) {
       fail(`report-metric at position ${index + 1} must include value and/or label.`, context)
     }
   })
+}
+
+function validateReportFigure(figure, context) {
+  const sizes = new Set(['narrow', 'normal', 'wide'])
+  if (!figure.src) {
+    fail('report-figure requires a src attribute.', context)
+  }
+  if (!figure.alt) {
+    fail('report-figure requires an alt attribute for accessibility.', context)
+  }
+  if (!sizes.has(figure.size)) {
+    fail('report-figure size must be narrow, normal, or wide.', context)
+  }
 }
 
 function validateReportRateBars(rateBars, context) {

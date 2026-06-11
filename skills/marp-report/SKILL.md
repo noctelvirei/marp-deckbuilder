@@ -40,6 +40,7 @@ Use these renderer-backed component tags in `report.md`. They look like HTML tag
 | Ranked distribution bars | `<report-rate-bars>` | `labels`, `values`; optional `shares` |
 | Findings and actions | `<report-callout>` | Body text or `text`; optional `variant`, `title` |
 | Recommendation or insight card | `<report-accent-card>` | Body text or `body`; optional `accent`, `title` |
+| Captioned embedded image | `<report-figure>` | `src`, `alt`; optional `caption`, `source`, `size` |
 | Table status label | `<report-badge>` | Body text or `label`; optional `status`, `variant` |
 | Chart.js bar chart | `<report-chart type="bar">` | `labels`, `values` |
 | Chart.js line chart | `<report-chart type="line">` | `labels`, `values` |
@@ -72,6 +73,7 @@ Generate `report.md` in this order:
 - Use `<report-rate-bars>` for ranked distribution bars.
 - Use `<report-callout>` for info, warning, success, and danger findings.
 - Use `<report-accent-card>` for highlighted recommendations, risks, or ownership notes.
+- Use `<report-figure>` for captioned images, screenshots, and diagrams stored under resources.
 - Use `<report-badge>` for table statuses and small inline state labels.
 - For chart types that are not yet supported, do not write Chart.js, Observable Plot, D3, SVG, or HTML manually. Tell the user to ask the skill maker to add that chart type.
 

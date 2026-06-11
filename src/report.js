@@ -344,6 +344,51 @@ body {
   height: auto;
 }
 
+.report-figure {
+  margin: 28px auto;
+  padding: 18px;
+  border: 1px solid var(--border, #dbe5f2);
+  border-radius: 8px;
+  background: var(--bg-card, #ffffff);
+  box-shadow: 0 12px 30px rgba(15, 23, 42, 0.07);
+}
+
+.report-figure-normal {
+  max-width: 760px;
+}
+
+.report-figure-narrow {
+  max-width: 560px;
+}
+
+.report-figure-wide {
+  max-width: 100%;
+}
+
+.report-figure img {
+  display: block;
+  width: 100%;
+  border-radius: 6px;
+}
+
+.report-figure figcaption {
+  display: grid;
+  gap: 5px;
+  margin-top: 12px;
+  color: var(--text-dim, #64748b);
+  font-size: 13px;
+  line-height: 1.35;
+}
+
+.report-figure-caption {
+  color: var(--text, #334155);
+  font-weight: 600;
+}
+
+.report-figure-source {
+  font-size: 12px;
+}
+
 .report-chart {
   margin: 28px 0;
   padding: 22px;

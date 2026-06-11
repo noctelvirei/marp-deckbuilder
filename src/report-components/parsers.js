@@ -1,3 +1,4 @@
+import { normalizeResourceReference } from '../resources.js'
 import { cleanText, splitCsv } from './utils.js'
 
 export function parseReportChart(chart, index = 0) {
@@ -62,6 +63,17 @@ export function parseReportMetricGrid(root, grid) {
   }
 }
 
+export function parseReportFigure(figure) {
+  return {
+    type: 'figure',
+    src: normalizeResourceReference(figure.attr('src') || figure.attr('image') || ''),
+    alt: figure.attr('alt') || '',
+    caption: figure.attr('caption') || cleanText(figure.text()),
+    source: figure.attr('source') || '',
+    size: normalizeFigureSize(figure.attr('size') || figure.attr('width') || ''),
+  }
+}
+
 export function parseReportCallout(callout) {
   return {
     type: 'callout',
@@ -115,6 +127,12 @@ function normalizeChartType(value = 'bar') {
   if (token === 'donut') return 'doughnut'
   if (token === 'tree-map') return 'treemap'
   return token
+}
+
+function normalizeFigureSize(value = '') {
+  const token = String(value || '').trim().toLowerCase()
+  if (['narrow', 'normal', 'wide'].includes(token)) return token
+  return token || 'normal'
 }
 
 function parseChartPoints(value = '') {

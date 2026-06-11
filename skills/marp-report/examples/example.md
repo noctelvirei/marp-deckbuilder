@@ -15,6 +15,14 @@ April volume is concentrated in one dominant journey. The top three journeys acc
   <report-metric value="92.4%" label="Top 3 journeys" accent="cyan"></report-metric>
 </report-metric-grid>
 
+<report-figure
+  src="images/journey-volume.svg"
+  alt="Sample journey volume snapshot"
+  caption="Volume distribution snapshot for the top journeys."
+  source="Source: April journey export"
+  size="wide"
+></report-figure>
+
 ## Volume Chart
 
 <report-chart

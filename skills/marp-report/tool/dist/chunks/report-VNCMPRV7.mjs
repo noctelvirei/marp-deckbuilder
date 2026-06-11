@@ -4785,6 +4785,16 @@ function parseReportMetricGrid(root, grid) {
     metrics
   };
 }
+function parseReportFigure(figure) {
+  return {
+    type: "figure",
+    src: normalizeResourceReference(figure.attr("src") || figure.attr("image") || ""),
+    alt: figure.attr("alt") || "",
+    caption: figure.attr("caption") || cleanText(figure.text()),
+    source: figure.attr("source") || "",
+    size: normalizeFigureSize(figure.attr("size") || figure.attr("width") || "")
+  };
+}
 function parseReportCallout(callout) {
   return {
     type: "callout",
@@ -4833,6 +4843,11 @@ function normalizeChartType(value = "bar") {
   if (token === "donut") return "doughnut";
   if (token === "tree-map") return "treemap";
   return token;
+}
+function normalizeFigureSize(value = "") {
+  const token = String(value || "").trim().toLowerCase();
+  if (["narrow", "normal", "wide"].includes(token)) return token;
+  return token || "normal";
 }
 function parseChartPoints(value = "") {
   return splitCsv(value).map((item) => {
@@ -4900,6 +4915,19 @@ function renderReportMetricGridHtml(grid) {
   return `<div class="report-metric-grid">
 ${grid.metrics.map(renderReportMetricHtml).join("\n")}
 </div>`;
+}
+function renderReportFigureHtml(figure) {
+  const className = ["report-figure", `report-figure-${figure.size}`].filter(Boolean).join(" ");
+  const caption = [
+    figure.caption ? `<span class="report-figure-caption">${escapeHtml2(figure.caption)}</span>` : "",
+    figure.source ? `<span class="report-figure-source">${escapeHtml2(figure.source)}</span>` : ""
+  ].filter(Boolean).join("\n    ");
+  return `<figure class="${escapeAttr(className)}">
+  <img src="${escapeAttr(figure.src)}" alt="${escapeAttr(figure.alt)}">
+  ${caption ? `<figcaption>
+    ${caption}
+  </figcaption>` : ""}
+</figure>`;
 }
 function renderReportCalloutHtml(callout) {
   return `<div class="report-callout report-callout-${escapeAttr(callout.variant)}" role="note">
@@ -5299,6 +5327,7 @@ var knownReportTags = /* @__PURE__ */ new Set([
   "report-badge",
   "report-callout",
   "report-chart",
+  "report-figure",
   "report-metric-grid",
   "report-metric",
   "report-rate-bars"
@@ -5330,6 +5359,12 @@ function compileReportComponents(source, options = {}) {
     const callout = parseReportCallout(calloutElement);
     validateReportCallout(callout, context);
     calloutElement.replaceWith(renderReportCalloutHtml(callout));
+  });
+  root("report-figure").each((_, element) => {
+    const figureElement = root(element);
+    const figure = parseReportFigure(figureElement);
+    validateReportFigure(figure, context);
+    figureElement.replaceWith(renderReportFigureHtml(figure));
   });
   root("report-accent-card").each((_, element) => {
     const cardElement = root(element);
@@ -5382,7 +5417,13 @@ function validateReportComponentSyntax(source, context) {
     const raw = match2[0];
     const tag = match2[1].toLowerCase();
     const line = lineNumberAt(source, match2.index);
-    if (!knownReportTags.has(tag)) fail(`Unknown report component <${tag}>.`, context, line);
+    if (!knownReportTags.has(tag)) {
+      fail(
+        `Report component <${tag}> is not available. Use a supported report-* component or ask the skill maker to add it.`,
+        context,
+        line
+      );
+    }
     const isClosing = /^<\s*\//.test(raw);
     const isSelfClosing = /\/\s*>$/.test(raw);
     if (isClosing) {
@@ -5408,7 +5449,7 @@ function validateReportChart(chart, context) {
   const supportedTypes = /* @__PURE__ */ new Set(["bar", "line", "doughnut", "area", "treemap"]);
   if (!supportedTypes.has(chart.chartType)) {
     fail(
-      `Unsupported report-chart type "${chart.chartType}". Supported types: bar, line, doughnut, area, treemap.`,
+      `report-chart type "${chart.chartType}" is not available. Supported types: bar, line, doughnut, area, treemap. Ask the skill maker to add missing chart types.`,
       context
     );
   }
@@ -5464,6 +5505,18 @@ function validateReportMetricGrid(metricGrid, context) {
       fail(`report-metric at position ${index + 1} must include value and/or label.`, context);
     }
   });
+}
+function validateReportFigure(figure, context) {
+  const sizes = /* @__PURE__ */ new Set(["narrow", "normal", "wide"]);
+  if (!figure.src) {
+    fail("report-figure requires a src attribute.", context);
+  }
+  if (!figure.alt) {
+    fail("report-figure requires an alt attribute for accessibility.", context);
+  }
+  if (!sizes.has(figure.size)) {
+    fail("report-figure size must be narrow, normal, or wide.", context);
+  }
 }
 function validateReportRateBars(rateBars, context) {
   if (rateBars.labels.length === 0 || rateBars.values.length === 0) {
@@ -5956,6 +6009,51 @@ body {
 .report-body svg {
   max-width: 100%;
   height: auto;
+}
+
+.report-figure {
+  margin: 28px auto;
+  padding: 18px;
+  border: 1px solid var(--border, #dbe5f2);
+  border-radius: 8px;
+  background: var(--bg-card, #ffffff);
+  box-shadow: 0 12px 30px rgba(15, 23, 42, 0.07);
+}
+
+.report-figure-normal {
+  max-width: 760px;
+}
+
+.report-figure-narrow {
+  max-width: 560px;
+}
+
+.report-figure-wide {
+  max-width: 100%;
+}
+
+.report-figure img {
+  display: block;
+  width: 100%;
+  border-radius: 6px;
+}
+
+.report-figure figcaption {
+  display: grid;
+  gap: 5px;
+  margin-top: 12px;
+  color: var(--text-dim, #64748b);
+  font-size: 13px;
+  line-height: 1.35;
+}
+
+.report-figure-caption {
+  color: var(--text, #334155);
+  font-weight: 600;
+}
+
+.report-figure-source {
+  font-size: 12px;
 }
 
 .report-chart {

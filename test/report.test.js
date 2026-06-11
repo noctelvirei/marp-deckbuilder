@@ -532,6 +532,58 @@ Branding comes from brand JSON.
   assert.match(rendered.document, /background-image:[\s\S]*data:image\/svg\+xml;base64,/)
 })
 
+test('expands report figure components into embedded images with captions', async () => {
+  const definitions = await loadDefinitions(new URL('../resources/definitions', import.meta.url))
+  const figureSource = await readFile(path.resolve('resources', 'images', 'journey-volume.svg'), 'utf8')
+  const rendered = renderReportHtml(
+    `# Figure report
+
+<report-figure
+  src="images/journey-volume.svg"
+  alt="Sample journey volume snapshot"
+  caption="Journey volume is concentrated in J0107."
+  source="Source: April journey export"
+  size="wide"
+></report-figure>
+`,
+    {
+      resourcesDir: path.resolve('resources'),
+      definitions,
+      inlineAssets: true,
+    },
+  )
+
+  assert.doesNotMatch(rendered.document, /<report-figure/i)
+  assert.match(rendered.document, /<figure class="report-figure report-figure-wide">/)
+  assert.match(rendered.document, /<img src="data:image\/svg\+xml;base64,[^"]+" alt="Sample journey volume snapshot">/)
+  assert.equal(rendered.document.includes(embeddedPayload(figureSource)), true)
+  assert.match(rendered.document, /<span class="report-figure-caption">Journey volume is concentrated in J0107\.<\/span>/)
+  assert.match(rendered.document, /<span class="report-figure-source">Source: April journey export<\/span>/)
+  assert.doesNotMatch(rendered.document, /resource:images\/journey-volume\.svg/)
+})
+
+test('report figures fail clearly when malformed', async () => {
+  const definitions = await loadDefinitions(new URL('../resources/definitions', import.meta.url))
+  const options = {
+    resourcesDir: path.resolve('resources'),
+    definitions,
+    inlineAssets: true,
+  }
+
+  assert.throws(
+    () => renderReportHtml('<report-figure alt="Missing source"></report-figure>', options),
+    /report-figure requires a src attribute/,
+  )
+  assert.throws(
+    () => renderReportHtml('<report-figure src="images\/journey-volume.svg"></report-figure>', options),
+    /report-figure requires an alt attribute for accessibility/,
+  )
+  assert.throws(
+    () => renderReportHtml('<report-figure src="images\/journey-volume.svg" alt="Snapshot" size="giant"></report-figure>', options),
+    /report-figure size must be narrow, normal, or wide/,
+  )
+})
+
 test('expands report metric grid components into reusable metric cards', async () => {
   const definitions = await loadDefinitions(new URL('../resources/definitions', import.meta.url))
   const rendered = renderReportHtml(

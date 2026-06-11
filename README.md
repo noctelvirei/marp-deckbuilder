@@ -360,6 +360,7 @@ Reports can use:
 - Callouts via `report-callout`.
 - Accent cards via `report-accent-card`.
 - Badges via `report-badge`.
+- Captioned embedded images via `report-figure`.
 - Tables.
 - Chart.js charts via `report-chart type="bar"`, `line`, and `doughnut`.
 - Observable Plot charts via `report-chart type="area"`.

@@ -33,6 +33,20 @@ ${grid.metrics.map(renderReportMetricHtml).join('\n')}
 </div>`
 }
 
+export function renderReportFigureHtml(figure) {
+  const className = ['report-figure', `report-figure-${figure.size}`].filter(Boolean).join(' ')
+  const caption = [
+    figure.caption ? `<span class="report-figure-caption">${escapeHtml(figure.caption)}</span>` : '',
+    figure.source ? `<span class="report-figure-source">${escapeHtml(figure.source)}</span>` : '',
+  ]
+    .filter(Boolean)
+    .join('\n    ')
+  return `<figure class="${escapeAttr(className)}">
+  <img src="${escapeAttr(figure.src)}" alt="${escapeAttr(figure.alt)}">
+  ${caption ? `<figcaption>\n    ${caption}\n  </figcaption>` : ''}
+</figure>`
+}
+
 export function renderReportCalloutHtml(callout) {
   return `<div class="report-callout report-callout-${escapeAttr(callout.variant)}" role="note">
   ${callout.title ? `<div class="report-callout-title">${escapeHtml(callout.title)}</div>` : ''}
