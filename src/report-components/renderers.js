@@ -208,6 +208,7 @@ export function renderReportChartScript(chart, context = {}) {
   if (chart.chartType === 'treemap') return renderReportTreemapChartScript(chart, context)
   if (chart.chartType === 'funnel') return renderReportFunnelChartScript(chart, context)
   if (chart.chartType === 'grouped-bar') return renderReportMultiBarChartScript(chart, context, { stacked: false })
+  if (chart.chartType === 'stacked-bar') return renderReportMultiBarChartScript(chart, context, { stacked: true })
 
   const palette = chart.colors.length ? chart.colors : reportChartPalette(context.brand)
   const colors = chart.labels.map((_, index) => normalizeChartColor(palette[index % palette.length]))

@@ -333,6 +333,35 @@ test('expands report grouped bar charts into Chart.js multi-dataset bars', async
   assert.match(rendered.document, /const valueSuffix = " cases"/)
 })
 
+test('expands report stacked bar charts into Chart.js stacked bars', async () => {
+  const definitions = await loadDefinitions(new URL('../resources/definitions', import.meta.url))
+  const rendered = renderReportHtml(
+    `# Stacked bar report
+
+<report-chart
+  type="stacked-bar"
+  title="Weekly case composition"
+  value-suffix=" cases"
+  labels="Week 1,Week 2,Week 3"
+  series="J0107|J0106|Other"
+  values="12000|3200|2040;13000|3480|2510;14200|3770|2560"
+></report-chart>
+`,
+    {
+      resourcesDir: path.resolve('resources'),
+      definitions,
+      inlineAssets: true,
+    },
+  )
+
+  assert.doesNotMatch(rendered.document, /<report-chart/i)
+  assert.match(rendered.document, /class="report-chart report-chart-stacked-bar"/)
+  assert.match(rendered.document, /"label":"J0107","data":\[12000,13000,14200\]/)
+  assert.match(rendered.document, /"label":"J0106","data":\[3200,3480,3770\]/)
+  assert.match(rendered.document, /stacked:\s*true/)
+  assert.match(rendered.document, /const valueSuffix = " cases"/)
+})
+
 test('allows Chart.js, Observable Plot, and D3 report charts to coexist', async () => {
   const definitions = await loadDefinitions(new URL('../resources/definitions', import.meta.url))
   const rendered = renderReportHtml(
@@ -1082,7 +1111,7 @@ test('report chart components fail clearly when data is invalid', async () => {
   )
   assert.throws(
     () => renderReportHtml('<report-chart type="radar" labels="A" values="10"></report-chart>', options),
-    /report-chart type "radar" is not available\. Supported types: bar, line, doughnut, area, treemap, funnel, grouped-bar\. Ask the skill maker to add missing chart types/,
+    /report-chart type "radar" is not available\. Supported types: bar, line, doughnut, area, treemap, funnel, grouped-bar, stacked-bar\. Ask the skill maker to add missing chart types/,
   )
   assert.throws(
     () => renderReportHtml('<report-chart type="doughnut" labels="A,B" values="10,-1"></report-chart>', options),
@@ -1130,6 +1159,10 @@ test('report chart components fail clearly when data is invalid', async () => {
     () =>
       renderReportHtml('<report-chart type="grouped-bar" labels="A" series="X|Y" values="10|nope"></report-chart>', options),
     /report-chart type="grouped-bar" row 1 values must all be numeric/,
+  )
+  assert.throws(
+    () => renderReportHtml('<report-chart type="stacked-bar" labels="A" values="10"></report-chart>', options),
+    /report-chart type="stacked-bar" requires series names in the series attribute/,
   )
   assert.throws(
     () => renderReportHtml('<report-unknown></report-unknown>', options),

@@ -4744,7 +4744,7 @@ function parseReportChart(chart, index = 0) {
   const points = parseChartPoints(chart.attr("points") || chart.attr("data"));
   const seriesNames = splitPipe(chart.attr("series") || chart.attr("datasets") || chart.attr("series-labels"));
   const matrix = parseChartMatrix(
-    chart.attr("matrix") || chart.attr("series-values") || (type === "grouped-bar" ? chart.attr("values") : "")
+    chart.attr("matrix") || chart.attr("series-values") || (["grouped-bar", "stacked-bar"].includes(type) ? chart.attr("values") : "")
   );
   const derivedPoints = points.length > 0 ? points : labels.map((label, index2) => ({
     x: label,
@@ -4881,6 +4881,7 @@ function normalizeChartType(value = "bar") {
   if (token === "donut") return "doughnut";
   if (token === "tree-map") return "treemap";
   if (["grouped", "groupedbar", "clustered", "clustered-bar", "clusteredbar"].includes(token)) return "grouped-bar";
+  if (["stacked", "stackedbar"].includes(token)) return "stacked-bar";
   return token;
 }
 function normalizeFigureSize(value = "") {
@@ -5139,6 +5140,7 @@ function renderReportChartScript(chart, context = {}) {
   if (chart.chartType === "treemap") return renderReportTreemapChartScript(chart, context);
   if (chart.chartType === "funnel") return renderReportFunnelChartScript(chart, context);
   if (chart.chartType === "grouped-bar") return renderReportMultiBarChartScript(chart, context, { stacked: false });
+  if (chart.chartType === "stacked-bar") return renderReportMultiBarChartScript(chart, context, { stacked: true });
   const palette = chart.colors.length ? chart.colors : reportChartPalette(context.brand);
   const colors = chart.labels.map((_, index) => normalizeChartColor(palette[index % palette.length]));
   const primaryColor = normalizeChartColor(palette[0]) || "#0F82F5";
@@ -5800,10 +5802,19 @@ function validateReportComponentSyntax(source, context) {
   }
 }
 function validateReportChart(chart, context) {
-  const supportedTypes = /* @__PURE__ */ new Set(["bar", "line", "doughnut", "area", "treemap", "funnel", "grouped-bar"]);
+  const supportedTypes = /* @__PURE__ */ new Set([
+    "bar",
+    "line",
+    "doughnut",
+    "area",
+    "treemap",
+    "funnel",
+    "grouped-bar",
+    "stacked-bar"
+  ]);
   if (!supportedTypes.has(chart.chartType)) {
     fail(
-      `report-chart type "${chart.chartType}" is not available. Supported types: bar, line, doughnut, area, treemap, funnel, grouped-bar. Ask the skill maker to add missing chart types.`,
+      `report-chart type "${chart.chartType}" is not available. Supported types: bar, line, doughnut, area, treemap, funnel, grouped-bar, stacked-bar. Ask the skill maker to add missing chart types.`,
       context
     );
   }
@@ -5836,7 +5847,7 @@ function validateReportChart(chart, context) {
     }
     return;
   }
-  if (chart.chartType === "grouped-bar") {
+  if (chart.chartType === "grouped-bar" || chart.chartType === "stacked-bar") {
     validateReportMultiSeriesChart(chart, context);
     return;
   }

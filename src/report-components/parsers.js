@@ -15,7 +15,9 @@ export function parseReportChart(chart, index = 0) {
   const points = parseChartPoints(chart.attr('points') || chart.attr('data'))
   const seriesNames = splitPipe(chart.attr('series') || chart.attr('datasets') || chart.attr('series-labels'))
   const matrix = parseChartMatrix(
-    chart.attr('matrix') || chart.attr('series-values') || (type === 'grouped-bar' ? chart.attr('values') : ''),
+    chart.attr('matrix') ||
+      chart.attr('series-values') ||
+      (['grouped-bar', 'stacked-bar'].includes(type) ? chart.attr('values') : ''),
   )
   const derivedPoints =
     points.length > 0
@@ -169,6 +171,7 @@ function normalizeChartType(value = 'bar') {
   if (token === 'donut') return 'doughnut'
   if (token === 'tree-map') return 'treemap'
   if (['grouped', 'groupedbar', 'clustered', 'clustered-bar', 'clusteredbar'].includes(token)) return 'grouped-bar'
+  if (['stacked', 'stackedbar'].includes(token)) return 'stacked-bar'
   return token
 }
 

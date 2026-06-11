@@ -192,10 +192,19 @@ function validateReportComponentSyntax(source, context) {
 }
 
 function validateReportChart(chart, context) {
-  const supportedTypes = new Set(['bar', 'line', 'doughnut', 'area', 'treemap', 'funnel', 'grouped-bar'])
+  const supportedTypes = new Set([
+    'bar',
+    'line',
+    'doughnut',
+    'area',
+    'treemap',
+    'funnel',
+    'grouped-bar',
+    'stacked-bar',
+  ])
   if (!supportedTypes.has(chart.chartType)) {
     fail(
-      `report-chart type "${chart.chartType}" is not available. Supported types: bar, line, doughnut, area, treemap, funnel, grouped-bar. Ask the skill maker to add missing chart types.`,
+      `report-chart type "${chart.chartType}" is not available. Supported types: bar, line, doughnut, area, treemap, funnel, grouped-bar, stacked-bar. Ask the skill maker to add missing chart types.`,
       context,
     )
   }
@@ -228,7 +237,7 @@ function validateReportChart(chart, context) {
     }
     return
   }
-  if (chart.chartType === 'grouped-bar') {
+  if (chart.chartType === 'grouped-bar' || chart.chartType === 'stacked-bar') {
     validateReportMultiSeriesChart(chart, context)
     return
   }

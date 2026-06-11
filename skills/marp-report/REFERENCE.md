@@ -66,6 +66,7 @@ Reports use normal Markdown plus compact `report-*` component tags. The renderer
 | Chart.js line chart | `report-chart type="line"` | `labels`, `values` |
 | Chart.js doughnut chart | `report-chart type="doughnut"` | `labels`, `values` |
 | Chart.js grouped bar chart | `report-chart type="grouped-bar"` | `labels`, `series`, matrix `values` |
+| Chart.js stacked bar chart | `report-chart type="stacked-bar"` | `labels`, `series`, matrix `values` |
 | Observable Plot area chart | `report-chart type="area"` | `points` as `x:y` pairs, or `labels`, `values` |
 | D3 treemap | `report-chart type="treemap"` | `labels`, `values` |
 | D3 funnel | `report-chart type="funnel"` | `labels`, `values` |
@@ -84,7 +85,7 @@ If the needed visual is not listed, do not create raw HTML or JavaScript in the 
 
 ### Report Chart: Chart.js, Observable Plot, And D3
 
-Use `report-chart` for standard Chart.js bar, line, doughnut, and grouped bar charts, Observable Plot area charts, D3 treemaps, and D3 funnels. Do not write the `<canvas>`, chart container, SVG, or JavaScript initializer yourself. The renderer generates hover tooltips that show the represented value.
+Use `report-chart` for standard Chart.js bar, line, doughnut, grouped bar, and stacked bar charts, Observable Plot area charts, D3 treemaps, and D3 funnels. Do not write the `<canvas>`, chart container, SVG, or JavaScript initializer yourself. The renderer generates hover tooltips that show the represented value.
 
 ```md
 <report-chart
@@ -129,6 +130,17 @@ Use `report-chart` for standard Chart.js bar, line, doughnut, and grouped bar ch
 
 ```md
 <report-chart
+  type="stacked-bar"
+  title="Weekly case composition"
+  series="J0107|J0106|J0101|J0116"
+  value-suffix=" cases"
+  labels="Week 1,Week 2,Week 3,Week 4"
+  values="11420|2450|2020|620;12680|2680|2240|720;13750|2940|2330|760;14358|3049|2058|810"
+></report-chart>
+```
+
+```md
+<report-chart
   type="area"
   title="Daily volume"
   series="Cases"
@@ -161,12 +173,12 @@ Supported attributes:
 
 | Attribute | Required | Notes |
 | --- | --- | --- |
-| `type` | no | Supports `bar`, `line`, `doughnut`, `grouped-bar`, `area`, `treemap`, and `funnel`. Defaults to `bar`. Aliases: `donut`, `tree-map`, `grouped`, `clustered-bar`. |
+| `type` | no | Supports `bar`, `line`, `doughnut`, `grouped-bar`, `stacked-bar`, `area`, `treemap`, and `funnel`. Defaults to `bar`. Aliases: `donut`, `tree-map`, `grouped`, `clustered-bar`, `stacked`. |
 | `title` | no | Rendered above the chart and used as the accessible label. |
-| `series` | no | Dataset label for single-series charts. For `grouped-bar`, use pipe-separated series names such as `Opened|Completed`. Aliases: `datasets`, `series-labels`. |
+| `series` | no | Dataset label for single-series charts. For `grouped-bar` and `stacked-bar`, use pipe-separated series names such as `Opened|Completed`. Aliases: `datasets`, `series-labels`. |
 | `labels` | yes for Chart.js, `treemap`, and `funnel` types | Comma-separated labels. For `area`, this can be used with `values` as an alternative to `points`. |
 | `values` | yes for Chart.js, `treemap`, and `funnel` types | Comma-separated numeric values. Must match label count. For `area`, this can be used with `labels` as an alternative to `points`. |
-| `values` for `grouped-bar` | yes | Semicolon-separated label rows with pipe-separated series values, such as `10|20;12|24`. Aliases: `matrix`, `series-values`. |
+| `values` for `grouped-bar` and `stacked-bar` | yes | Semicolon-separated label rows with pipe-separated series values, such as `10|20;12|24`. Aliases: `matrix`, `series-values`. |
 | `points` | yes for `area` | Comma-separated `x:y` or `x=y` points such as `2026-04-01:2200,2026-04-02:2600`. Alias: `data`. |
 | `colors` | no | Comma-separated hex colors. Defaults to brand chart colors. |
 | `height` | no | Pixel height, clamped by the renderer. Defaults to `320`. |

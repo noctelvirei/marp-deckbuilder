@@ -60,6 +60,17 @@ April volume is concentrated in one dominant journey. The top three journeys acc
   values="17240|15020|640;18990|16880|720;20530|18030|760;21191|19050|810"
 ></report-chart>
 
+## Case Composition
+
+<report-chart
+  type="stacked-bar"
+  title="Weekly case composition"
+  series="J0107|J0106|J0101|J0116"
+  value-suffix=" cases"
+  labels="Week 1,Week 2,Week 3,Week 4"
+  values="11420|2450|2020|620;12680|2680|2240|720;13750|2940|2330|760;14358|3049|2058|810"
+></report-chart>
+
 ## Completion Funnel
 
 <report-chart
