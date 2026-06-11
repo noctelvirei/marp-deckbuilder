@@ -354,17 +354,19 @@ Reports can use:
 - Built-in dark report theme via `reportTheme: dark`.
 - Generated sticky navigation via `reportNav: true`.
 - Sticky sidebars.
-- Metric cards.
-- Ranked rate bars.
-- Callouts.
-- Badges.
+- Compact `report-*` component tags that the renderer expands into HTML, CSS, and JavaScript.
+- Metric cards via `report-metric-grid`.
+- Ranked rate bars via `report-rate-bars`.
+- Callouts via `report-callout`.
+- Accent cards via `report-accent-card`.
+- Badges via `report-badge`.
 - Tables.
 - Inline SVG.
-- Chart.js.
-- Observable Plot.
-- D3.
+- Chart.js charts via `report-chart type="bar"`, `line`, and `doughnut`.
+- Observable Plot charts via `report-chart type="area"`.
+- D3 charts via `report-chart type="treemap"`.
 
-The report build wrapper injects vendored chart libraries into the generated HTML head and strips known CDN tags. Agents should not paste minified library code into Markdown.
+The report build wrapper injects vendored chart libraries into the generated HTML head and strips known CDN tags. Agents should not paste minified library code, chart containers, or chart initializer scripts into Markdown when a supported `report-*` component exists.
 
 Use `skills/marp-report/SKILL.md` and `skills/marp-report/REFERENCE.md` for report-specific syntax. Keep report guidance out of the presentation skill unless it is a shared concept.
 
@@ -402,10 +404,13 @@ When adding a deck component, update the whole pipeline:
 When adding report capability, update:
 
 - `src/report.js`
+- `src/report-components.js`
+- `src/report-components/parsers.js`
+- `src/report-components/renderers.js`
 - `skills/marp-report/SKILL.md`
 - `skills/marp-report/REFERENCE.md`
 - `skills/marp-report/examples/`
-- report smoke coverage if relevant
+- report tests and smoke coverage if relevant
 
 ## Common Agent Mistakes
 

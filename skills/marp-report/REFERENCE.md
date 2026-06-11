@@ -298,7 +298,7 @@ Supported attributes:
 
 ## Legacy HTML Classes
 
-Some components are still in migration. Until their `report-*` versions exist, reports may use these HTML classes:
+Prefer the `report-*` components above. Use these raw HTML classes only for temporary custom layouts that do not yet have a structured component:
 
 | Pattern | Required classes | Optional modifiers |
 | --- | --- | --- |
@@ -311,6 +311,8 @@ Some components are still in migration. Until their `report-*` versions exist, r
 Do not use `deck-*` tags in reports. They are presentation components.
 
 ### Metric Grid
+
+Use `report-metric-grid` for standard KPI cards. Keep this raw class pattern only for bespoke layouts that the component does not cover.
 
 ```html
 <div class="r-metric-grid">
