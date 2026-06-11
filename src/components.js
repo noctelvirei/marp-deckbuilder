@@ -15,6 +15,12 @@ import {
   parseVisual,
 } from './components/parsers.js'
 import {
+  parseRichHtmlComponent,
+  renderRichHtml,
+  richHtmlParentTags,
+  richHtmlTags,
+} from './components/rich-html.js'
+import {
   renderChartHtml,
   renderCloseHtml,
   renderComparisonHtml,
@@ -62,6 +68,7 @@ const knownDeckTags = new Set([
   'deck-swimlane',
   'deck-takeaway',
   'deck-visual',
+  ...richHtmlTags,
 ])
 
 export {
@@ -199,6 +206,15 @@ export function compileDeckComponents(source, options = {}) {
     }
     components.push(model)
     execMetrics.replaceWith(renderExecMetricsHtml(model))
+  })
+  root([...richHtmlParentTags].join(',')).each((_, element) => {
+    const model = parseRichHtmlComponent(root, element, {
+      ...context,
+      ordinal: components.length + 1,
+    })
+    if (!model) return
+    components.push(model)
+    root(element).replaceWith(renderRichHtml(model))
   })
   root('deck-divider').each((_, element) => compileDivider(root, element, components, context))
   root('deck-close').each((_, element) => compileClose(root, element, components))
@@ -389,6 +405,29 @@ function validateDeckComponentTree(root, context) {
     root(childTag).each((_, element) => {
       if (!root(element).parent().is(parentTag)) {
         fail(`<${childTag}> must be placed directly inside <${parentTag}>.`, context)
+      }
+    })
+  }
+
+  const multiParentRules = [
+    ['deck-rich-item', ['deck-rich-agenda', 'deck-neon-title']],
+    ['deck-rich-card', ['deck-tilt-cards', 'deck-glass-cards', 'deck-stagger-grid']],
+    ['deck-rich-metric', ['deck-rich-stats', 'deck-metric-rings', 'deck-gauge']],
+    ['deck-rich-series', ['deck-rich-bars', 'deck-rich-line']],
+    ['deck-rich-segment', ['deck-rich-donut']],
+    ['deck-rich-milestone', ['deck-rich-timeline']],
+    ['deck-rich-phrase', ['deck-typewriter']],
+    ['deck-rich-axis', ['deck-radar-chart']],
+    ['deck-rich-column', ['deck-comparison-reveal']],
+    ['deck-rich-row', ['deck-comparison-reveal']],
+    ['deck-magazine-page', ['deck-magazine-book']],
+  ]
+
+  for (const [childTag, parentTags] of multiParentRules) {
+    root(childTag).each((_, element) => {
+      const parent = root(element).parent()
+      if (!parentTags.some((parentTag) => parent.is(parentTag))) {
+        fail(`<${childTag}> must be placed directly inside ${parentTags.map((tag) => `<${tag}>`).join(' or ')}.`, context)
       }
     })
   }

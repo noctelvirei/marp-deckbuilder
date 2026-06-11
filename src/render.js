@@ -3,6 +3,7 @@ import { Element } from '@marp-team/marpit'
 import { pathToFileURL } from 'node:url'
 
 import { buildMarpMarkdown } from './markdown.js'
+import { richHtmlRuntimeScript } from './rich-html-runtime.js'
 import {
   normalizeResourceReference,
   resolveResourceFile,
@@ -65,6 +66,7 @@ export function renderDeckHtml(deck, options = {}) {
       comments,
       bespokeCss: definitions.bespokeCss,
       bespokeJs: definitions.bespokeJs,
+      richHtmlJs: richHtmlRuntimeScript(),
       title: deck.frontmatter.title || 'Deck',
     }),
     assets: assetMap
@@ -432,10 +434,12 @@ function surfaceResourceReference(src, resourcesDir, surface) {
 function slideKind(slide) {
   switch (slide.layout) {
     case 'cover':
+    case 'rich-cover':
       return 'cover'
     case 'divider':
       return 'divider'
     case 'close':
+    case 'rich-close':
       return 'close'
     default:
       return 'content'
@@ -445,11 +449,15 @@ function slideKind(slide) {
 function htmlClassForLayout(layout) {
   switch (layout) {
     case 'cover':
+    case 'rich-cover':
       return 'cover'
     case 'divider':
       return 'deck-divider-slide'
     case 'close':
+    case 'rich-close':
       return 'deck-close-slide'
+    case 'rich-html':
+      return 'dark'
     default:
       return ''
   }
@@ -482,6 +490,7 @@ export function htmlDocument({
   comments = [],
   bespokeCss = '',
   bespokeJs = '',
+  richHtmlJs = '',
   title = 'Deck',
 }) {
   return `<!doctype html>
@@ -503,6 +512,7 @@ ${bespokeOsc()}
 ${html}
 ${renderNotes(comments)}
 <script>${bespokeJs}</script>
+<script data-deckbuilder-rich-html>${richHtmlJs}</script>
 </body>
 </html>
 `
