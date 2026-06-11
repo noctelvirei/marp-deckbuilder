@@ -4784,6 +4784,16 @@ function parseReportCallout(callout) {
     body: callout.attr("text") || cleanText(callout.text())
   };
 }
+function parseReportBadge(badge) {
+  const label = badge.attr("label") || cleanText(badge.text());
+  const rawVariant = badge.attr("variant") || badge.attr("color") || badge.attr("tone") || badge.attr("status") || label || "muted";
+  return {
+    type: "badge",
+    variant: normalizeBadgeVariant(rawVariant),
+    rawVariant,
+    label
+  };
+}
 function parseReportRateBars(rateBars) {
   return {
     type: "rate-bars",
@@ -4819,6 +4829,17 @@ function normalizeCalloutVariant(value = "info") {
   if (token === "positive") return "success";
   return token;
 }
+function normalizeBadgeVariant(value = "muted") {
+  const token = String(value || "muted").trim().toLowerCase();
+  if (["green", "success", "active", "approved", "done", "complete", "completed", "pass"].includes(token)) {
+    return "green";
+  }
+  if (["blue", "info", "live", "new"].includes(token)) return "blue";
+  if (["orange", "warning", "warn", "review", "watch", "attention"].includes(token)) return "orange";
+  if (["red", "danger", "error", "blocked", "fail", "failed"].includes(token)) return "red";
+  if (["muted", "neutral", "pending", "draft", "gray", "grey"].includes(token)) return "muted";
+  return token;
+}
 function normalizeAccent(value = "") {
   const token = String(value || "").trim().toLowerCase();
   if (["blue", "cyan", "purple", "green", "orange", "red"].includes(token)) return token;
@@ -4844,6 +4865,9 @@ function renderReportCalloutHtml(callout) {
   ${callout.title ? `<div class="report-callout-title">${escapeHtml2(callout.title)}</div>` : ""}
   ${callout.body ? `<div class="report-callout-body">${escapeHtml2(callout.body)}</div>` : ""}
 </div>`;
+}
+function renderReportBadgeHtml(badge) {
+  return `<span class="report-badge report-badge-${escapeAttr(badge.variant)}">${escapeHtml2(badge.label)}</span>`;
 }
 function renderReportMetricHtml(metric) {
   const className = ["report-metric", metric.accent ? `report-metric-${metric.accent}` : ""].filter(Boolean).join(" ");
@@ -4953,6 +4977,7 @@ function clampPercent(value) {
 
 // src/report-components.js
 var knownReportTags = /* @__PURE__ */ new Set([
+  "report-badge",
   "report-callout",
   "report-chart",
   "report-metric-grid",
@@ -4986,6 +5011,12 @@ function compileReportComponents(source, options = {}) {
     const callout = parseReportCallout(calloutElement);
     validateReportCallout(callout, context);
     calloutElement.replaceWith(renderReportCalloutHtml(callout));
+  });
+  root("report-badge").each((_, element) => {
+    const badgeElement = root(element);
+    const badge = parseReportBadge(badgeElement);
+    validateReportBadge(badge, context);
+    badgeElement.replaceWith(renderReportBadgeHtml(badge));
   });
   root("report-chart").each((index, element) => {
     const chartElement = root(element);
@@ -5121,6 +5152,18 @@ function validateReportCallout(callout, context) {
   }
   if (!callout.title && !callout.body) {
     fail("report-callout requires title and/or text content.", context);
+  }
+}
+function validateReportBadge(badge, context) {
+  const variants = /* @__PURE__ */ new Set(["blue", "green", "orange", "red", "muted"]);
+  if (!variants.has(badge.variant)) {
+    fail(
+      `Unsupported report-badge variant "${badge.rawVariant}". Supported variants: blue, green, orange, red, muted.`,
+      context
+    );
+  }
+  if (!badge.label) {
+    fail("report-badge requires label or text content.", context);
   }
 }
 function uniqueDomId(value, usedIds, prefix) {
@@ -5734,6 +5777,55 @@ body {
   --report-callout-bg: rgba(252, 81, 97, 0.12);
   --report-callout-border: rgba(252, 81, 97, 0.44);
   --report-callout-title: var(--red, #dc2626);
+}
+
+.report-badge {
+  display: inline-flex;
+  align-items: center;
+  min-height: 20px;
+  max-width: 100%;
+  padding: 3px 8px;
+  border: 1px solid var(--report-badge-border, rgba(100, 116, 139, 0.32));
+  border-radius: 999px;
+  background: var(--report-badge-bg, rgba(100, 116, 139, 0.1));
+  color: var(--report-badge-text, #475569);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  line-height: 1.1;
+  text-transform: uppercase;
+  vertical-align: middle;
+  white-space: nowrap;
+}
+
+.report-badge-blue {
+  --report-badge-bg: rgba(15, 130, 245, 0.12);
+  --report-badge-border: rgba(15, 130, 245, 0.35);
+  --report-badge-text: var(--blue, #0F82F5);
+}
+
+.report-badge-green {
+  --report-badge-bg: rgba(102, 204, 142, 0.12);
+  --report-badge-border: rgba(102, 204, 142, 0.35);
+  --report-badge-text: var(--green, #16a34a);
+}
+
+.report-badge-orange {
+  --report-badge-bg: rgba(249, 147, 91, 0.12);
+  --report-badge-border: rgba(249, 147, 91, 0.35);
+  --report-badge-text: var(--orange, #F9935B);
+}
+
+.report-badge-red {
+  --report-badge-bg: rgba(252, 81, 97, 0.12);
+  --report-badge-border: rgba(252, 81, 97, 0.38);
+  --report-badge-text: var(--red, #dc2626);
+}
+
+.report-badge-muted {
+  --report-badge-bg: rgba(139, 154, 181, 0.1);
+  --report-badge-border: rgba(139, 154, 181, 0.28);
+  --report-badge-text: var(--text-dim, #64748b);
 }
 
 .report-layout {

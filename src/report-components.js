@@ -1,12 +1,14 @@
 import * as cheerio from 'cheerio'
 
 import {
+  parseReportBadge,
   parseReportCallout,
   parseReportChart,
   parseReportMetricGrid,
   parseReportRateBars,
 } from './report-components/parsers.js'
 import {
+  renderReportBadgeHtml,
   renderReportCalloutHtml,
   renderReportChartHtml,
   renderReportChartScript,
@@ -15,6 +17,7 @@ import {
 } from './report-components/renderers.js'
 
 const knownReportTags = new Set([
+  'report-badge',
   'report-callout',
   'report-chart',
   'report-metric-grid',
@@ -54,6 +57,13 @@ export function compileReportComponents(source, options = {}) {
     const callout = parseReportCallout(calloutElement)
     validateReportCallout(callout, context)
     calloutElement.replaceWith(renderReportCalloutHtml(callout))
+  })
+
+  root('report-badge').each((_, element) => {
+    const badgeElement = root(element)
+    const badge = parseReportBadge(badgeElement)
+    validateReportBadge(badge, context)
+    badgeElement.replaceWith(renderReportBadgeHtml(badge))
   })
 
   root('report-chart').each((index, element) => {
@@ -201,6 +211,19 @@ function validateReportCallout(callout, context) {
   }
   if (!callout.title && !callout.body) {
     fail('report-callout requires title and/or text content.', context)
+  }
+}
+
+function validateReportBadge(badge, context) {
+  const variants = new Set(['blue', 'green', 'orange', 'red', 'muted'])
+  if (!variants.has(badge.variant)) {
+    fail(
+      `Unsupported report-badge variant "${badge.rawVariant}". Supported variants: blue, green, orange, red, muted.`,
+      context,
+    )
+  }
+  if (!badge.label) {
+    fail('report-badge requires label or text content.', context)
   }
 }
 

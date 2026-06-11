@@ -434,6 +434,47 @@ test('report callouts fail clearly when malformed', async () => {
   )
 })
 
+test('expands report badges inside markdown tables', async () => {
+  const definitions = await loadDefinitions(new URL('../resources/definitions', import.meta.url))
+  const rendered = renderReportHtml(
+    `# Badge report
+
+| Journey | Status |
+| --- | --- |
+| J0107 | <report-badge variant="green">Active & live</report-badge> |
+| J0116 | <report-badge status="review" label="Review"></report-badge> |
+`,
+    {
+      resourcesDir: path.resolve('resources'),
+      definitions,
+      inlineAssets: true,
+    },
+  )
+
+  assert.doesNotMatch(rendered.document, /<report-badge/i)
+  assert.match(rendered.document, /<span class="report-badge report-badge-green">Active &amp; live<\/span>/)
+  assert.match(rendered.document, /<span class="report-badge report-badge-orange">Review<\/span>/)
+  assert.match(rendered.document, /<table>/)
+})
+
+test('report badges fail clearly when malformed', async () => {
+  const definitions = await loadDefinitions(new URL('../resources/definitions', import.meta.url))
+  const options = {
+    resourcesDir: path.resolve('resources'),
+    definitions,
+    inlineAssets: true,
+  }
+
+  assert.throws(
+    () => renderReportHtml('<report-badge variant="purple">Unknown</report-badge>', options),
+    /Unsupported report-badge variant "purple"/,
+  )
+  assert.throws(
+    () => renderReportHtml('<report-badge variant="green"></report-badge>', options),
+    /report-badge requires label or text content/,
+  )
+})
+
 test('report chart components fail clearly when data is invalid', async () => {
   const definitions = await loadDefinitions(new URL('../resources/definitions', import.meta.url))
   const options = {

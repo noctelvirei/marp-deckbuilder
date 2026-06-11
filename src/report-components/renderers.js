@@ -30,6 +30,10 @@ export function renderReportCalloutHtml(callout) {
 </div>`
 }
 
+export function renderReportBadgeHtml(badge) {
+  return `<span class="report-badge report-badge-${escapeAttr(badge.variant)}">${escapeHtml(badge.label)}</span>`
+}
+
 function renderReportMetricHtml(metric) {
   const className = ['report-metric', metric.accent ? `report-metric-${metric.accent}` : '']
     .filter(Boolean)

@@ -219,6 +219,23 @@ Supported attributes:
 | `title` | no | Short bold heading. |
 | `text` | no | Body text when you prefer attribute-only authoring. Otherwise use the tag body. |
 
+### Report Badge
+
+Use `report-badge` for table statuses and compact inline state labels. Do not hand-author `r-badge` spans.
+
+```html
+<report-badge status="active">Active</report-badge>
+<report-badge status="review" label="Review"></report-badge>
+```
+
+Supported attributes:
+
+| Attribute | Required | Notes |
+| --- | --- | --- |
+| `variant` | no | Supports `blue`, `green`, `orange`, `red`, `muted`. Aliases: `color`, `tone`. |
+| `status` | no | Maps common statuses such as `active`, `review`, `blocked`, and `pending` to badge colors. |
+| `label` | no | Badge text when you prefer attribute-only authoring. Otherwise use the tag body. |
+
 ## Legacy HTML Classes
 
 Some components are still in migration. Until their `report-*` versions exist, reports may use these HTML classes:
@@ -229,7 +246,6 @@ Some components are still in migration. Until their `report-*` versions exist, r
 | Metrics | `r-metric-grid`, `r-metric`, `r-metric-value`, `r-metric-label` | `r-metric-sub`, `down` |
 | Cards | `r-card`, `r-card-accent` | `cyan`, `green`, `orange`, `red`, `purple` |
 | Chart frame | `r-chart-wrap`, `r-chart-title` | `r-legend`, `r-legend-item`, `r-legend-swatch` |
-| Badges | `r-badge` | `blue`, `green`, `orange`, `red`, `muted` |
 | Grids | `r-two-col`, `r-three-col` | none |
 
 Do not use `deck-*` tags in reports. They are presentation components.
@@ -259,16 +275,6 @@ Do not use `deck-*` tags in reports. They are presentation components.
   <div class="r-card-accent green"><h3>Positive</h3><p>Target met.</p></div>
   <div class="r-card-accent orange"><h3>Watch</h3><p>Needs review.</p></div>
 </div>
-```
-
-### Badges
-
-```html
-<span class="r-badge blue">Live</span>
-<span class="r-badge green">Active</span>
-<span class="r-badge orange">Watch</span>
-<span class="r-badge red">Blocked</span>
-<span class="r-badge muted">Pending</span>
 ```
 
 ## JavaScript Charts

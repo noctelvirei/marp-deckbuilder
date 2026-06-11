@@ -536,6 +536,55 @@ body {
   --report-callout-title: var(--red, #dc2626);
 }
 
+.report-badge {
+  display: inline-flex;
+  align-items: center;
+  min-height: 20px;
+  max-width: 100%;
+  padding: 3px 8px;
+  border: 1px solid var(--report-badge-border, rgba(100, 116, 139, 0.32));
+  border-radius: 999px;
+  background: var(--report-badge-bg, rgba(100, 116, 139, 0.1));
+  color: var(--report-badge-text, #475569);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  line-height: 1.1;
+  text-transform: uppercase;
+  vertical-align: middle;
+  white-space: nowrap;
+}
+
+.report-badge-blue {
+  --report-badge-bg: rgba(15, 130, 245, 0.12);
+  --report-badge-border: rgba(15, 130, 245, 0.35);
+  --report-badge-text: var(--blue, #0F82F5);
+}
+
+.report-badge-green {
+  --report-badge-bg: rgba(102, 204, 142, 0.12);
+  --report-badge-border: rgba(102, 204, 142, 0.35);
+  --report-badge-text: var(--green, #16a34a);
+}
+
+.report-badge-orange {
+  --report-badge-bg: rgba(249, 147, 91, 0.12);
+  --report-badge-border: rgba(249, 147, 91, 0.35);
+  --report-badge-text: var(--orange, #F9935B);
+}
+
+.report-badge-red {
+  --report-badge-bg: rgba(252, 81, 97, 0.12);
+  --report-badge-border: rgba(252, 81, 97, 0.38);
+  --report-badge-text: var(--red, #dc2626);
+}
+
+.report-badge-muted {
+  --report-badge-bg: rgba(139, 154, 181, 0.1);
+  --report-badge-border: rgba(139, 154, 181, 0.28);
+  --report-badge-text: var(--text-dim, #64748b);
+}
+
 .report-layout {
   display: grid;
   grid-template-columns: minmax(160px, 200px) minmax(0, 1fr);

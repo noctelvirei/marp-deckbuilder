@@ -59,6 +59,18 @@ export function parseReportCallout(callout) {
   }
 }
 
+export function parseReportBadge(badge) {
+  const label = badge.attr('label') || cleanText(badge.text())
+  const rawVariant =
+    badge.attr('variant') || badge.attr('color') || badge.attr('tone') || badge.attr('status') || label || 'muted'
+  return {
+    type: 'badge',
+    variant: normalizeBadgeVariant(rawVariant),
+    rawVariant,
+    label,
+  }
+}
+
 export function parseReportRateBars(rateBars) {
   return {
     type: 'rate-bars',
@@ -96,6 +108,18 @@ function normalizeCalloutVariant(value = 'info') {
   if (token === 'danger' || token === 'error') return 'danger'
   if (token === 'warn') return 'warning'
   if (token === 'positive') return 'success'
+  return token
+}
+
+function normalizeBadgeVariant(value = 'muted') {
+  const token = String(value || 'muted').trim().toLowerCase()
+  if (['green', 'success', 'active', 'approved', 'done', 'complete', 'completed', 'pass'].includes(token)) {
+    return 'green'
+  }
+  if (['blue', 'info', 'live', 'new'].includes(token)) return 'blue'
+  if (['orange', 'warning', 'warn', 'review', 'watch', 'attention'].includes(token)) return 'orange'
+  if (['red', 'danger', 'error', 'blocked', 'fail', 'failed'].includes(token)) return 'red'
+  if (['muted', 'neutral', 'pending', 'draft', 'gray', 'grey'].includes(token)) return 'muted'
   return token
 }
 
