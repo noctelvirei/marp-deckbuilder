@@ -81,6 +81,20 @@ ${keyValues.items.map(renderReportKeyValueItem).join('\n')}
 </section>`
 }
 
+export function renderReportSourceNoteHtml(sourceNote) {
+  const meta = [
+    sourceNote.source ? `<span>Source: ${escapeHtml(sourceNote.source)}</span>` : '',
+    sourceNote.date ? `<span>Date: ${escapeHtml(sourceNote.date)}</span>` : '',
+  ]
+    .filter(Boolean)
+    .join('\n    ')
+  return `<aside class="report-source-note" role="note">
+  ${sourceNote.title ? `<div class="report-source-note-title">${escapeHtml(sourceNote.title)}</div>` : ''}
+  ${sourceNote.body ? `<div class="report-source-note-body">${escapeHtml(sourceNote.body)}</div>` : ''}
+  ${meta ? `<div class="report-source-note-meta">\n    ${meta}\n  </div>` : ''}
+</aside>`
+}
+
 export function renderReportCalloutHtml(callout) {
   return `<div class="report-callout report-callout-${escapeAttr(callout.variant)}" role="note">
   ${callout.title ? `<div class="report-callout-title">${escapeHtml(callout.title)}</div>` : ''}

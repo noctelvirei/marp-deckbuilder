@@ -57,6 +57,7 @@ Reports use normal Markdown plus compact `report-*` component tags. The renderer
 | Metadata or context summary | `report-key-values` | `items`; optional `title`, `columns` |
 | Ranked distribution bars | `report-rate-bars` | `labels`, `values`; optional `shares` |
 | Formatted data table | `report-data-table` | `columns`, `rows`; optional `types`, `caption`, `source` |
+| Citation or methodology note | `report-source-note` | Body text and/or `source`; optional `title`, `date` |
 | Finding, risk, or action block | `report-callout` | Body text or `text`; optional `variant`, `title` |
 | Highlighted recommendation card | `report-accent-card` | Body text or `body`; optional `accent`, `title` |
 | Captioned embedded image | `report-figure` | `src`, `alt`; optional `caption`, `source`, `size` |
@@ -237,6 +238,27 @@ Supported attributes:
 | `source` | no | Source note under the caption. |
 
 For a cell type that is not supported, do not write raw HTML. Ask the skill maker to add the missing table cell type.
+
+### Report Source Note
+
+Use `report-source-note` for citations, methodology, assumptions, and data freshness notes. Do not hand-author aside blocks for standard source notes.
+
+```md
+<report-source-note title="Methodology" source="Journey export" date="April 2026">
+Cases are counted from completed journey records and exclude test journeys.
+</report-source-note>
+```
+
+Supported attributes:
+
+| Attribute | Required | Notes |
+| --- | --- | --- |
+| `title` | no | Short note label. Alias: `label`. |
+| `text` | no | Body text when you prefer attribute-only authoring. Alias: `body`. Otherwise use the tag body. |
+| `source` | no | Data source, citation, or owner. |
+| `date` | no | Date, period, or freshness indicator. Alias: `period`. |
+
+The note must include at least one of title, body text, source, or date.
 
 ### Report Callout
 

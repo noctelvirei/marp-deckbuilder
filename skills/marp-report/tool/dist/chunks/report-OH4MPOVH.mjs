@@ -4818,6 +4818,15 @@ function parseReportKeyValues(keyValues) {
     columns: normalizeKeyValueColumns(keyValues.attr("columns") || keyValues.attr("cols") || "")
   };
 }
+function parseReportSourceNote(sourceNote) {
+  return {
+    type: "source-note",
+    title: sourceNote.attr("title") || sourceNote.attr("label") || "",
+    body: sourceNote.attr("text") || sourceNote.attr("body") || cleanText(sourceNote.text()),
+    source: sourceNote.attr("source") || "",
+    date: sourceNote.attr("date") || sourceNote.attr("period") || ""
+  };
+}
 function parseReportCallout(callout) {
   return {
     type: "callout",
@@ -5009,6 +5018,19 @@ function renderReportKeyValuesHtml(keyValues) {
 ${keyValues.items.map(renderReportKeyValueItem).join("\n")}
   </dl>
 </section>`;
+}
+function renderReportSourceNoteHtml(sourceNote) {
+  const meta = [
+    sourceNote.source ? `<span>Source: ${escapeHtml2(sourceNote.source)}</span>` : "",
+    sourceNote.date ? `<span>Date: ${escapeHtml2(sourceNote.date)}</span>` : ""
+  ].filter(Boolean).join("\n    ");
+  return `<aside class="report-source-note" role="note">
+  ${sourceNote.title ? `<div class="report-source-note-title">${escapeHtml2(sourceNote.title)}</div>` : ""}
+  ${sourceNote.body ? `<div class="report-source-note-body">${escapeHtml2(sourceNote.body)}</div>` : ""}
+  ${meta ? `<div class="report-source-note-meta">
+    ${meta}
+  </div>` : ""}
+</aside>`;
 }
 function renderReportCalloutHtml(callout) {
   return `<div class="report-callout report-callout-${escapeAttr(callout.variant)}" role="note">
@@ -5449,7 +5471,8 @@ var knownReportTags = /* @__PURE__ */ new Set([
   "report-key-values",
   "report-metric-grid",
   "report-metric",
-  "report-rate-bars"
+  "report-rate-bars",
+  "report-source-note"
 ]);
 function compileReportComponents(source, options = {}) {
   const context = reportComponentContext(options);
@@ -5496,6 +5519,12 @@ function compileReportComponents(source, options = {}) {
     const keyValues = parseReportKeyValues(keyValuesElement);
     validateReportKeyValues(keyValues, context);
     keyValuesElement.replaceWith(renderReportKeyValuesHtml(keyValues));
+  });
+  root("report-source-note").each((_, element) => {
+    const sourceNoteElement = root(element);
+    const sourceNote = parseReportSourceNote(sourceNoteElement);
+    validateReportSourceNote(sourceNote, context);
+    sourceNoteElement.replaceWith(renderReportSourceNoteHtml(sourceNote));
   });
   root("report-accent-card").each((_, element) => {
     const cardElement = root(element);
@@ -5698,6 +5727,11 @@ function validateReportKeyValues(keyValues, context) {
       fail(`report-key-values item ${index + 1} must use "Label: Value" or "Label=Value".`, context);
     }
   });
+}
+function validateReportSourceNote(sourceNote, context) {
+  if (!sourceNote.title && !sourceNote.body && !sourceNote.source && !sourceNote.date) {
+    fail("report-source-note requires title, body text, source, or date.", context);
+  }
 }
 function validateReportRateBars(rateBars, context) {
   if (rateBars.labels.length === 0 || rateBars.values.length === 0) {
@@ -6390,6 +6424,40 @@ body {
   font-size: 15px;
   font-weight: 650;
   overflow-wrap: anywhere;
+}
+
+.report-source-note {
+  margin: 22px 0;
+  padding: 13px 16px;
+  border: 1px solid var(--border-dim, #e2e8f0);
+  border-left: 4px solid var(--cyan, var(--report-cyan, #59D6FD));
+  border-radius: 7px;
+  background: rgba(89, 214, 253, 0.07);
+  color: var(--text-dim, #64748b);
+}
+
+.report-source-note-title {
+  margin-bottom: 4px;
+  color: var(--text, #334155);
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.report-source-note-body {
+  color: var(--text, #334155);
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.report-source-note-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 14px;
+  margin-top: 7px;
+  color: var(--text-dim, #64748b);
+  font-size: 12px;
 }
 
 .report-chart {

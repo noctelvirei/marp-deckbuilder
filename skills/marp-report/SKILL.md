@@ -21,7 +21,7 @@ The report wrapper injects Chart.js, Observable Plot, and D3 into the generated 
 3. Create one output folder for the request. Prefer `Documents/Presentations/YYYY-MM-DD/<report-title-slug>/` when the user has not specified a location.
 4. Draft `report.md` in that folder. For dark navy, set `reportTheme: dark` in frontmatter. For reports with four or more sections, set `reportNav: true` to generate a sticky sidebar from headings.
 5. Let the renderer own brand chrome. Corporate logos, colors, fonts, and report background assets come from `tool/resources/definitions/brand.json` and `tool/resources`; do not hand-place branding in report Markdown.
-6. Use report components for fidelity. Use `<report-metric-grid>` for KPI cards, `<report-key-values>` for metadata summaries, `<report-rate-bars>` for ranked distributions, `<report-data-table>` for formatted tabular data, `<report-callout>` for findings or actions, `<report-accent-card>` for recommendation cards, `<report-badge>` for inline statuses, and `<report-chart>` for supported chart types. Do not use raw HTML or JavaScript as a fallback. If a component type is missing, tell the user to ask the skill maker to add it.
+6. Use report components for fidelity. Use `<report-metric-grid>` for KPI cards, `<report-key-values>` for metadata summaries, `<report-rate-bars>` for ranked distributions, `<report-data-table>` for formatted tabular data, `<report-source-note>` for citations or methodology, `<report-callout>` for findings or actions, `<report-accent-card>` for recommendation cards, `<report-badge>` for inline statuses, and `<report-chart>` for supported chart types. Do not use raw HTML or JavaScript as a fallback. If a component type is missing, tell the user to ask the skill maker to add it.
 7. Build from this skill folder:
 
 ```bash
@@ -40,6 +40,7 @@ Use these renderer-backed component tags in `report.md`. They look like HTML tag
 | Metadata or context summary | `<report-key-values>` | `items`; optional `title`, `columns` |
 | Ranked distribution bars | `<report-rate-bars>` | `labels`, `values`; optional `shares` |
 | Formatted data table | `<report-data-table>` | `columns`, `rows`; optional `types`, `caption`, `source` |
+| Citation or methodology note | `<report-source-note>` | Body text and/or `source`; optional `title`, `date` |
 | Findings and actions | `<report-callout>` | Body text or `text`; optional `variant`, `title` |
 | Recommendation or insight card | `<report-accent-card>` | Body text or `body`; optional `accent`, `title` |
 | Captioned embedded image | `<report-figure>` | `src`, `alt`; optional `caption`, `source`, `size` |
@@ -75,6 +76,7 @@ Generate `report.md` in this order:
 - Use `<report-key-values>` for metadata, report context, parameters, and compact label/value summaries.
 - Use `<report-rate-bars>` for ranked distribution bars.
 - Use `<report-data-table>` for formatted tables with text, number, percent, and status columns.
+- Use `<report-source-note>` for citations, methodology, assumptions, and data freshness notes.
 - Use `<report-callout>` for info, warning, success, and danger findings.
 - Use `<report-accent-card>` for highlighted recommendations, risks, or ownership notes.
 - Use `<report-figure>` for captioned images, screenshots, and diagrams stored under resources.

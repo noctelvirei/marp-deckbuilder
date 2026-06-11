@@ -359,6 +359,7 @@ Reports can use:
 - Metadata summaries via `report-key-values`.
 - Ranked rate bars via `report-rate-bars`.
 - Formatted data tables via `report-data-table`.
+- Source and methodology notes via `report-source-note`.
 - Callouts via `report-callout`.
 - Accent cards via `report-accent-card`.
 - Badges via `report-badge`.

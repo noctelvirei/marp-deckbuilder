@@ -541,6 +541,40 @@ body {
   overflow-wrap: anywhere;
 }
 
+.report-source-note {
+  margin: 22px 0;
+  padding: 13px 16px;
+  border: 1px solid var(--border-dim, #e2e8f0);
+  border-left: 4px solid var(--cyan, var(--report-cyan, #59D6FD));
+  border-radius: 7px;
+  background: rgba(89, 214, 253, 0.07);
+  color: var(--text-dim, #64748b);
+}
+
+.report-source-note-title {
+  margin-bottom: 4px;
+  color: var(--text, #334155);
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.report-source-note-body {
+  color: var(--text, #334155);
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.report-source-note-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 14px;
+  margin-top: 7px;
+  color: var(--text-dim, #64748b);
+  font-size: 12px;
+}
+
 .report-chart {
   margin: 28px 0;
   padding: 22px;

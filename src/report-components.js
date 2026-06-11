@@ -10,6 +10,7 @@ import {
   parseReportKeyValues,
   parseReportMetricGrid,
   parseReportRateBars,
+  parseReportSourceNote,
 } from './report-components/parsers.js'
 import {
   renderReportAccentCardHtml,
@@ -22,6 +23,7 @@ import {
   renderReportKeyValuesHtml,
   renderReportMetricGridHtml,
   renderReportRateBarsHtml,
+  renderReportSourceNoteHtml,
 } from './report-components/renderers.js'
 
 const knownReportTags = new Set([
@@ -35,6 +37,7 @@ const knownReportTags = new Set([
   'report-metric-grid',
   'report-metric',
   'report-rate-bars',
+  'report-source-note',
 ])
 
 export function compileReportComponents(source, options = {}) {
@@ -90,6 +93,13 @@ export function compileReportComponents(source, options = {}) {
     const keyValues = parseReportKeyValues(keyValuesElement)
     validateReportKeyValues(keyValues, context)
     keyValuesElement.replaceWith(renderReportKeyValuesHtml(keyValues))
+  })
+
+  root('report-source-note').each((_, element) => {
+    const sourceNoteElement = root(element)
+    const sourceNote = parseReportSourceNote(sourceNoteElement)
+    validateReportSourceNote(sourceNote, context)
+    sourceNoteElement.replaceWith(renderReportSourceNoteHtml(sourceNote))
   })
 
   root('report-accent-card').each((_, element) => {
@@ -308,6 +318,12 @@ function validateReportKeyValues(keyValues, context) {
       fail(`report-key-values item ${index + 1} must use "Label: Value" or "Label=Value".`, context)
     }
   })
+}
+
+function validateReportSourceNote(sourceNote, context) {
+  if (!sourceNote.title && !sourceNote.body && !sourceNote.source && !sourceNote.date) {
+    fail('report-source-note requires title, body text, source, or date.', context)
+  }
 }
 
 function validateReportRateBars(rateBars, context) {

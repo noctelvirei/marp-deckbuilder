@@ -98,6 +98,10 @@ April volume is concentrated in one dominant journey. The top three journeys acc
   source="Source: April journey export"
 ></report-data-table>
 
+<report-source-note title="Methodology" source="Journey export" date="April 2026">
+Cases are counted from completed journey records and exclude test journeys and duplicate retries.
+</report-source-note>
+
 <report-callout variant="warning" title="Action">
 J0116 generated meaningful volume but is not in the registered journey profile.
 </report-callout>

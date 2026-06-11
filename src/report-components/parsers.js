@@ -100,6 +100,16 @@ export function parseReportKeyValues(keyValues) {
   }
 }
 
+export function parseReportSourceNote(sourceNote) {
+  return {
+    type: 'source-note',
+    title: sourceNote.attr('title') || sourceNote.attr('label') || '',
+    body: sourceNote.attr('text') || sourceNote.attr('body') || cleanText(sourceNote.text()),
+    source: sourceNote.attr('source') || '',
+    date: sourceNote.attr('date') || sourceNote.attr('period') || '',
+  }
+}
+
 export function parseReportCallout(callout) {
   return {
     type: 'callout',

@@ -709,6 +709,49 @@ test('report key values fail clearly when malformed', async () => {
   )
 })
 
+test('expands report source notes into renderer-owned asides', async () => {
+  const definitions = await loadDefinitions(new URL('../resources/definitions', import.meta.url))
+  const rendered = renderReportHtml(
+    `# Source note report
+
+<report-source-note
+  title="Methodology"
+  source="Journey export"
+  date="April 2026"
+>Cases exclude test journeys and duplicate retries.</report-source-note>
+`,
+    {
+      resourcesDir: path.resolve('resources'),
+      definitions,
+      inlineAssets: true,
+    },
+  )
+
+  assert.doesNotMatch(rendered.document, /<report-source-note/i)
+  assert.match(rendered.document, /<aside class="report-source-note" role="note">/)
+  assert.match(rendered.document, /<div class="report-source-note-title">Methodology<\/div>/)
+  assert.match(
+    rendered.document,
+    /<div class="report-source-note-body">Cases exclude test journeys and duplicate retries\.<\/div>/,
+  )
+  assert.match(rendered.document, /<span>Source: Journey export<\/span>/)
+  assert.match(rendered.document, /<span>Date: April 2026<\/span>/)
+})
+
+test('report source notes fail clearly when empty', async () => {
+  const definitions = await loadDefinitions(new URL('../resources/definitions', import.meta.url))
+  const options = {
+    resourcesDir: path.resolve('resources'),
+    definitions,
+    inlineAssets: true,
+  }
+
+  assert.throws(
+    () => renderReportHtml('<report-source-note></report-source-note>', options),
+    /report-source-note requires title, body text, source, or date/,
+  )
+})
+
 test('expands report metric grid components into reusable metric cards', async () => {
   const definitions = await loadDefinitions(new URL('../resources/definitions', import.meta.url))
   const rendered = renderReportHtml(
