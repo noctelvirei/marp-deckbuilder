@@ -389,6 +389,95 @@ body {
   font-size: 12px;
 }
 
+.report-data-table {
+  margin: 28px 0;
+  border: 1px solid var(--border, #dbe5f2);
+  border-radius: 8px;
+  background: var(--bg-card, #ffffff);
+  box-shadow: 0 12px 30px rgba(15, 23, 42, 0.07);
+  overflow: hidden;
+}
+
+.report-data-table-title {
+  padding: 18px 20px 0;
+  color: var(--text-dim, #334155);
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.report-data-table-scroll {
+  overflow-x: auto;
+}
+
+.report-data-table table {
+  width: 100%;
+  min-width: 560px;
+  margin: 0;
+  border: 0;
+  border-collapse: separate;
+  border-spacing: 0;
+  font-size: 13px;
+}
+
+.report-data-table th,
+.report-data-table td {
+  padding: 12px 14px;
+  border: 0;
+  border-bottom: 1px solid var(--border-dim, #e2e8f0);
+  color: var(--text, #334155);
+  text-align: left;
+  vertical-align: middle;
+}
+
+.report-data-table th {
+  background: var(--bg-subtle, #071228);
+  color: var(--white, #ffffff);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.report-data-table tr:nth-child(even) td {
+  background: rgba(15, 130, 245, 0.04);
+}
+
+.report-data-table tbody tr:last-child td {
+  border-bottom: 0;
+}
+
+.report-data-table-cell-number,
+.report-data-table-cell-percent {
+  font-family: Consolas, "SFMono-Regular", monospace;
+  text-align: right;
+  white-space: nowrap;
+}
+
+.report-data-table-cell-status {
+  white-space: nowrap;
+}
+
+.report-data-table figcaption {
+  display: grid;
+  gap: 5px;
+  padding: 12px 20px 16px;
+  border-top: 1px solid var(--border-dim, #e2e8f0);
+  color: var(--text-dim, #64748b);
+  font-size: 12px;
+  line-height: 1.35;
+}
+
+.report-data-table-caption {
+  color: var(--text, #334155);
+  font-weight: 600;
+}
+
+.report-data-table-source {
+  font-size: 12px;
+}
+
 .report-chart {
   margin: 28px 0;
   padding: 22px;
@@ -834,6 +923,10 @@ body.report-theme-dark-page {
 }
 
 .deck-report.report-theme-dark .report-chart {
+  box-shadow: none;
+}
+
+.deck-report.report-theme-dark .report-data-table {
   box-shadow: none;
 }
 

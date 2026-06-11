@@ -4795,6 +4795,21 @@ function parseReportFigure(figure) {
     size: normalizeFigureSize(figure.attr("size") || figure.attr("width") || "")
   };
 }
+function parseReportDataTable(table2) {
+  const columns = splitPipe(table2.attr("columns") || table2.attr("headers"));
+  const rawTypes = splitPipe(table2.attr("types") || table2.attr("formats"));
+  const types = rawTypes.length ? rawTypes.map(normalizeDataTableType) : columns.map(() => "text");
+  const rows = splitRows(table2.attr("rows") || table2.attr("data")).map((row) => splitPipe(row, { keepEmpty: true }));
+  return {
+    type: "data-table",
+    title: table2.attr("title") || cleanText(table2.find("caption,h2,h3").first().text()),
+    columns,
+    types,
+    rows,
+    caption: table2.attr("caption") || "",
+    source: table2.attr("source") || ""
+  };
+}
 function parseReportCallout(callout) {
   return {
     type: "callout",
@@ -4848,6 +4863,17 @@ function normalizeFigureSize(value = "") {
   const token = String(value || "").trim().toLowerCase();
   if (["narrow", "normal", "wide"].includes(token)) return token;
   return token || "normal";
+}
+function normalizeDataTableType(value = "") {
+  return String(value || "text").trim().toLowerCase();
+}
+function splitPipe(value = "", options = {}) {
+  const keepEmpty = Boolean(options.keepEmpty);
+  const items = String(value || "").split("|").map((item) => cleanText(item));
+  return keepEmpty ? items : items.filter(Boolean);
+}
+function splitRows(value = "") {
+  return String(value || "").split(";").map((row) => row.trim()).filter(Boolean);
 }
 function parseChartPoints(value = "") {
   return splitCsv(value).map((item) => {
@@ -4929,6 +4955,28 @@ function renderReportFigureHtml(figure) {
   </figcaption>` : ""}
 </figure>`;
 }
+function renderReportDataTableHtml(table2) {
+  const caption = [
+    table2.caption ? `<span class="report-data-table-caption">${escapeHtml2(table2.caption)}</span>` : "",
+    table2.source ? `<span class="report-data-table-source">${escapeHtml2(table2.source)}</span>` : ""
+  ].filter(Boolean).join("\n    ");
+  return `<figure class="report-data-table">
+  ${table2.title ? `<div class="report-data-table-title">${escapeHtml2(table2.title)}</div>` : ""}
+  <div class="report-data-table-scroll">
+    <table>
+      <thead>
+        <tr>${table2.columns.map((column) => `<th scope="col">${escapeHtml2(column)}</th>`).join("")}</tr>
+      </thead>
+      <tbody>
+${table2.rows.map((row) => renderReportDataTableRow(row, table2.types)).join("\n")}
+      </tbody>
+    </table>
+  </div>
+  ${caption ? `<figcaption>
+    ${caption}
+  </figcaption>` : ""}
+</figure>`;
+}
 function renderReportCalloutHtml(callout) {
   return `<div class="report-callout report-callout-${escapeAttr(callout.variant)}" role="note">
   ${callout.title ? `<div class="report-callout-title">${escapeHtml2(callout.title)}</div>` : ""}
@@ -4952,6 +5000,36 @@ function renderReportMetricHtml(metric) {
   ${metric.label ? `<div class="report-metric-label">${escapeHtml2(metric.label)}</div>` : ""}
   ${metric.sub ? `<div class="${escapeAttr(subClass)}">${escapeHtml2(metric.sub)}</div>` : ""}
 </div>`;
+}
+function renderReportDataTableRow(row, types) {
+  return `        <tr>${row.map((value, index) => renderReportDataTableCell(value, types[index])).join("")}</tr>`;
+}
+function renderReportDataTableCell(value, type = "text") {
+  const className = ["report-data-table-cell", `report-data-table-cell-${type}`].join(" ");
+  if (type === "number") {
+    return `<td class="${escapeAttr(className)}">${escapeHtml2(formatReportNumber(parseDataTableNumber(value)))}</td>`;
+  }
+  if (type === "percent") {
+    return `<td class="${escapeAttr(className)}">${escapeHtml2(formatReportPercent(parseDataTableNumber(value)))}</td>`;
+  }
+  if (type === "status") {
+    const variant = dataTableStatusVariant(value);
+    return `<td class="${escapeAttr(className)}"><span class="report-badge report-badge-${escapeAttr(variant)}">${escapeHtml2(value)}</span></td>`;
+  }
+  return `<td class="${escapeAttr(className)}">${escapeHtml2(value)}</td>`;
+}
+function parseDataTableNumber(value) {
+  return Number(String(value || "").replace(/,/g, "").replace(/%$/, "").trim());
+}
+function dataTableStatusVariant(value = "") {
+  const token = String(value || "").trim().toLowerCase();
+  if (["green", "success", "active", "approved", "done", "complete", "completed", "pass"].includes(token)) {
+    return "green";
+  }
+  if (["blue", "info", "live", "new"].includes(token)) return "blue";
+  if (["orange", "warning", "warn", "review", "watch", "attention"].includes(token)) return "orange";
+  if (["red", "danger", "error", "blocked", "fail", "failed"].includes(token)) return "red";
+  return "muted";
 }
 function renderReportRateBarsHtml(rateBars, context = {}) {
   const palette = rateBars.colors.length ? rateBars.colors : reportChartPalette(context.brand);
@@ -5327,6 +5405,7 @@ var knownReportTags = /* @__PURE__ */ new Set([
   "report-badge",
   "report-callout",
   "report-chart",
+  "report-data-table",
   "report-figure",
   "report-metric-grid",
   "report-metric",
@@ -5365,6 +5444,12 @@ function compileReportComponents(source, options = {}) {
     const figure = parseReportFigure(figureElement);
     validateReportFigure(figure, context);
     figureElement.replaceWith(renderReportFigureHtml(figure));
+  });
+  root("report-data-table").each((_, element) => {
+    const tableElement = root(element);
+    const table2 = parseReportDataTable(tableElement);
+    validateReportDataTable(table2, context);
+    tableElement.replaceWith(renderReportDataTableHtml(table2));
   });
   root("report-accent-card").each((_, element) => {
     const cardElement = root(element);
@@ -5518,6 +5603,43 @@ function validateReportFigure(figure, context) {
     fail("report-figure size must be narrow, normal, or wide.", context);
   }
 }
+function validateReportDataTable(table2, context) {
+  const supportedTypes = /* @__PURE__ */ new Set(["text", "number", "percent", "status"]);
+  if (table2.columns.length === 0) {
+    fail("report-data-table requires columns or headers.", context);
+  }
+  if (table2.rows.length === 0) {
+    fail("report-data-table requires at least one row in rows or data.", context);
+  }
+  if (table2.types.length !== table2.columns.length) {
+    fail(
+      `report-data-table types/columns length mismatch: ${table2.types.length} type(s), ${table2.columns.length} column(s).`,
+      context
+    );
+  }
+  table2.types.forEach((type) => {
+    if (!supportedTypes.has(type)) {
+      fail(
+        `report-data-table type "${type}" is not available. Supported types: text, number, percent, status. Ask the skill maker to add missing table cell types.`,
+        context
+      );
+    }
+  });
+  table2.rows.forEach((row, index) => {
+    if (row.length !== table2.columns.length) {
+      fail(
+        `report-data-table row ${index + 1} has ${row.length} cell(s), but ${table2.columns.length} column(s) were declared.`,
+        context
+      );
+    }
+    row.forEach((value, cellIndex) => {
+      const type = table2.types[cellIndex];
+      if ((type === "number" || type === "percent") && !Number.isFinite(parseDataTableNumber2(value))) {
+        fail(`report-data-table row ${index + 1} column "${table2.columns[cellIndex]}" must be numeric.`, context);
+      }
+    });
+  });
+}
 function validateReportRateBars(rateBars, context) {
   if (rateBars.labels.length === 0 || rateBars.values.length === 0) {
     fail("report-rate-bars requires non-empty labels and values attributes.", context);
@@ -5606,6 +5728,9 @@ function sanitizeDomId(value) {
 }
 function isSixDigitHexColor(value) {
   return /^#?[0-9a-f]{6}$/i.test(String(value || "").trim());
+}
+function parseDataTableNumber2(value) {
+  return Number(String(value || "").replace(/,/g, "").replace(/%$/, "").trim());
 }
 function indent(source, spaces) {
   const padding = " ".repeat(spaces);
@@ -6056,6 +6181,95 @@ body {
   font-size: 12px;
 }
 
+.report-data-table {
+  margin: 28px 0;
+  border: 1px solid var(--border, #dbe5f2);
+  border-radius: 8px;
+  background: var(--bg-card, #ffffff);
+  box-shadow: 0 12px 30px rgba(15, 23, 42, 0.07);
+  overflow: hidden;
+}
+
+.report-data-table-title {
+  padding: 18px 20px 0;
+  color: var(--text-dim, #334155);
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.report-data-table-scroll {
+  overflow-x: auto;
+}
+
+.report-data-table table {
+  width: 100%;
+  min-width: 560px;
+  margin: 0;
+  border: 0;
+  border-collapse: separate;
+  border-spacing: 0;
+  font-size: 13px;
+}
+
+.report-data-table th,
+.report-data-table td {
+  padding: 12px 14px;
+  border: 0;
+  border-bottom: 1px solid var(--border-dim, #e2e8f0);
+  color: var(--text, #334155);
+  text-align: left;
+  vertical-align: middle;
+}
+
+.report-data-table th {
+  background: var(--bg-subtle, #071228);
+  color: var(--white, #ffffff);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.report-data-table tr:nth-child(even) td {
+  background: rgba(15, 130, 245, 0.04);
+}
+
+.report-data-table tbody tr:last-child td {
+  border-bottom: 0;
+}
+
+.report-data-table-cell-number,
+.report-data-table-cell-percent {
+  font-family: Consolas, "SFMono-Regular", monospace;
+  text-align: right;
+  white-space: nowrap;
+}
+
+.report-data-table-cell-status {
+  white-space: nowrap;
+}
+
+.report-data-table figcaption {
+  display: grid;
+  gap: 5px;
+  padding: 12px 20px 16px;
+  border-top: 1px solid var(--border-dim, #e2e8f0);
+  color: var(--text-dim, #64748b);
+  font-size: 12px;
+  line-height: 1.35;
+}
+
+.report-data-table-caption {
+  color: var(--text, #334155);
+  font-weight: 600;
+}
+
+.report-data-table-source {
+  font-size: 12px;
+}
+
 .report-chart {
   margin: 28px 0;
   padding: 22px;
@@ -6501,6 +6715,10 @@ body.report-theme-dark-page {
 }
 
 .deck-report.report-theme-dark .report-chart {
+  box-shadow: none;
+}
+
+.deck-report.report-theme-dark .report-data-table {
   box-shadow: none;
 }
 

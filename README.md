@@ -357,6 +357,7 @@ Reports can use:
 - Compact `report-*` component tags that the renderer expands into HTML, CSS, and JavaScript.
 - Metric cards via `report-metric-grid`.
 - Ranked rate bars via `report-rate-bars`.
+- Formatted data tables via `report-data-table`.
 - Callouts via `report-callout`.
 - Accent cards via `report-accent-card`.
 - Badges via `report-badge`.

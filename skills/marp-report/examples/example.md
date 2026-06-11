@@ -83,12 +83,14 @@ April volume is concentrated in one dominant journey. The top three journeys acc
 
 ## Breakdown
 
-| Journey | Cases | Share | Status |
-| --- | ---: | ---: | --- |
-| J0107 | 52,208 | 67.1% | <report-badge status="active">Active</report-badge> |
-| J0106 | 11,119 | 14.3% | <report-badge status="active">Active</report-badge> |
-| J0101 | 8,648 | 11.1% | <report-badge status="active">Active</report-badge> |
-| J0116 | 3,751 | 4.8% | <report-badge status="review">Review</report-badge> |
+<report-data-table
+  title="Journey breakdown"
+  columns="Journey|Cases|Share|Status"
+  types="text|number|percent|status"
+  rows="J0107|52208|67.1|Active;J0106|11119|14.3|Active;J0101|8648|11.1|Active;J0116|3751|4.8|Review"
+  caption="Registered and unregistered journey volume."
+  source="Source: April journey export"
+></report-data-table>
 
 <report-callout variant="warning" title="Action">
 J0116 generated meaningful volume but is not in the registered journey profile.

@@ -47,6 +47,29 @@ export function renderReportFigureHtml(figure) {
 </figure>`
 }
 
+export function renderReportDataTableHtml(table) {
+  const caption = [
+    table.caption ? `<span class="report-data-table-caption">${escapeHtml(table.caption)}</span>` : '',
+    table.source ? `<span class="report-data-table-source">${escapeHtml(table.source)}</span>` : '',
+  ]
+    .filter(Boolean)
+    .join('\n    ')
+  return `<figure class="report-data-table">
+  ${table.title ? `<div class="report-data-table-title">${escapeHtml(table.title)}</div>` : ''}
+  <div class="report-data-table-scroll">
+    <table>
+      <thead>
+        <tr>${table.columns.map((column) => `<th scope="col">${escapeHtml(column)}</th>`).join('')}</tr>
+      </thead>
+      <tbody>
+${table.rows.map((row) => renderReportDataTableRow(row, table.types)).join('\n')}
+      </tbody>
+    </table>
+  </div>
+  ${caption ? `<figcaption>\n    ${caption}\n  </figcaption>` : ''}
+</figure>`
+}
+
 export function renderReportCalloutHtml(callout) {
   return `<div class="report-callout report-callout-${escapeAttr(callout.variant)}" role="note">
   ${callout.title ? `<div class="report-callout-title">${escapeHtml(callout.title)}</div>` : ''}
@@ -77,6 +100,40 @@ function renderReportMetricHtml(metric) {
   ${metric.label ? `<div class="report-metric-label">${escapeHtml(metric.label)}</div>` : ''}
   ${metric.sub ? `<div class="${escapeAttr(subClass)}">${escapeHtml(metric.sub)}</div>` : ''}
 </div>`
+}
+
+function renderReportDataTableRow(row, types) {
+  return `        <tr>${row.map((value, index) => renderReportDataTableCell(value, types[index])).join('')}</tr>`
+}
+
+function renderReportDataTableCell(value, type = 'text') {
+  const className = ['report-data-table-cell', `report-data-table-cell-${type}`].join(' ')
+  if (type === 'number') {
+    return `<td class="${escapeAttr(className)}">${escapeHtml(formatReportNumber(parseDataTableNumber(value)))}</td>`
+  }
+  if (type === 'percent') {
+    return `<td class="${escapeAttr(className)}">${escapeHtml(formatReportPercent(parseDataTableNumber(value)))}</td>`
+  }
+  if (type === 'status') {
+    const variant = dataTableStatusVariant(value)
+    return `<td class="${escapeAttr(className)}"><span class="report-badge report-badge-${escapeAttr(variant)}">${escapeHtml(value)}</span></td>`
+  }
+  return `<td class="${escapeAttr(className)}">${escapeHtml(value)}</td>`
+}
+
+function parseDataTableNumber(value) {
+  return Number(String(value || '').replace(/,/g, '').replace(/%$/, '').trim())
+}
+
+function dataTableStatusVariant(value = '') {
+  const token = String(value || '').trim().toLowerCase()
+  if (['green', 'success', 'active', 'approved', 'done', 'complete', 'completed', 'pass'].includes(token)) {
+    return 'green'
+  }
+  if (['blue', 'info', 'live', 'new'].includes(token)) return 'blue'
+  if (['orange', 'warning', 'warn', 'review', 'watch', 'attention'].includes(token)) return 'orange'
+  if (['red', 'danger', 'error', 'blocked', 'fail', 'failed'].includes(token)) return 'red'
+  return 'muted'
 }
 
 export function renderReportRateBarsHtml(rateBars, context = {}) {

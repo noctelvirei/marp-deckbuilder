@@ -74,6 +74,23 @@ export function parseReportFigure(figure) {
   }
 }
 
+export function parseReportDataTable(table) {
+  const columns = splitPipe(table.attr('columns') || table.attr('headers'))
+  const rawTypes = splitPipe(table.attr('types') || table.attr('formats'))
+  const types = rawTypes.length ? rawTypes.map(normalizeDataTableType) : columns.map(() => 'text')
+  const rows = splitRows(table.attr('rows') || table.attr('data')).map((row) => splitPipe(row, { keepEmpty: true }))
+
+  return {
+    type: 'data-table',
+    title: table.attr('title') || cleanText(table.find('caption,h2,h3').first().text()),
+    columns,
+    types,
+    rows,
+    caption: table.attr('caption') || '',
+    source: table.attr('source') || '',
+  }
+}
+
 export function parseReportCallout(callout) {
   return {
     type: 'callout',
@@ -133,6 +150,25 @@ function normalizeFigureSize(value = '') {
   const token = String(value || '').trim().toLowerCase()
   if (['narrow', 'normal', 'wide'].includes(token)) return token
   return token || 'normal'
+}
+
+function normalizeDataTableType(value = '') {
+  return String(value || 'text').trim().toLowerCase()
+}
+
+function splitPipe(value = '', options = {}) {
+  const keepEmpty = Boolean(options.keepEmpty)
+  const items = String(value || '')
+    .split('|')
+    .map((item) => cleanText(item))
+  return keepEmpty ? items : items.filter(Boolean)
+}
+
+function splitRows(value = '') {
+  return String(value || '')
+    .split(';')
+    .map((row) => row.trim())
+    .filter(Boolean)
 }
 
 function parseChartPoints(value = '') {

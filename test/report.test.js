@@ -584,6 +584,82 @@ test('report figures fail clearly when malformed', async () => {
   )
 })
 
+test('expands report data tables into formatted table components', async () => {
+  const definitions = await loadDefinitions(new URL('../resources/definitions', import.meta.url))
+  const rendered = renderReportHtml(
+    `# Data table report
+
+<report-data-table
+  title="Journey breakdown"
+  columns="Journey|Cases|Share|Status"
+  types="text|number|percent|status"
+  rows="J0107|52,208|67.1|Active;J0116|3,751|4.8|Review"
+  caption="Registered and unregistered journey volume."
+  source="Source: April journey export"
+></report-data-table>
+`,
+    {
+      resourcesDir: path.resolve('resources'),
+      definitions,
+      inlineAssets: true,
+    },
+  )
+
+  assert.doesNotMatch(rendered.document, /<report-data-table/i)
+  assert.match(rendered.document, /<figure class="report-data-table">/)
+  assert.match(rendered.document, /<div class="report-data-table-title">Journey breakdown<\/div>/)
+  assert.match(rendered.document, /<th scope="col">Journey<\/th>/)
+  assert.match(rendered.document, /<td class="report-data-table-cell report-data-table-cell-number">52,208<\/td>/)
+  assert.match(rendered.document, /<td class="report-data-table-cell report-data-table-cell-percent">67\.1%<\/td>/)
+  assert.match(rendered.document, /<span class="report-badge report-badge-green">Active<\/span>/)
+  assert.match(rendered.document, /<span class="report-badge report-badge-orange">Review<\/span>/)
+  assert.match(
+    rendered.document,
+    /<span class="report-data-table-caption">Registered and unregistered journey volume\.<\/span>/,
+  )
+  assert.match(rendered.document, /<span class="report-data-table-source">Source: April journey export<\/span>/)
+})
+
+test('report data tables fail clearly when malformed', async () => {
+  const definitions = await loadDefinitions(new URL('../resources/definitions', import.meta.url))
+  const options = {
+    resourcesDir: path.resolve('resources'),
+    definitions,
+    inlineAssets: true,
+  }
+
+  assert.throws(
+    () => renderReportHtml('<report-data-table rows="A|1"></report-data-table>', options),
+    /report-data-table requires columns or headers/,
+  )
+  assert.throws(
+    () => renderReportHtml('<report-data-table columns="A|B"></report-data-table>', options),
+    /report-data-table requires at least one row/,
+  )
+  assert.throws(
+    () => renderReportHtml('<report-data-table columns="A|B" types="text" rows="A|1"></report-data-table>', options),
+    /report-data-table types\/columns length mismatch/,
+  )
+  assert.throws(
+    () =>
+      renderReportHtml(
+        '<report-data-table columns="A|B" types="text|number" rows="A|1|extra"></report-data-table>',
+        options,
+      ),
+    /report-data-table row 1 has 3 cell\(s\), but 2 column\(s\) were declared/,
+  )
+  assert.throws(
+    () =>
+      renderReportHtml('<report-data-table columns="A" types="currency" rows="1"></report-data-table>', options),
+    /report-data-table type "currency" is not available\. Supported types: text, number, percent, status\. Ask the skill maker to add missing table cell types/,
+  )
+  assert.throws(
+    () =>
+      renderReportHtml('<report-data-table columns="A" types="number" rows="not-a-number"></report-data-table>', options),
+    /report-data-table row 1 column "A" must be numeric/,
+  )
+})
+
 test('expands report metric grid components into reusable metric cards', async () => {
   const definitions = await loadDefinitions(new URL('../resources/definitions', import.meta.url))
   const rendered = renderReportHtml(

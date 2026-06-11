@@ -5,6 +5,7 @@ import {
   parseReportBadge,
   parseReportCallout,
   parseReportChart,
+  parseReportDataTable,
   parseReportFigure,
   parseReportMetricGrid,
   parseReportRateBars,
@@ -15,6 +16,7 @@ import {
   renderReportCalloutHtml,
   renderReportChartHtml,
   renderReportChartScript,
+  renderReportDataTableHtml,
   renderReportFigureHtml,
   renderReportMetricGridHtml,
   renderReportRateBarsHtml,
@@ -25,6 +27,7 @@ const knownReportTags = new Set([
   'report-badge',
   'report-callout',
   'report-chart',
+  'report-data-table',
   'report-figure',
   'report-metric-grid',
   'report-metric',
@@ -70,6 +73,13 @@ export function compileReportComponents(source, options = {}) {
     const figure = parseReportFigure(figureElement)
     validateReportFigure(figure, context)
     figureElement.replaceWith(renderReportFigureHtml(figure))
+  })
+
+  root('report-data-table').each((_, element) => {
+    const tableElement = root(element)
+    const table = parseReportDataTable(tableElement)
+    validateReportDataTable(table, context)
+    tableElement.replaceWith(renderReportDataTableHtml(table))
   })
 
   root('report-accent-card').each((_, element) => {
@@ -238,6 +248,44 @@ function validateReportFigure(figure, context) {
   }
 }
 
+function validateReportDataTable(table, context) {
+  const supportedTypes = new Set(['text', 'number', 'percent', 'status'])
+  if (table.columns.length === 0) {
+    fail('report-data-table requires columns or headers.', context)
+  }
+  if (table.rows.length === 0) {
+    fail('report-data-table requires at least one row in rows or data.', context)
+  }
+  if (table.types.length !== table.columns.length) {
+    fail(
+      `report-data-table types/columns length mismatch: ${table.types.length} type(s), ${table.columns.length} column(s).`,
+      context,
+    )
+  }
+  table.types.forEach((type) => {
+    if (!supportedTypes.has(type)) {
+      fail(
+        `report-data-table type "${type}" is not available. Supported types: text, number, percent, status. Ask the skill maker to add missing table cell types.`,
+        context,
+      )
+    }
+  })
+  table.rows.forEach((row, index) => {
+    if (row.length !== table.columns.length) {
+      fail(
+        `report-data-table row ${index + 1} has ${row.length} cell(s), but ${table.columns.length} column(s) were declared.`,
+        context,
+      )
+    }
+    row.forEach((value, cellIndex) => {
+      const type = table.types[cellIndex]
+      if ((type === 'number' || type === 'percent') && !Number.isFinite(parseDataTableNumber(value))) {
+        fail(`report-data-table row ${index + 1} column "${table.columns[cellIndex]}" must be numeric.`, context)
+      }
+    })
+  })
+}
+
 function validateReportRateBars(rateBars, context) {
   if (rateBars.labels.length === 0 || rateBars.values.length === 0) {
     fail('report-rate-bars requires non-empty labels and values attributes.', context)
@@ -335,6 +383,10 @@ function sanitizeDomId(value) {
 
 function isSixDigitHexColor(value) {
   return /^#?[0-9a-f]{6}$/i.test(String(value || '').trim())
+}
+
+function parseDataTableNumber(value) {
+  return Number(String(value || '').replace(/,/g, '').replace(/%$/, '').trim())
 }
 
 function indent(source, spaces) {

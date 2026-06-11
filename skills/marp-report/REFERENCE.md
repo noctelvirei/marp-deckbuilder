@@ -55,6 +55,7 @@ Reports use normal Markdown plus compact `report-*` component tags. The renderer
 | --- | --- | --- |
 | KPI card grid | `report-metric-grid` with `report-metric` children | Metric `value` and/or `label` |
 | Ranked distribution bars | `report-rate-bars` | `labels`, `values`; optional `shares` |
+| Formatted data table | `report-data-table` | `columns`, `rows`; optional `types`, `caption`, `source` |
 | Finding, risk, or action block | `report-callout` | Body text or `text`; optional `variant`, `title` |
 | Highlighted recommendation card | `report-accent-card` | Body text or `body`; optional `accent`, `title` |
 | Captioned embedded image | `report-figure` | `src`, `alt`; optional `caption`, `source`, `size` |
@@ -187,6 +188,34 @@ Supported attributes:
 | `values` | yes | Comma-separated numeric values. Must match label count. |
 | `shares` | no | Comma-separated percentages. Aliases: `percentages`, `percents`. When omitted, shares are computed from `values`. |
 | `colors` | no | Comma-separated six-digit hex colors. Defaults to brand chart colors. |
+
+### Report Data Table
+
+Use `report-data-table` for compact formatted tables with renderer-owned number, percent, and status styling. Do not hand-author table HTML or inline status badges when this component covers the need.
+
+```md
+<report-data-table
+  title="Journey breakdown"
+  columns="Journey|Cases|Share|Status"
+  types="text|number|percent|status"
+  rows="J0107|52208|67.1|Active;J0116|3751|4.8|Review"
+  caption="Registered and unregistered journey volume."
+  source="Source: April journey export"
+></report-data-table>
+```
+
+Supported attributes:
+
+| Attribute | Required | Notes |
+| --- | --- | --- |
+| `title` | no | Rendered above the table. |
+| `columns` | yes | Pipe-separated column labels. Alias: `headers`. |
+| `types` | no | Pipe-separated cell types. Supports `text`, `number`, `percent`, `status`. Defaults to `text` for every column. Alias: `formats`. |
+| `rows` | yes | Semicolon-separated rows with pipe-separated cells. Alias: `data`. |
+| `caption` | no | Visible caption below the table. |
+| `source` | no | Source note under the caption. |
+
+For a cell type that is not supported, do not write raw HTML. Ask the skill maker to add the missing table cell type.
 
 ### Report Callout
 
