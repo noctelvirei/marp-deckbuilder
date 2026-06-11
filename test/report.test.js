@@ -269,6 +269,37 @@ test('expands report treemap chart components into D3 treemap initializers', asy
   assert.match(rendered.document, /const valueSuffix = " cases"/)
 })
 
+test('expands report funnel chart components into D3 funnel initializers', async () => {
+  const definitions = await loadDefinitions(new URL('../resources/definitions', import.meta.url))
+  const rendered = renderReportHtml(
+    `# Funnel chart report
+
+<report-chart
+  type="funnel"
+  title="Completion funnel"
+  value-suffix=" cases"
+  labels="Opened,Started,Completed"
+  values="52000,38000,27500"
+></report-chart>
+`,
+    {
+      resourcesDir: path.resolve('resources'),
+      definitions,
+      inlineAssets: true,
+    },
+  )
+
+  assert.doesNotMatch(rendered.document, /<report-chart/i)
+  assert.match(rendered.document, /class="report-chart report-chart-funnel"/)
+  assert.match(rendered.document, /<div id="report-chart-1" class="report-chart-plot" role="img"/)
+  assert.match(rendered.document, /const segmentHeight = Math\.max/)
+  assert.match(rendered.document, /class", "report-funnel-segment"/)
+  assert.doesNotMatch(rendered.document, /\.append\("text"\)/)
+  assert.match(rendered.document, /cell\.on\("mousemove"/)
+  assert.match(rendered.document, /tooltip\.className = "report-chart-floating-tooltip"/)
+  assert.match(rendered.document, /const valueSuffix = " cases"/)
+})
+
 test('allows Chart.js, Observable Plot, and D3 report charts to coexist', async () => {
   const definitions = await loadDefinitions(new URL('../resources/definitions', import.meta.url))
   const rendered = renderReportHtml(
@@ -1018,7 +1049,7 @@ test('report chart components fail clearly when data is invalid', async () => {
   )
   assert.throws(
     () => renderReportHtml('<report-chart type="radar" labels="A" values="10"></report-chart>', options),
-    /report-chart type "radar" is not available\. Supported types: bar, line, doughnut, area, treemap\. Ask the skill maker to add missing chart types/,
+    /report-chart type "radar" is not available\. Supported types: bar, line, doughnut, area, treemap, funnel\. Ask the skill maker to add missing chart types/,
   )
   assert.throws(
     () => renderReportHtml('<report-chart type="doughnut" labels="A,B" values="10,-1"></report-chart>', options),
@@ -1039,6 +1070,14 @@ test('report chart components fail clearly when data is invalid', async () => {
   assert.throws(
     () => renderReportHtml('<report-chart type="treemap" labels="A,B" values="0,0"></report-chart>', options),
     /report-chart treemap values must sum to more than zero/,
+  )
+  assert.throws(
+    () => renderReportHtml('<report-chart type="funnel" labels="A,B" values="10,-1"></report-chart>', options),
+    /report-chart funnel values must be zero or positive/,
+  )
+  assert.throws(
+    () => renderReportHtml('<report-chart type="funnel" labels="A,B" values="0,0"></report-chart>', options),
+    /report-chart funnel values must sum to more than zero/,
   )
   assert.throws(
     () => renderReportHtml('<report-unknown></report-unknown>', options),

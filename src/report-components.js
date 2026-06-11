@@ -192,10 +192,10 @@ function validateReportComponentSyntax(source, context) {
 }
 
 function validateReportChart(chart, context) {
-  const supportedTypes = new Set(['bar', 'line', 'doughnut', 'area', 'treemap'])
+  const supportedTypes = new Set(['bar', 'line', 'doughnut', 'area', 'treemap', 'funnel'])
   if (!supportedTypes.has(chart.chartType)) {
     fail(
-      `report-chart type "${chart.chartType}" is not available. Supported types: bar, line, doughnut, area, treemap. Ask the skill maker to add missing chart types.`,
+      `report-chart type "${chart.chartType}" is not available. Supported types: bar, line, doughnut, area, treemap, funnel. Ask the skill maker to add missing chart types.`,
       context,
     )
   }
@@ -215,6 +215,16 @@ function validateReportChart(chart, context) {
     }
     if (chart.values.reduce((sum, value) => sum + value, 0) <= 0) {
       fail('report-chart treemap values must sum to more than zero.', context)
+    }
+    return
+  }
+  if (chart.chartType === 'funnel') {
+    validateReportChartLabelsAndValues(chart, context)
+    if (chart.values.some((value) => value < 0)) {
+      fail('report-chart funnel values must be zero or positive.', context)
+    }
+    if (chart.values.reduce((sum, value) => sum + value, 0) <= 0) {
+      fail('report-chart funnel values must sum to more than zero.', context)
     }
     return
   }

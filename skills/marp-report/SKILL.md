@@ -50,6 +50,7 @@ Use these renderer-backed component tags in `report.md`. They look like HTML tag
 | Chart.js doughnut chart | `<report-chart type="doughnut">` | `labels`, `values` |
 | Observable Plot area chart | `<report-chart type="area">` | `points` as `x:y` pairs, or `labels` and `values` |
 | D3 treemap | `<report-chart type="treemap">` | `labels`, `values` |
+| D3 funnel | `<report-chart type="funnel">` | `labels`, `values` |
 
 ## Markdown Generation Pattern
 
@@ -72,6 +73,7 @@ Generate `report.md` in this order:
 - Use `<report-chart type="bar">`, `<report-chart type="line">`, or `<report-chart type="doughnut">` for standard Chart.js charts with renderer-owned hover tooltips.
 - Use `<report-chart type="area">` for Observable Plot time-series area charts with renderer-owned hover tips.
 - Use `<report-chart type="treemap">` for D3 treemaps with renderer-owned sizing, brand colors, and hover tips.
+- Use `<report-chart type="funnel">` for D3 stage funnels with renderer-owned hover tips.
 - Use `<report-metric-grid>` for KPI summaries.
 - Use `<report-key-values>` for metadata, report context, parameters, and compact label/value summaries.
 - Use `<report-rate-bars>` for ranked distribution bars.

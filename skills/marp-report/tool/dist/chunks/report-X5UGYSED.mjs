@@ -4953,7 +4953,7 @@ function normalizeAccent(value = "") {
 
 // src/report-components/renderers.js
 function renderReportChartHtml(chart) {
-  if (chart.chartType === "area" || chart.chartType === "treemap") return renderReportPlotChartHtml(chart);
+  if (["area", "treemap", "funnel"].includes(chart.chartType)) return renderReportPlotChartHtml(chart);
   return `<div class="report-chart report-chart-${escapeAttr(chart.chartType)}">
   ${chart.title ? `<div class="report-chart-title">${escapeHtml2(chart.title)}</div>` : ""}
   <div class="report-chart-stage" style="height:${chart.height}px">
@@ -5127,6 +5127,7 @@ function renderReportRateBar(row) {
 function renderReportChartScript(chart, context = {}) {
   if (chart.chartType === "area") return renderReportAreaChartScript(chart, context);
   if (chart.chartType === "treemap") return renderReportTreemapChartScript(chart, context);
+  if (chart.chartType === "funnel") return renderReportFunnelChartScript(chart, context);
   const palette = chart.colors.length ? chart.colors : reportChartPalette(context.brand);
   const colors = chart.labels.map((_, index) => normalizeChartColor(palette[index % palette.length]));
   const primaryColor = normalizeChartColor(palette[0]) || "#0F82F5";
@@ -5222,6 +5223,109 @@ ${datasetOptions}
 ${chartScales}
     }
   });
+})();`;
+}
+function renderReportFunnelChartScript(chart, context = {}) {
+  const palette = chart.colors.length ? chart.colors : reportChartPalette(context.brand);
+  const fallbackColor = normalizeChartColor(palette[0]) || "#0F82F5";
+  const data = chart.labels.map((label, index) => ({
+    label,
+    value: chart.values[index],
+    color: normalizeChartColor(palette[index % palette.length]) || fallbackColor
+  }));
+  return `(() => {
+  const target = document.getElementById(${jsString(chart.id)});
+  const themeRoot = target.closest(".deck-report") || document.body || document.documentElement;
+  const rootStyle = getComputedStyle(themeRoot);
+  const gridColor = rootStyle.getPropertyValue("--border").trim() || "rgba(148, 163, 184, 0.28)";
+  const tooltipBg = rootStyle.getPropertyValue("--bg-card").trim() || "rgba(15, 23, 42, 0.92)";
+  const valuePrefix = ${jsString(chart.valuePrefix)};
+  const valueSuffix = ${jsString(chart.valueSuffix)};
+  const valueFormatter = new Intl.NumberFormat("en-US", { maximumFractionDigits: 2 });
+  const formatTooltipValue = (value) => {
+    const numeric = Number(value);
+    const formatted = Number.isFinite(numeric) ? valueFormatter.format(numeric) : String(value ?? "");
+    return valuePrefix + formatted + valueSuffix;
+  };
+  const data = ${jsValue(data)};
+  const maxValue = Math.max(...data.map((item) => item.value), 1);
+  const width = Math.max(320, target.clientWidth || 720);
+  const height = ${chart.height};
+  const marginX = 28;
+  const segmentGap = 5;
+  const segmentHeight = Math.max(34, (height - segmentGap * (data.length - 1)) / Math.max(1, data.length));
+  const availableWidth = width - marginX * 2;
+  const widthFor = (value) => Math.max(34, (Number(value) / maxValue) * availableWidth);
+  target.textContent = "";
+  const tooltip = document.createElement("div");
+  tooltip.className = "report-chart-floating-tooltip";
+  tooltip.hidden = true;
+  const svg = d3.create("svg")
+    .attr("viewBox", [0, 0, width, height].join(" "))
+    .attr("width", width)
+    .attr("height", height)
+    .attr("role", "img")
+    .attr("aria-label", ${jsString(chart.ariaLabel)})
+    .style("display", "block")
+    .style("width", "100%")
+    .style("height", "100%");
+  const segments = data.map((item, index) => {
+    const y0 = index * (segmentHeight + segmentGap);
+    const y1 = y0 + segmentHeight;
+    const topWidth = widthFor(item.value);
+    const next = data[index + 1];
+    const bottomWidth = widthFor(next ? next.value : item.value * 0.72);
+    const xTop = (width - topWidth) / 2;
+    const xBottom = (width - bottomWidth) / 2;
+    const previous = index === 0 ? null : data[index - 1];
+    const conversion = previous && previous.value > 0 ? (item.value / previous.value) * 100 : null;
+    return {
+      ...item,
+      index,
+      y0,
+      y1,
+      xTop,
+      xBottom,
+      topWidth,
+      bottomWidth,
+      conversion,
+      path: [
+        "M", xTop, y0,
+        "L", xTop + topWidth, y0,
+        "L", xBottom + bottomWidth, y1,
+        "L", xBottom, y1,
+        "Z"
+      ].join(" ")
+    };
+  });
+  const cell = svg.selectAll("g")
+    .data(segments)
+    .join("g")
+    .attr("class", "report-funnel-segment");
+  cell.append("path")
+    .attr("d", (segment) => segment.path)
+    .attr("fill", (segment) => segment.color)
+    .attr("fill-opacity", 0.9)
+    .attr("stroke", tooltipBg)
+    .attr("stroke-width", 1.5);
+  cell.on("mousemove", (event, segment) => {
+    const rect = target.getBoundingClientRect();
+    const conversion = segment.conversion === null ? "Start" : (Math.round(segment.conversion * 10) / 10).toString().replace(/\\.0$/, "") + "% from prior";
+    tooltip.textContent = segment.label + ": " + formatTooltipValue(segment.value) + " \xB7 " + conversion;
+    tooltip.style.left = Math.min(rect.width - 8, Math.max(8, event.clientX - rect.left)) + "px";
+    tooltip.style.top = Math.min(rect.height - 8, Math.max(8, event.clientY - rect.top)) + "px";
+    tooltip.hidden = false;
+    d3.select(event.currentTarget).select("path").attr("stroke", gridColor).attr("fill-opacity", 1);
+  });
+  cell.on("mouseleave", (event) => {
+    tooltip.hidden = true;
+    d3.select(event.currentTarget).select("path").attr("stroke", tooltipBg).attr("fill-opacity", 0.9);
+  });
+  target.addEventListener("mouseleave", () => {
+    tooltip.hidden = true;
+  });
+  target.append(svg.node());
+  target.append(tooltip);
 })();`;
 }
 function renderReportTreemapChartScript(chart, context = {}) {
@@ -5606,10 +5710,10 @@ function validateReportComponentSyntax(source, context) {
   }
 }
 function validateReportChart(chart, context) {
-  const supportedTypes = /* @__PURE__ */ new Set(["bar", "line", "doughnut", "area", "treemap"]);
+  const supportedTypes = /* @__PURE__ */ new Set(["bar", "line", "doughnut", "area", "treemap", "funnel"]);
   if (!supportedTypes.has(chart.chartType)) {
     fail(
-      `report-chart type "${chart.chartType}" is not available. Supported types: bar, line, doughnut, area, treemap. Ask the skill maker to add missing chart types.`,
+      `report-chart type "${chart.chartType}" is not available. Supported types: bar, line, doughnut, area, treemap, funnel. Ask the skill maker to add missing chart types.`,
       context
     );
   }
@@ -5629,6 +5733,16 @@ function validateReportChart(chart, context) {
     }
     if (chart.values.reduce((sum, value) => sum + value, 0) <= 0) {
       fail("report-chart treemap values must sum to more than zero.", context);
+    }
+    return;
+  }
+  if (chart.chartType === "funnel") {
+    validateReportChartLabelsAndValues(chart, context);
+    if (chart.values.some((value) => value < 0)) {
+      fail("report-chart funnel values must be zero or positive.", context);
+    }
+    if (chart.values.reduce((sum, value) => sum + value, 0) <= 0) {
+      fail("report-chart funnel values must sum to more than zero.", context);
     }
     return;
   }

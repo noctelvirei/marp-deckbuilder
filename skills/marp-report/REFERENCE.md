@@ -67,6 +67,7 @@ Reports use normal Markdown plus compact `report-*` component tags. The renderer
 | Chart.js doughnut chart | `report-chart type="doughnut"` | `labels`, `values` |
 | Observable Plot area chart | `report-chart type="area"` | `points` as `x:y` pairs, or `labels`, `values` |
 | D3 treemap | `report-chart type="treemap"` | `labels`, `values` |
+| D3 funnel | `report-chart type="funnel"` | `labels`, `values` |
 
 ## Generating Report Markdown
 
@@ -82,7 +83,7 @@ If the needed visual is not listed, do not create raw HTML or JavaScript in the 
 
 ### Report Chart: Chart.js, Observable Plot, And D3
 
-Use `report-chart` for standard Chart.js bar, line, and doughnut charts, Observable Plot area charts, and D3 treemaps. Do not write the `<canvas>`, chart container, SVG, or JavaScript initializer yourself. The renderer generates hover tooltips that show the represented value.
+Use `report-chart` for standard Chart.js bar, line, and doughnut charts, Observable Plot area charts, D3 treemaps, and D3 funnels. Do not write the `<canvas>`, chart container, SVG, or JavaScript initializer yourself. The renderer generates hover tooltips that show the represented value.
 
 ```md
 <report-chart
@@ -133,15 +134,26 @@ Use `report-chart` for standard Chart.js bar, line, and doughnut charts, Observa
 ></report-chart>
 ```
 
+```md
+<report-chart
+  type="funnel"
+  title="Journey completion funnel"
+  series="Cases"
+  value-suffix=" cases"
+  labels="Opened,Started,Completed,Exception"
+  values="52208,44120,37980,3751"
+></report-chart>
+```
+
 Supported attributes:
 
 | Attribute | Required | Notes |
 | --- | --- | --- |
-| `type` | no | Supports `bar`, `line`, `doughnut`, `area`, and `treemap`. Defaults to `bar`. Aliases: `donut`, `tree-map`. |
+| `type` | no | Supports `bar`, `line`, `doughnut`, `area`, `treemap`, and `funnel`. Defaults to `bar`. Aliases: `donut`, `tree-map`. |
 | `title` | no | Rendered above the chart and used as the accessible label. |
 | `series` | no | Dataset label. |
-| `labels` | yes for Chart.js and `treemap` types | Comma-separated labels. For `area`, this can be used with `values` as an alternative to `points`. |
-| `values` | yes for Chart.js and `treemap` types | Comma-separated numeric values. Must match label count. For `area`, this can be used with `labels` as an alternative to `points`. |
+| `labels` | yes for Chart.js, `treemap`, and `funnel` types | Comma-separated labels. For `area`, this can be used with `values` as an alternative to `points`. |
+| `values` | yes for Chart.js, `treemap`, and `funnel` types | Comma-separated numeric values. Must match label count. For `area`, this can be used with `labels` as an alternative to `points`. |
 | `points` | yes for `area` | Comma-separated `x:y` or `x=y` points such as `2026-04-01:2200,2026-04-02:2600`. Alias: `data`. |
 | `colors` | no | Comma-separated hex colors. Defaults to brand chart colors. |
 | `height` | no | Pixel height, clamped by the renderer. Defaults to `320`. |
