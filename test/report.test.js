@@ -548,6 +548,49 @@ test('report callouts fail clearly when malformed', async () => {
   )
 })
 
+test('expands report accent cards into reusable accent blocks', async () => {
+  const definitions = await loadDefinitions(new URL('../resources/definitions', import.meta.url))
+  const rendered = renderReportHtml(
+    `# Accent card report
+
+<report-accent-card accent="green" title="Recommendation & owner">
+Prioritise the dominant journey & review the long-tail cases.
+</report-accent-card>
+`,
+    {
+      resourcesDir: path.resolve('resources'),
+      definitions,
+      inlineAssets: true,
+    },
+  )
+
+  assert.doesNotMatch(rendered.document, /<report-accent-card/i)
+  assert.match(rendered.document, /class="report-accent-card report-accent-card-green"/)
+  assert.match(rendered.document, /<div class="report-accent-card-title">Recommendation &amp; owner<\/div>/)
+  assert.match(
+    rendered.document,
+    /<div class="report-accent-card-body">Prioritise the dominant journey &amp; review the long-tail cases\.<\/div>/,
+  )
+})
+
+test('report accent cards fail clearly when malformed', async () => {
+  const definitions = await loadDefinitions(new URL('../resources/definitions', import.meta.url))
+  const options = {
+    resourcesDir: path.resolve('resources'),
+    definitions,
+    inlineAssets: true,
+  }
+
+  assert.throws(
+    () => renderReportHtml('<report-accent-card accent="magenta">Check this.</report-accent-card>', options),
+    /Unsupported report-accent-card accent "magenta"/,
+  )
+  assert.throws(
+    () => renderReportHtml('<report-accent-card accent="green"></report-accent-card>', options),
+    /report-accent-card requires title and\/or text content/,
+  )
+})
+
 test('expands report badges inside markdown tables', async () => {
   const definitions = await loadDefinitions(new URL('../resources/definitions', import.meta.url))
   const rendered = renderReportHtml(

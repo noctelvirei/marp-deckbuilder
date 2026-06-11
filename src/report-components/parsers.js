@@ -63,6 +63,17 @@ export function parseReportCallout(callout) {
   }
 }
 
+export function parseReportAccentCard(card) {
+  const rawAccent = card.attr('accent') || card.attr('color') || card.attr('tone') || 'blue'
+  return {
+    type: 'accent-card',
+    accent: normalizeAccent(rawAccent) || String(rawAccent || '').trim().toLowerCase(),
+    rawAccent,
+    title: card.attr('title') || cleanText(card.find('h3,strong,b').first().text()),
+    body: card.attr('body') || card.attr('text') || cleanText(card.text()),
+  }
+}
+
 export function parseReportBadge(badge) {
   const label = badge.attr('label') || cleanText(badge.text())
   const rawVariant =

@@ -1,6 +1,7 @@
 import * as cheerio from 'cheerio'
 
 import {
+  parseReportAccentCard,
   parseReportBadge,
   parseReportCallout,
   parseReportChart,
@@ -8,6 +9,7 @@ import {
   parseReportRateBars,
 } from './report-components/parsers.js'
 import {
+  renderReportAccentCardHtml,
   renderReportBadgeHtml,
   renderReportCalloutHtml,
   renderReportChartHtml,
@@ -17,6 +19,7 @@ import {
 } from './report-components/renderers.js'
 
 const knownReportTags = new Set([
+  'report-accent-card',
   'report-badge',
   'report-callout',
   'report-chart',
@@ -57,6 +60,13 @@ export function compileReportComponents(source, options = {}) {
     const callout = parseReportCallout(calloutElement)
     validateReportCallout(callout, context)
     calloutElement.replaceWith(renderReportCalloutHtml(callout))
+  })
+
+  root('report-accent-card').each((_, element) => {
+    const cardElement = root(element)
+    const card = parseReportAccentCard(cardElement)
+    validateReportAccentCard(card, context)
+    cardElement.replaceWith(renderReportAccentCardHtml(card))
   })
 
   root('report-badge').each((_, element) => {
@@ -211,6 +221,19 @@ function validateReportCallout(callout, context) {
   }
   if (!callout.title && !callout.body) {
     fail('report-callout requires title and/or text content.', context)
+  }
+}
+
+function validateReportAccentCard(card, context) {
+  const accents = new Set(['blue', 'cyan', 'purple', 'green', 'orange', 'red'])
+  if (!accents.has(card.accent)) {
+    fail(
+      `Unsupported report-accent-card accent "${card.rawAccent}". Supported accents: blue, cyan, purple, green, orange, red.`,
+      context,
+    )
+  }
+  if (!card.title && !card.body) {
+    fail('report-accent-card requires title and/or text content.', context)
   }
 }
 

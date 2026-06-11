@@ -4788,6 +4788,16 @@ function parseReportCallout(callout) {
     body: callout.attr("text") || cleanText(callout.text())
   };
 }
+function parseReportAccentCard(card) {
+  const rawAccent = card.attr("accent") || card.attr("color") || card.attr("tone") || "blue";
+  return {
+    type: "accent-card",
+    accent: normalizeAccent(rawAccent) || String(rawAccent || "").trim().toLowerCase(),
+    rawAccent,
+    title: card.attr("title") || cleanText(card.find("h3,strong,b").first().text()),
+    body: card.attr("body") || card.attr("text") || cleanText(card.text())
+  };
+}
 function parseReportBadge(badge) {
   const label = badge.attr("label") || cleanText(badge.text());
   const rawVariant = badge.attr("variant") || badge.attr("color") || badge.attr("tone") || badge.attr("status") || label || "muted";
@@ -4868,6 +4878,12 @@ function renderReportCalloutHtml(callout) {
   return `<div class="report-callout report-callout-${escapeAttr(callout.variant)}" role="note">
   ${callout.title ? `<div class="report-callout-title">${escapeHtml2(callout.title)}</div>` : ""}
   ${callout.body ? `<div class="report-callout-body">${escapeHtml2(callout.body)}</div>` : ""}
+</div>`;
+}
+function renderReportAccentCardHtml(card) {
+  return `<div class="report-accent-card report-accent-card-${escapeAttr(card.accent)}">
+  ${card.title ? `<div class="report-accent-card-title">${escapeHtml2(card.title)}</div>` : ""}
+  ${card.body ? `<div class="report-accent-card-body">${escapeHtml2(card.body)}</div>` : ""}
 </div>`;
 }
 function renderReportBadgeHtml(badge) {
@@ -5018,6 +5034,7 @@ function clampPercent(value) {
 
 // src/report-components.js
 var knownReportTags = /* @__PURE__ */ new Set([
+  "report-accent-card",
   "report-badge",
   "report-callout",
   "report-chart",
@@ -5052,6 +5069,12 @@ function compileReportComponents(source, options = {}) {
     const callout = parseReportCallout(calloutElement);
     validateReportCallout(callout, context);
     calloutElement.replaceWith(renderReportCalloutHtml(callout));
+  });
+  root("report-accent-card").each((_, element) => {
+    const cardElement = root(element);
+    const card = parseReportAccentCard(cardElement);
+    validateReportAccentCard(card, context);
+    cardElement.replaceWith(renderReportAccentCardHtml(card));
   });
   root("report-badge").each((_, element) => {
     const badgeElement = root(element);
@@ -5193,6 +5216,18 @@ function validateReportCallout(callout, context) {
   }
   if (!callout.title && !callout.body) {
     fail("report-callout requires title and/or text content.", context);
+  }
+}
+function validateReportAccentCard(card, context) {
+  const accents = /* @__PURE__ */ new Set(["blue", "cyan", "purple", "green", "orange", "red"]);
+  if (!accents.has(card.accent)) {
+    fail(
+      `Unsupported report-accent-card accent "${card.rawAccent}". Supported accents: blue, cyan, purple, green, orange, red.`,
+      context
+    );
+  }
+  if (!card.title && !card.body) {
+    fail("report-accent-card requires title and/or text content.", context);
   }
 }
 function validateReportBadge(badge, context) {
@@ -5820,6 +5855,39 @@ body {
   --report-callout-title: var(--red, #dc2626);
 }
 
+.report-accent-card {
+  margin: 22px 0;
+  padding: 18px 20px;
+  border: 1px solid var(--border, #dbe5f2);
+  border-top: 4px solid var(--report-accent-color, var(--blue, #0F82F5));
+  border-radius: 8px;
+  background: var(--bg-card, #ffffff);
+  box-shadow: 0 10px 26px rgba(15, 23, 42, 0.06);
+}
+
+.report-accent-card-title {
+  margin-bottom: 7px;
+  color: var(--report-accent-color, var(--blue, #0F82F5));
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.report-accent-card-body {
+  min-width: 0;
+  color: var(--text, #334155);
+  font-size: 15px;
+  overflow-wrap: anywhere;
+}
+
+.report-accent-card-blue { --report-accent-color: var(--blue, #0F82F5); }
+.report-accent-card-cyan { --report-accent-color: var(--cyan, #59D6FD); }
+.report-accent-card-purple { --report-accent-color: var(--purple, #5143D5); }
+.report-accent-card-green { --report-accent-color: var(--green, #16a34a); }
+.report-accent-card-orange { --report-accent-color: var(--orange, #F9935B); }
+.report-accent-card-red { --report-accent-color: var(--red, #dc2626); }
+
 .report-badge {
   display: inline-flex;
   align-items: center;
@@ -6006,6 +6074,10 @@ body.report-theme-dark-page {
 }
 
 .deck-report.report-theme-dark .report-chart {
+  box-shadow: none;
+}
+
+.deck-report.report-theme-dark .report-accent-card {
   box-shadow: none;
 }
 

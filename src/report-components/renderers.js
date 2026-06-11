@@ -30,6 +30,13 @@ export function renderReportCalloutHtml(callout) {
 </div>`
 }
 
+export function renderReportAccentCardHtml(card) {
+  return `<div class="report-accent-card report-accent-card-${escapeAttr(card.accent)}">
+  ${card.title ? `<div class="report-accent-card-title">${escapeHtml(card.title)}</div>` : ''}
+  ${card.body ? `<div class="report-accent-card-body">${escapeHtml(card.body)}</div>` : ''}
+</div>`
+}
+
 export function renderReportBadgeHtml(badge) {
   return `<span class="report-badge report-badge-${escapeAttr(badge.variant)}">${escapeHtml(badge.label)}</span>`
 }

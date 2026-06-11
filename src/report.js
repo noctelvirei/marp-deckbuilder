@@ -536,6 +536,39 @@ body {
   --report-callout-title: var(--red, #dc2626);
 }
 
+.report-accent-card {
+  margin: 22px 0;
+  padding: 18px 20px;
+  border: 1px solid var(--border, #dbe5f2);
+  border-top: 4px solid var(--report-accent-color, var(--blue, #0F82F5));
+  border-radius: 8px;
+  background: var(--bg-card, #ffffff);
+  box-shadow: 0 10px 26px rgba(15, 23, 42, 0.06);
+}
+
+.report-accent-card-title {
+  margin-bottom: 7px;
+  color: var(--report-accent-color, var(--blue, #0F82F5));
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.report-accent-card-body {
+  min-width: 0;
+  color: var(--text, #334155);
+  font-size: 15px;
+  overflow-wrap: anywhere;
+}
+
+.report-accent-card-blue { --report-accent-color: var(--blue, #0F82F5); }
+.report-accent-card-cyan { --report-accent-color: var(--cyan, #59D6FD); }
+.report-accent-card-purple { --report-accent-color: var(--purple, #5143D5); }
+.report-accent-card-green { --report-accent-color: var(--green, #16a34a); }
+.report-accent-card-orange { --report-accent-color: var(--orange, #F9935B); }
+.report-accent-card-red { --report-accent-color: var(--red, #dc2626); }
+
 .report-badge {
   display: inline-flex;
   align-items: center;
@@ -722,6 +755,10 @@ body.report-theme-dark-page {
 }
 
 .deck-report.report-theme-dark .report-chart {
+  box-shadow: none;
+}
+
+.deck-report.report-theme-dark .report-accent-card {
   box-shadow: none;
 }
 

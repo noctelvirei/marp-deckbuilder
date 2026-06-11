@@ -49,6 +49,10 @@ J0116 generated meaningful volume but is not in the registered journey profile.
 
 ## Next Steps
 
+<report-accent-card accent="green" title="Recommended focus">
+Prioritise monitoring for J0107 while validating whether J0116 is a real journey or a data quality issue.
+</report-accent-card>
+
 1. Confirm whether J0116 is a new journey or a data quality issue.
 2. Add month-over-month tracking for the top three journeys.
 3. Calibrate operational monitoring to the dominant journey.

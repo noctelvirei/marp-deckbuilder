@@ -221,6 +221,24 @@ Supported attributes:
 | `title` | no | Short bold heading. |
 | `text` | no | Body text when you prefer attribute-only authoring. Otherwise use the tag body. |
 
+### Report Accent Card
+
+Use `report-accent-card` for highlighted recommendations, risks, ownership notes, and small standalone insight cards. Do not hand-author `r-card-accent` blocks for standard cards.
+
+```html
+<report-accent-card accent="green" title="Recommended focus">
+Prioritise monitoring for J0107 while validating whether J0116 is a real journey.
+</report-accent-card>
+```
+
+Supported attributes:
+
+| Attribute | Required | Notes |
+| --- | --- | --- |
+| `accent` | no | Supports `blue`, `cyan`, `purple`, `green`, `orange`, `red`. Aliases: `color`, `tone`. Defaults to `blue`. |
+| `title` | no | Short card title. |
+| `body` | no | Body text when you prefer attribute-only authoring. Alias: `text`. Otherwise use the tag body. |
+
 ### Report Badge
 
 Use `report-badge` for table statuses and compact inline state labels. Do not hand-author `r-badge` spans.
@@ -270,6 +288,8 @@ Do not use `deck-*` tags in reports. They are presentation components.
 ```
 
 ### Accent Cards
+
+Use `report-accent-card` for standard accent cards. Keep this raw class pattern only for temporary custom multi-card layouts.
 
 ```html
 <div class="r-three-col">
