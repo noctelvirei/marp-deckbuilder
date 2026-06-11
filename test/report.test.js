@@ -362,6 +362,36 @@ test('expands report stacked bar charts into Chart.js stacked bars', async () =>
   assert.match(rendered.document, /const valueSuffix = " cases"/)
 })
 
+test('expands report heatmap charts into D3 heatmap initializers', async () => {
+  const definitions = await loadDefinitions(new URL('../resources/definitions', import.meta.url))
+  const rendered = renderReportHtml(
+    `# Heatmap report
+
+<report-chart
+  type="heatmap"
+  title="Journey weekday intensity"
+  value-suffix=" cases"
+  x-labels="Mon|Tue|Wed"
+  y-labels="J0107|J0106"
+  values="120|180|210;40|55|70"
+></report-chart>
+`,
+    {
+      resourcesDir: path.resolve('resources'),
+      definitions,
+      inlineAssets: true,
+    },
+  )
+
+  assert.doesNotMatch(rendered.document, /<report-chart/i)
+  assert.match(rendered.document, /class="report-chart report-chart-heatmap"/)
+  assert.match(rendered.document, /<div id="report-chart-1" class="report-chart-plot" role="img"/)
+  assert.match(rendered.document, /d3\.scaleSequential\(\)/)
+  assert.match(rendered.document, /class", "report-heatmap-cell"/)
+  assert.match(rendered.document, /tooltip\.textContent = cell\.y \+ " · " \+ cell\.x/)
+  assert.match(rendered.document, /const valueSuffix = " cases"/)
+})
+
 test('allows Chart.js, Observable Plot, and D3 report charts to coexist', async () => {
   const definitions = await loadDefinitions(new URL('../resources/definitions', import.meta.url))
   const rendered = renderReportHtml(
@@ -1111,7 +1141,7 @@ test('report chart components fail clearly when data is invalid', async () => {
   )
   assert.throws(
     () => renderReportHtml('<report-chart type="radar" labels="A" values="10"></report-chart>', options),
-    /report-chart type "radar" is not available\. Supported types: bar, line, doughnut, area, treemap, funnel, grouped-bar, stacked-bar\. Ask the skill maker to add missing chart types/,
+    /report-chart type "radar" is not available\. Supported types: bar, line, doughnut, area, treemap, funnel, grouped-bar, stacked-bar, heatmap\. Ask the skill maker to add missing chart types/,
   )
   assert.throws(
     () => renderReportHtml('<report-chart type="doughnut" labels="A,B" values="10,-1"></report-chart>', options),
@@ -1163,6 +1193,29 @@ test('report chart components fail clearly when data is invalid', async () => {
   assert.throws(
     () => renderReportHtml('<report-chart type="stacked-bar" labels="A" values="10"></report-chart>', options),
     /report-chart type="stacked-bar" requires series names in the series attribute/,
+  )
+  assert.throws(
+    () => renderReportHtml('<report-chart type="heatmap" y-labels="A" values="10"></report-chart>', options),
+    /report-chart type="heatmap" requires x-labels or columns/,
+  )
+  assert.throws(
+    () => renderReportHtml('<report-chart type="heatmap" x-labels="A" values="10"></report-chart>', options),
+    /report-chart type="heatmap" requires y-labels or rows/,
+  )
+  assert.throws(
+    () =>
+      renderReportHtml('<report-chart type="heatmap" x-labels="A|B" y-labels="R1|R2" values="1|2"></report-chart>', options),
+    /report-chart type="heatmap" y-labels\/rows length mismatch/,
+  )
+  assert.throws(
+    () =>
+      renderReportHtml('<report-chart type="heatmap" x-labels="A|B" y-labels="R1" values="1|2|3"></report-chart>', options),
+    /report-chart type="heatmap" row 1 has 3 value\(s\), but 2 x-label\(s\) were declared/,
+  )
+  assert.throws(
+    () =>
+      renderReportHtml('<report-chart type="heatmap" x-labels="A|B" y-labels="R1" values="1|nope"></report-chart>', options),
+    /report-chart type="heatmap" row 1 values must all be numeric/,
   )
   assert.throws(
     () => renderReportHtml('<report-unknown></report-unknown>', options),

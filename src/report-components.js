@@ -201,10 +201,11 @@ function validateReportChart(chart, context) {
     'funnel',
     'grouped-bar',
     'stacked-bar',
+    'heatmap',
   ])
   if (!supportedTypes.has(chart.chartType)) {
     fail(
-      `report-chart type "${chart.chartType}" is not available. Supported types: bar, line, doughnut, area, treemap, funnel, grouped-bar, stacked-bar. Ask the skill maker to add missing chart types.`,
+      `report-chart type "${chart.chartType}" is not available. Supported types: bar, line, doughnut, area, treemap, funnel, grouped-bar, stacked-bar, heatmap. Ask the skill maker to add missing chart types.`,
       context,
     )
   }
@@ -239,6 +240,10 @@ function validateReportChart(chart, context) {
   }
   if (chart.chartType === 'grouped-bar' || chart.chartType === 'stacked-bar') {
     validateReportMultiSeriesChart(chart, context)
+    return
+  }
+  if (chart.chartType === 'heatmap') {
+    validateReportHeatmapChart(chart, context)
     return
   }
   validateReportChartLabelsAndValues(chart, context)
@@ -292,6 +297,35 @@ function validateReportMultiSeriesChart(chart, context) {
     }
     if (row.some((value) => !Number.isFinite(value))) {
       fail(`report-chart type="${chart.chartType}" row ${rowIndex + 1} values must all be numeric.`, context)
+    }
+  })
+}
+
+function validateReportHeatmapChart(chart, context) {
+  if (chart.xLabels.length === 0) {
+    fail('report-chart type="heatmap" requires x-labels or columns.', context)
+  }
+  if (chart.yLabels.length === 0) {
+    fail('report-chart type="heatmap" requires y-labels or rows.', context)
+  }
+  if (chart.matrix.length === 0) {
+    fail('report-chart type="heatmap" requires matrix values in values, matrix, or series-values.', context)
+  }
+  if (chart.matrix.length !== chart.yLabels.length) {
+    fail(
+      `report-chart type="heatmap" y-labels/rows length mismatch: ${chart.yLabels.length} y-label(s), ${chart.matrix.length} row(s).`,
+      context,
+    )
+  }
+  chart.matrix.forEach((row, rowIndex) => {
+    if (row.length !== chart.xLabels.length) {
+      fail(
+        `report-chart type="heatmap" row ${rowIndex + 1} has ${row.length} value(s), but ${chart.xLabels.length} x-label(s) were declared.`,
+        context,
+      )
+    }
+    if (row.some((value) => !Number.isFinite(value))) {
+      fail(`report-chart type="heatmap" row ${rowIndex + 1} values must all be numeric.`, context)
     }
   })
 }

@@ -101,6 +101,17 @@ April volume is concentrated in one dominant journey. The top three journeys acc
   points="2026-04-01:2200,2026-04-02:2600,2026-04-03:2450,2026-04-04:3100,2026-04-05:3380,2026-04-06:3520"
 ></report-chart>
 
+## Weekday Intensity
+
+<report-chart
+  type="heatmap"
+  title="Journey weekday intensity"
+  value-suffix=" cases"
+  x-labels="Mon|Tue|Wed|Thu|Fri"
+  y-labels="J0107|J0106|J0101|J0116"
+  values="11920|12380|11650|12710|13120;2480|2640|2710|2820|2469;2020|2140|1980|2230|2278;620|720|760|810|841"
+></report-chart>
+
 ## Distribution
 
 <report-rate-bars

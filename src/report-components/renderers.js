@@ -9,7 +9,7 @@ import {
 } from './utils.js'
 
 export function renderReportChartHtml(chart) {
-  if (['area', 'treemap', 'funnel'].includes(chart.chartType)) return renderReportPlotChartHtml(chart)
+  if (['area', 'treemap', 'funnel', 'heatmap'].includes(chart.chartType)) return renderReportPlotChartHtml(chart)
   return `<div class="report-chart report-chart-${escapeAttr(chart.chartType)}">
   ${chart.title ? `<div class="report-chart-title">${escapeHtml(chart.title)}</div>` : ''}
   <div class="report-chart-stage" style="height:${chart.height}px">
@@ -207,6 +207,7 @@ export function renderReportChartScript(chart, context = {}) {
   if (chart.chartType === 'area') return renderReportAreaChartScript(chart, context)
   if (chart.chartType === 'treemap') return renderReportTreemapChartScript(chart, context)
   if (chart.chartType === 'funnel') return renderReportFunnelChartScript(chart, context)
+  if (chart.chartType === 'heatmap') return renderReportHeatmapChartScript(chart, context)
   if (chart.chartType === 'grouped-bar') return renderReportMultiBarChartScript(chart, context, { stacked: false })
   if (chart.chartType === 'stacked-bar') return renderReportMultiBarChartScript(chart, context, { stacked: true })
 
@@ -317,6 +318,125 @@ ${datasetOptions}
 ${chartScales}
     }
   });
+})();`
+}
+
+function renderReportHeatmapChartScript(chart, context = {}) {
+  const palette = chart.colors.length ? chart.colors : reportChartPalette(context.brand)
+  const highColor = normalizeChartColor(palette[0]) || '#0F82F5'
+  const lowColor = hexToRgba(highColor, 0.12)
+  const cells = chart.yLabels.flatMap((rowLabel, rowIndex) =>
+    chart.xLabels.map((columnLabel, columnIndex) => ({
+      x: columnLabel,
+      y: rowLabel,
+      value: chart.matrix[rowIndex][columnIndex],
+    })),
+  )
+
+  return `(() => {
+  const target = document.getElementById(${jsString(chart.id)});
+  const themeRoot = target.closest(".deck-report") || document.body || document.documentElement;
+  const rootStyle = getComputedStyle(themeRoot);
+  const tickColor = rootStyle.getPropertyValue("--text-dim").trim() || "#64748b";
+  const gridColor = rootStyle.getPropertyValue("--border").trim() || "rgba(148, 163, 184, 0.28)";
+  const tooltipBg = rootStyle.getPropertyValue("--bg-card").trim() || "rgba(15, 23, 42, 0.92)";
+  const valuePrefix = ${jsString(chart.valuePrefix)};
+  const valueSuffix = ${jsString(chart.valueSuffix)};
+  const valueFormatter = new Intl.NumberFormat("en-US", { maximumFractionDigits: 2 });
+  const formatTooltipValue = (value) => {
+    const numeric = Number(value);
+    const formatted = Number.isFinite(numeric) ? valueFormatter.format(numeric) : String(value ?? "");
+    return valuePrefix + formatted + valueSuffix;
+  };
+  const xLabels = ${jsValue(chart.xLabels)};
+  const yLabels = ${jsValue(chart.yLabels)};
+  const cells = ${jsValue(cells)};
+  const width = Math.max(320, target.clientWidth || 720);
+  const height = ${chart.height};
+  const margin = { top: 22, right: 24, bottom: 44, left: Math.max(76, Math.min(148, Math.max(...yLabels.map((label) => String(label).length)) * 9 + 28)) };
+  const plotWidth = Math.max(1, width - margin.left - margin.right);
+  const plotHeight = Math.max(1, height - margin.top - margin.bottom);
+  const cellWidth = plotWidth / Math.max(1, xLabels.length);
+  const cellHeight = plotHeight / Math.max(1, yLabels.length);
+  const values = cells.map((cell) => Number(cell.value));
+  const minValue = Math.min(...values);
+  const maxValue = Math.max(...values);
+  const color = d3.scaleSequential()
+    .domain(minValue === maxValue ? [minValue - 1, maxValue + 1] : [minValue, maxValue])
+    .interpolator(d3.interpolateRgb(${jsString(lowColor)}, ${jsString(highColor)}));
+  target.textContent = "";
+  const tooltip = document.createElement("div");
+  tooltip.className = "report-chart-floating-tooltip";
+  tooltip.hidden = true;
+  const svg = d3.create("svg")
+    .attr("viewBox", [0, 0, width, height].join(" "))
+    .attr("width", width)
+    .attr("height", height)
+    .attr("role", "img")
+    .attr("aria-label", ${jsString(chart.ariaLabel)})
+    .style("display", "block")
+    .style("width", "100%")
+    .style("height", "100%");
+  const plot = svg.append("g")
+    .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+  plot.selectAll("rect")
+    .data(cells)
+    .join("rect")
+    .attr("class", "report-heatmap-cell")
+    .attr("x", (cell) => xLabels.indexOf(cell.x) * cellWidth)
+    .attr("y", (cell) => yLabels.indexOf(cell.y) * cellHeight)
+    .attr("width", Math.max(1, cellWidth - 3))
+    .attr("height", Math.max(1, cellHeight - 3))
+    .attr("rx", 5)
+    .attr("fill", (cell) => color(Number(cell.value)))
+    .attr("stroke", tooltipBg)
+    .attr("stroke-width", 1)
+    .on("mousemove", (event, cell) => {
+      const rect = target.getBoundingClientRect();
+      tooltip.textContent = cell.y + " · " + cell.x + ": " + formatTooltipValue(cell.value);
+      tooltip.style.left = Math.min(rect.width - 8, Math.max(8, event.clientX - rect.left)) + "px";
+      tooltip.style.top = Math.min(rect.height - 8, Math.max(8, event.clientY - rect.top)) + "px";
+      tooltip.hidden = false;
+      d3.select(event.currentTarget).attr("stroke", gridColor).attr("stroke-width", 2);
+    })
+    .on("mouseleave", (event) => {
+      tooltip.hidden = true;
+      d3.select(event.currentTarget).attr("stroke", tooltipBg).attr("stroke-width", 1);
+    });
+  svg.append("g")
+    .attr("transform", "translate(" + margin.left + "," + (margin.top + plotHeight + 10) + ")")
+    .selectAll("text")
+    .data(xLabels)
+    .join("text")
+    .attr("x", (_, index) => index * cellWidth + cellWidth / 2)
+    .attr("y", 16)
+    .attr("text-anchor", "middle")
+    .attr("fill", tickColor)
+    .attr("font-size", 12)
+    .text((label) => label);
+  svg.append("g")
+    .attr("transform", "translate(" + (margin.left - 12) + "," + margin.top + ")")
+    .selectAll("text")
+    .data(yLabels)
+    .join("text")
+    .attr("x", 0)
+    .attr("y", (_, index) => index * cellHeight + cellHeight / 2 + 4)
+    .attr("text-anchor", "end")
+    .attr("fill", tickColor)
+    .attr("font-size", 12)
+    .text((label) => label);
+  svg.append("text")
+    .attr("x", width - margin.right)
+    .attr("y", height - 8)
+    .attr("text-anchor", "end")
+    .attr("fill", tickColor)
+    .attr("font-size", 11)
+    .text("Low " + formatTooltipValue(minValue) + "   High " + formatTooltipValue(maxValue));
+  target.addEventListener("mouseleave", () => {
+    tooltip.hidden = true;
+  });
+  target.append(svg.node());
+  target.append(tooltip);
 })();`
 }
 

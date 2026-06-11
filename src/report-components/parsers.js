@@ -14,10 +14,12 @@ export function parseReportChart(chart, index = 0) {
   const valueSuffix = chart.attr('value-suffix') || chart.attr('suffix') || ''
   const points = parseChartPoints(chart.attr('points') || chart.attr('data'))
   const seriesNames = splitPipe(chart.attr('series') || chart.attr('datasets') || chart.attr('series-labels'))
+  const xLabels = splitPipe(chart.attr('x-labels') || chart.attr('columns') || chart.attr('x') || '')
+  const yLabels = splitPipe(chart.attr('y-labels') || chart.attr('rows') || chart.attr('y') || '')
   const matrix = parseChartMatrix(
     chart.attr('matrix') ||
       chart.attr('series-values') ||
-      (['grouped-bar', 'stacked-bar'].includes(type) ? chart.attr('values') : ''),
+      (['grouped-bar', 'stacked-bar', 'heatmap'].includes(type) ? chart.attr('values') : ''),
   )
   const derivedPoints =
     points.length > 0
@@ -39,6 +41,8 @@ export function parseReportChart(chart, index = 0) {
     colors,
     points: derivedPoints,
     seriesNames,
+    xLabels,
+    yLabels,
     matrix,
     height,
     valuePrefix,
