@@ -35,6 +35,16 @@ April volume is concentrated in one dominant journey. The top three journeys acc
   values="17240,18990,20530,21191"
 ></report-chart>
 
+## Journey Mix
+
+<report-chart
+  type="doughnut"
+  title="Journey mix"
+  series="Cases"
+  labels="J0107,J0106,J0101,J0116"
+  values="52208,11119,8648,3751"
+></report-chart>
+
 ## Distribution
 
 <report-rate-bars

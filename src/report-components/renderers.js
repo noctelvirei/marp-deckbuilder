@@ -94,9 +94,14 @@ export function renderReportChartScript(chart, context = {}) {
   const palette = chart.colors.length ? chart.colors : reportChartPalette(context.brand)
   const colors = chart.labels.map((_, index) => normalizeChartColor(palette[index % palette.length]))
   const primaryColor = normalizeChartColor(palette[0]) || '#0F82F5'
-  const chartJsType = chart.chartType === 'line' ? 'line' : 'bar'
+  const chartJsType = chart.chartType === 'line' ? 'line' : chart.chartType === 'doughnut' ? 'doughnut' : 'bar'
   const datasetOptions =
-    chart.chartType === 'line'
+    chart.chartType === 'doughnut'
+      ? `        backgroundColor: ${jsValue(colors)},
+        borderColor: tooltipBg,
+        borderWidth: 2,
+        hoverOffset: 8`
+      : chart.chartType === 'line'
       ? `        borderColor: ${jsString(primaryColor)},
         backgroundColor: ${jsString(hexToRgba(primaryColor, 0.18))},
         pointBackgroundColor: ${jsString(primaryColor)},
@@ -108,6 +113,27 @@ export function renderReportChartScript(chart, context = {}) {
         fill: false`
       : `        backgroundColor: ${jsValue(colors)},
         borderRadius: 5`
+  const legendOptions =
+    chart.chartType === 'doughnut'
+      ? 'legend: { display: true, position: "right", labels: { color: tickColor } }'
+      : `legend: { display: ${chart.series && chart.series !== chart.title ? 'true' : 'false'} }`
+  const chartScales =
+    chart.chartType === 'doughnut'
+      ? ''
+      : `,
+      scales: {
+        x: {
+          ticks: { color: tickColor },
+          grid: { color: gridColor }
+        },
+        y: {
+          ticks: {
+            color: tickColor,
+            callback: value => Number(value).toLocaleString()
+          },
+          grid: { color: gridColor }
+        }
+      }`
 
   return `(() => {
   const canvas = document.getElementById(${jsString(chart.id)});
@@ -148,7 +174,7 @@ ${datasetOptions}
         intersect: true
       },
       plugins: {
-        legend: { display: ${chart.series && chart.series !== chart.title ? 'true' : 'false'} },
+        ${legendOptions},
         tooltip: {
           enabled: true,
           mode: "index",
@@ -163,24 +189,13 @@ ${datasetOptions}
           callbacks: {
             label: (context) => {
               const label = context.dataset.label ? context.dataset.label + ": " : "";
-              return label + formatTooltipValue(context.parsed.y);
+              const parsedValue = context.parsed && typeof context.parsed === "object" ? context.parsed.y : context.parsed;
+              return label + formatTooltipValue(parsedValue);
             }
           }
         }
-      },
-      scales: {
-        x: {
-          ticks: { color: tickColor },
-          grid: { color: gridColor }
-        },
-        y: {
-          ticks: {
-            color: tickColor,
-            callback: value => Number(value).toLocaleString()
-          },
-          grid: { color: gridColor }
-        }
       }
+${chartScales}
     }
   });
 })();`

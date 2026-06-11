@@ -121,7 +121,7 @@ title: Chart Component Report
   assert.match(rendered.document, /data:\s*\[52208,11119,8648\]/)
   assert.match(rendered.document, /interaction:\s*\{\s*mode:\s*"index",\s*intersect:\s*false\s*\}/)
   assert.match(rendered.document, /tooltip:\s*\{[\s\S]*enabled:\s*true/)
-  assert.match(rendered.document, /label:\s*\(context\)\s*=>\s*\{[\s\S]*formatTooltipValue\(context\.parsed\.y\)/)
+  assert.match(rendered.document, /label:\s*\(context\)\s*=>\s*\{[\s\S]*formatTooltipValue\(parsedValue\)/)
   assert.match(rendered.document, /const valueSuffix = " cases"/)
 })
 
@@ -174,6 +174,37 @@ test('expands report line chart components into Chart.js line initializers', asy
   assert.match(rendered.document, /pointHoverRadius:\s*6/)
   assert.match(rendered.document, /tension:\s*0\.35/)
   assert.match(rendered.document, /tooltip:\s*\{[\s\S]*enabled:\s*true/)
+})
+
+test('expands report doughnut chart components into Chart.js doughnut initializers', async () => {
+  const definitions = await loadDefinitions(new URL('../resources/definitions', import.meta.url))
+  const rendered = renderReportHtml(
+    `# Doughnut chart report
+
+<report-chart
+  type="doughnut"
+  title="Journey mix"
+  series="Cases"
+  value-suffix=" cases"
+  labels="J0107,J0106,J0101"
+  values="52208,11119,8648"
+></report-chart>
+`,
+    {
+      resourcesDir: path.resolve('resources'),
+      definitions,
+      inlineAssets: true,
+    },
+  )
+
+  assert.doesNotMatch(rendered.document, /<report-chart/i)
+  assert.match(rendered.document, /class="report-chart report-chart-doughnut"/)
+  assert.match(rendered.document, /type:\s*"doughnut"/)
+  assert.match(rendered.document, /hoverOffset:\s*8/)
+  assert.match(rendered.document, /legend:\s*\{\s*display:\s*true,\s*position:\s*"right"/)
+  assert.match(rendered.document, /const parsedValue = context\.parsed && typeof context\.parsed === "object"/)
+  assert.doesNotMatch(rendered.document, /scales:\s*\{/)
+  assert.match(rendered.document, /const valueSuffix = " cases"/)
 })
 
 test('applies dark report theme and generated navigation from frontmatter', async () => {
@@ -679,7 +710,15 @@ test('report chart components fail clearly when data is invalid', async () => {
   )
   assert.throws(
     () => renderReportHtml('<report-chart type="area" labels="A" values="10"></report-chart>', options),
-    /Unsupported report-chart type "area". Supported types: bar, line/,
+    /Unsupported report-chart type "area". Supported types: bar, line, doughnut/,
+  )
+  assert.throws(
+    () => renderReportHtml('<report-chart type="doughnut" labels="A,B" values="10,-1"></report-chart>', options),
+    /report-chart doughnut values must be zero or positive/,
+  )
+  assert.throws(
+    () => renderReportHtml('<report-chart type="doughnut" labels="A,B" values="0,0"></report-chart>', options),
+    /report-chart doughnut values must sum to more than zero/,
   )
   assert.throws(
     () => renderReportHtml('<report-unknown></report-unknown>', options),

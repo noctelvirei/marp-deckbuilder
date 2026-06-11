@@ -146,9 +146,9 @@ function validateReportComponentSyntax(source, context) {
 }
 
 function validateReportChart(chart, context) {
-  const supportedTypes = new Set(['bar', 'line'])
+  const supportedTypes = new Set(['bar', 'line', 'doughnut'])
   if (!supportedTypes.has(chart.chartType)) {
-    fail(`Unsupported report-chart type "${chart.chartType}". Supported types: bar, line.`, context)
+    fail(`Unsupported report-chart type "${chart.chartType}". Supported types: bar, line, doughnut.`, context)
   }
   if (chart.labels.length === 0 || chart.values.length === 0) {
     fail('report-chart requires non-empty labels and values attributes.', context)
@@ -161,6 +161,14 @@ function validateReportChart(chart, context) {
   }
   if (chart.values.some((value) => !Number.isFinite(value))) {
     fail('report-chart values must all be numeric.', context)
+  }
+  if (chart.chartType === 'doughnut') {
+    if (chart.values.some((value) => value < 0)) {
+      fail('report-chart doughnut values must be zero or positive.', context)
+    }
+    if (chart.values.reduce((sum, value) => sum + value, 0) <= 0) {
+      fail('report-chart doughnut values must sum to more than zero.', context)
+    }
   }
 }
 

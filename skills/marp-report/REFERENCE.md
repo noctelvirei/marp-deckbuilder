@@ -132,9 +132,9 @@ code { background: var(--bg-card) !important; color: var(--cyan) !important; bor
 
 Reports use normal Markdown plus compact `report-*` component tags where supported. The renderer expands those tags into HTML, CSS hooks, and JavaScript initializers.
 
-### Report Chart: Chart.js Bar And Line
+### Report Chart: Chart.js Bar, Line, And Doughnut
 
-Use `report-chart` for standard Chart.js bar and line charts. Do not write the `<canvas>` or Chart.js initializer yourself. The renderer generates Chart.js hover tooltips that show the represented value.
+Use `report-chart` for standard Chart.js bar, line, and doughnut charts. Do not write the `<canvas>` or Chart.js initializer yourself. The renderer generates Chart.js hover tooltips that show the represented value.
 
 ```html
 <report-chart
@@ -156,11 +156,21 @@ Use `report-chart` for standard Chart.js bar and line charts. Do not write the `
 ></report-chart>
 ```
 
+```html
+<report-chart
+  type="doughnut"
+  title="Journey mix"
+  series="Cases"
+  labels="J0107,J0106,J0101,J0116"
+  values="52208,11119,8648,3751"
+></report-chart>
+```
+
 Supported attributes:
 
 | Attribute | Required | Notes |
 | --- | --- | --- |
-| `type` | no | Supports `bar` and `line`. Defaults to `bar`. |
+| `type` | no | Supports `bar`, `line`, and `doughnut`. Defaults to `bar`. Alias: `donut`. |
 | `title` | no | Rendered above the chart and used as the accessible label. |
 | `series` | no | Dataset label. |
 | `labels` | yes | Comma-separated labels. |

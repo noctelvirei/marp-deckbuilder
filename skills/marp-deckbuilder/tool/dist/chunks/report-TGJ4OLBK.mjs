@@ -4824,6 +4824,7 @@ function parseReportRateBars(rateBars) {
 function normalizeChartType(value = "bar") {
   const token = String(value || "bar").trim().toLowerCase();
   if (token === "column") return "bar";
+  if (token === "donut") return "doughnut";
   return token;
 }
 function parseDimension(value, fallback) {
@@ -4934,8 +4935,11 @@ function renderReportChartScript(chart, context = {}) {
   const palette = chart.colors.length ? chart.colors : reportChartPalette(context.brand);
   const colors = chart.labels.map((_, index) => normalizeChartColor(palette[index % palette.length]));
   const primaryColor = normalizeChartColor(palette[0]) || "#0F82F5";
-  const chartJsType = chart.chartType === "line" ? "line" : "bar";
-  const datasetOptions = chart.chartType === "line" ? `        borderColor: ${jsString(primaryColor)},
+  const chartJsType = chart.chartType === "line" ? "line" : chart.chartType === "doughnut" ? "doughnut" : "bar";
+  const datasetOptions = chart.chartType === "doughnut" ? `        backgroundColor: ${jsValue(colors)},
+        borderColor: tooltipBg,
+        borderWidth: 2,
+        hoverOffset: 8` : chart.chartType === "line" ? `        borderColor: ${jsString(primaryColor)},
         backgroundColor: ${jsString(hexToRgba(primaryColor, 0.18))},
         pointBackgroundColor: ${jsString(primaryColor)},
         pointBorderColor: tooltipBg,
@@ -4945,6 +4949,21 @@ function renderReportChartScript(chart, context = {}) {
         tension: 0.35,
         fill: false` : `        backgroundColor: ${jsValue(colors)},
         borderRadius: 5`;
+  const legendOptions = chart.chartType === "doughnut" ? 'legend: { display: true, position: "right", labels: { color: tickColor } }' : `legend: { display: ${chart.series && chart.series !== chart.title ? "true" : "false"} }`;
+  const chartScales = chart.chartType === "doughnut" ? "" : `,
+      scales: {
+        x: {
+          ticks: { color: tickColor },
+          grid: { color: gridColor }
+        },
+        y: {
+          ticks: {
+            color: tickColor,
+            callback: value => Number(value).toLocaleString()
+          },
+          grid: { color: gridColor }
+        }
+      }`;
   return `(() => {
   const canvas = document.getElementById(${jsString(chart.id)});
   const themeRoot = canvas.closest(".deck-report") || document.body || document.documentElement;
@@ -4984,7 +5003,7 @@ ${datasetOptions}
         intersect: true
       },
       plugins: {
-        legend: { display: ${chart.series && chart.series !== chart.title ? "true" : "false"} },
+        ${legendOptions},
         tooltip: {
           enabled: true,
           mode: "index",
@@ -4999,24 +5018,13 @@ ${datasetOptions}
           callbacks: {
             label: (context) => {
               const label = context.dataset.label ? context.dataset.label + ": " : "";
-              return label + formatTooltipValue(context.parsed.y);
+              const parsedValue = context.parsed && typeof context.parsed === "object" ? context.parsed.y : context.parsed;
+              return label + formatTooltipValue(parsedValue);
             }
           }
         }
-      },
-      scales: {
-        x: {
-          ticks: { color: tickColor },
-          grid: { color: gridColor }
-        },
-        y: {
-          ticks: {
-            color: tickColor,
-            callback: value => Number(value).toLocaleString()
-          },
-          grid: { color: gridColor }
-        }
       }
+${chartScales}
     }
   });
 })();`;
@@ -5164,9 +5172,9 @@ function validateReportComponentSyntax(source, context) {
   }
 }
 function validateReportChart(chart, context) {
-  const supportedTypes = /* @__PURE__ */ new Set(["bar", "line"]);
+  const supportedTypes = /* @__PURE__ */ new Set(["bar", "line", "doughnut"]);
   if (!supportedTypes.has(chart.chartType)) {
-    fail(`Unsupported report-chart type "${chart.chartType}". Supported types: bar, line.`, context);
+    fail(`Unsupported report-chart type "${chart.chartType}". Supported types: bar, line, doughnut.`, context);
   }
   if (chart.labels.length === 0 || chart.values.length === 0) {
     fail("report-chart requires non-empty labels and values attributes.", context);
@@ -5179,6 +5187,14 @@ function validateReportChart(chart, context) {
   }
   if (chart.values.some((value) => !Number.isFinite(value))) {
     fail("report-chart values must all be numeric.", context);
+  }
+  if (chart.chartType === "doughnut") {
+    if (chart.values.some((value) => value < 0)) {
+      fail("report-chart doughnut values must be zero or positive.", context);
+    }
+    if (chart.values.reduce((sum, value) => sum + value, 0) <= 0) {
+      fail("report-chart doughnut values must sum to more than zero.", context);
+    }
   }
 }
 function validateReportMetricGrid(metricGrid, context) {
