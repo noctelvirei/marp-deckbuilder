@@ -374,6 +374,40 @@ body {
   height: 100% !important;
 }
 
+.report-chart-plot {
+  position: relative;
+  width: 100%;
+  height: 100%;
+}
+
+.report-chart-plot svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+
+.report-chart-floating-tooltip {
+  position: absolute;
+  z-index: 2;
+  max-width: 240px;
+  padding: 9px 11px;
+  border: 1px solid var(--border, rgba(148, 163, 184, 0.35));
+  border-radius: 6px;
+  background: var(--bg-card, rgba(15, 23, 42, 0.94));
+  color: var(--text, #ffffff);
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1.25;
+  pointer-events: none;
+  transform: translate(-50%, calc(-100% - 10px));
+  white-space: nowrap;
+}
+
+.report-chart-floating-tooltip[hidden] {
+  display: none;
+}
+
 .report-metric-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));

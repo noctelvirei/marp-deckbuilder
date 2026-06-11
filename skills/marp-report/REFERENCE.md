@@ -132,9 +132,9 @@ code { background: var(--bg-card) !important; color: var(--cyan) !important; bor
 
 Reports use normal Markdown plus compact `report-*` component tags where supported. The renderer expands those tags into HTML, CSS hooks, and JavaScript initializers.
 
-### Report Chart: Chart.js Bar, Line, And Doughnut
+### Report Chart: Chart.js And Observable Plot
 
-Use `report-chart` for standard Chart.js bar, line, and doughnut charts. Do not write the `<canvas>` or Chart.js initializer yourself. The renderer generates Chart.js hover tooltips that show the represented value.
+Use `report-chart` for standard Chart.js bar, line, and doughnut charts, plus Observable Plot area charts. Do not write the `<canvas>`, chart container, or JavaScript initializer yourself. The renderer generates hover tooltips that show the represented value.
 
 ```html
 <report-chart
@@ -166,15 +166,25 @@ Use `report-chart` for standard Chart.js bar, line, and doughnut charts. Do not 
 ></report-chart>
 ```
 
+```html
+<report-chart
+  type="area"
+  title="Daily volume"
+  series="Cases"
+  points="2026-04-01:2200,2026-04-02:2600,2026-04-03:2450"
+></report-chart>
+```
+
 Supported attributes:
 
 | Attribute | Required | Notes |
 | --- | --- | --- |
-| `type` | no | Supports `bar`, `line`, and `doughnut`. Defaults to `bar`. Alias: `donut`. |
+| `type` | no | Supports `bar`, `line`, `doughnut`, and `area`. Defaults to `bar`. Alias: `donut`. |
 | `title` | no | Rendered above the chart and used as the accessible label. |
 | `series` | no | Dataset label. |
-| `labels` | yes | Comma-separated labels. |
-| `values` | yes | Comma-separated numeric values. Must match label count. |
+| `labels` | yes for Chart.js types | Comma-separated labels. For `area`, this can be used with `values` as a fallback. |
+| `values` | yes for Chart.js types | Comma-separated numeric values. Must match label count. For `area`, this can be used with `labels` as a fallback. |
+| `points` | yes for `area` | Comma-separated `x:y` or `x=y` points such as `2026-04-01:2200,2026-04-02:2600`. Alias: `data`. |
 | `colors` | no | Comma-separated hex colors. Defaults to brand chart colors. |
 | `height` | no | Pixel height, clamped by the renderer. Defaults to `320`. |
 | `value-prefix` | no | Prefix shown in tooltips, such as `$`. Alias: `prefix`. |

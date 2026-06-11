@@ -207,6 +207,59 @@ test('expands report doughnut chart components into Chart.js doughnut initialize
   assert.match(rendered.document, /const valueSuffix = " cases"/)
 })
 
+test('expands report area chart components into Observable Plot initializers', async () => {
+  const definitions = await loadDefinitions(new URL('../resources/definitions', import.meta.url))
+  const rendered = renderReportHtml(
+    `# Area chart report
+
+<report-chart
+  type="area"
+  title="Daily volume"
+  value-suffix=" cases"
+  points="2026-04-01:1200,2026-04-02:1540,2026-04-03:1325"
+></report-chart>
+`,
+    {
+      resourcesDir: path.resolve('resources'),
+      definitions,
+      inlineAssets: true,
+    },
+  )
+
+  assert.doesNotMatch(rendered.document, /<report-chart/i)
+  assert.match(rendered.document, /class="report-chart report-chart-area"/)
+  assert.match(rendered.document, /<div id="report-chart-1" class="report-chart-plot" role="img"/)
+  assert.match(rendered.document, /target\.append\(Plot\.plot\(/)
+  assert.match(rendered.document, /Plot\.areaY\(data, /)
+  assert.match(rendered.document, /Plot\.lineY\(data, /)
+  assert.match(rendered.document, /Plot\.tip\(data, Plot\.pointerX\(/)
+  assert.match(rendered.document, /tooltip\.className = "report-chart-floating-tooltip"/)
+  assert.match(rendered.document, /target\.addEventListener\("mousemove"/)
+  assert.match(rendered.document, /const valueSuffix = " cases"/)
+})
+
+test('allows Chart.js and Observable Plot report charts to coexist', async () => {
+  const definitions = await loadDefinitions(new URL('../resources/definitions', import.meta.url))
+  const rendered = renderReportHtml(
+    `# Mixed chart report
+
+<report-chart title="Cases" labels="A,B" values="10,20"></report-chart>
+
+<report-chart type="area" title="Trend" points="2026-04-01:10,2026-04-02:20"></report-chart>
+`,
+    {
+      resourcesDir: path.resolve('resources'),
+      definitions,
+      inlineAssets: true,
+    },
+  )
+
+  assert.match(rendered.document, /<canvas id="report-chart-1"/)
+  assert.match(rendered.document, /<div id="report-chart-2" class="report-chart-plot"/)
+  assert.match(rendered.document, /new Chart\(canvas, /)
+  assert.match(rendered.document, /target\.append\(Plot\.plot\(/)
+})
+
 test('applies dark report theme and generated navigation from frontmatter', async () => {
   const definitions = await loadDefinitions(new URL('../resources/definitions', import.meta.url))
   const rendered = renderReportHtml(
@@ -709,8 +762,8 @@ test('report chart components fail clearly when data is invalid', async () => {
     /report-chart values must all be numeric/,
   )
   assert.throws(
-    () => renderReportHtml('<report-chart type="area" labels="A" values="10"></report-chart>', options),
-    /Unsupported report-chart type "area". Supported types: bar, line, doughnut/,
+    () => renderReportHtml('<report-chart type="radar" labels="A" values="10"></report-chart>', options),
+    /Unsupported report-chart type "radar". Supported types: bar, line, doughnut, area/,
   )
   assert.throws(
     () => renderReportHtml('<report-chart type="doughnut" labels="A,B" values="10,-1"></report-chart>', options),
@@ -719,6 +772,10 @@ test('report chart components fail clearly when data is invalid', async () => {
   assert.throws(
     () => renderReportHtml('<report-chart type="doughnut" labels="A,B" values="0,0"></report-chart>', options),
     /report-chart doughnut values must sum to more than zero/,
+  )
+  assert.throws(
+    () => renderReportHtml('<report-chart type="area" points="2026-04-01:nope"></report-chart>', options),
+    /report-chart area points must be x:y pairs with numeric y values/,
   )
   assert.throws(
     () => renderReportHtml('<report-unknown></report-unknown>', options),

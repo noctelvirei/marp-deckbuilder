@@ -45,6 +45,15 @@ April volume is concentrated in one dominant journey. The top three journeys acc
   values="52208,11119,8648,3751"
 ></report-chart>
 
+## Daily Volume
+
+<report-chart
+  type="area"
+  title="Daily volume"
+  series="Cases"
+  points="2026-04-01:2200,2026-04-02:2600,2026-04-03:2450,2026-04-04:3100,2026-04-05:3380,2026-04-06:3520"
+></report-chart>
+
 ## Distribution
 
 <report-rate-bars

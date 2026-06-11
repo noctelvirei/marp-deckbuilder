@@ -146,9 +146,18 @@ function validateReportComponentSyntax(source, context) {
 }
 
 function validateReportChart(chart, context) {
-  const supportedTypes = new Set(['bar', 'line', 'doughnut'])
+  const supportedTypes = new Set(['bar', 'line', 'doughnut', 'area'])
   if (!supportedTypes.has(chart.chartType)) {
-    fail(`Unsupported report-chart type "${chart.chartType}". Supported types: bar, line, doughnut.`, context)
+    fail(`Unsupported report-chart type "${chart.chartType}". Supported types: bar, line, doughnut, area.`, context)
+  }
+  if (chart.chartType === 'area') {
+    if (chart.points.length === 0) {
+      fail('report-chart type="area" requires non-empty points or labels/values attributes.', context)
+    }
+    if (chart.points.some((point) => !point.x || !Number.isFinite(point.y))) {
+      fail('report-chart area points must be x:y pairs with numeric y values.', context)
+    }
+    return
   }
   if (chart.labels.length === 0 || chart.values.length === 0) {
     fail('report-chart requires non-empty labels and values attributes.', context)

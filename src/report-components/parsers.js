@@ -11,6 +11,14 @@ export function parseReportChart(chart, index = 0) {
   const requestedId = chart.attr('id') || chart.attr('chart-id') || ''
   const valuePrefix = chart.attr('value-prefix') || chart.attr('prefix') || ''
   const valueSuffix = chart.attr('value-suffix') || chart.attr('suffix') || ''
+  const points = parseChartPoints(chart.attr('points') || chart.attr('data'))
+  const derivedPoints =
+    points.length > 0
+      ? points
+      : labels.map((label, index) => ({
+          x: label,
+          y: values[index],
+        }))
 
   return {
     type: 'chart',
@@ -22,6 +30,7 @@ export function parseReportChart(chart, index = 0) {
     labels,
     values,
     colors,
+    points: derivedPoints,
     height,
     valuePrefix,
     valueSuffix,
@@ -105,6 +114,17 @@ function normalizeChartType(value = 'bar') {
   if (token === 'column') return 'bar'
   if (token === 'donut') return 'doughnut'
   return token
+}
+
+function parseChartPoints(value = '') {
+  return splitCsv(value).map((item) => {
+    const separator = item.includes('=') ? '=' : ':'
+    const [x, ...rest] = item.split(separator)
+    return {
+      x: cleanText(x),
+      y: Number(rest.join(separator).trim()),
+    }
+  })
 }
 
 function parseDimension(value, fallback) {

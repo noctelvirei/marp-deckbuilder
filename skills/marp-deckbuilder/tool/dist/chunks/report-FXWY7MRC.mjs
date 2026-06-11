@@ -4741,6 +4741,11 @@ function parseReportChart(chart, index = 0) {
   const requestedId = chart.attr("id") || chart.attr("chart-id") || "";
   const valuePrefix = chart.attr("value-prefix") || chart.attr("prefix") || "";
   const valueSuffix = chart.attr("value-suffix") || chart.attr("suffix") || "";
+  const points = parseChartPoints(chart.attr("points") || chart.attr("data"));
+  const derivedPoints = points.length > 0 ? points : labels.map((label, index2) => ({
+    x: label,
+    y: values[index2]
+  }));
   return {
     type: "chart",
     chartType: type,
@@ -4751,6 +4756,7 @@ function parseReportChart(chart, index = 0) {
     labels,
     values,
     colors,
+    points: derivedPoints,
     height,
     valuePrefix,
     valueSuffix,
@@ -4827,6 +4833,16 @@ function normalizeChartType(value = "bar") {
   if (token === "donut") return "doughnut";
   return token;
 }
+function parseChartPoints(value = "") {
+  return splitCsv(value).map((item) => {
+    const separator = item.includes("=") ? "=" : ":";
+    const [x, ...rest] = item.split(separator);
+    return {
+      x: cleanText(x),
+      y: Number(rest.join(separator).trim())
+    };
+  });
+}
 function parseDimension(value, fallback) {
   const numeric = Number.parseInt(value || fallback, 10);
   if (!Number.isFinite(numeric)) return fallback;
@@ -4863,10 +4879,19 @@ function normalizeAccent(value = "") {
 
 // src/report-components/renderers.js
 function renderReportChartHtml(chart) {
+  if (chart.chartType === "area") return renderReportPlotChartHtml(chart);
   return `<div class="report-chart report-chart-${escapeAttr(chart.chartType)}">
   ${chart.title ? `<div class="report-chart-title">${escapeHtml2(chart.title)}</div>` : ""}
   <div class="report-chart-stage" style="height:${chart.height}px">
     <canvas id="${escapeAttr(chart.id)}" role="img" aria-label="${escapeAttr(chart.ariaLabel)}"></canvas>
+  </div>
+</div>`;
+}
+function renderReportPlotChartHtml(chart) {
+  return `<div class="report-chart report-chart-${escapeAttr(chart.chartType)}">
+  ${chart.title ? `<div class="report-chart-title">${escapeHtml2(chart.title)}</div>` : ""}
+  <div class="report-chart-stage" style="height:${chart.height}px">
+    <div id="${escapeAttr(chart.id)}" class="report-chart-plot" role="img" aria-label="${escapeAttr(chart.ariaLabel)}"></div>
   </div>
 </div>`;
 }
@@ -4932,6 +4957,7 @@ function renderReportRateBar(row) {
 </div>`;
 }
 function renderReportChartScript(chart, context = {}) {
+  if (chart.chartType === "area") return renderReportAreaChartScript(chart, context);
   const palette = chart.colors.length ? chart.colors : reportChartPalette(context.brand);
   const colors = chart.labels.map((_, index) => normalizeChartColor(palette[index % palette.length]));
   const primaryColor = normalizeChartColor(palette[0]) || "#0F82F5";
@@ -5026,6 +5052,109 @@ ${datasetOptions}
       }
 ${chartScales}
     }
+  });
+})();`;
+}
+function renderReportAreaChartScript(chart, context = {}) {
+  const palette = chart.colors.length ? chart.colors : reportChartPalette(context.brand);
+  const primaryColor = normalizeChartColor(palette[0]) || "#0F82F5";
+  const fillColor = hexToRgba(primaryColor, 0.24);
+  return `(() => {
+  const target = document.getElementById(${jsString(chart.id)});
+  const themeRoot = target.closest(".deck-report") || document.body || document.documentElement;
+  const rootStyle = getComputedStyle(themeRoot);
+  const tickColor = rootStyle.getPropertyValue("--text-dim").trim() || "#64748b";
+  const gridColor = rootStyle.getPropertyValue("--border").trim() || "rgba(148, 163, 184, 0.28)";
+  const tooltipBg = rootStyle.getPropertyValue("--bg-card").trim() || "rgba(15, 23, 42, 0.92)";
+  const textColor = rootStyle.getPropertyValue("--text").trim() || "#0f172a";
+  const valuePrefix = ${jsString(chart.valuePrefix)};
+  const valueSuffix = ${jsString(chart.valueSuffix)};
+  const valueFormatter = new Intl.NumberFormat("en-US", { maximumFractionDigits: 2 });
+  const formatTooltipValue = (value) => {
+    const numeric = Number(value);
+    const formatted = Number.isFinite(numeric) ? valueFormatter.format(numeric) : String(value ?? "");
+    return valuePrefix + formatted + valueSuffix;
+  };
+  const parseX = (value) => {
+    const parsed = new Date(value);
+    return Number.isNaN(parsed.valueOf()) ? value : parsed;
+  };
+  const data = ${jsValue(chart.points)}.map((point) => ({
+    x: parseX(point.x),
+    label: point.x,
+    y: Number(point.y)
+  }));
+  const tickStep = Math.max(1, Math.ceil(data.length / 6));
+  const xTickValues = data
+    .filter((point, index) => data.length <= 8 || index === 0 || index === data.length - 1 || index % tickStep === 0)
+    .map((point) => point.x);
+  target.textContent = "";
+  const tooltip = document.createElement("div");
+  tooltip.className = "report-chart-floating-tooltip";
+  tooltip.hidden = true;
+  target.append(Plot.plot({
+    width: Math.max(320, target.clientWidth || 720),
+    height: ${chart.height},
+    marginLeft: 58,
+    marginRight: 24,
+    marginTop: 18,
+    marginBottom: 42,
+    style: {
+      background: "transparent",
+      color: tickColor,
+      fontFamily: rootStyle.getPropertyValue("font-family").trim() || "Arial, sans-serif"
+    },
+    x: {
+      grid: true,
+      label: null,
+      ticks: xTickValues,
+      tickFormat: (value) => value instanceof Date ? value.toLocaleDateString("en-US", { month: "short", day: "numeric" }) : String(value)
+    },
+    y: {
+      grid: true,
+      label: null,
+      tickFormat: (value) => Number(value).toLocaleString()
+    },
+    marks: [
+      Plot.ruleY([0], { stroke: gridColor }),
+      Plot.areaY(data, { x: "x", y: "y", fill: ${jsString(fillColor)} }),
+      Plot.lineY(data, { x: "x", y: "y", stroke: ${jsString(primaryColor)}, strokeWidth: 3, curve: "catmull-rom" }),
+      Plot.dot(data, { x: "x", y: "y", fill: ${jsString(primaryColor)}, stroke: tooltipBg, r: 4 }),
+      Plot.tip(data, Plot.pointerX({
+        x: "x",
+        y: "y",
+        title: (point) => point.label + ": " + formatTooltipValue(point.y),
+        fill: tooltipBg,
+        stroke: gridColor,
+        fontSize: 12,
+        color: textColor
+      }))
+    ]
+  }));
+  target.append(tooltip);
+  target.addEventListener("mousemove", (event) => {
+    const rect = target.getBoundingClientRect();
+    const plotLeft = 58;
+    const plotRight = 24;
+    const plotTop = 18;
+    const plotBottom = 42;
+    const plotWidth = Math.max(1, rect.width - plotLeft - plotRight);
+    const plotHeight = Math.max(1, rect.height - plotTop - plotBottom);
+    const relativeX = Math.min(1, Math.max(0, (event.clientX - rect.left - plotLeft) / plotWidth));
+    const index = Math.min(data.length - 1, Math.max(0, Math.round(relativeX * (data.length - 1))));
+    const point = data[index];
+    const maxY = Math.max(...data.map((item) => item.y), 0);
+    const minY = Math.min(...data.map((item) => item.y), 0);
+    const yRange = Math.max(1, maxY - minY);
+    const x = plotLeft + (data.length <= 1 ? 0 : (index / (data.length - 1)) * plotWidth);
+    const y = plotTop + (1 - (point.y - minY) / yRange) * plotHeight;
+    tooltip.textContent = point.label + ": " + formatTooltipValue(point.y);
+    tooltip.style.left = x + "px";
+    tooltip.style.top = y + "px";
+    tooltip.hidden = false;
+  });
+  target.addEventListener("mouseleave", () => {
+    tooltip.hidden = true;
   });
 })();`;
 }
@@ -5172,9 +5301,18 @@ function validateReportComponentSyntax(source, context) {
   }
 }
 function validateReportChart(chart, context) {
-  const supportedTypes = /* @__PURE__ */ new Set(["bar", "line", "doughnut"]);
+  const supportedTypes = /* @__PURE__ */ new Set(["bar", "line", "doughnut", "area"]);
   if (!supportedTypes.has(chart.chartType)) {
-    fail(`Unsupported report-chart type "${chart.chartType}". Supported types: bar, line, doughnut.`, context);
+    fail(`Unsupported report-chart type "${chart.chartType}". Supported types: bar, line, doughnut, area.`, context);
+  }
+  if (chart.chartType === "area") {
+    if (chart.points.length === 0) {
+      fail('report-chart type="area" requires non-empty points or labels/values attributes.', context);
+    }
+    if (chart.points.some((point) => !point.x || !Number.isFinite(point.y))) {
+      fail("report-chart area points must be x:y pairs with numeric y values.", context);
+    }
+    return;
   }
   if (chart.labels.length === 0 || chart.values.length === 0) {
     fail("report-chart requires non-empty labels and values attributes.", context);
@@ -5728,6 +5866,40 @@ body {
   display: block;
   width: 100% !important;
   height: 100% !important;
+}
+
+.report-chart-plot {
+  position: relative;
+  width: 100%;
+  height: 100%;
+}
+
+.report-chart-plot svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+
+.report-chart-floating-tooltip {
+  position: absolute;
+  z-index: 2;
+  max-width: 240px;
+  padding: 9px 11px;
+  border: 1px solid var(--border, rgba(148, 163, 184, 0.35));
+  border-radius: 6px;
+  background: var(--bg-card, rgba(15, 23, 42, 0.94));
+  color: var(--text, #ffffff);
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1.25;
+  pointer-events: none;
+  transform: translate(-50%, calc(-100% - 10px));
+  white-space: nowrap;
+}
+
+.report-chart-floating-tooltip[hidden] {
+  display: none;
 }
 
 .report-metric-grid {
