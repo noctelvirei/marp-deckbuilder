@@ -62,6 +62,7 @@ Use these renderer-backed component tags in `report.md`. They look like HTML tag
 | Chart.js scatter chart | `<report-chart type="scatter">` | numeric `points` as `x:y` pairs |
 | Chart.js bubble chart | `<report-chart type="bubble">` | numeric `points` as `x:y:r` triples |
 | Chart.js histogram | `<report-chart type="histogram">` | raw numeric `values`; optional `bins` |
+| Chart.js boxplot | `<report-chart type="boxplot">` | `labels`, matrix `values` with observations per label |
 | Observable Plot area chart | `<report-chart type="area">` | `points` as `x:y` pairs, or `labels` and `values` |
 | D3 treemap | `<report-chart type="treemap">` | `labels`, `values` |
 | D3 funnel | `<report-chart type="funnel">` | `labels`, `values` |
@@ -93,6 +94,7 @@ Generate `report.md` in this order:
 - Use `<report-chart type="scatter">` for numeric relationship plots; provide `points` as `x:y` pairs and optional `x-label`/`y-label`.
 - Use `<report-chart type="bubble">` for numeric relationship plots where bubble radius carries magnitude; provide `points` as `x:y:r` triples.
 - Use `<report-chart type="histogram">` for distributions; provide raw numeric `values` and optional `bins` between 2 and 30.
+- Use `<report-chart type="boxplot">` for spread and outlier context; provide `labels` and semicolon-separated observation rows in `values`.
 - Use `<report-chart type="area">` for Observable Plot time-series area charts with renderer-owned hover tips.
 - Use `<report-chart type="treemap">` for D3 treemaps with renderer-owned sizing, brand colors, and hover tips.
 - Use `<report-chart type="funnel">` for D3 stage funnels with renderer-owned hover tips.

@@ -144,6 +144,17 @@ April volume is concentrated in one dominant journey. The top three journeys acc
   values="5,6,7,7,8,10,11,12,12,13,15,17,18,21,23,24,26,28"
 ></report-chart>
 
+## Cycle Time Spread
+
+<report-chart
+  type="boxplot"
+  title="Cycle time spread by journey type"
+  series="Days"
+  y-label="Days"
+  labels="Digital,Assisted,Exceptions"
+  values="5|6|7|7|8|10|12;8|10|11|12|14|15|18;14|16|18|21|23|24|28"
+></report-chart>
+
 ## Completion Funnel
 
 <report-chart

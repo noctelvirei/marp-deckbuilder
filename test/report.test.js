@@ -608,6 +608,38 @@ test('expands report histogram charts into computed Chart.js bins', async () => 
   assert.match(rendered.document, /"Count: " \+ valueFormatter\.format\(context\.parsed\.y\)/)
 })
 
+test('expands report boxplot charts into Chart.js quartile plots', async () => {
+  const definitions = await loadDefinitions(new URL('../resources/definitions', import.meta.url))
+  const rendered = renderReportHtml(
+    `# Boxplot chart report
+
+<report-chart
+  type="boxplot"
+  title="Cycle time spread"
+  series="Days"
+  y-label="Days"
+  labels="Digital,Assisted"
+  values="5|7|9|11|13;8|10|12|14|16"
+></report-chart>
+`,
+    {
+      resourcesDir: path.resolve('resources'),
+      definitions,
+      inlineAssets: true,
+    },
+  )
+
+  assert.doesNotMatch(rendered.document, /<report-chart/i)
+  assert.match(rendered.document, /class="report-chart report-chart-boxplot"/)
+  assert.match(rendered.document, /id: "reportBoxplotWhiskers"/)
+  assert.match(rendered.document, /"q1":7/)
+  assert.match(rendered.document, /"median":9/)
+  assert.match(rendered.document, /"q3":11/)
+  assert.match(rendered.document, /data: stats\.map\(\(item\) => \[item\.q1, item\.q3\]\)/)
+  assert.match(rendered.document, /"Median: " \+ formatTooltipValue\(item\.median\)/)
+  assert.match(rendered.document, /borderSkipped:\s*false/)
+})
+
 test('allows Chart.js, Observable Plot, and D3 report charts to coexist', async () => {
   const definitions = await loadDefinitions(new URL('../resources/definitions', import.meta.url))
   const rendered = renderReportHtml(
@@ -1693,7 +1725,27 @@ test('report chart components fail clearly when data is invalid', async () => {
   )
   assert.throws(
     () => renderReportHtml('<report-chart type="radar" labels="A" values="10"></report-chart>', options),
-    /report-chart type "radar" is not available\. Supported types: bar, line, doughnut, area, treemap, funnel, grouped-bar, stacked-bar, heatmap, waterfall, bullet, scatter, bubble, histogram\. Ask the skill maker to add missing chart types/,
+    /report-chart type "radar" is not available\. Supported types: bar, line, doughnut, area, treemap, funnel, grouped-bar, stacked-bar, heatmap, waterfall, bullet, scatter, bubble, histogram, boxplot\. Ask the skill maker to add missing chart types/,
+  )
+  assert.throws(
+    () => renderReportHtml('<report-chart type="boxplot" values="1|2|3|4|5"></report-chart>', options),
+    /report-chart type="boxplot" requires non-empty labels/,
+  )
+  assert.throws(
+    () => renderReportHtml('<report-chart type="boxplot" labels="A"></report-chart>', options),
+    /report-chart type="boxplot" requires matrix values in values, matrix, or series-values/,
+  )
+  assert.throws(
+    () => renderReportHtml('<report-chart type="boxplot" labels="A,B" values="1|2|3|4|5"></report-chart>', options),
+    /report-chart type="boxplot" labels\/rows length mismatch/,
+  )
+  assert.throws(
+    () => renderReportHtml('<report-chart type="boxplot" labels="A" values="1|2|3|4"></report-chart>', options),
+    /report-chart type="boxplot" row 1 must include at least 5 numeric observations/,
+  )
+  assert.throws(
+    () => renderReportHtml('<report-chart type="boxplot" labels="A" values="1|2|3|4|nope"></report-chart>', options),
+    /report-chart type="boxplot" row 1 values must all be numeric/,
   )
   assert.throws(
     () => renderReportHtml('<report-chart type="histogram"></report-chart>', options),

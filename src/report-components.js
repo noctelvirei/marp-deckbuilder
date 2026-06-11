@@ -295,13 +295,14 @@ function validateReportChart(chart, context) {
     'scatter',
     'bubble',
     'histogram',
+    'boxplot',
     'grouped-bar',
     'stacked-bar',
     'heatmap',
   ])
   if (!supportedTypes.has(chart.chartType)) {
     fail(
-      `report-chart type "${chart.chartType}" is not available. Supported types: bar, line, doughnut, area, treemap, funnel, grouped-bar, stacked-bar, heatmap, waterfall, bullet, scatter, bubble, histogram. Ask the skill maker to add missing chart types.`,
+      `report-chart type "${chart.chartType}" is not available. Supported types: bar, line, doughnut, area, treemap, funnel, grouped-bar, stacked-bar, heatmap, waterfall, bullet, scatter, bubble, histogram, boxplot. Ask the skill maker to add missing chart types.`,
       context,
     )
   }
@@ -354,6 +355,10 @@ function validateReportChart(chart, context) {
     validateReportHistogramChart(chart, context)
     return
   }
+  if (chart.chartType === 'boxplot') {
+    validateReportBoxplotChart(chart, context)
+    return
+  }
   validateReportChartLabelsAndValues(chart, context)
   if (chart.chartType === 'bullet') {
     validateReportBulletChart(chart, context)
@@ -385,6 +390,29 @@ function validateReportChartLabelsAndValues(chart, context) {
   if (chart.values.some((value) => !Number.isFinite(value))) {
     fail('report-chart values must all be numeric.', context)
   }
+}
+
+function validateReportBoxplotChart(chart, context) {
+  if (chart.labels.length === 0) {
+    fail('report-chart type="boxplot" requires non-empty labels.', context)
+  }
+  if (chart.matrix.length === 0) {
+    fail('report-chart type="boxplot" requires matrix values in values, matrix, or series-values.', context)
+  }
+  if (chart.matrix.length !== chart.labels.length) {
+    fail(
+      `report-chart type="boxplot" labels/rows length mismatch: ${chart.labels.length} label(s), ${chart.matrix.length} row(s).`,
+      context,
+    )
+  }
+  chart.matrix.forEach((row, rowIndex) => {
+    if (row.length < 5) {
+      fail(`report-chart type="boxplot" row ${rowIndex + 1} must include at least 5 numeric observations.`, context)
+    }
+    if (row.some((value) => !Number.isFinite(value))) {
+      fail(`report-chart type="boxplot" row ${rowIndex + 1} values must all be numeric.`, context)
+    }
+  })
 }
 
 function validateReportHistogramChart(chart, context) {

@@ -25,7 +25,7 @@ export function parseReportChart(chart, index = 0) {
   const matrix = parseChartMatrix(
     chart.attr('matrix') ||
       chart.attr('series-values') ||
-      (['grouped-bar', 'stacked-bar', 'heatmap'].includes(type) ? chart.attr('values') : ''),
+      (['grouped-bar', 'stacked-bar', 'heatmap', 'boxplot'].includes(type) ? chart.attr('values') : ''),
   )
   const derivedPoints =
     points.length > 0

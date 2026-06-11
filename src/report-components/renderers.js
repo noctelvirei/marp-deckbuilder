@@ -383,6 +383,7 @@ export function renderReportChartScript(chart, context = {}) {
   if (chart.chartType === 'scatter') return renderReportScatterChartScript(chart, context)
   if (chart.chartType === 'bubble') return renderReportBubbleChartScript(chart, context)
   if (chart.chartType === 'histogram') return renderReportHistogramChartScript(chart, context)
+  if (chart.chartType === 'boxplot') return renderReportBoxplotChartScript(chart, context)
 
   const palette = chart.colors.length ? chart.colors : reportChartPalette(context.brand)
   const colors = chart.labels.map((_, index) => normalizeChartColor(palette[index % palette.length]))
@@ -489,6 +490,147 @@ ${datasetOptions}
         }
       }
 ${chartScales}
+    }
+  });
+})();`
+}
+
+function renderReportBoxplotChartScript(chart, context = {}) {
+  const palette = chart.colors.length ? chart.colors : reportChartPalette(context.brand)
+  const boxColor = normalizeChartColor(palette[0]) || '#0F82F5'
+  const medianColor = normalizeChartColor(palette[5]) || '#FC5161'
+  const stats = chart.labels.map((label, index) => {
+    const values = [...chart.matrix[index]].sort((left, right) => left - right)
+    return {
+      label,
+      min: values[0],
+      q1: quantile(values, 0.25),
+      median: quantile(values, 0.5),
+      q3: quantile(values, 0.75),
+      max: values[values.length - 1],
+    }
+  })
+
+  return `(() => {
+  const canvas = document.getElementById(${jsString(chart.id)});
+  const themeRoot = canvas.closest(".deck-report") || document.body || document.documentElement;
+  const rootStyle = getComputedStyle(themeRoot);
+  const tickColor = rootStyle.getPropertyValue("--text-dim").trim() || "#64748b";
+  const gridColor = rootStyle.getPropertyValue("--border").trim() || "rgba(148, 163, 184, 0.28)";
+  const tooltipBg = rootStyle.getPropertyValue("--bg-card").trim() || "rgba(15, 23, 42, 0.92)";
+  const tooltipText = rootStyle.getPropertyValue("--text").trim() || "#ffffff";
+  const tooltipMuted = rootStyle.getPropertyValue("--text-dim").trim() || "#cbd5e1";
+  const valuePrefix = ${jsString(chart.valuePrefix)};
+  const valueSuffix = ${jsString(chart.valueSuffix)};
+  const stats = ${jsValue(stats)};
+  const medianColor = ${jsString(medianColor)};
+  const valueFormatter = new Intl.NumberFormat("en-US", { maximumFractionDigits: 2 });
+  const formatTooltipValue = (value) => {
+    const numeric = Number(value);
+    const formatted = Number.isFinite(numeric) ? valueFormatter.format(numeric) : String(value ?? "");
+    return valuePrefix + formatted + valueSuffix;
+  };
+  const boxplotPlugin = {
+    id: "reportBoxplotWhiskers",
+    afterDatasetsDraw(chart) {
+      const meta = chart.getDatasetMeta(0);
+      const yScale = chart.scales.y;
+      const ctx = chart.ctx;
+      ctx.save();
+      ctx.strokeStyle = medianColor;
+      ctx.lineWidth = 2;
+      ctx.lineCap = "round";
+      stats.forEach((item, index) => {
+        const bar = meta.data[index];
+        if (!bar) return;
+        const x = bar.x;
+        const halfWidth = Math.max(10, Math.min(28, Math.abs(bar.width || 28) / 2));
+        const minY = yScale.getPixelForValue(item.min);
+        const maxY = yScale.getPixelForValue(item.max);
+        const medianY = yScale.getPixelForValue(item.median);
+        ctx.beginPath();
+        ctx.moveTo(x, minY);
+        ctx.lineTo(x, maxY);
+        ctx.moveTo(x - halfWidth, minY);
+        ctx.lineTo(x + halfWidth, minY);
+        ctx.moveTo(x - halfWidth, maxY);
+        ctx.lineTo(x + halfWidth, maxY);
+        ctx.moveTo(x - halfWidth, medianY);
+        ctx.lineTo(x + halfWidth, medianY);
+        ctx.stroke();
+      });
+      ctx.restore();
+    }
+  };
+  new Chart(canvas, {
+    type: "bar",
+    data: {
+      labels: ${jsValue(chart.labels)},
+      datasets: [{
+        label: ${jsString(chart.series || 'Interquartile range')},
+        data: stats.map((item) => [item.q1, item.q3]),
+        backgroundColor: ${jsString(hexToRgba(boxColor, 0.52))},
+        borderColor: ${jsString(boxColor)},
+        borderWidth: 2,
+        borderSkipped: false,
+        borderRadius: 4,
+        barPercentage: 0.58,
+        categoryPercentage: 0.7
+      }]
+    },
+    plugins: [boxplotPlugin],
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      interaction: {
+        mode: "index",
+        intersect: false
+      },
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          enabled: true,
+          mode: "index",
+          intersect: false,
+          backgroundColor: tooltipBg,
+          titleColor: tooltipText,
+          bodyColor: tooltipMuted,
+          borderColor: gridColor,
+          borderWidth: 1,
+          displayColors: false,
+          padding: 12,
+          callbacks: {
+            label: (context) => {
+              const item = stats[context.dataIndex];
+              return [
+                "Min: " + formatTooltipValue(item.min),
+                "Q1: " + formatTooltipValue(item.q1),
+                "Median: " + formatTooltipValue(item.median),
+                "Q3: " + formatTooltipValue(item.q3),
+                "Max: " + formatTooltipValue(item.max)
+              ];
+            }
+          }
+        }
+      },
+      scales: {
+        x: {
+          ticks: { color: tickColor },
+          grid: { color: gridColor }
+        },
+        y: {
+          title: {
+            display: ${chart.yAxisLabel ? 'true' : 'false'},
+            text: ${jsString(chart.yAxisLabel)},
+            color: tickColor
+          },
+          ticks: {
+            color: tickColor,
+            callback: value => Number(value).toLocaleString()
+          },
+          grid: { color: gridColor }
+        }
+      }
     }
   });
 })();`
@@ -1554,6 +1696,16 @@ function formatBinLabel(value) {
   if (!Number.isFinite(value)) return String(value)
   const rounded = Math.round(value * 100) / 100
   return Number.isInteger(rounded) ? String(rounded) : rounded.toFixed(2).replace(/0+$/, '').replace(/\.$/, '')
+}
+
+function quantile(values, fraction) {
+  if (!values.length) return 0
+  const position = (values.length - 1) * fraction
+  const lower = Math.floor(position)
+  const upper = Math.ceil(position)
+  if (lower === upper) return values[lower]
+  const weight = position - lower
+  return values[lower] * (1 - weight) + values[upper] * weight
 }
 
 function clampPercent(value) {
