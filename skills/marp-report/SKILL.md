@@ -58,6 +58,7 @@ Use these renderer-backed component tags in `report.md`. They look like HTML tag
 | Chart.js grouped bar chart | `<report-chart type="grouped-bar">` | `labels`, `series`, matrix `values` |
 | Chart.js stacked bar chart | `<report-chart type="stacked-bar">` | `labels`, `series`, matrix `values` |
 | Chart.js waterfall chart | `<report-chart type="waterfall">` | `labels`, `values` as sequential deltas |
+| Chart.js bullet chart | `<report-chart type="bullet">` | `labels`, `values`, `targets` |
 | Observable Plot area chart | `<report-chart type="area">` | `points` as `x:y` pairs, or `labels` and `values` |
 | D3 treemap | `<report-chart type="treemap">` | `labels`, `values` |
 | D3 funnel | `<report-chart type="funnel">` | `labels`, `values` |
@@ -85,6 +86,7 @@ Generate `report.md` in this order:
 - Use `<report-chart type="grouped-bar">` for Chart.js grouped comparisons with matrix `values` like `10|20;12|24`.
 - Use `<report-chart type="stacked-bar">` for Chart.js cumulative comparisons with the same matrix syntax.
 - Use `<report-chart type="waterfall">` for sequential positive/negative movement; each `values` entry is a delta.
+- Use `<report-chart type="bullet">` for actual-vs-target comparisons; `values` are actuals and `targets` are target markers.
 - Use `<report-chart type="area">` for Observable Plot time-series area charts with renderer-owned hover tips.
 - Use `<report-chart type="treemap">` for D3 treemaps with renderer-owned sizing, brand colors, and hover tips.
 - Use `<report-chart type="funnel">` for D3 stage funnels with renderer-owned hover tips.

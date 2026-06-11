@@ -291,13 +291,14 @@ function validateReportChart(chart, context) {
     'treemap',
     'funnel',
     'waterfall',
+    'bullet',
     'grouped-bar',
     'stacked-bar',
     'heatmap',
   ])
   if (!supportedTypes.has(chart.chartType)) {
     fail(
-      `report-chart type "${chart.chartType}" is not available. Supported types: bar, line, doughnut, area, treemap, funnel, grouped-bar, stacked-bar, heatmap, waterfall. Ask the skill maker to add missing chart types.`,
+      `report-chart type "${chart.chartType}" is not available. Supported types: bar, line, doughnut, area, treemap, funnel, grouped-bar, stacked-bar, heatmap, waterfall, bullet. Ask the skill maker to add missing chart types.`,
       context,
     )
   }
@@ -339,6 +340,10 @@ function validateReportChart(chart, context) {
     return
   }
   validateReportChartLabelsAndValues(chart, context)
+  if (chart.chartType === 'bullet') {
+    validateReportBulletChart(chart, context)
+    return
+  }
   if (chart.chartType === 'waterfall') {
     return
   }
@@ -364,6 +369,27 @@ function validateReportChartLabelsAndValues(chart, context) {
   }
   if (chart.values.some((value) => !Number.isFinite(value))) {
     fail('report-chart values must all be numeric.', context)
+  }
+}
+
+function validateReportBulletChart(chart, context) {
+  if (chart.targets.length === 0) {
+    fail('report-chart type="bullet" requires targets or target-values.', context)
+  }
+  if (chart.targets.length !== chart.labels.length) {
+    fail(
+      `report-chart type="bullet" labels/targets length mismatch: ${chart.labels.length} label(s), ${chart.targets.length} target(s).`,
+      context,
+    )
+  }
+  if (chart.targets.some((value) => !Number.isFinite(value))) {
+    fail('report-chart type="bullet" targets must all be numeric.', context)
+  }
+  if (chart.values.some((value) => value < 0) || chart.targets.some((value) => value < 0)) {
+    fail('report-chart type="bullet" values and targets must be zero or positive.', context)
+  }
+  if ([...chart.values, ...chart.targets].reduce((max, value) => Math.max(max, value), 0) <= 0) {
+    fail('report-chart type="bullet" values and targets must include at least one value above zero.', context)
   }
 }
 

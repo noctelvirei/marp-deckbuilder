@@ -375,6 +375,7 @@ Reports can use:
 - Chart.js grouped bars via `report-chart type="grouped-bar"`.
 - Chart.js stacked bars via `report-chart type="stacked-bar"`.
 - Chart.js waterfall charts via `report-chart type="waterfall"`.
+- Chart.js bullet charts via `report-chart type="bullet"`.
 - Observable Plot charts via `report-chart type="area"`.
 - D3 charts via `report-chart type="treemap"`.
 - D3 funnels via `report-chart type="funnel"`.

@@ -379,6 +379,7 @@ export function renderReportChartScript(chart, context = {}) {
   if (chart.chartType === 'grouped-bar') return renderReportMultiBarChartScript(chart, context, { stacked: false })
   if (chart.chartType === 'stacked-bar') return renderReportMultiBarChartScript(chart, context, { stacked: true })
   if (chart.chartType === 'waterfall') return renderReportWaterfallChartScript(chart, context)
+  if (chart.chartType === 'bullet') return renderReportBulletChartScript(chart, context)
 
   const palette = chart.colors.length ? chart.colors : reportChartPalette(context.brand)
   const colors = chart.labels.map((_, index) => normalizeChartColor(palette[index % palette.length]))
@@ -485,6 +486,119 @@ ${datasetOptions}
         }
       }
 ${chartScales}
+    }
+  });
+})();`
+}
+
+function renderReportBulletChartScript(chart, context = {}) {
+  const palette = chart.colors.length ? chart.colors : reportChartPalette(context.brand)
+  const barColor = normalizeChartColor(palette[0]) || '#0F82F5'
+  const targetColor = normalizeChartColor(palette[5]) || '#FC5161'
+
+  return `(() => {
+  const canvas = document.getElementById(${jsString(chart.id)});
+  const themeRoot = canvas.closest(".deck-report") || document.body || document.documentElement;
+  const rootStyle = getComputedStyle(themeRoot);
+  const tickColor = rootStyle.getPropertyValue("--text-dim").trim() || "#64748b";
+  const gridColor = rootStyle.getPropertyValue("--border").trim() || "rgba(148, 163, 184, 0.28)";
+  const tooltipBg = rootStyle.getPropertyValue("--bg-card").trim() || "rgba(15, 23, 42, 0.92)";
+  const tooltipText = rootStyle.getPropertyValue("--text").trim() || "#ffffff";
+  const tooltipMuted = rootStyle.getPropertyValue("--text-dim").trim() || "#cbd5e1";
+  const valuePrefix = ${jsString(chart.valuePrefix)};
+  const valueSuffix = ${jsString(chart.valueSuffix)};
+  const targets = ${jsValue(chart.targets)};
+  const targetColor = ${jsString(targetColor)};
+  const valueFormatter = new Intl.NumberFormat("en-US", { maximumFractionDigits: 2 });
+  const formatTooltipValue = (value) => {
+    const numeric = Number(value);
+    const formatted = Number.isFinite(numeric) ? valueFormatter.format(numeric) : String(value ?? "");
+    return valuePrefix + formatted + valueSuffix;
+  };
+  const targetMarkerPlugin = {
+    id: "reportBulletTargetMarkers",
+    afterDatasetsDraw(chart) {
+      const meta = chart.getDatasetMeta(0);
+      const xScale = chart.scales.x;
+      const ctx = chart.ctx;
+      ctx.save();
+      ctx.strokeStyle = targetColor;
+      ctx.lineWidth = 3;
+      ctx.lineCap = "round";
+      targets.forEach((target, index) => {
+        const bar = meta.data[index];
+        if (!bar) return;
+        const x = xScale.getPixelForValue(target);
+        const markerHeight = Math.min(34, Math.max(16, Math.abs(bar.height || 24) + 8));
+        ctx.beginPath();
+        ctx.moveTo(x, bar.y - markerHeight / 2);
+        ctx.lineTo(x, bar.y + markerHeight / 2);
+        ctx.stroke();
+      });
+      ctx.restore();
+    }
+  };
+  new Chart(canvas, {
+    type: "bar",
+    data: {
+      labels: ${jsValue(chart.labels)},
+      datasets: [{
+        label: ${jsString(chart.series || 'Actual')},
+        data: ${jsValue(chart.values)},
+        backgroundColor: ${jsString(barColor)},
+        borderRadius: 5,
+        borderSkipped: false,
+        barPercentage: 0.58,
+        categoryPercentage: 0.72
+      }]
+    },
+    plugins: [targetMarkerPlugin],
+    options: {
+      indexAxis: "y",
+      responsive: true,
+      maintainAspectRatio: false,
+      interaction: {
+        mode: "nearest",
+        intersect: true
+      },
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          enabled: true,
+          mode: "nearest",
+          intersect: true,
+          backgroundColor: tooltipBg,
+          titleColor: tooltipText,
+          bodyColor: tooltipMuted,
+          borderColor: gridColor,
+          borderWidth: 1,
+          displayColors: false,
+          padding: 12,
+          callbacks: {
+            label: (context) => {
+              const target = targets[context.dataIndex];
+              return [
+                "Actual: " + formatTooltipValue(context.parsed.x),
+                "Target: " + formatTooltipValue(target)
+              ];
+            }
+          }
+        }
+      },
+      scales: {
+        x: {
+          beginAtZero: true,
+          ticks: {
+            color: tickColor,
+            callback: value => Number(value).toLocaleString()
+          },
+          grid: { color: gridColor }
+        },
+        y: {
+          ticks: { color: tickColor },
+          grid: { display: false }
+        }
+      }
     }
   });
 })();`

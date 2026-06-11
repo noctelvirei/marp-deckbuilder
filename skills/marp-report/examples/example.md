@@ -96,6 +96,18 @@ April volume is concentrated in one dominant journey. The top three journeys acc
   values="52000,6400,-1200,3750"
 ></report-chart>
 
+## SLA Against Target
+
+<report-chart
+  type="bullet"
+  title="SLA attainment against target"
+  series="Actual"
+  value-suffix="%"
+  labels="Digital,Assisted,Exceptions"
+  values="92,84,63"
+  targets="95,90,75"
+></report-chart>
+
 ## Completion Funnel
 
 <report-chart

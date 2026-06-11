@@ -481,6 +481,38 @@ test('expands report waterfall charts into Chart.js floating bars', async () => 
   assert.match(rendered.document, /borderSkipped:\s*false/)
 })
 
+test('expands report bullet charts into Chart.js target comparisons', async () => {
+  const definitions = await loadDefinitions(new URL('../resources/definitions', import.meta.url))
+  const rendered = renderReportHtml(
+    `# Bullet chart report
+
+<report-chart
+  type="bullet"
+  title="SLA attainment"
+  series="Actual"
+  value-suffix="%"
+  labels="Digital,Assisted,Exceptions"
+  values="92,84,63"
+  targets="95,90,75"
+></report-chart>
+`,
+    {
+      resourcesDir: path.resolve('resources'),
+      definitions,
+      inlineAssets: true,
+    },
+  )
+
+  assert.doesNotMatch(rendered.document, /<report-chart/i)
+  assert.match(rendered.document, /class="report-chart report-chart-bullet"/)
+  assert.match(rendered.document, /indexAxis:\s*"y"/)
+  assert.match(rendered.document, /const targets = \[95,90,75\]/)
+  assert.match(rendered.document, /id: "reportBulletTargetMarkers"/)
+  assert.match(rendered.document, /xScale\.getPixelForValue\(target\)/)
+  assert.match(rendered.document, /"Actual: " \+ formatTooltipValue\(context\.parsed\.x\)/)
+  assert.match(rendered.document, /"Target: " \+ formatTooltipValue\(target\)/)
+})
+
 test('allows Chart.js, Observable Plot, and D3 report charts to coexist', async () => {
   const definitions = await loadDefinitions(new URL('../resources/definitions', import.meta.url))
   const rendered = renderReportHtml(
@@ -1566,7 +1598,23 @@ test('report chart components fail clearly when data is invalid', async () => {
   )
   assert.throws(
     () => renderReportHtml('<report-chart type="radar" labels="A" values="10"></report-chart>', options),
-    /report-chart type "radar" is not available\. Supported types: bar, line, doughnut, area, treemap, funnel, grouped-bar, stacked-bar, heatmap, waterfall\. Ask the skill maker to add missing chart types/,
+    /report-chart type "radar" is not available\. Supported types: bar, line, doughnut, area, treemap, funnel, grouped-bar, stacked-bar, heatmap, waterfall, bullet\. Ask the skill maker to add missing chart types/,
+  )
+  assert.throws(
+    () => renderReportHtml('<report-chart type="bullet" labels="A" values="10"></report-chart>', options),
+    /report-chart type="bullet" requires targets or target-values/,
+  )
+  assert.throws(
+    () => renderReportHtml('<report-chart type="bullet" labels="A,B" values="10,20" targets="12"></report-chart>', options),
+    /report-chart type="bullet" labels\/targets length mismatch/,
+  )
+  assert.throws(
+    () => renderReportHtml('<report-chart type="bullet" labels="A" values="10" targets="nope"></report-chart>', options),
+    /report-chart type="bullet" targets must all be numeric/,
+  )
+  assert.throws(
+    () => renderReportHtml('<report-chart type="bullet" labels="A" values="-1" targets="10"></report-chart>', options),
+    /report-chart type="bullet" values and targets must be zero or positive/,
   )
   assert.throws(
     () => renderReportHtml('<report-chart type="doughnut" labels="A,B" values="10,-1"></report-chart>', options),

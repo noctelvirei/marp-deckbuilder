@@ -4734,6 +4734,9 @@ function parseReportChart(chart, index = 0) {
   const type = normalizeChartType(chart.attr("type") || "bar");
   const labels = splitCsv(chart.attr("labels"));
   const values = splitCsv(chart.attr("values")).map((value) => Number(value));
+  const targets = splitCsv(chart.attr("targets") || chart.attr("target-values") || chart.attr("target")).map(
+    (value) => Number(value)
+  );
   const title = chart.attr("title") || cleanText(chart.find("h2,h3,figcaption").first().text());
   const series = chart.attr("series") || title || "Series 1";
   const colors = splitCsv(chart.attr("colors"));
@@ -4761,6 +4764,7 @@ function parseReportChart(chart, index = 0) {
     series,
     labels,
     values,
+    targets,
     colors,
     points: derivedPoints,
     seriesNames,
@@ -5424,6 +5428,7 @@ function renderReportChartScript(chart, context = {}) {
   if (chart.chartType === "grouped-bar") return renderReportMultiBarChartScript(chart, context, { stacked: false });
   if (chart.chartType === "stacked-bar") return renderReportMultiBarChartScript(chart, context, { stacked: true });
   if (chart.chartType === "waterfall") return renderReportWaterfallChartScript(chart, context);
+  if (chart.chartType === "bullet") return renderReportBulletChartScript(chart, context);
   const palette = chart.colors.length ? chart.colors : reportChartPalette(context.brand);
   const colors = chart.labels.map((_, index) => normalizeChartColor(palette[index % palette.length]));
   const primaryColor = normalizeChartColor(palette[0]) || "#0F82F5";
@@ -5517,6 +5522,117 @@ ${datasetOptions}
         }
       }
 ${chartScales}
+    }
+  });
+})();`;
+}
+function renderReportBulletChartScript(chart, context = {}) {
+  const palette = chart.colors.length ? chart.colors : reportChartPalette(context.brand);
+  const barColor = normalizeChartColor(palette[0]) || "#0F82F5";
+  const targetColor = normalizeChartColor(palette[5]) || "#FC5161";
+  return `(() => {
+  const canvas = document.getElementById(${jsString(chart.id)});
+  const themeRoot = canvas.closest(".deck-report") || document.body || document.documentElement;
+  const rootStyle = getComputedStyle(themeRoot);
+  const tickColor = rootStyle.getPropertyValue("--text-dim").trim() || "#64748b";
+  const gridColor = rootStyle.getPropertyValue("--border").trim() || "rgba(148, 163, 184, 0.28)";
+  const tooltipBg = rootStyle.getPropertyValue("--bg-card").trim() || "rgba(15, 23, 42, 0.92)";
+  const tooltipText = rootStyle.getPropertyValue("--text").trim() || "#ffffff";
+  const tooltipMuted = rootStyle.getPropertyValue("--text-dim").trim() || "#cbd5e1";
+  const valuePrefix = ${jsString(chart.valuePrefix)};
+  const valueSuffix = ${jsString(chart.valueSuffix)};
+  const targets = ${jsValue(chart.targets)};
+  const targetColor = ${jsString(targetColor)};
+  const valueFormatter = new Intl.NumberFormat("en-US", { maximumFractionDigits: 2 });
+  const formatTooltipValue = (value) => {
+    const numeric = Number(value);
+    const formatted = Number.isFinite(numeric) ? valueFormatter.format(numeric) : String(value ?? "");
+    return valuePrefix + formatted + valueSuffix;
+  };
+  const targetMarkerPlugin = {
+    id: "reportBulletTargetMarkers",
+    afterDatasetsDraw(chart) {
+      const meta = chart.getDatasetMeta(0);
+      const xScale = chart.scales.x;
+      const ctx = chart.ctx;
+      ctx.save();
+      ctx.strokeStyle = targetColor;
+      ctx.lineWidth = 3;
+      ctx.lineCap = "round";
+      targets.forEach((target, index) => {
+        const bar = meta.data[index];
+        if (!bar) return;
+        const x = xScale.getPixelForValue(target);
+        const markerHeight = Math.min(34, Math.max(16, Math.abs(bar.height || 24) + 8));
+        ctx.beginPath();
+        ctx.moveTo(x, bar.y - markerHeight / 2);
+        ctx.lineTo(x, bar.y + markerHeight / 2);
+        ctx.stroke();
+      });
+      ctx.restore();
+    }
+  };
+  new Chart(canvas, {
+    type: "bar",
+    data: {
+      labels: ${jsValue(chart.labels)},
+      datasets: [{
+        label: ${jsString(chart.series || "Actual")},
+        data: ${jsValue(chart.values)},
+        backgroundColor: ${jsString(barColor)},
+        borderRadius: 5,
+        borderSkipped: false,
+        barPercentage: 0.58,
+        categoryPercentage: 0.72
+      }]
+    },
+    plugins: [targetMarkerPlugin],
+    options: {
+      indexAxis: "y",
+      responsive: true,
+      maintainAspectRatio: false,
+      interaction: {
+        mode: "nearest",
+        intersect: true
+      },
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          enabled: true,
+          mode: "nearest",
+          intersect: true,
+          backgroundColor: tooltipBg,
+          titleColor: tooltipText,
+          bodyColor: tooltipMuted,
+          borderColor: gridColor,
+          borderWidth: 1,
+          displayColors: false,
+          padding: 12,
+          callbacks: {
+            label: (context) => {
+              const target = targets[context.dataIndex];
+              return [
+                "Actual: " + formatTooltipValue(context.parsed.x),
+                "Target: " + formatTooltipValue(target)
+              ];
+            }
+          }
+        }
+      },
+      scales: {
+        x: {
+          beginAtZero: true,
+          ticks: {
+            color: tickColor,
+            callback: value => Number(value).toLocaleString()
+          },
+          grid: { color: gridColor }
+        },
+        y: {
+          ticks: { color: tickColor },
+          grid: { display: false }
+        }
+      }
     }
   });
 })();`;
@@ -6367,13 +6483,14 @@ function validateReportChart(chart, context) {
     "treemap",
     "funnel",
     "waterfall",
+    "bullet",
     "grouped-bar",
     "stacked-bar",
     "heatmap"
   ]);
   if (!supportedTypes.has(chart.chartType)) {
     fail(
-      `report-chart type "${chart.chartType}" is not available. Supported types: bar, line, doughnut, area, treemap, funnel, grouped-bar, stacked-bar, heatmap, waterfall. Ask the skill maker to add missing chart types.`,
+      `report-chart type "${chart.chartType}" is not available. Supported types: bar, line, doughnut, area, treemap, funnel, grouped-bar, stacked-bar, heatmap, waterfall, bullet. Ask the skill maker to add missing chart types.`,
       context
     );
   }
@@ -6415,6 +6532,10 @@ function validateReportChart(chart, context) {
     return;
   }
   validateReportChartLabelsAndValues(chart, context);
+  if (chart.chartType === "bullet") {
+    validateReportBulletChart(chart, context);
+    return;
+  }
   if (chart.chartType === "waterfall") {
     return;
   }
@@ -6439,6 +6560,26 @@ function validateReportChartLabelsAndValues(chart, context) {
   }
   if (chart.values.some((value) => !Number.isFinite(value))) {
     fail("report-chart values must all be numeric.", context);
+  }
+}
+function validateReportBulletChart(chart, context) {
+  if (chart.targets.length === 0) {
+    fail('report-chart type="bullet" requires targets or target-values.', context);
+  }
+  if (chart.targets.length !== chart.labels.length) {
+    fail(
+      `report-chart type="bullet" labels/targets length mismatch: ${chart.labels.length} label(s), ${chart.targets.length} target(s).`,
+      context
+    );
+  }
+  if (chart.targets.some((value) => !Number.isFinite(value))) {
+    fail('report-chart type="bullet" targets must all be numeric.', context);
+  }
+  if (chart.values.some((value) => value < 0) || chart.targets.some((value) => value < 0)) {
+    fail('report-chart type="bullet" values and targets must be zero or positive.', context);
+  }
+  if ([...chart.values, ...chart.targets].reduce((max, value) => Math.max(max, value), 0) <= 0) {
+    fail('report-chart type="bullet" values and targets must include at least one value above zero.', context);
   }
 }
 function validateReportMultiSeriesChart(chart, context) {

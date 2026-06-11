@@ -5,6 +5,9 @@ export function parseReportChart(chart, index = 0) {
   const type = normalizeChartType(chart.attr('type') || 'bar')
   const labels = splitCsv(chart.attr('labels'))
   const values = splitCsv(chart.attr('values')).map((value) => Number(value))
+  const targets = splitCsv(chart.attr('targets') || chart.attr('target-values') || chart.attr('target')).map((value) =>
+    Number(value),
+  )
   const title = chart.attr('title') || cleanText(chart.find('h2,h3,figcaption').first().text())
   const series = chart.attr('series') || title || 'Series 1'
   const colors = splitCsv(chart.attr('colors'))
@@ -38,6 +41,7 @@ export function parseReportChart(chart, index = 0) {
     series,
     labels,
     values,
+    targets,
     colors,
     points: derivedPoints,
     seriesNames,
