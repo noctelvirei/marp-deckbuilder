@@ -361,12 +361,11 @@ Reports can use:
 - Accent cards via `report-accent-card`.
 - Badges via `report-badge`.
 - Tables.
-- Inline SVG.
 - Chart.js charts via `report-chart type="bar"`, `line`, and `doughnut`.
 - Observable Plot charts via `report-chart type="area"`.
 - D3 charts via `report-chart type="treemap"`.
 
-The report build wrapper injects vendored chart libraries into the generated HTML head and strips known CDN tags. Agents should not paste minified library code, chart containers, or chart initializer scripts into Markdown when a supported `report-*` component exists.
+The report build wrapper injects vendored chart libraries into the generated HTML head and strips known CDN tags. Report Markdown should contain prose, Markdown tables/lists, and supported `report-*` component calls only. Agents should not paste raw HTML, inline SVG, CSS, minified library code, chart containers, or chart initializer scripts into report Markdown. If a display type is missing, add it as a renderer-backed report component first.
 
 Use `skills/marp-report/SKILL.md` and `skills/marp-report/REFERENCE.md` for report-specific syntax. Keep report guidance out of the presentation skill unless it is a shared concept.
 

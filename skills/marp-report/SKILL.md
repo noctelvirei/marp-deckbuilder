@@ -11,7 +11,7 @@ Use this skill to turn source material into a long-form HTML report: a scrollabl
 
 Do not force reports into slides. Write `report.md` using normal Markdown plus the report component tags in `REFERENCE.md`, then run the bundled report wrapper. This skill includes its own bundled renderer and resources under `tool/`.
 
-The report wrapper injects Chart.js, Observable Plot, and D3 into the generated HTML head from local vendor files, so the final HTML works offline after generation. Use supported `report-*` components instead of pasting chart container HTML or JavaScript initializers. Do not paste minified library source into Markdown.
+The report wrapper injects Chart.js, Observable Plot, and D3 into the generated HTML head from local vendor files, so the final HTML works offline after generation. The report Markdown must not contain raw HTML layouts, SVG blocks, chart containers, CSS, JavaScript, or library source. Use supported `report-*` components only. If the requested display is not supported, extend the renderer and reference docs first, then use the new component.
 
 ## Workflow
 
@@ -21,7 +21,7 @@ The report wrapper injects Chart.js, Observable Plot, and D3 into the generated 
 3. Create one output folder for the request. Prefer `Documents/Presentations/YYYY-MM-DD/<report-title-slug>/` when the user has not specified a location.
 4. Draft `report.md` in that folder. For dark navy, set `reportTheme: dark` in frontmatter. For reports with four or more sections, set `reportNav: true` to generate a sticky sidebar from headings.
 5. Let the renderer own brand chrome. Corporate logos, colors, fonts, and report background assets come from `tool/resources/definitions/brand.json` and `tool/resources`; do not hand-place branding in report Markdown.
-6. Use report components for fidelity. Use `<report-metric-grid>` for KPI cards, `<report-rate-bars>` for ranked distributions, `<report-callout>` for findings or actions, `<report-accent-card>` for recommendation cards, `<report-badge>` for statuses, and `<report-chart>` for supported chart types. For component types that are not implemented yet, use the class patterns in `REFERENCE.md` as a temporary fallback.
+6. Use report components for fidelity. Use `<report-metric-grid>` for KPI cards, `<report-rate-bars>` for ranked distributions, `<report-callout>` for findings or actions, `<report-accent-card>` for recommendation cards, `<report-badge>` for statuses, and `<report-chart>` for supported chart types. Do not use raw HTML or JavaScript as a fallback. If a component type is missing, add it to the renderer before authoring the report.
 7. Build from this skill folder:
 
 ```bash
@@ -30,10 +30,37 @@ node scripts/build-report.mjs <output-folder>/report.md --out-dir <output-folder
 
 8. Return the generated `.html` and source `.md` paths. Do not create or return a generated resource folder for report images; they should be embedded in the HTML. For PDF, tell the user to open the HTML and use browser Print to PDF.
 
+## Available Components
+
+Use these renderer-backed component tags in `report.md`. They look like HTML tags, but they are report directives consumed by the renderer.
+
+| Need | Component | Required data |
+| --- | --- | --- |
+| KPI cards | `<report-metric-grid>` with `<report-metric>` children | Metric `value` and/or `label` |
+| Ranked distribution bars | `<report-rate-bars>` | `labels`, `values`; optional `shares` |
+| Findings and actions | `<report-callout>` | Body text or `text`; optional `variant`, `title` |
+| Recommendation or insight card | `<report-accent-card>` | Body text or `body`; optional `accent`, `title` |
+| Table status label | `<report-badge>` | Body text or `label`; optional `status`, `variant` |
+| Chart.js bar chart | `<report-chart type="bar">` | `labels`, `values` |
+| Chart.js line chart | `<report-chart type="line">` | `labels`, `values` |
+| Chart.js doughnut chart | `<report-chart type="doughnut">` | `labels`, `values` |
+| Observable Plot area chart | `<report-chart type="area">` | `points` as `x:y` pairs, or `labels` and `values` |
+| D3 treemap | `<report-chart type="treemap">` | `labels`, `values` |
+
+## Markdown Generation Pattern
+
+Generate `report.md` in this order:
+
+1. Frontmatter with `title`, optional `subtitle`, `reportTheme`, and `reportNav`.
+2. Markdown headings for report sections.
+3. Prose, Markdown lists, and Markdown tables for narrative content.
+4. Renderer component tags from the available list for visuals, cards, statuses, and charts.
+5. No raw HTML, CSS, SVG, canvas, JavaScript, CDN tags, or handwritten chart initializers.
+
 ## Authoring Guidance
 
 - Write for a reader scrolling a document, not for a presenter advancing slides.
-- Use prose, headings, tables, and explanatory callouts freely.
+- Use prose, headings, Markdown lists, Markdown tables, and report components freely.
 - Prefer `reportNav: true` for reports with four or more sections.
 - Prefer `reportTheme: dark` for dark navy reports instead of pasting CSS into Markdown.
 - Keep branding renderer-owned through `brand.json` and bundled resources; report Markdown should not declare corporate logos, brand colors, fonts, or background chrome.
@@ -46,29 +73,26 @@ node scripts/build-report.mjs <output-folder>/report.md --out-dir <output-folder
 - Use `<report-callout>` for info, warning, success, and danger findings.
 - Use `<report-accent-card>` for highlighted recommendations, risks, or ownership notes.
 - Use `<report-badge>` for table statuses and small inline state labels.
-- Use Chart.js manually only for chart types that are not yet supported as report components, such as stacked bar and radar charts.
-- Use Observable Plot manually only for chart types that are not yet supported as report components, such as dot, heatmap, and small-multiple charts.
-- Use D3 manually only for bespoke SVG charts that are not yet supported as report components, such as custom arcs, Sankey-style flows, and force layouts.
-- Use inline SVG when the visual should be static, exact, and dependency-free.
+- For chart types that are not yet supported, do not write Chart.js, Observable Plot, D3, SVG, or HTML manually. Add a renderer-backed `report-*` component and document that component first.
 
-## Script Rules
+## Renderer-Only Rules
 
-For supported `report-*` components, do not write JavaScript. The renderer generates the container and initializer. Follow these rules exactly only for temporary custom visuals that still require handwritten JavaScript:
+Report Markdown is a compact data-and-copy layer. The renderer owns all HTML structure, CSS hooks, SVG, chart containers, and JavaScript initializers.
 
-1. Do not include CDN `<script src>` tags in `report.md`. The wrapper injects bundled vendor libraries into the final HTML head.
-2. Put chart containers in the relevant section body.
-3. Put one init `<script>` block as the last element inside `<main class="r-main">`, before `</main>` and `</div>`.
-4. Wrap every initializer in `document.addEventListener('DOMContentLoaded', function() { ... })`.
-5. Never put `<script>` tags after `</main></div>`. Some Markdown renderers will turn them into visible text.
-6. Never use em dashes or double-hyphen separators in JavaScript comments. Use simple comments such as `// Bar chart section`.
+1. Do not write raw HTML blocks in `report.md`.
+2. Do not write `<style>`, `<script>`, `<canvas>`, `<svg>`, or chart container elements in `report.md`.
+3. Do not include CDN tags, vendored library source, or chart initializers in `report.md`.
+4. Do not hand-place logos, background assets, brand colors, or fonts in `report.md`.
+5. When a supported capability exists, remove any legacy raw-code guidance for it from this skill.
+6. When a requested capability does not exist, update `src/report-components*`, tests, examples, and `REFERENCE.md` so it is available as a renderer-backed component.
 
 ## Dark-Mode Rules
 
 - Do not use light SVG fills such as `#f8fbff`, `#fdfdfd`, or white chart backgrounds on the navy theme.
-- SVG text on dark backgrounds should use `#C8D8F0`, `#8B9AB5`, or `#FFFFFF`, not near-black text.
-- Do not write raw library code into Markdown.
+- Renderer-generated SVG text on dark backgrounds should use `#C8D8F0`, `#8B9AB5`, or `#FFFFFF`, not near-black text.
+- Do not write raw HTML, SVG, CSS, JavaScript, or library code into Markdown.
 - Do not rely on external network scripts for final output.
-- These are authoring choices, not CSS problems. Fix the source pattern instead of stacking override rules.
+- These are renderer component choices, not CSS problems. Fix the renderer-backed component instead of stacking override rules in report Markdown.
 
 ## Build Output
 

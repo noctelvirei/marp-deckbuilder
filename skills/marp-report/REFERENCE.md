@@ -34,109 +34,53 @@ Report prose goes here.
 <report-chart title="Cases by journey" labels="J0107,J0106" values="52208,11119"></report-chart>
 ```
 
-## Dark Navy CSS Setup
+## Report Theme
 
-Prefer the built-in frontmatter preset:
+Use renderer-owned frontmatter for theme and navigation:
 
 ```yaml
 reportTheme: dark
 reportNav: true
 ```
 
-The historical raw CSS setup is retained below only for legacy Markdown that has not moved to renderer-owned theme/layout yet.
+Do not paste CSS into report Markdown. Add or update renderer-owned theme support instead.
 
-```html
-<style>
-:root {
-  --bg: #060D18;
-  --bg-card: #0D1D36;
-  --bg-subtle: #071228;
-  --border: #1E3A5F;
-  --border-dim: rgba(30,58,95,.45);
-  --blue: #0F82F5;
-  --cyan: #59D6FD;
-  --purple: #5143D5;
-  --green: #66CC8E;
-  --orange: #F99358;
-  --red: #FC5161;
-  --white: #FFFFFF;
-  --text: #C8D8F0;
-  --text-dim: #8B9AB5;
-  --font-mono: "Consolas", "SFMono-Regular", monospace;
-}
-body { background: var(--bg) !important; color: var(--text) !important; }
-.deck-report { background: var(--bg-subtle) !important; box-shadow: none !important; max-width: 1200px !important; }
-.report-body { padding: 0 !important; }
-.report-body h2 { color: var(--cyan) !important; border-top: none !important; border-bottom: 1px solid var(--border) !important; font-size: 1.15rem !important; font-weight: 500 !important; text-transform: uppercase; letter-spacing: .06em; padding-bottom: 8px; margin-top: 40px !important; }
-.report-body h3 { color: var(--cyan) !important; font-size: .8rem !important; font-weight: 600 !important; text-transform: uppercase; letter-spacing: .08em; }
-.report-body p, .report-body li { color: var(--text) !important; font-size: .93rem; }
-.report-body a { color: var(--cyan) !important; }
-.report-body hr { border-top-color: var(--border) !important; margin: 32px 0 !important; }
-.report-body table { font-size: .87rem; }
-.report-body thead tr { background: var(--bg-card) !important; border-top: 2px solid var(--blue) !important; }
-.report-body th { color: var(--white) !important; font-size: .72rem !important; text-transform: uppercase; letter-spacing: .06em; background: transparent !important; border-bottom: 1px solid var(--border) !important; }
-.report-body td { color: var(--text) !important; border-color: var(--border-dim) !important; vertical-align: middle; }
-.report-body tr:nth-child(even) td { background: rgba(13,31,56,.4) !important; }
-.report-body tr:hover td { background: rgba(89,214,253,.05) !important; }
-.report-body blockquote { background: var(--bg-card) !important; border-left: 4px solid var(--blue) !important; color: var(--text) !important; padding: 14px 18px !important; border-radius: 0 6px 6px 0; }
-code { background: var(--bg-card) !important; color: var(--cyan) !important; border: 1px solid var(--border) !important; font-family: var(--font-mono); padding: 1px 5px; border-radius: 3px; font-size: .85em; }
-.r-layout { display: grid; grid-template-columns: 200px 1fr; gap: 40px; max-width: 1200px; margin: 0 auto; padding: 32px; }
-.r-sidebar { position: sticky; top: 24px; background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px; padding: 20px; align-self: start; }
-.r-sidebar-title { font-size: .65rem; font-weight: 600; text-transform: uppercase; letter-spacing: .1em; color: var(--text-dim); margin-bottom: 12px; }
-.r-sidebar a { display: block; color: var(--text-dim); text-decoration: none; font-size: .82rem; padding: 7px 10px; border-radius: 4px; transition: all .15s; }
-.r-sidebar a:hover { color: var(--cyan); background: rgba(89,214,253,.08); }
-.r-main { min-width: 0; padding: 32px 40px 60px; }
-.r-metric-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px,1fr)); gap: 14px; margin: 18px 0; }
-.r-metric { background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px; padding: 18px; text-align: center; }
-.r-metric-value { font-size: 1.9rem; font-weight: 300; color: var(--white); line-height: 1; margin-bottom: 5px; }
-.r-metric-label { font-size: .7rem; font-weight: 500; text-transform: uppercase; letter-spacing: .08em; color: var(--text-dim); }
-.r-metric-sub { font-size: .76rem; margin-top: 7px; color: var(--green); }
-.r-metric-sub.down { color: var(--red); }
-.r-card { background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px; padding: 22px; margin-bottom: 14px; }
-.r-card-accent { background: var(--bg-card); border: 1px solid var(--border); border-top: 3px solid var(--blue); border-radius: 12px; padding: 22px; margin-bottom: 14px; }
-.r-card-accent.cyan { border-top-color: var(--cyan); }
-.r-card-accent.green { border-top-color: var(--green); }
-.r-card-accent.orange { border-top-color: var(--orange); }
-.r-card-accent.red { border-top-color: var(--red); }
-.r-card-accent.purple { border-top-color: var(--purple); }
-.r-chart-wrap { background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px; padding: 22px; margin: 18px 0; }
-.r-chart-title { font-size: .75rem; font-weight: 600; text-transform: uppercase; letter-spacing: .08em; color: var(--text-dim); margin-bottom: 16px; }
-.r-rate-bar { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
-.r-rate-label { font-size: .82rem; min-width: 110px; color: var(--text); }
-.r-rate-track { flex: 1; height: 22px; background: rgba(30,58,95,.6); border-radius: 4px; overflow: hidden; }
-.r-rate-fill { height: 100%; border-radius: 4px; display: flex; align-items: center; padding-left: 10px; font-size: .72rem; font-weight: 600; color: var(--white); white-space: nowrap; }
-.r-rate-pct { font-size: .76rem; font-family: var(--font-mono); color: var(--text-dim); min-width: 42px; text-align: right; }
-.r-callout { display: flex; gap: 14px; padding: 14px 18px; border-radius: 8px; margin: 16px 0; border: 1px solid; }
-.r-callout.info { background: rgba(15,130,245,.1); border-color: rgba(15,130,245,.3); color: #93c5fd; }
-.r-callout.warning { background: rgba(249,147,88,.1); border-color: rgba(249,147,88,.3); color: #fdba74; }
-.r-callout.success { background: rgba(102,204,142,.1); border-color: rgba(102,204,142,.3); color: #86efac; }
-.r-callout.danger { background: rgba(252,81,97,.1); border-color: rgba(252,81,97,.3); color: #fca5a5; }
-.r-badge { display: inline-flex; align-items: center; font-size: .66rem; font-weight: 600; text-transform: uppercase; letter-spacing: .07em; padding: 2px 7px; border-radius: 999px; border: 1px solid; }
-.r-badge.blue { background: rgba(15,130,245,.12); color: var(--blue); border-color: rgba(15,130,245,.35); }
-.r-badge.green { background: rgba(102,204,142,.12); color: var(--green); border-color: rgba(102,204,142,.35); }
-.r-badge.orange { background: rgba(249,147,88,.12); color: var(--orange); border-color: rgba(249,147,88,.35); }
-.r-badge.red { background: rgba(252,81,97,.12); color: var(--red); border-color: rgba(252,81,97,.35); }
-.r-badge.muted { background: rgba(139,154,181,.1); color: var(--text-dim); border-color: rgba(139,154,181,.25); }
-.r-two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
-.r-three-col { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
-.r-legend { display: flex; flex-wrap: wrap; gap: 16px; margin-top: 14px; font-size: .75rem; color: var(--text-dim); }
-.r-legend-item { display: flex; align-items: center; gap: 7px; }
-.r-legend-swatch { width: 20px; height: 3px; border-radius: 2px; display: inline-block; }
-::-webkit-scrollbar { width: 8px; }
-::-webkit-scrollbar-track { background: var(--bg); }
-::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
-</style>
-```
+## Component Tags
 
-## Component Tags And Classes
+Reports use normal Markdown plus compact `report-*` component tags. The renderer expands those tags into HTML, CSS hooks, SVG where needed, and JavaScript initializers. Do not write raw HTML, CSS, SVG, canvas, or JavaScript in report Markdown.
 
-Reports use normal Markdown plus compact `report-*` component tags where supported. The renderer expands those tags into HTML, CSS hooks, and JavaScript initializers.
+## Available Renderer Components
+
+| Need | Component | Required data |
+| --- | --- | --- |
+| KPI card grid | `report-metric-grid` with `report-metric` children | Metric `value` and/or `label` |
+| Ranked distribution bars | `report-rate-bars` | `labels`, `values`; optional `shares` |
+| Finding, risk, or action block | `report-callout` | Body text or `text`; optional `variant`, `title` |
+| Highlighted recommendation card | `report-accent-card` | Body text or `body`; optional `accent`, `title` |
+| Inline status label | `report-badge` | Body text or `label`; optional `status`, `variant` |
+| Chart.js bar chart | `report-chart type="bar"` | `labels`, `values` |
+| Chart.js line chart | `report-chart type="line"` | `labels`, `values` |
+| Chart.js doughnut chart | `report-chart type="doughnut"` | `labels`, `values` |
+| Observable Plot area chart | `report-chart type="area"` | `points` as `x:y` pairs, or `labels`, `values` |
+| D3 treemap | `report-chart type="treemap"` | `labels`, `values` |
+
+## Generating Report Markdown
+
+Use this sequence when creating `report.md`:
+
+1. Add frontmatter for `title`, optional `subtitle`, optional `reportTheme: dark`, and optional `reportNav: true`.
+2. Add Markdown headings for sections.
+3. Add narrative content with plain Markdown paragraphs, lists, and tables.
+4. Add visuals only through the available `report-*` component tags below.
+5. Build with `node scripts/build-report.mjs report.md --out-dir output`.
+
+If the needed visual is not listed, do not create raw HTML or JavaScript in the Markdown. Add a renderer-backed component first.
 
 ### Report Chart: Chart.js, Observable Plot, And D3
 
 Use `report-chart` for standard Chart.js bar, line, and doughnut charts, Observable Plot area charts, and D3 treemaps. Do not write the `<canvas>`, chart container, SVG, or JavaScript initializer yourself. The renderer generates hover tooltips that show the represented value.
 
-```html
+```md
 <report-chart
   type="bar"
   title="Cases by journey"
@@ -146,7 +90,7 @@ Use `report-chart` for standard Chart.js bar, line, and doughnut charts, Observa
 ></report-chart>
 ```
 
-```html
+```md
 <report-chart
   type="line"
   title="Weekly case volume"
@@ -156,7 +100,7 @@ Use `report-chart` for standard Chart.js bar, line, and doughnut charts, Observa
 ></report-chart>
 ```
 
-```html
+```md
 <report-chart
   type="doughnut"
   title="Journey mix"
@@ -166,7 +110,7 @@ Use `report-chart` for standard Chart.js bar, line, and doughnut charts, Observa
 ></report-chart>
 ```
 
-```html
+```md
 <report-chart
   type="area"
   title="Daily volume"
@@ -175,7 +119,7 @@ Use `report-chart` for standard Chart.js bar, line, and doughnut charts, Observa
 ></report-chart>
 ```
 
-```html
+```md
 <report-chart
   type="treemap"
   title="Volume by journey"
@@ -192,8 +136,8 @@ Supported attributes:
 | `type` | no | Supports `bar`, `line`, `doughnut`, `area`, and `treemap`. Defaults to `bar`. Aliases: `donut`, `tree-map`. |
 | `title` | no | Rendered above the chart and used as the accessible label. |
 | `series` | no | Dataset label. |
-| `labels` | yes for Chart.js and `treemap` types | Comma-separated labels. For `area`, this can be used with `values` as a fallback. |
-| `values` | yes for Chart.js and `treemap` types | Comma-separated numeric values. Must match label count. For `area`, this can be used with `labels` as a fallback. |
+| `labels` | yes for Chart.js and `treemap` types | Comma-separated labels. For `area`, this can be used with `values` as an alternative to `points`. |
+| `values` | yes for Chart.js and `treemap` types | Comma-separated numeric values. Must match label count. For `area`, this can be used with `labels` as an alternative to `points`. |
 | `points` | yes for `area` | Comma-separated `x:y` or `x=y` points such as `2026-04-01:2200,2026-04-02:2600`. Alias: `data`. |
 | `colors` | no | Comma-separated hex colors. Defaults to brand chart colors. |
 | `height` | no | Pixel height, clamped by the renderer. Defaults to `320`. |
@@ -204,7 +148,7 @@ Supported attributes:
 
 Use `report-metric-grid` for KPI cards. Do not hand-author nested metric card `div` blocks.
 
-```html
+```md
 <report-metric-grid>
   <report-metric value="77,951" label="Total cases" sub="+12% vs prior"></report-metric>
   <report-metric value="94.3%" label="Completion rate" sub="-1.1 pp" direction="down"></report-metric>
@@ -225,7 +169,7 @@ Supported `report-metric` attributes:
 
 Use `report-rate-bars` for ranked distributions. Do not hand-author inline-width rate bar HTML.
 
-```html
+```md
 <report-rate-bars
   title="Journey distribution"
   labels="J0107,J0106,J0101,J0116"
@@ -247,7 +191,7 @@ Supported attributes:
 
 Use `report-callout` for findings, risks, and next actions. Do not hand-author `r-callout` blocks.
 
-```html
+```md
 <report-callout variant="warning" title="Action">
 J0116 generated meaningful volume but is not in the registered journey profile.
 </report-callout>
@@ -263,9 +207,9 @@ Supported attributes:
 
 ### Report Accent Card
 
-Use `report-accent-card` for highlighted recommendations, risks, ownership notes, and small standalone insight cards. Do not hand-author `r-card-accent` blocks for standard cards.
+Use `report-accent-card` for highlighted recommendations, risks, ownership notes, and small standalone insight cards. Do not hand-author raw card blocks for standard cards.
 
-```html
+```md
 <report-accent-card accent="green" title="Recommended focus">
 Prioritise monitoring for J0107 while validating whether J0116 is a real journey.
 </report-accent-card>
@@ -283,7 +227,7 @@ Supported attributes:
 
 Use `report-badge` for table statuses and compact inline state labels. Do not hand-author `r-badge` spans.
 
-```html
+```md
 <report-badge status="active">Active</report-badge>
 <report-badge status="review" label="Review"></report-badge>
 ```
@@ -296,96 +240,25 @@ Supported attributes:
 | `status` | no | Maps common statuses such as `active`, `review`, `blocked`, and `pending` to badge colors. |
 | `label` | no | Badge text when you prefer attribute-only authoring. Otherwise use the tag body. |
 
-## Legacy HTML Classes
+## Unsupported Capabilities
 
-Prefer the `report-*` components above. Use these raw HTML classes only for temporary custom layouts that do not yet have a structured component:
+Do not use raw HTML, CSS, SVG, canvas, Chart.js, Observable Plot, D3, or handwritten JavaScript as a fallback in report Markdown.
 
-| Pattern | Required classes | Optional modifiers |
-| --- | --- | --- |
-| Sidebar layout | `r-layout`, `r-sidebar`, `r-sidebar-title`, `r-main` | none |
-| Metrics | `r-metric-grid`, `r-metric`, `r-metric-value`, `r-metric-label` | `r-metric-sub`, `down` |
-| Cards | `r-card`, `r-card-accent` | `cyan`, `green`, `orange`, `red`, `purple` |
-| Chart frame | `r-chart-wrap`, `r-chart-title` | `r-legend`, `r-legend-item`, `r-legend-swatch` |
-| Grids | `r-two-col`, `r-three-col` | none |
+When the report needs a display type that is not listed above, implement it as a renderer-backed component first:
+
+1. Add parsing in `src/report-components/parsers.js`.
+2. Add validation and registration in `src/report-components.js`.
+3. Add HTML, SVG, and script generation in `src/report-components/renderers.js` or report CSS in `src/report.js`.
+4. Add tests in `test/report.test.js`.
+5. Add a compact component example to this reference and `skills/marp-report/examples/`.
 
 Do not use `deck-*` tags in reports. They are presentation components.
-
-### Metric Grid
-
-Use `report-metric-grid` for standard KPI cards. Keep this raw class pattern only for bespoke layouts that the component does not cover.
-
-```html
-<div class="r-metric-grid">
-  <div class="r-metric">
-    <div class="r-metric-value">77,951</div>
-    <div class="r-metric-label">Total cases</div>
-    <div class="r-metric-sub">+12% vs prior</div>
-  </div>
-  <div class="r-metric">
-    <div class="r-metric-value">94.3%</div>
-    <div class="r-metric-label">Completion rate</div>
-    <div class="r-metric-sub down">-1.1 pp</div>
-  </div>
-</div>
-```
-
-### Accent Cards
-
-Use `report-accent-card` for standard accent cards. Keep this raw class pattern only for temporary custom multi-card layouts.
-
-```html
-<div class="r-three-col">
-  <div class="r-card-accent"><h3>Primary</h3><p>Main finding.</p></div>
-  <div class="r-card-accent green"><h3>Positive</h3><p>Target met.</p></div>
-  <div class="r-card-accent orange"><h3>Watch</h3><p>Needs review.</p></div>
-</div>
-```
-
-## JavaScript Charts
-
-The report wrapper injects Chart.js, Observable Plot, and D3 into the final HTML head from local vendor files. Use the structured `report-chart` component above for bar, line, doughnut, area, and treemap charts.
-
-Only write manual chart containers and init scripts for chart types that are not yet implemented as report components. When a manual chart is unavoidable, place the init script inside `<main class="r-main">` as the final element before `</main>`.
-
-### Legacy Chart.js Bar
-
-Use the structured `report-chart` component above instead of the legacy raw `<canvas>` and Chart.js initializer.
-
-### Observable Plot Area
-
-Use `<report-chart type="area">` above instead of a raw Observable Plot container and initializer.
-
-### D3 Treemap
-
-Use `<report-chart type="treemap">` above instead of a raw D3 SVG container and initializer.
-
-## Inline SVG
-
-Use inline SVG for exact static visuals. Keep fills dark and text readable on navy.
-
-```html
-<div class="r-chart-wrap">
-  <div class="r-chart-title">Completion funnel</div>
-  <svg viewBox="0 0 640 240" role="img" aria-label="Completion funnel" style="width:100%;max-width:640px">
-    <rect x="60" y="24" width="520" height="52" fill="#0f82f5" rx="4"/>
-    <text x="84" y="57" fill="#ffffff" font-family="Poppins,sans-serif" font-size="15">Invited</text>
-    <text x="552" y="57" fill="#ffffff" font-family="Poppins,sans-serif" font-size="15" text-anchor="end">8,420</text>
-    <rect x="100" y="94" width="440" height="52" fill="#5143d5" rx="4"/>
-    <text x="124" y="127" fill="#ffffff" font-family="Poppins,sans-serif" font-size="15">Started</text>
-    <text x="512" y="127" fill="#ffffff" font-family="Poppins,sans-serif" font-size="15" text-anchor="end">6,568</text>
-    <rect x="160" y="164" width="320" height="52" fill="#66cc8e" rx="4"/>
-    <text x="184" y="197" fill="#071228" font-family="Poppins,sans-serif" font-size="15">Completed</text>
-    <text x="452" y="197" fill="#071228" font-family="Poppins,sans-serif" font-size="15" text-anchor="end">5,136</text>
-  </svg>
-</div>
-```
 
 ## Authoring Safety
 
 - No slide delimiters (`---`) unless you want a horizontal rule in report prose.
 - No `deck-*` tags.
-- No CDN script tags.
-- No minified library source in Markdown.
-- No init scripts after `</main></div>`.
-- No em dash or double-hyphen separators in JavaScript comments.
-- No light SVG islands on dark navy backgrounds.
+- No raw HTML blocks.
+- No CSS, SVG, canvas, script tags, chart containers, chart initializer scripts, CDN tags, or minified library source in Markdown.
+- No hand-placed logos, brand colors, font declarations, or background chrome.
+- No unsupported visuals without first adding a renderer-backed component.
