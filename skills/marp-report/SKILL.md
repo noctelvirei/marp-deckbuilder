@@ -5,7 +5,7 @@ description: Builds long-form, scrollable, brandable HTML reports from source da
 
 # Marp Report
 
-Use this skill to turn source material into a long-form HTML report: a scrollable, self-contained document designed to be read in a browser and printed to PDF. Use `marp-deckbuilder` instead when the user asks for slides, a presentation, or editable PPTX.
+Use this skill to turn source material into a long-form HTML report: a scrollable, self-contained document designed to be read in a browser and printed to PDF. The generated HTML must embed image assets and vendor scripts; source assets can live under `tool/resources`, but report output should not depend on sidecar resource files. Use `marp-deckbuilder` instead when the user asks for slides, a presentation, or editable PPTX.
 
 ## Core Rule
 
@@ -20,7 +20,7 @@ The report wrapper injects Chart.js, Observable Plot, and D3 into the generated 
    `Dark navy report theme (recommended) or light print theme?`
 3. Create one output folder for the request. Prefer `Documents/Presentations/YYYY-MM-DD/<report-title-slug>/` when the user has not specified a location.
 4. Draft `report.md` in that folder. For dark navy, set `reportTheme: dark` in frontmatter. For reports with four or more sections, set `reportNav: true` to generate a sticky sidebar from headings.
-5. Let the renderer own brand chrome. The corporate logo comes from the bundled brand resources; do not hand-place it in report Markdown.
+5. Let the renderer own brand chrome. Corporate logos, colors, fonts, and report background assets come from `tool/resources/definitions/brand.json` and `tool/resources`; do not hand-place branding in report Markdown.
 6. Use report components for fidelity. Use `<report-metric-grid>` for KPI cards, `<report-rate-bars>` for ranked distributions, `<report-callout>` for findings or actions, `<report-badge>` for statuses, and `<report-chart type="bar">` for standard bar charts. For component types that are not implemented yet, use the class patterns in `REFERENCE.md` as a temporary fallback.
 7. Build from this skill folder:
 
@@ -28,7 +28,7 @@ The report wrapper injects Chart.js, Observable Plot, and D3 into the generated 
 node scripts/build-report.mjs <output-folder>/report.md --out-dir <output-folder>
 ```
 
-8. Return the generated `.html` and source `.md` paths. For PDF, tell the user to open the HTML and use browser Print to PDF.
+8. Return the generated `.html` and source `.md` paths. Do not create or return a generated resource folder for report images; they should be embedded in the HTML. For PDF, tell the user to open the HTML and use browser Print to PDF.
 
 ## Authoring Guidance
 
@@ -36,7 +36,7 @@ node scripts/build-report.mjs <output-folder>/report.md --out-dir <output-folder
 - Use prose, headings, tables, and explanatory callouts freely.
 - Prefer `reportNav: true` for reports with four or more sections.
 - Prefer `reportTheme: dark` for dark navy reports instead of pasting CSS into Markdown.
-- Keep the corporate logo renderer-owned through brand definitions and resources.
+- Keep branding renderer-owned through `brand.json` and bundled resources; report Markdown should not declare corporate logos, brand colors, fonts, or background chrome.
 - Keep technical field names as plain text in dark reports unless code formatting is truly necessary.
 - Use `<report-chart type="bar">` for standard Chart.js bar charts.
 - Use `<report-metric-grid>` for KPI summaries.

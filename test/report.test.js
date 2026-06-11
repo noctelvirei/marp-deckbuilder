@@ -1,12 +1,19 @@
 import assert from 'node:assert/strict'
-import { mkdir, writeFile } from 'node:fs/promises'
+import { execFile } from 'node:child_process'
+import { mkdir, readFile, writeFile } from 'node:fs/promises'
 import path from 'node:path'
 import { test } from 'node:test'
+import { promisify } from 'node:util'
 
 import { loadDefinitions } from '../src/brand.js'
 import { renderReportHtml } from '../src/report.js'
 
 const tmpDir = path.resolve('.tmp', 'report-tests')
+const execFileAsync = promisify(execFile)
+
+function embeddedPayload(source) {
+  return Buffer.from(source).toString('base64')
+}
 
 test('renders self-contained long-form report HTML', async () => {
   await mkdir(path.join(tmpDir, 'resources', 'images'), { recursive: true })
@@ -55,6 +62,28 @@ The report can hold more detail than a slide deck.
   assert.match(rendered.document, /report-logo/)
   assert.doesNotMatch(rendered.document, /resource:images\/chart\.svg/)
   assert.doesNotMatch(rendered.document, /resource:logo\.svg/)
+})
+
+test('report command rejects copied sidecar assets', async () => {
+  const reportDir = path.join(tmpDir, 'cli-inline')
+  await mkdir(reportDir, { recursive: true })
+  const inputPath = path.join(reportDir, 'report.md')
+  await writeFile(inputPath, '# CLI report\n\nBody copy.')
+
+  await assert.rejects(
+    execFileAsync(process.execPath, [
+      'src/cli.js',
+      'report',
+      inputPath,
+      '--html',
+      path.join(reportDir, 'report.html'),
+      '--resources',
+      'resources',
+      '--html-assets',
+      'copy',
+    ]),
+    /Report HTML is always self-contained/,
+  )
 })
 
 test('expands report bar chart components into chart HTML and initializer', async () => {
@@ -226,6 +255,8 @@ test('report corporate logo follows dark and light report modes', async () => {
       },
     },
   }
+  const darkLogo = '<svg xmlns="http://www.w3.org/2000/svg"><text fill="#fff">Fake white text logo</text></svg>'
+  const lightLogo = '<svg xmlns="http://www.w3.org/2000/svg"><text fill="#000">Fake black text logo</text></svg>'
   const darkRendered = renderReportHtml(
     `---
 title: Dark Logo Report
@@ -239,9 +270,7 @@ Dark report content.
     {
       resourcesDir: logoDir,
       definitions,
-      collectResources: true,
-      inlineAssets: false,
-      assetUrlPrefix: 'assets',
+      inlineAssets: true,
     },
   )
   const lightRendered = renderReportHtml(
@@ -256,18 +285,98 @@ Light report content.
     {
       resourcesDir: logoDir,
       definitions,
-      collectResources: true,
-      inlineAssets: false,
-      assetUrlPrefix: 'assets',
+      inlineAssets: true,
     },
   )
 
-  assert.match(darkRendered.document, /src="assets\/logos\/fake-logo-dark\.svg"/)
-  assert.doesNotMatch(darkRendered.document, /fake-logo-light\.svg/)
-  assert.deepEqual(darkRendered.assets.map((asset) => asset.relativePath), ['logos/fake-logo-dark.svg'])
-  assert.match(lightRendered.document, /src="assets\/logos\/fake-logo-light\.svg"/)
-  assert.doesNotMatch(lightRendered.document, /fake-logo-dark\.svg/)
-  assert.deepEqual(lightRendered.assets.map((asset) => asset.relativePath), ['logos/fake-logo-light.svg'])
+  assert.match(darkRendered.document, /src="data:image\/svg\+xml;base64,[^"]+"/)
+  assert.equal(darkRendered.document.includes(embeddedPayload(darkLogo)), true)
+  assert.equal(darkRendered.document.includes(embeddedPayload(lightLogo)), false)
+  assert.match(lightRendered.document, /src="data:image\/svg\+xml;base64,[^"]+"/)
+  assert.equal(lightRendered.document.includes(embeddedPayload(lightLogo)), true)
+  assert.equal(lightRendered.document.includes(embeddedPayload(darkLogo)), false)
+  assert.doesNotMatch(darkRendered.document, /assets\/logos/)
+  assert.doesNotMatch(lightRendered.document, /assets\/logos/)
+})
+
+test('report uses bundled brand json logo configuration', async () => {
+  const definitions = await loadDefinitions(new URL('../resources/definitions', import.meta.url))
+  const darkLogo = await readFile(path.resolve('resources', 'logos', 'sample-corporate.dark.svg'), 'utf8')
+  const lightLogo = await readFile(path.resolve('resources', 'logos', 'sample-corporate.light.svg'), 'utf8')
+  const rendered = renderReportHtml(
+    `---
+title: Brand Json Logo Report
+reportTheme: dark
+---
+
+## Summary
+
+The report logo is configured by brand JSON.
+`,
+    {
+      resourcesDir: path.resolve('resources'),
+      definitions,
+      inlineAssets: true,
+    },
+  )
+
+  assert.match(rendered.document, /<img class="report-logo" src="data:image\/svg\+xml;base64,[^"]+" alt="Deckbuilder logo">/)
+  assert.equal(rendered.document.includes(embeddedPayload(darkLogo)), true)
+  assert.equal(rendered.document.includes(embeddedPayload(lightLogo)), false)
+  assert.doesNotMatch(rendered.document, /assets\/logos/)
+  assert.deepEqual(rendered.assets, [])
+})
+
+test('report uses brand json colors fonts and background assets', async () => {
+  const brandDir = path.join(tmpDir, 'brand-config', 'resources')
+  await mkdir(path.join(brandDir, 'backgrounds'), { recursive: true })
+  await writeFile(
+    path.join(brandDir, 'backgrounds', 'report-cover.svg'),
+    '<svg xmlns="http://www.w3.org/2000/svg"><rect width="10" height="10" fill="#123abc"/></svg>',
+  )
+  const baseDefinitions = await loadDefinitions(new URL('../resources/definitions', import.meta.url))
+  const definitions = {
+    ...baseDefinitions,
+    brand: {
+      ...baseDefinitions.brand,
+      colors: {
+        ...baseDefinitions.brand.colors,
+        dark: '010203',
+        blue: '123ABC',
+        cyan: '45CDEF',
+      },
+      fonts: {
+        regular: 'CorpSans',
+        fallback: 'CorpFallback',
+      },
+      assets: {
+        backgrounds: {
+          content: 'resource:backgrounds/report-cover.svg',
+        },
+      },
+    },
+  }
+  const rendered = renderReportHtml(
+    `---
+title: Brand Config Report
+---
+
+## Summary
+
+Branding comes from brand JSON.
+`,
+    {
+      resourcesDir: brandDir,
+      definitions,
+      inlineAssets: true,
+    },
+  )
+
+  assert.match(rendered.document, /--report-dark: #010203/)
+  assert.match(rendered.document, /--report-blue: #123ABC/)
+  assert.match(rendered.document, /--report-cyan: #45CDEF/)
+  assert.match(rendered.document, /font-family: "CorpSans", "CorpFallback", Arial, sans-serif/)
+  assert.match(rendered.document, /background-image:[\s\S]*data:image\/svg\+xml;base64,/)
 })
 
 test('expands report metric grid components into reusable metric cards', async () => {

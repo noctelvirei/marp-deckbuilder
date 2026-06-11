@@ -8,14 +8,14 @@ From the `skills/marp-report` folder:
 node scripts/build-report.mjs report.md --out-dir output
 ```
 
-The wrapper calls the bundled renderer at `tool/dist/deckbuilder.mjs` and uses resources from `tool/resources`.
+The wrapper calls the bundled renderer at `tool/dist/deckbuilder.mjs` and uses resources from `tool/resources`. Generated report HTML is self-contained: images and brand assets are embedded into the HTML rather than written beside it as copied resource files.
 
 For PDF, open the generated HTML in a browser and use Print to PDF. No browser engine is bundled.
 
 ## Report Skeleton
 
 Use this shape for rich reports. `reportTheme: dark` applies the built-in dark navy report theme. `reportNav: true` generates a sticky sidebar from section headings.
-The corporate logo is renderer-owned and comes from bundled brand resources; do not add logo `<img>` tags to report Markdown. Dark reports use `assets.logo.reportDark`, `companyDark`, or `dark`; light reports use `assets.logo.reportLight`, `companyLight`, or `light`.
+Branding is renderer-owned and comes from `tool/resources/definitions/brand.json` plus bundled resources; do not add logo `<img>` tags, brand colors, font declarations, or background chrome to report Markdown. Dark reports use `assets.logo.reportDark`, `companyDark`, or `dark`; light reports use `assets.logo.reportLight`, `companyLight`, or `light`.
 
 ```md
 ---

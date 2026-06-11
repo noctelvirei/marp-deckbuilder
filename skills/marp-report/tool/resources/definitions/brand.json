@@ -10,6 +10,12 @@
     "heightIn": 7.5,
     "pxToPt": 0.75
   },
+  "assets": {
+    "logo": {
+      "dark": "resource:logos/sample-corporate.dark.svg",
+      "light": "resource:logos/sample-corporate.light.svg"
+    }
+  },
   "colors": {
     "dark": "090909",
     "white": "FFFFFF",
