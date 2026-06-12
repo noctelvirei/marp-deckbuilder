@@ -5,7 +5,9 @@ import {
   formatReportPercent,
   jsString,
   jsValue,
+  normalizeBadgeVariant,
   normalizeHexColor,
+  parseDataTableNumber,
 } from './utils.js'
 
 export function renderReportChartHtml(chart) {
@@ -245,7 +247,7 @@ function renderReportDataTableCell(value, type = 'text', table = {}, rowIndex = 
   }
   if (type === 'status') {
     if (!String(value || '').trim()) return `<td class="${escapeAttr(className)}"></td>`
-    const variant = dataTableStatusVariant(value)
+    const variant = normalizeBadgeVariant(value)
     return `<td class="${escapeAttr(className)}"><span class="report-badge report-badge-${escapeAttr(variant)}">${escapeHtml(value)}</span></td>`
   }
   return `<td class="${escapeAttr(className)}">${escapeHtml(value)}</td>`
@@ -321,21 +323,6 @@ function renderReportTimelineEvent(event) {
     </li>`
 }
 
-function parseDataTableNumber(value) {
-  return Number(String(value || '').replace(/,/g, '').replace(/%$/, '').trim())
-}
-
-function dataTableStatusVariant(value = '') {
-  const token = String(value || '').trim().toLowerCase()
-  if (['green', 'success', 'active', 'approved', 'done', 'complete', 'completed', 'pass'].includes(token)) {
-    return 'green'
-  }
-  if (['blue', 'info', 'live', 'new'].includes(token)) return 'blue'
-  if (['orange', 'warning', 'warn', 'review', 'watch', 'attention'].includes(token)) return 'orange'
-  if (['red', 'danger', 'error', 'blocked', 'fail', 'failed'].includes(token)) return 'red'
-  return 'muted'
-}
-
 export function renderReportRateBarsHtml(rateBars, context = {}) {
   const palette = rateBars.colors.length ? rateBars.colors : reportChartPalette(context.brand)
   const total = rateBars.values.reduce((sum, value) => sum + value, 0)
@@ -369,6 +356,29 @@ function renderReportRateBar(row) {
   </div>
   <span class="report-rate-pct">${escapeHtml(formatReportPercent(row.share))}</span>
 </div>`
+}
+
+function chartBoilerplate(chart, targetName = 'canvas') {
+  return `  const themeRoot = ${targetName}.closest(".deck-report") || document.body || document.documentElement;
+  const rootStyle = getComputedStyle(themeRoot);
+  const tickColor = rootStyle.getPropertyValue("--text-dim").trim() || "#64748b";
+  const gridColor = rootStyle.getPropertyValue("--border").trim() || "rgba(148, 163, 184, 0.28)";
+  const tooltipBg = rootStyle.getPropertyValue("--bg-card").trim() || "rgba(15, 23, 42, 0.92)";
+  const tooltipText = rootStyle.getPropertyValue("--text").trim() || "#ffffff";
+  const tooltipMuted = rootStyle.getPropertyValue("--text-dim").trim() || "#cbd5e1";
+  const textColor = rootStyle.getPropertyValue("--text").trim() || "#ffffff";
+  const mutedColor = rootStyle.getPropertyValue("--text-dim").trim() || "#94a3b8";
+  const valuePrefix = ${jsString(chart.valuePrefix)};
+  const valueSuffix = ${jsString(chart.valueSuffix)};
+  const valueFormatter = new Intl.NumberFormat("en-US", { maximumFractionDigits: 2 });
+  const formatAxisValue = (value) => {
+    const numeric = Number(value);
+    return Number.isFinite(numeric) ? valueFormatter.format(numeric) : String(value ?? "");
+  };
+  const formatTooltipValue = (value) => {
+    const formatted = formatAxisValue(value);
+    return valuePrefix + formatted + valueSuffix;
+  };`
 }
 
 export function renderReportChartScript(chart, context = {}) {
@@ -433,21 +443,7 @@ export function renderReportChartScript(chart, context = {}) {
 
   return `(() => {
   const canvas = document.getElementById(${jsString(chart.id)});
-  const themeRoot = canvas.closest(".deck-report") || document.body || document.documentElement;
-  const rootStyle = getComputedStyle(themeRoot);
-  const tickColor = rootStyle.getPropertyValue("--text-dim").trim() || "#64748b";
-  const gridColor = rootStyle.getPropertyValue("--border").trim() || "rgba(148, 163, 184, 0.28)";
-  const tooltipBg = rootStyle.getPropertyValue("--bg-card").trim() || "rgba(15, 23, 42, 0.92)";
-  const tooltipText = rootStyle.getPropertyValue("--text").trim() || "#ffffff";
-  const tooltipMuted = rootStyle.getPropertyValue("--text-dim").trim() || "#cbd5e1";
-  const valuePrefix = ${jsString(chart.valuePrefix)};
-  const valueSuffix = ${jsString(chart.valueSuffix)};
-  const valueFormatter = new Intl.NumberFormat("en-US", { maximumFractionDigits: 2 });
-  const formatTooltipValue = (value) => {
-    const numeric = Number(value);
-    const formatted = Number.isFinite(numeric) ? valueFormatter.format(numeric) : String(value ?? "");
-    return valuePrefix + formatted + valueSuffix;
-  };
+${chartBoilerplate(chart, 'canvas')}
   new Chart(canvas, {
     type: ${jsString(chartJsType)},
     data: {
@@ -513,21 +509,7 @@ function renderReportParetoChartScript(chart, context = {}) {
 
   return `(() => {
   const canvas = document.getElementById(${jsString(chart.id)});
-  const themeRoot = canvas.closest(".deck-report") || document.body || document.documentElement;
-  const rootStyle = getComputedStyle(themeRoot);
-  const tickColor = rootStyle.getPropertyValue("--text-dim").trim() || "#64748b";
-  const gridColor = rootStyle.getPropertyValue("--border").trim() || "rgba(148, 163, 184, 0.28)";
-  const tooltipBg = rootStyle.getPropertyValue("--bg-card").trim() || "rgba(15, 23, 42, 0.92)";
-  const tooltipText = rootStyle.getPropertyValue("--text").trim() || "#ffffff";
-  const tooltipMuted = rootStyle.getPropertyValue("--text-dim").trim() || "#cbd5e1";
-  const valuePrefix = ${jsString(chart.valuePrefix)};
-  const valueSuffix = ${jsString(chart.valueSuffix)};
-  const valueFormatter = new Intl.NumberFormat("en-US", { maximumFractionDigits: 2 });
-  const formatTooltipValue = (value) => {
-    const numeric = Number(value);
-    const formatted = Number.isFinite(numeric) ? valueFormatter.format(numeric) : String(value ?? "");
-    return valuePrefix + formatted + valueSuffix;
-  };
+${chartBoilerplate(chart, 'canvas')}
   new Chart(canvas, {
     data: {
       labels: ${jsValue(rows.map((row) => row.label))},
@@ -629,23 +611,9 @@ function renderReportBoxplotChartScript(chart, context = {}) {
 
   return `(() => {
   const canvas = document.getElementById(${jsString(chart.id)});
-  const themeRoot = canvas.closest(".deck-report") || document.body || document.documentElement;
-  const rootStyle = getComputedStyle(themeRoot);
-  const tickColor = rootStyle.getPropertyValue("--text-dim").trim() || "#64748b";
-  const gridColor = rootStyle.getPropertyValue("--border").trim() || "rgba(148, 163, 184, 0.28)";
-  const tooltipBg = rootStyle.getPropertyValue("--bg-card").trim() || "rgba(15, 23, 42, 0.92)";
-  const tooltipText = rootStyle.getPropertyValue("--text").trim() || "#ffffff";
-  const tooltipMuted = rootStyle.getPropertyValue("--text-dim").trim() || "#cbd5e1";
-  const valuePrefix = ${jsString(chart.valuePrefix)};
-  const valueSuffix = ${jsString(chart.valueSuffix)};
+${chartBoilerplate(chart, 'canvas')}
   const stats = ${jsValue(stats)};
   const medianColor = ${jsString(medianColor)};
-  const valueFormatter = new Intl.NumberFormat("en-US", { maximumFractionDigits: 2 });
-  const formatTooltipValue = (value) => {
-    const numeric = Number(value);
-    const formatted = Number.isFinite(numeric) ? valueFormatter.format(numeric) : String(value ?? "");
-    return valuePrefix + formatted + valueSuffix;
-  };
   const boxplotPlugin = {
     id: "reportBoxplotWhiskers",
     afterDatasetsDraw(chart) {
@@ -779,16 +747,9 @@ function renderReportHistogramChartScript(chart, context = {}) {
 
   return `(() => {
   const canvas = document.getElementById(${jsString(chart.id)});
-  const themeRoot = canvas.closest(".deck-report") || document.body || document.documentElement;
-  const rootStyle = getComputedStyle(themeRoot);
-  const tickColor = rootStyle.getPropertyValue("--text-dim").trim() || "#64748b";
-  const gridColor = rootStyle.getPropertyValue("--border").trim() || "rgba(148, 163, 184, 0.28)";
-  const tooltipBg = rootStyle.getPropertyValue("--bg-card").trim() || "rgba(15, 23, 42, 0.92)";
-  const tooltipText = rootStyle.getPropertyValue("--text").trim() || "#ffffff";
-  const tooltipMuted = rootStyle.getPropertyValue("--text-dim").trim() || "#cbd5e1";
+${chartBoilerplate(chart, 'canvas')}
   const ranges = ${jsValue(labels)};
   const counts = ${jsValue(counts)};
-  const valueFormatter = new Intl.NumberFormat("en-US", { maximumFractionDigits: 2 });
   new Chart(canvas, {
     type: "bar",
     data: {
@@ -874,24 +835,7 @@ function renderReportBubbleChartScript(chart, context = {}) {
 
   return `(() => {
   const canvas = document.getElementById(${jsString(chart.id)});
-  const themeRoot = canvas.closest(".deck-report") || document.body || document.documentElement;
-  const rootStyle = getComputedStyle(themeRoot);
-  const tickColor = rootStyle.getPropertyValue("--text-dim").trim() || "#64748b";
-  const gridColor = rootStyle.getPropertyValue("--border").trim() || "rgba(148, 163, 184, 0.28)";
-  const tooltipBg = rootStyle.getPropertyValue("--bg-card").trim() || "rgba(15, 23, 42, 0.92)";
-  const tooltipText = rootStyle.getPropertyValue("--text").trim() || "#ffffff";
-  const tooltipMuted = rootStyle.getPropertyValue("--text-dim").trim() || "#cbd5e1";
-  const valuePrefix = ${jsString(chart.valuePrefix)};
-  const valueSuffix = ${jsString(chart.valueSuffix)};
-  const valueFormatter = new Intl.NumberFormat("en-US", { maximumFractionDigits: 2 });
-  const formatAxisValue = (value) => {
-    const numeric = Number(value);
-    return Number.isFinite(numeric) ? valueFormatter.format(numeric) : String(value ?? "");
-  };
-  const formatTooltipValue = (value) => {
-    const formatted = formatAxisValue(value);
-    return valuePrefix + formatted + valueSuffix;
-  };
+${chartBoilerplate(chart, 'canvas')}
   new Chart(canvas, {
     type: "bubble",
     data: {
@@ -974,24 +918,7 @@ function renderReportScatterChartScript(chart, context = {}) {
 
   return `(() => {
   const canvas = document.getElementById(${jsString(chart.id)});
-  const themeRoot = canvas.closest(".deck-report") || document.body || document.documentElement;
-  const rootStyle = getComputedStyle(themeRoot);
-  const tickColor = rootStyle.getPropertyValue("--text-dim").trim() || "#64748b";
-  const gridColor = rootStyle.getPropertyValue("--border").trim() || "rgba(148, 163, 184, 0.28)";
-  const tooltipBg = rootStyle.getPropertyValue("--bg-card").trim() || "rgba(15, 23, 42, 0.92)";
-  const tooltipText = rootStyle.getPropertyValue("--text").trim() || "#ffffff";
-  const tooltipMuted = rootStyle.getPropertyValue("--text-dim").trim() || "#cbd5e1";
-  const valuePrefix = ${jsString(chart.valuePrefix)};
-  const valueSuffix = ${jsString(chart.valueSuffix)};
-  const valueFormatter = new Intl.NumberFormat("en-US", { maximumFractionDigits: 2 });
-  const formatAxisValue = (value) => {
-    const numeric = Number(value);
-    return Number.isFinite(numeric) ? valueFormatter.format(numeric) : String(value ?? "");
-  };
-  const formatTooltipValue = (value) => {
-    const formatted = formatAxisValue(value);
-    return valuePrefix + formatted + valueSuffix;
-  };
+${chartBoilerplate(chart, 'canvas')}
   new Chart(canvas, {
     type: "scatter",
     data: {
@@ -1071,23 +998,9 @@ function renderReportBulletChartScript(chart, context = {}) {
 
   return `(() => {
   const canvas = document.getElementById(${jsString(chart.id)});
-  const themeRoot = canvas.closest(".deck-report") || document.body || document.documentElement;
-  const rootStyle = getComputedStyle(themeRoot);
-  const tickColor = rootStyle.getPropertyValue("--text-dim").trim() || "#64748b";
-  const gridColor = rootStyle.getPropertyValue("--border").trim() || "rgba(148, 163, 184, 0.28)";
-  const tooltipBg = rootStyle.getPropertyValue("--bg-card").trim() || "rgba(15, 23, 42, 0.92)";
-  const tooltipText = rootStyle.getPropertyValue("--text").trim() || "#ffffff";
-  const tooltipMuted = rootStyle.getPropertyValue("--text-dim").trim() || "#cbd5e1";
-  const valuePrefix = ${jsString(chart.valuePrefix)};
-  const valueSuffix = ${jsString(chart.valueSuffix)};
+${chartBoilerplate(chart, 'canvas')}
   const targets = ${jsValue(chart.targets)};
   const targetColor = ${jsString(targetColor)};
-  const valueFormatter = new Intl.NumberFormat("en-US", { maximumFractionDigits: 2 });
-  const formatTooltipValue = (value) => {
-    const numeric = Number(value);
-    const formatted = Number.isFinite(numeric) ? valueFormatter.format(numeric) : String(value ?? "");
-    return valuePrefix + formatted + valueSuffix;
-  };
   const targetMarkerPlugin = {
     id: "reportBulletTargetMarkers",
     afterDatasetsDraw(chart) {
@@ -1191,19 +1104,7 @@ function renderReportHeatmapChartScript(chart, context = {}) {
 
   return `(() => {
   const target = document.getElementById(${jsString(chart.id)});
-  const themeRoot = target.closest(".deck-report") || document.body || document.documentElement;
-  const rootStyle = getComputedStyle(themeRoot);
-  const tickColor = rootStyle.getPropertyValue("--text-dim").trim() || "#64748b";
-  const gridColor = rootStyle.getPropertyValue("--border").trim() || "rgba(148, 163, 184, 0.28)";
-  const tooltipBg = rootStyle.getPropertyValue("--bg-card").trim() || "rgba(15, 23, 42, 0.92)";
-  const valuePrefix = ${jsString(chart.valuePrefix)};
-  const valueSuffix = ${jsString(chart.valueSuffix)};
-  const valueFormatter = new Intl.NumberFormat("en-US", { maximumFractionDigits: 2 });
-  const formatTooltipValue = (value) => {
-    const numeric = Number(value);
-    const formatted = Number.isFinite(numeric) ? valueFormatter.format(numeric) : String(value ?? "");
-    return valuePrefix + formatted + valueSuffix;
-  };
+${chartBoilerplate(chart, 'target')}
   const xLabels = ${jsValue(chart.xLabels)};
   const yLabels = ${jsValue(chart.yLabels)};
   const cells = ${jsValue(cells)};
@@ -1311,22 +1212,8 @@ function renderReportWaterfallChartScript(chart, context = {}) {
 
   return `(() => {
   const canvas = document.getElementById(${jsString(chart.id)});
-  const themeRoot = canvas.closest(".deck-report") || document.body || document.documentElement;
-  const rootStyle = getComputedStyle(themeRoot);
-  const tickColor = rootStyle.getPropertyValue("--text-dim").trim() || "#64748b";
-  const gridColor = rootStyle.getPropertyValue("--border").trim() || "rgba(148, 163, 184, 0.28)";
-  const tooltipBg = rootStyle.getPropertyValue("--bg-card").trim() || "rgba(15, 23, 42, 0.92)";
-  const tooltipText = rootStyle.getPropertyValue("--text").trim() || "#ffffff";
-  const tooltipMuted = rootStyle.getPropertyValue("--text-dim").trim() || "#cbd5e1";
-  const valuePrefix = ${jsString(chart.valuePrefix)};
-  const valueSuffix = ${jsString(chart.valueSuffix)};
+${chartBoilerplate(chart, 'canvas')}
   const deltas = ${jsValue(deltas)};
-  const valueFormatter = new Intl.NumberFormat("en-US", { maximumFractionDigits: 2 });
-  const formatTooltipValue = (value) => {
-    const numeric = Number(value);
-    const formatted = Number.isFinite(numeric) ? valueFormatter.format(numeric) : String(value ?? "");
-    return valuePrefix + formatted + valueSuffix;
-  };
   new Chart(canvas, {
     type: "bar",
     data: {
@@ -1397,21 +1284,7 @@ function renderReportMultiBarChartScript(chart, context = {}, options = {}) {
 
   return `(() => {
   const canvas = document.getElementById(${jsString(chart.id)});
-  const themeRoot = canvas.closest(".deck-report") || document.body || document.documentElement;
-  const rootStyle = getComputedStyle(themeRoot);
-  const tickColor = rootStyle.getPropertyValue("--text-dim").trim() || "#64748b";
-  const gridColor = rootStyle.getPropertyValue("--border").trim() || "rgba(148, 163, 184, 0.28)";
-  const tooltipBg = rootStyle.getPropertyValue("--bg-card").trim() || "rgba(15, 23, 42, 0.92)";
-  const tooltipText = rootStyle.getPropertyValue("--text").trim() || "#ffffff";
-  const tooltipMuted = rootStyle.getPropertyValue("--text-dim").trim() || "#cbd5e1";
-  const valuePrefix = ${jsString(chart.valuePrefix)};
-  const valueSuffix = ${jsString(chart.valueSuffix)};
-  const valueFormatter = new Intl.NumberFormat("en-US", { maximumFractionDigits: 2 });
-  const formatTooltipValue = (value) => {
-    const numeric = Number(value);
-    const formatted = Number.isFinite(numeric) ? valueFormatter.format(numeric) : String(value ?? "");
-    return valuePrefix + formatted + valueSuffix;
-  };
+${chartBoilerplate(chart, 'canvas')}
   new Chart(canvas, {
     type: "bar",
     data: {
@@ -1477,18 +1350,7 @@ function renderReportFunnelChartScript(chart, context = {}) {
 
   return `(() => {
   const target = document.getElementById(${jsString(chart.id)});
-  const themeRoot = target.closest(".deck-report") || document.body || document.documentElement;
-  const rootStyle = getComputedStyle(themeRoot);
-  const gridColor = rootStyle.getPropertyValue("--border").trim() || "rgba(148, 163, 184, 0.28)";
-  const tooltipBg = rootStyle.getPropertyValue("--bg-card").trim() || "rgba(15, 23, 42, 0.92)";
-  const valuePrefix = ${jsString(chart.valuePrefix)};
-  const valueSuffix = ${jsString(chart.valueSuffix)};
-  const valueFormatter = new Intl.NumberFormat("en-US", { maximumFractionDigits: 2 });
-  const formatTooltipValue = (value) => {
-    const numeric = Number(value);
-    const formatted = Number.isFinite(numeric) ? valueFormatter.format(numeric) : String(value ?? "");
-    return valuePrefix + formatted + valueSuffix;
-  };
+${chartBoilerplate(chart, 'target')}
   const data = ${jsValue(data)};
   const maxValue = Math.max(...data.map((item) => item.value), 1);
   const width = Math.max(320, target.clientWidth || 720);
@@ -1591,20 +1453,7 @@ function renderReportSankeyChartScript(chart, context = {}) {
 
   return `(() => {
   const target = document.getElementById(${jsString(chart.id)});
-  const themeRoot = target.closest(".deck-report") || document.body || document.documentElement;
-  const rootStyle = getComputedStyle(themeRoot);
-  const textColor = rootStyle.getPropertyValue("--text").trim() || "#ffffff";
-  const mutedColor = rootStyle.getPropertyValue("--text-dim").trim() || "#94a3b8";
-  const gridColor = rootStyle.getPropertyValue("--border").trim() || "rgba(148, 163, 184, 0.28)";
-  const tooltipBg = rootStyle.getPropertyValue("--bg-card").trim() || "rgba(15, 23, 42, 0.92)";
-  const valuePrefix = ${jsString(chart.valuePrefix)};
-  const valueSuffix = ${jsString(chart.valueSuffix)};
-  const valueFormatter = new Intl.NumberFormat("en-US", { maximumFractionDigits: 2 });
-  const formatTooltipValue = (value) => {
-    const numeric = Number(value);
-    const formatted = Number.isFinite(numeric) ? valueFormatter.format(numeric) : String(value ?? "");
-    return valuePrefix + formatted + valueSuffix;
-  };
+${chartBoilerplate(chart, 'target')}
   const data = ${jsValue(data)};
   const width = Math.max(320, target.clientWidth || 720);
   const height = ${chart.height};
@@ -1773,19 +1622,7 @@ function renderReportTreemapChartScript(chart, context = {}) {
 
   return `(() => {
   const target = document.getElementById(${jsString(chart.id)});
-  const themeRoot = target.closest(".deck-report") || document.body || document.documentElement;
-  const rootStyle = getComputedStyle(themeRoot);
-  const textColor = rootStyle.getPropertyValue("--text").trim() || "#ffffff";
-  const gridColor = rootStyle.getPropertyValue("--border").trim() || "rgba(148, 163, 184, 0.28)";
-  const tooltipBg = rootStyle.getPropertyValue("--bg-card").trim() || "rgba(15, 23, 42, 0.92)";
-  const valuePrefix = ${jsString(chart.valuePrefix)};
-  const valueSuffix = ${jsString(chart.valueSuffix)};
-  const valueFormatter = new Intl.NumberFormat("en-US", { maximumFractionDigits: 2 });
-  const formatTooltipValue = (value) => {
-    const numeric = Number(value);
-    const formatted = Number.isFinite(numeric) ? valueFormatter.format(numeric) : String(value ?? "");
-    return valuePrefix + formatted + valueSuffix;
-  };
+${chartBoilerplate(chart, 'target')}
   const data = ${jsValue(data)};
   const width = Math.max(320, target.clientWidth || 720);
   const height = ${chart.height};
@@ -1873,20 +1710,7 @@ function renderReportAreaChartScript(chart, context = {}) {
 
   return `(() => {
   const target = document.getElementById(${jsString(chart.id)});
-  const themeRoot = target.closest(".deck-report") || document.body || document.documentElement;
-  const rootStyle = getComputedStyle(themeRoot);
-  const tickColor = rootStyle.getPropertyValue("--text-dim").trim() || "#64748b";
-  const gridColor = rootStyle.getPropertyValue("--border").trim() || "rgba(148, 163, 184, 0.28)";
-  const tooltipBg = rootStyle.getPropertyValue("--bg-card").trim() || "rgba(15, 23, 42, 0.92)";
-  const textColor = rootStyle.getPropertyValue("--text").trim() || "#0f172a";
-  const valuePrefix = ${jsString(chart.valuePrefix)};
-  const valueSuffix = ${jsString(chart.valueSuffix)};
-  const valueFormatter = new Intl.NumberFormat("en-US", { maximumFractionDigits: 2 });
-  const formatTooltipValue = (value) => {
-    const numeric = Number(value);
-    const formatted = Number.isFinite(numeric) ? valueFormatter.format(numeric) : String(value ?? "");
-    return valuePrefix + formatted + valueSuffix;
-  };
+${chartBoilerplate(chart, 'target')}
   const parseX = (value) => {
     const parsed = new Date(value);
     return Number.isNaN(parsed.valueOf()) ? value : parsed;

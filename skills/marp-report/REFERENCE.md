@@ -58,40 +58,40 @@ Reports use normal Markdown plus compact `report-*` component tags. The renderer
 
 | Need | Component | Required data |
 | --- | --- | --- |
-| KPI card grid | `report-metric-grid` with `report-metric` children | Metric `value` and/or `label` |
-| Metadata or context summary | `report-key-values` | `items`; optional `title`, `columns` |
-| Ranked distribution bars | `report-rate-bars` | `labels`, `values`; optional `shares` |
-| Formatted data table | `report-data-table` | `columns`, `rows`; optional `types`, `compact`, `align`, `totals`, `highlights`, `caption`, `source` |
-| Reusable dataset | `report-dataset` | `id`, `columns`, `rows`; referenced with `data-ref` |
-| Structured insight | `report-insight` | Finding/body text or `title`, `evidence`, `impact`, `action` |
-| Owned recommendation | `report-recommendation` | Body text or `title`; optional `owner`, `priority`, `due`, `status` |
-| Citation or methodology note | `report-source-note` | Body text and/or `source`; optional `title`, `date` |
-| Reusable source list | `report-source-list` with `report-source` children | Source `id` and descriptive source data |
-| Inline source citation | `report-cite` | `source` matching a declared `report-source` id |
-| Print/PDF page break | `report-page-break` | Optional `label` |
-| Mixed insight/action card grid | `report-card-grid` with `report-card` children | Card `title` and/or body text |
-| Ordered milestones/events | `report-timeline` with `report-event` children | Event date/title/body |
-| Finding, risk, or action block | `report-callout` | Body text or `text`; optional `variant`, `title` |
-| Highlighted recommendation card | `report-accent-card` | Body text or `body`; optional `accent`, `title` |
-| Captioned embedded image | `report-figure` | `src`, `alt`; optional `caption`, `source`, `size` |
-| Inline status label | `report-badge` | Body text or `label`; optional `status`, `variant` |
-| Chart.js bar chart | `report-chart type="bar"` | `labels`, `values` |
-| Chart.js line chart | `report-chart type="line"` | `labels`, `values` |
-| Chart.js doughnut chart | `report-chart type="doughnut"` | `labels`, `values` |
-| Chart.js grouped bar chart | `report-chart type="grouped-bar"` | `labels`, `series`, matrix `values` |
-| Chart.js stacked bar chart | `report-chart type="stacked-bar"` | `labels`, `series`, matrix `values` |
-| Chart.js waterfall chart | `report-chart type="waterfall"` | `labels`, `values` as sequential deltas |
-| Chart.js bullet chart | `report-chart type="bullet"` | `labels`, `values`, `targets` |
-| Chart.js scatter chart | `report-chart type="scatter"` | numeric `points` as `x:y` pairs |
-| Chart.js bubble chart | `report-chart type="bubble"` | numeric `points` as `x:y:r` triples |
-| Chart.js histogram | `report-chart type="histogram"` | raw numeric `values`; optional `bins` |
-| Chart.js boxplot | `report-chart type="boxplot"` | `labels`, matrix `values` with observations per label |
-| Chart.js Pareto chart | `report-chart type="pareto"` | `labels`, non-negative `values` sorted by impact |
-| Observable Plot area chart | `report-chart type="area"` | `points` as `x:y` pairs, or `labels`, `values` |
-| D3 treemap | `report-chart type="treemap"` | `labels`, `values` |
-| D3 funnel | `report-chart type="funnel"` | `labels`, `values` |
-| D3 heatmap | `report-chart type="heatmap"` | `x-labels`, `y-labels`, matrix `values` |
-| D3 Sankey flow | `report-chart type="sankey"` | `links` as `source>target:value` |
+| KPI card grid | `<report-metric-grid>` with `<report-metric>` children | Metric `value` and/or `label` |
+| Metadata or context summary | `<report-key-values>` | `items`; optional `title`, `columns` |
+| Ranked distribution bars | `<report-rate-bars>` | `labels`, `values`; optional `shares` |
+| Formatted data table | `<report-data-table>` | `columns`, `rows`; optional `types`, `compact`, `align`, `totals`, `highlights`, `caption`, `source` |
+| Reusable dataset | `<report-dataset>` | `id`, `columns`, `rows`; referenced with `data-ref` |
+| Structured insight | `<report-insight>` | Finding/body text or `title`, `evidence`, `impact`, `action` |
+| Owned recommendation | `<report-recommendation>` | Body text or `title`; optional `owner`, `priority`, `due`, `status` |
+| Citation or methodology note | `<report-source-note>` | Body text and/or `source`; optional `title`, `date` |
+| Reusable source list | `<report-source-list>` with `<report-source>` children | Source `id` and descriptive source data |
+| Inline source citation | `<report-cite>` | `source` matching a declared `report-source` id |
+| Print/PDF page break | `<report-page-break>` | Optional `label` |
+| Mixed insight/action card grid | `<report-card-grid>` with `<report-card>` children | Card `title` and/or body text |
+| Ordered milestones/events | `<report-timeline>` with `<report-event>` children | Event date/title/body |
+| Finding, risk, or action block | `<report-callout>` | Body text or `text`; optional `variant`, `title` |
+| Highlighted recommendation card | `<report-accent-card>` | Body text or `body`; optional `accent`, `title` |
+| Captioned embedded image | `<report-figure>` | `src`, `alt`; optional `caption`, `source`, `size` |
+| Inline status label | `<report-badge>` | Body text or `label`; optional `status`, `variant` |
+| Chart.js bar chart | `<report-chart type="bar">` | `labels`, `values` |
+| Chart.js line chart | `<report-chart type="line">` | `labels`, `values` |
+| Chart.js doughnut chart | `<report-chart type="doughnut">` | `labels`, `values` |
+| Chart.js grouped bar chart | `<report-chart type="grouped-bar">` | `labels`, `series`, matrix `values` |
+| Chart.js stacked bar chart | `<report-chart type="stacked-bar">` | `labels`, `series`, matrix `values` |
+| Chart.js waterfall chart | `<report-chart type="waterfall">` | `labels`, `values` as sequential deltas |
+| Chart.js bullet chart | `<report-chart type="bullet">` | `labels`, `values`, `targets` |
+| Chart.js scatter chart | `<report-chart type="scatter">` | numeric `points` as `x:y` pairs |
+| Chart.js bubble chart | `<report-chart type="bubble">` | numeric `points` as `x:y:r` triples |
+| Chart.js histogram | `<report-chart type="histogram">` | raw numeric `values`; optional `bins` |
+| Chart.js boxplot | `<report-chart type="boxplot">` | `labels`, matrix `values` with observations per label |
+| Chart.js Pareto chart | `<report-chart type="pareto">` | `labels`, non-negative `values` sorted by impact |
+| Observable Plot area chart | `<report-chart type="area">` | `points` as `x:y` pairs, or `labels`, `values` |
+| D3 treemap | `<report-chart type="treemap">` | `labels`, `values` |
+| D3 funnel | `<report-chart type="funnel">` | `labels`, `values` |
+| D3 heatmap | `<report-chart type="heatmap">` | `x-labels`, `y-labels`, matrix `values` |
+| D3 Sankey flow | `<report-chart type="sankey">` | `links` as `source>target:value` |
 
 ## Generating Report Markdown
 

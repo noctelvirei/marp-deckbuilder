@@ -40,6 +40,10 @@ import {
   renderReportSourceNoteHtml,
   renderReportTimelineHtml,
 } from './report-components/renderers.js'
+import { isKnownBadgeVariant, parseDataTableNumber } from './report-components/utils.js'
+
+const dataRefChartTypes = ['bar', 'line', 'doughnut', 'waterfall', 'bullet', 'pareto']
+const dataRefChartTypeList = formatReportList(dataRefChartTypes)
 
 const knownReportTags = new Set([
   'report-accent-card',
@@ -244,6 +248,11 @@ function prepareReportDataset(dataset, datasetRegistry, context) {
   datasetRegistry.set(dataset.id, dataset)
 }
 
+function formatReportList(items = []) {
+  if (items.length <= 1) return items.join('')
+  return `${items.slice(0, -1).join(', ')}, and ${items[items.length - 1]}`
+}
+
 function resolveReportDataTableDataset(table, datasetRegistry, context) {
   if (!table.dataRef) return
   const dataset = datasetRegistry.get(table.dataRef)
@@ -266,10 +275,10 @@ function resolveReportChartDataset(chart, datasetRegistry, context) {
   if (!dataset) {
     fail(`report-chart data-ref "${chart.dataRef}" does not match a report-dataset id.`, context)
   }
-  const supportedChartDatasetTypes = new Set(['bar', 'line', 'doughnut', 'waterfall', 'bullet', 'pareto'])
+  const supportedChartDatasetTypes = new Set(dataRefChartTypes)
   if (!supportedChartDatasetTypes.has(chart.chartType)) {
     fail(
-      `report-chart data-ref currently supports bar, line, doughnut, waterfall, bullet, and pareto charts. Ask the skill maker to add dataset support for type "${chart.chartType}".`,
+      `report-chart data-ref currently supports ${dataRefChartTypeList} charts. Ask the skill maker to add dataset support for type "${chart.chartType}".`,
       context,
     )
   }
@@ -720,7 +729,6 @@ function validateReportFigure(figure, context) {
 function validateReportDataTable(table, context) {
   const supportedTypes = new Set(['text', 'number', 'percent', 'status'])
   const supportedAlignments = new Set(['left', 'center', 'right'])
-  const supportedHighlights = new Set(['blue', 'green', 'orange', 'red', 'muted'])
   if (table.columns.length === 0) {
     fail('report-data-table requires columns or headers.', context)
   }
@@ -773,7 +781,7 @@ function validateReportDataTable(table, context) {
     if (highlight.column && (!Number.isInteger(highlight.column) || highlight.column < 1 || highlight.column > table.columns.length)) {
       fail('report-data-table cell highlights must target an existing 1-based column number.', context)
     }
-    if (!supportedHighlights.has(highlight.variant)) {
+    if (!isKnownBadgeVariant(highlight.rawVariant)) {
       fail(
         `report-data-table highlight "${highlight.rawVariant}" is not available. Supported highlights: blue, green, orange, red, muted.`,
         context,
@@ -901,12 +909,11 @@ function validateReportCardGrid(cardGrid, context) {
 }
 
 function validateReportTimeline(timeline, context) {
-  const variants = new Set(['blue', 'green', 'orange', 'red', 'muted'])
   if (timeline.events.length === 0) {
     fail('report-timeline must include at least one report-event.', context)
   }
   timeline.events.forEach((event, index) => {
-    if (!variants.has(event.status)) {
+    if (!isKnownBadgeVariant(event.rawStatus)) {
       fail(
         `Unsupported report-event status "${event.rawStatus}". Supported statuses map to blue, green, orange, red, or muted.`,
         context,
@@ -982,8 +989,7 @@ function validateReportAccentCard(card, context) {
 }
 
 function validateReportBadge(badge, context) {
-  const variants = new Set(['blue', 'green', 'orange', 'red', 'muted'])
-  if (!variants.has(badge.variant)) {
+  if (!isKnownBadgeVariant(badge.rawVariant)) {
     fail(
       `Unsupported report-badge variant "${badge.rawVariant}". Supported variants: blue, green, orange, red, muted.`,
       context,
@@ -1015,10 +1021,6 @@ function sanitizeDomId(value) {
 
 function isSixDigitHexColor(value) {
   return /^#?[0-9a-f]{6}$/i.test(String(value || '').trim())
-}
-
-function parseDataTableNumber(value) {
-  return Number(String(value || '').replace(/,/g, '').replace(/%$/, '').trim())
 }
 
 function reportSourceDomId(id = '') {

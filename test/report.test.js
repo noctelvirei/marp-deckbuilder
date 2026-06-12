@@ -1024,7 +1024,7 @@ test('expands report data tables into formatted table components', async () => {
   title="Journey breakdown"
   columns="Journey|Cases|Share|Status"
   types="text|number|percent|status"
-  rows="J0107|52,208|67.1|Active;J0116|3,751|4.8|Review"
+  rows="J0107|52,208|67.1|Active;J0116|3,751|4.8|Review;J0999|0|0|Draft"
   caption="Registered and unregistered journey volume."
   source="Source: April journey export"
 ></report-data-table>
@@ -1050,6 +1050,7 @@ test('expands report data tables into formatted table components', async () => {
   )
   assert.match(rendered.document, /<span class="report-badge report-badge-green">Active<\/span>/)
   assert.match(rendered.document, /<span class="report-badge report-badge-orange">Review<\/span>/)
+  assert.match(rendered.document, /<span class="report-badge report-badge-muted">Draft<\/span>/)
   assert.match(
     rendered.document,
     /<span class="report-data-table-caption">Registered and unregistered journey volume\.<\/span>/,
@@ -1342,7 +1343,7 @@ test('expands report recommendations into owner action blocks', async () => {
   owner="Operations"
   priority="High"
   due="Week 1"
-  status="Watch"
+  status="Needs bespoke status"
 >Confirm whether J0116 is a new journey or a data quality issue.</report-recommendation>
 `,
     {
@@ -1359,7 +1360,7 @@ test('expands report recommendations into owner action blocks', async () => {
   assert.match(rendered.document, /<span class="report-recommendation-meta-item">Owner: Operations<\/span>/)
   assert.match(rendered.document, /<span class="report-recommendation-priority report-recommendation-priority-high">High<\/span>/)
   assert.match(rendered.document, /<span class="report-recommendation-meta-item">Due: Week 1<\/span>/)
-  assert.match(rendered.document, /<span class="report-badge report-badge-orange">Watch<\/span>/)
+  assert.match(rendered.document, /<span class="report-badge report-badge-muted">Needs bespoke status<\/span>/)
 })
 
 test('report recommendations fail clearly when malformed', async () => {

@@ -2,6 +2,7 @@ import MarkdownIt from 'markdown-it'
 
 import { splitFrontmatter } from './markdown.js'
 import { compileReportComponents } from './report-components.js'
+import { escapeAttr as escapeHtmlAttr, escapeHtml } from './report-components/utils.js'
 import {
   prepareReportPresentation,
   reportArticleClass,
@@ -54,6 +55,7 @@ export function renderReportHtml(source, options = {}) {
   )
 
   return {
+    // `html` is the rendered report body content; `document` is the full standalone HTML page.
     html: content,
     css,
     frontmatter,
@@ -1715,17 +1717,4 @@ function hex(value, fallback) {
 
 function escapeCssUrl(value) {
   return String(value).replace(/["\\\n\r\f]/g, '\\$&')
-}
-
-function escapeHtml(value) {
-  return String(value)
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#39;')
-}
-
-function escapeHtmlAttr(value) {
-  return escapeHtml(value)
 }

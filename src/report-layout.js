@@ -1,5 +1,7 @@
 import * as cheerio from 'cheerio'
 
+import { cleanText, escapeAttr, escapeHtml } from './report-components/utils.js'
+
 export function prepareReportPresentation(content, frontmatter = {}) {
   const theme = normalizeReportTheme(frontmatter.reportTheme || frontmatter.themeSurface)
   const navEnabled = isTruthy(frontmatter.reportNav || frontmatter.nav)
@@ -96,21 +98,4 @@ function slugify(value) {
     .replace(/&[a-z0-9#]+;/gi, '')
     .replace(/[^a-z0-9]+/g, '-')
     .replace(/^-+|-+$/g, '')
-}
-
-function cleanText(value) {
-  return String(value || '').replace(/\s+/g, ' ').trim()
-}
-
-function escapeHtml(value = '') {
-  return String(value || '')
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#39;')
-}
-
-function escapeAttr(value = '') {
-  return escapeHtml(value)
 }

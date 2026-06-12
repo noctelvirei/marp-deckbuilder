@@ -22,6 +22,10 @@ export function escapeAttr(value = '') {
   return escapeHtml(value)
 }
 
+export function parseDataTableNumber(value) {
+  return Number(String(value || '').replace(/,/g, '').replace(/%$/, '').trim())
+}
+
 export function formatReportNumber(value) {
   const numeric = Number(value)
   if (!Number.isFinite(numeric)) return String(value || '')
@@ -41,6 +45,54 @@ export function normalizeHexColor(value = '') {
   const token = String(value || '').trim()
   const hex = token.match(/^#?([0-9a-f]{6})$/i)
   return hex ? `#${hex[1].toUpperCase()}` : ''
+}
+
+export function normalizeBadgeVariant(value = 'muted') {
+  const token = String(value || 'muted').trim().toLowerCase()
+  if (['green', 'success', 'active', 'approved', 'done', 'complete', 'completed', 'pass'].includes(token)) {
+    return 'green'
+  }
+  if (['blue', 'info', 'live', 'new'].includes(token)) return 'blue'
+  if (['orange', 'warning', 'warn', 'review', 'watch', 'attention'].includes(token)) return 'orange'
+  if (['red', 'danger', 'error', 'blocked', 'fail', 'failed'].includes(token)) return 'red'
+  if (['muted', 'neutral', 'pending', 'draft', 'gray', 'grey'].includes(token)) return 'muted'
+  return 'muted'
+}
+
+export function isKnownBadgeVariant(value = 'muted') {
+  const token = String(value || 'muted').trim().toLowerCase()
+  return [
+    'green',
+    'success',
+    'active',
+    'approved',
+    'done',
+    'complete',
+    'completed',
+    'pass',
+    'blue',
+    'info',
+    'live',
+    'new',
+    'orange',
+    'warning',
+    'warn',
+    'review',
+    'watch',
+    'attention',
+    'red',
+    'danger',
+    'error',
+    'blocked',
+    'fail',
+    'failed',
+    'muted',
+    'neutral',
+    'pending',
+    'draft',
+    'gray',
+    'grey',
+  ].includes(token)
 }
 
 export function jsString(value = '') {

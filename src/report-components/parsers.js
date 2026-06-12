@@ -1,5 +1,5 @@
 import { normalizeResourceReference } from '../resources.js'
-import { cleanText, splitCsv } from './utils.js'
+import { cleanText, normalizeBadgeVariant, splitCsv } from './utils.js'
 
 export function parseReportChart(chart, index = 0) {
   const type = normalizeChartType(chart.attr('type') || 'bar')
@@ -462,18 +462,6 @@ function normalizeCalloutVariant(value = 'info') {
 function normalizeRecommendationPriority(value = '') {
   const token = String(value || '').trim().toLowerCase()
   if (['critical', 'high', 'medium', 'low'].includes(token)) return token
-  return token
-}
-
-function normalizeBadgeVariant(value = 'muted') {
-  const token = String(value || 'muted').trim().toLowerCase()
-  if (['green', 'success', 'active', 'approved', 'done', 'complete', 'completed', 'pass'].includes(token)) {
-    return 'green'
-  }
-  if (['blue', 'info', 'live', 'new'].includes(token)) return 'blue'
-  if (['orange', 'warning', 'warn', 'review', 'watch', 'attention'].includes(token)) return 'orange'
-  if (['red', 'danger', 'error', 'blocked', 'fail', 'failed'].includes(token)) return 'red'
-  if (['muted', 'neutral', 'pending', 'draft', 'gray', 'grey'].includes(token)) return 'muted'
   return token
 }
 
