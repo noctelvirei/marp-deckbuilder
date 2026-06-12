@@ -8280,8 +8280,9 @@ function reportDocument({
   articleClass = "report-body"
 }) {
   const bodyClassAttr = bodyClass ? ` class="${escapeAttr(bodyClass)}"` : "";
+  const htmlClassAttr = bodyClass ? ` class="${escapeAttr(bodyClass)}"` : "";
   return `<!doctype html>
-<html lang="en">
+<html lang="en"${htmlClassAttr}>
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1.0">
@@ -9921,8 +9922,14 @@ ${backgroundRule}
     min-height: 100%;
   }
 
+  html.report-theme-dark-page,
   body.report-theme-dark-page {
     background: var(--bg, #060D18) !important;
+  }
+
+  html.report-theme-dark-page {
+    --bg: #060D18;
+    --bg-subtle: #071228;
   }
 
   body.report-theme-dark-page::before {
