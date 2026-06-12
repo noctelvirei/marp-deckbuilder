@@ -96,7 +96,7 @@ reportNav: true
   assert.match(rendered.document, /<html lang="en" class="report-theme-dark-page">/)
   assert.match(rendered.css, /html\.report-theme-dark-page,[\s\S]*body\.report-theme-dark-page \{[\s\S]*background: var\(--bg, #060D18\) !important;/)
   assert.match(rendered.css, /body\.report-theme-dark-page::before \{[\s\S]*position: fixed;[\s\S]*background: var\(--bg-subtle, #071228\) !important;/)
-  assert.match(rendered.css, /\.report-cover \{[\s\S]*padding: 10mm 0 12mm;/)
+  assert.match(rendered.css, /\.report-cover \{[\s\S]*padding: 10mm 0 12mm;[\s\S]*background: linear-gradient\(135deg, var\(--bg, #090909\), #0a1730\) !important;/)
   assert.match(rendered.css, /\.report-body \{[\s\S]*padding: 10mm 0 0;/)
   assert.match(rendered.css, /\.report-layout \{[\s\S]*display: block;[\s\S]*padding: 0;/)
   assert.match(rendered.css, /\.report-sidebar \{[\s\S]*display: none !important;/)

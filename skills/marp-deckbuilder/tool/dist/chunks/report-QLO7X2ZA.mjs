@@ -9970,7 +9970,7 @@ ${backgroundRule}
   .report-cover {
     min-height: 220px;
     padding: 10mm 0 12mm;
-    background: #${dark} !important;
+    background: linear-gradient(135deg, var(--bg, #${dark}), #0a1730) !important;
   }
 
   .report-logo {
