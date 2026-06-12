@@ -775,6 +775,31 @@ This report uses generated dark report chrome.
   assert.doesNotMatch(rendered.document, /<report-chart/i)
 })
 
+test('dark report inline code uses dark-theme contrast tokens', async () => {
+  const definitions = await loadDefinitions(new URL('../resources/definitions', import.meta.url))
+  const rendered = renderReportHtml(
+    `---
+title: Dark Code Report
+reportTheme: dark
+---
+
+## Summary
+
+The field \`CaseProductName\` should not render as a light chip on dark reports.
+`,
+    {
+      resourcesDir: path.resolve('resources'),
+      definitions,
+      inlineAssets: true,
+    },
+  )
+
+  assert.match(rendered.document, /<main class="deck-report report-theme-dark">/)
+  assert.match(rendered.document, /<code>CaseProductName<\/code>/)
+  assert.match(rendered.css, /\.deck-report\.report-theme-dark \.report-body code \{[\s\S]*background: rgba\(89, 214, 253, 0\.12\);[\s\S]*color: var\(--white\);/)
+  assert.match(rendered.css, /\.deck-report\.report-theme-dark \.report-body pre code \{[\s\S]*background: transparent;[\s\S]*color: inherit;/)
+})
+
 test('dark report components preserve renderer-owned corporate logo', async () => {
   const logoDir = path.join(tmpDir, 'logo-retention', 'resources')
   await mkdir(logoDir, { recursive: true })

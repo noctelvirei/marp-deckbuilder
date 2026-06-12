@@ -143,6 +143,7 @@ Report Markdown is a compact data-and-copy layer. The renderer owns all HTML str
 
 - Do not use light SVG fills such as `#f8fbff`, `#fdfdfd`, or white chart backgrounds on the navy theme.
 - Renderer-generated SVG text on dark backgrounds should use `#C8D8F0`, `#8B9AB5`, or `#FFFFFF`, not near-black text.
+- Do not wrap technical field names, product names, journey IDs, or customer names in backticks for emphasis. Use plain text unless the user explicitly needs code syntax.
 - Do not write raw HTML, SVG, CSS, JavaScript, or library code into Markdown.
 - Do not rely on external network scripts for final output.
 - These are renderer component choices, not CSS problems. If the renderer component does not support the need, ask the skill maker to add or adjust it.

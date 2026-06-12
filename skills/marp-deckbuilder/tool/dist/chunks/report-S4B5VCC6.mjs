@@ -9712,6 +9712,18 @@ pre code {
   background: transparent;
 }
 
+.deck-report.report-theme-dark .report-body code {
+  border: 1px solid rgba(89, 214, 253, 0.26);
+  background: rgba(89, 214, 253, 0.12);
+  color: var(--white);
+}
+
+.deck-report.report-theme-dark .report-body pre code {
+  border: 0;
+  background: transparent;
+  color: inherit;
+}
+
 @media (max-width: 760px) {
   .report-cover {
     padding: 54px 32px 60px;

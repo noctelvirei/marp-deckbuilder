@@ -58,6 +58,8 @@ Self-closing syntax is supported for attribute-only components, such as `<report
 
 Only documented attributes are valid. The renderer rejects unsupported attributes on all `report-*` components instead of ignoring them. If the attribute you need is not listed here, ask the skill maker to add it.
 
+In dark reports, do not wrap technical field names, product names, journey IDs, or customer names in backticks for emphasis. Use plain text unless the user explicitly needs code syntax.
+
 ## Separator Convention
 
 Use semicolons to separate repeated records or items, and pipes to separate fields inside one record. Examples: `items="Scope: TD; Platform: v2"`, `rows="A|1; B|2"`, and `values="10|20; 12|24"` for matrix-style chart values. Use commas only for simple one-dimensional chart series such as `labels="A,B"` or `values="10,20"`.
