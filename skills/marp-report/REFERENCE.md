@@ -56,6 +56,12 @@ Reports use normal Markdown plus compact `report-*` component tags. The renderer
 
 Self-closing syntax is supported for attribute-only components, such as `<report-chart ... />`, `<report-data-table ... />`, `<report-dataset ... />`, `<report-figure ... />`, `<report-page-break />`, and child items such as `<report-metric ... />`. Do not self-close components that need body text or nested children, such as `<report-metric-grid>...</report-metric-grid>`, `<report-source-list>...</report-source-list>`, `<report-insight>...</report-insight>`, or `<report-recommendation>...</report-recommendation>`.
 
+## Separator Convention
+
+Use semicolons to separate repeated records or items, and pipes to separate fields inside one record. Examples: `items="Scope: TD; Platform: v2"`, `rows="A|1; B|2"`, and `values="10|20; 12|24"` for matrix-style chart values. Use commas only for simple one-dimensional chart series such as `labels="A,B"` or `values="10,20"`.
+
+Do not use pipes to separate `report-key-values` items. The renderer rejects `items="Scope: TD|Platform: v2"` because pipes are reserved for table cells, dataset fields, and matrix fields.
+
 ## Available Renderer Components
 
 | Need | Component | Required data |
@@ -431,7 +437,7 @@ Supported attributes:
 | Attribute | Required | Notes |
 | --- | --- | --- |
 | `title` | no | Rendered above the key/value grid. |
-| `items` | yes | Semicolon-separated `Label: Value` or `Label=Value` pairs. Alias: `data`. |
+| `items` | yes | Semicolon-separated `Label: Value` or `Label=Value` pairs. Do not separate items with pipes. Alias: `data`. |
 | `columns` | no | Number of columns from `1` to `4`. Alias: `cols`. Defaults to `2`. |
 
 ### Report Rate Bars

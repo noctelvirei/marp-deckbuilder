@@ -862,6 +862,12 @@ function validateReportKeyValues(keyValues, context) {
   if (keyValues.items.length === 0) {
     fail('report-key-values requires at least one item in items or data.', context)
   }
+  if (looksLikePipeDelimitedKeyValueItems(keyValues.rawItems)) {
+    fail(
+      'report-key-values items must separate items with semicolons, not pipes. Use items="Scope: TD (T011); Platform: v2; Period: 1 Jan - 11 Jun 2026". Pipes are reserved for fields inside table rows, datasets, and matrix values.',
+      context,
+    )
+  }
   if (keyValues.columns < 1 || keyValues.columns > 4) {
     fail('report-key-values columns must be between 1 and 4.', context)
   }
@@ -1091,6 +1097,14 @@ function isIdentifierLikeBadgeLabel(value = '') {
   const token = String(value || '').trim()
   if (!token || /\s/.test(token)) return false
   return /^[a-z][A-Za-z0-9]*[A-Z][A-Za-z0-9]*$/.test(token) || /^[A-Za-z][A-Za-z0-9]*(?:[_-][A-Za-z0-9]+)+$/.test(token)
+}
+
+function looksLikePipeDelimitedKeyValueItems(value = '') {
+  const source = String(value || '').trim()
+  if (!source.includes('|') || source.includes(';')) return false
+  const segments = source.split('|').map((item) => item.trim()).filter(Boolean)
+  if (segments.length < 2) return false
+  return segments.filter((segment) => /^[^:=|]{1,80}\s*[:=]\s*\S/.test(segment)).length >= 2
 }
 
 function reportSourceDomId(id = '') {

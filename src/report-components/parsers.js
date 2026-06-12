@@ -158,10 +158,12 @@ export function parseReportDataTable(table) {
 }
 
 export function parseReportKeyValues(keyValues) {
+  const rawItems = keyValues.attr('items') || keyValues.attr('data') || cleanText(keyValues.text())
   return {
     type: 'key-values',
     title: keyValues.attr('title') || cleanText(keyValues.find('h2,h3').first().text()),
-    items: parseKeyValueItems(keyValues.attr('items') || keyValues.attr('data') || cleanText(keyValues.text())),
+    items: parseKeyValueItems(rawItems),
+    rawItems,
     columns: normalizeKeyValueColumns(keyValues.attr('columns') || keyValues.attr('cols') || ''),
   }
 }

@@ -89,6 +89,7 @@ Generate `report.md` in this order:
 - Prefer `reportTheme: dark` for dark navy reports instead of pasting CSS into Markdown.
 - Keep branding renderer-owned through `brand.json` and bundled resources; report Markdown should not declare corporate logos, brand colors, fonts, or background chrome.
 - Keep technical field names as plain text in dark reports unless code formatting is truly necessary.
+- Follow the report separator convention: semicolons separate repeated records or items, pipes separate fields inside one record, and commas separate simple one-dimensional chart series. Use `items="Scope: TD; Platform: v2"` for `report-key-values`, never `items="Scope: TD|Platform: v2"`.
 - Use self-closing syntax for attribute-only components when it keeps Markdown compact, for example `<report-chart ... />`, `<report-data-table ... />`, `<report-dataset ... />`, `<report-figure ... />`, and `<report-metric ... />` inside a metric grid.
 - Do not self-close components that need body text or nested children, such as `<report-metric-grid>...</report-metric-grid>`, `<report-source-list>...</report-source-list>`, `<report-insight>...</report-insight>`, or `<report-recommendation>...</report-recommendation>`.
 - Use `<report-chart type="bar">`, `<report-chart type="line">`, or `<report-chart type="doughnut">` for standard Chart.js charts with renderer-owned hover tooltips.
@@ -107,7 +108,7 @@ Generate `report.md` in this order:
 - Use `<report-chart type="heatmap">` for D3 matrix intensity displays with renderer-owned hover tips.
 - Use `<report-chart type="sankey">` for D3 flow diagrams; provide comma-separated `links` such as `Opened>Started:44120,Started>Completed:37980`.
 - Use `<report-metric-grid>` for KPI summaries.
-- Use `<report-key-values>` for metadata, report context, parameters, and compact label/value summaries.
+- Use `<report-key-values>` for metadata, report context, parameters, and compact label/value summaries. Separate each `Label: Value` item with semicolons.
 - Use `<report-rate-bars>` for ranked distribution bars.
 - Use `<report-data-table>` for formatted tables with text, number, percent, status columns, compact mode, alignment, totals, and row/cell highlights. `totals` must be a pipe-separated footer row, not a boolean.
 - Use `<report-dataset>` when the same rows should feed a table and a supported Chart.js chart. Reference it with `data-ref`; do not repeat the same data manually. For grouped and stacked bars, use `series-columns="Opened|Completed|Exceptions"` to choose multiple numeric dataset columns.

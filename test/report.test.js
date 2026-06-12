@@ -1338,6 +1338,20 @@ test('report key values fail clearly when malformed', async () => {
     () => renderReportHtml('<report-key-values items="Period only"></report-key-values>', options),
     /report-key-values item 1 must use "Label: Value" or "Label=Value"/,
   )
+  assert.throws(
+    () =>
+      renderReportHtml(
+        '<report-key-values items="Scope: TD (T011)|Platform: v2|Period: 1 Jan - 11 Jun 2026"></report-key-values>',
+        options,
+      ),
+    /report-key-values items must separate items with semicolons, not pipes/,
+  )
+  assert.doesNotThrow(() =>
+    renderReportHtml(
+      '<report-key-values items="Scope: TD (T011); Platform: v2; Period: 1 Jan - 11 Jun 2026"></report-key-values>',
+      options,
+    ),
+  )
 })
 
 test('expands report insights into structured narrative blocks', async () => {
