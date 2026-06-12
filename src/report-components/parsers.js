@@ -149,6 +149,7 @@ export function parseReportDataTable(table) {
     compact: normalizeBoolean(table.attr('compact') || table.attr('dense')),
     align: parseDataTableAlignments(table.attr('align') || table.attr('alignment')),
     totals,
+    rawTotals: cleanText(totalsValue),
     highlights: parseDataTableHighlights(table.attr('highlights') || table.attr('highlight')),
     dataRef: table.attr('data-ref') || table.attr('dataset') || '',
     caption: table.attr('caption') || '',

@@ -3,12 +3,13 @@ const require = __deckbuilderCreateRequire(import.meta.url);
 import {
   require_punycode,
   resolveResourceUrls
-} from "./chunk-KQ5HQ246.mjs";
+} from "./chunk-4HN4Q4GM.mjs";
 import {
   decodeHTML,
+  expandSelfClosingComponentTags,
   load,
   splitFrontmatter
-} from "./chunk-IMJWZKGS.mjs";
+} from "./chunk-WXRPC2NL.mjs";
 import "./chunk-ZA7UPLW5.mjs";
 import {
   normalizeResourceReference,
@@ -4910,6 +4911,7 @@ function parseReportDataTable(table2) {
     compact: normalizeBoolean(table2.attr("compact") || table2.attr("dense")),
     align: parseDataTableAlignments(table2.attr("align") || table2.attr("alignment")),
     totals,
+    rawTotals: cleanText(totalsValue),
     highlights: parseDataTableHighlights(table2.attr("highlights") || table2.attr("highlight")),
     dataRef: table2.attr("data-ref") || table2.attr("dataset") || "",
     caption: table2.attr("caption") || "",
@@ -5245,6 +5247,8 @@ function renderReportDataTableHtml(table2) {
 ${renderReportDataTableRow(table2.totals, table2.types, table2, "total")}
       </tfoot>
 ` : "";
+  const footerHtml = footer ? `
+${footer.trimEnd()}` : "";
   return `<figure class="${escapeAttr(className)}">
   ${table2.title ? `<div class="report-data-table-title">${escapeHtml2(table2.title)}</div>` : ""}
   <div class="report-data-table-scroll">
@@ -5254,8 +5258,7 @@ ${renderReportDataTableRow(table2.totals, table2.types, table2, "total")}
       </thead>
       <tbody>
 ${table2.rows.map((row, index) => renderReportDataTableRow(row, table2.types, table2, index + 1)).join("\n")}
-      </tbody>
-${footer.trimEnd()}
+      </tbody>${footerHtml}
     </table>
   </div>
   ${caption ? `<figcaption>
@@ -6974,7 +6977,8 @@ var knownReportTags = /* @__PURE__ */ new Set([
 function compileReportComponents(source, options = {}) {
   const context = reportComponentContext(options);
   validateReportComponentSyntax(source, context);
-  const root = load(`<root>${source}</root>`, {
+  const parseSource = expandSelfClosingComponentTags(source, knownReportTags, "report");
+  const root = load(`<root>${parseSource}</root>`, {
     decodeEntities: false,
     lowerCaseAttributeNames: true
   });
@@ -7629,6 +7633,9 @@ function validateReportDataTable(table2, context) {
   if (table2.rows.length === 0) {
     fail("report-data-table requires at least one row in rows or data.", context);
   }
+  if (isBooleanAttributeToken(table2.rawTotals)) {
+    fail('report-data-table totals must be a pipe-separated footer row, not a boolean. Example: totals="Total|55959|71.9|".', context);
+  }
   if (table2.types.length !== table2.columns.length) {
     fail(
       `report-data-table types/columns length mismatch: ${table2.types.length} type(s), ${table2.columns.length} column(s).`,
@@ -7897,6 +7904,9 @@ function sanitizeDomId(value) {
 }
 function isSixDigitHexColor(value) {
   return /^#?[0-9a-f]{6}$/i.test(String(value || "").trim());
+}
+function isBooleanAttributeToken(value = "") {
+  return ["true", "false", "yes", "no", "on", "off", "1", "0"].includes(String(value || "").trim().toLowerCase());
 }
 function reportSourceDomId(id = "") {
   return `report-source-${String(id).replace(/[^a-z0-9_-]/gi, "-").toLowerCase()}`;

@@ -54,6 +54,8 @@ Do not paste CSS into report Markdown. Add or update renderer-owned theme suppor
 
 Reports use normal Markdown plus compact `report-*` component tags. The renderer expands those tags into HTML, CSS hooks, SVG where needed, and JavaScript initializers. Do not write raw HTML, CSS, SVG, canvas, or JavaScript in report Markdown.
 
+Self-closing syntax is supported for attribute-only components, such as `<report-chart ... />`, `<report-data-table ... />`, `<report-dataset ... />`, `<report-figure ... />`, `<report-page-break />`, and child items such as `<report-metric ... />`. Do not self-close components that need body text or nested children, such as `<report-metric-grid>...</report-metric-grid>`, `<report-source-list>...</report-source-list>`, `<report-insight>...</report-insight>`, or `<report-recommendation>...</report-recommendation>`.
+
 ## Available Renderer Components
 
 | Need | Component | Required data |
@@ -397,8 +399,8 @@ Use `report-metric-grid` for KPI cards. Do not hand-author nested metric card `d
 
 ```md
 <report-metric-grid>
-  <report-metric value="77,951" label="Total cases" sub="+12% vs prior"></report-metric>
-  <report-metric value="94.3%" label="Completion rate" sub="-1.1 pp" direction="down"></report-metric>
+  <report-metric value="77,951" label="Total cases" sub="+12% vs prior" />
+  <report-metric value="94.3%" label="Completion rate" sub="-1.1 pp" direction="down" />
 </report-metric-grid>
 ```
 
@@ -483,7 +485,7 @@ Supported attributes:
 | `rows` | yes | Semicolon-separated rows with pipe-separated cells. Alias: `data`. |
 | `compact` | no | Use `true` for denser report tables. Alias: `dense`. |
 | `align` | no | Pipe-separated column alignment. Supports `left`, `center`, `right`. Defaults numeric and percent columns to right alignment. Alias: `alignment`. |
-| `totals` | no | Pipe-separated footer row with the same number of cells as `columns`. Aliases: `total`, `footer`. |
+| `totals` | no | Pipe-separated footer row with the same number of cells as `columns`, for example `totals="Total|55959|71.9|"`. Boolean values such as `totals="true"` are invalid. Aliases: `total`, `footer`. |
 | `highlights` | no | Semicolon-separated row or cell highlights. Use `2:orange` for row 2 or `1.3:green` for row 1, column 3. Supports `blue`, `green`, `orange`, `red`, `muted`. Alias: `highlight`. |
 | `caption` | no | Visible caption below the table. |
 | `source` | no | Source note under the caption. |

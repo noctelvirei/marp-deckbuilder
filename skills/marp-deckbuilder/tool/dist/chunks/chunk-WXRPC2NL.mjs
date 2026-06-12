@@ -46742,6 +46742,16 @@ var STRINGS = {
 var undici = __toESM(require_undici(), 1);
 var import_whatwg_mimetype = __toESM(require_mime_type(), 1);
 
+// src/component-tags.js
+function expandSelfClosingComponentTags(source, knownTags, prefix) {
+  const pattern = new RegExp(`<\\s*(${prefix}-[a-z0-9-]+)\\b([^<>]*?)\\/\\s*>`, "gi");
+  return String(source || "").replace(pattern, (raw, tag, attrs = "") => {
+    const normalizedTag = tag.toLowerCase();
+    if (!knownTags.has(normalizedTag)) return raw;
+    return `<${normalizedTag}${attrs}></${normalizedTag}>`;
+  });
+}
+
 // src/components/utils.js
 function splitCsv(value = "") {
   return String(value).split(",").map((item) => item.trim()).filter(Boolean);
@@ -47289,7 +47299,8 @@ var knownDeckTags = /* @__PURE__ */ new Set([
 function compileDeckComponents(source, options = {}) {
   const context = componentContext(options);
   validateDeckComponentSyntax(source, context);
-  const root2 = load2(`<root>${source}</root>`, {
+  const parseSource = expandSelfClosingComponentTags(source, knownDeckTags, "deck");
+  const root2 = load2(`<root>${parseSource}</root>`, {
     decodeEntities: false,
     lowerCaseAttributeNames: true
   });
@@ -48082,6 +48093,7 @@ function decodeHtml(value) {
 export {
   decodeHTML,
   load2 as load,
+  expandSelfClosingComponentTags,
   parseDeckMarkdown,
   splitFrontmatter,
   buildMarpMarkdown,

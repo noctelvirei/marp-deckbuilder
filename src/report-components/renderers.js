@@ -63,6 +63,7 @@ ${renderReportDataTableRow(table.totals, table.types, table, 'total')}
       </tfoot>
 `
     : ''
+  const footerHtml = footer ? `\n${footer.trimEnd()}` : ''
   return `<figure class="${escapeAttr(className)}">
   ${table.title ? `<div class="report-data-table-title">${escapeHtml(table.title)}</div>` : ''}
   <div class="report-data-table-scroll">
@@ -72,8 +73,7 @@ ${renderReportDataTableRow(table.totals, table.types, table, 'total')}
       </thead>
       <tbody>
 ${table.rows.map((row, index) => renderReportDataTableRow(row, table.types, table, index + 1)).join('\n')}
-      </tbody>
-${footer.trimEnd()}
+      </tbody>${footerHtml}
     </table>
   </div>
   ${caption ? `<figcaption>\n    ${caption}\n  </figcaption>` : ''}

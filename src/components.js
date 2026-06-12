@@ -1,5 +1,6 @@
 import * as cheerio from 'cheerio'
 
+import { expandSelfClosingComponentTags } from './component-tags.js'
 import {
   parseChart,
   parseComparison,
@@ -96,7 +97,8 @@ export {
 export function compileDeckComponents(source, options = {}) {
   const context = componentContext(options)
   validateDeckComponentSyntax(source, context)
-  const root = cheerio.load(`<root>${source}</root>`, {
+  const parseSource = expandSelfClosingComponentTags(source, knownDeckTags, 'deck')
+  const root = cheerio.load(`<root>${parseSource}</root>`, {
     decodeEntities: false,
     lowerCaseAttributeNames: true,
   })

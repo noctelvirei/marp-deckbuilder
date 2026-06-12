@@ -39,6 +39,26 @@ test('parses frontmatter, directives, and all native components', async () => {
   assert.equal(deck.slides[11].close.title, 'Thank you')
 })
 
+test('parses self-closing deck component tags as siblings', () => {
+  const deck = parseDeckMarkdown(`# Metrics
+
+<deck-stat-grid>
+  <deck-stat value="1" label="One" />
+  <deck-stat value="2" label="Two" />
+</deck-stat-grid>
+
+<deck-chart title="Chart" labels="A" values="1" />
+
+<deck-takeaway text="Done" />
+`)
+
+  assert.equal(deck.slides[0].stats.length, 2)
+  assert.deepEqual(deck.slides[0].stats.map((stat) => stat.value), ['1', '2'])
+  assert.equal(deck.slides[0].chart.title, 'Chart')
+  assert.equal(deck.slides[0].takeaway, 'Done')
+  assert.doesNotMatch(deck.slides[0].source, /<deck-/)
+})
+
 test('adds Marp defaults while preserving deck frontmatter', async () => {
   const source = await readFile(new URL('../samples/demo.md', import.meta.url), 'utf8')
   const definitions = await loadDefinitions(new URL('../resources/definitions', import.meta.url))

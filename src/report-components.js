@@ -1,5 +1,6 @@
 import * as cheerio from 'cheerio'
 
+import { expandSelfClosingComponentTags } from './component-tags.js'
 import {
   parseReportAccentCard,
   parseReportBadge,
@@ -73,8 +74,9 @@ const knownReportTags = new Set([
 export function compileReportComponents(source, options = {}) {
   const context = reportComponentContext(options)
   validateReportComponentSyntax(source, context)
+  const parseSource = expandSelfClosingComponentTags(source, knownReportTags, 'report')
 
-  const root = cheerio.load(`<root>${source}</root>`, {
+  const root = cheerio.load(`<root>${parseSource}</root>`, {
     decodeEntities: false,
     lowerCaseAttributeNames: true,
   })
@@ -784,6 +786,9 @@ function validateReportDataTable(table, context) {
   if (table.rows.length === 0) {
     fail('report-data-table requires at least one row in rows or data.', context)
   }
+  if (isBooleanAttributeToken(table.rawTotals)) {
+    fail('report-data-table totals must be a pipe-separated footer row, not a boolean. Example: totals="Total|55959|71.9|".', context)
+  }
   if (table.types.length !== table.columns.length) {
     fail(
       `report-data-table types/columns length mismatch: ${table.types.length} type(s), ${table.columns.length} column(s).`,
@@ -1070,6 +1075,10 @@ function sanitizeDomId(value) {
 
 function isSixDigitHexColor(value) {
   return /^#?[0-9a-f]{6}$/i.test(String(value || '').trim())
+}
+
+function isBooleanAttributeToken(value = '') {
+  return ['true', 'false', 'yes', 'no', 'on', 'off', '1', '0'].includes(String(value || '').trim().toLowerCase())
 }
 
 function reportSourceDomId(id = '') {

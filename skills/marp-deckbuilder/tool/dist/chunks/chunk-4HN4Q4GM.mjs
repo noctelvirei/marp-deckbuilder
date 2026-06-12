@@ -2,7 +2,7 @@ import { createRequire as __deckbuilderCreateRequire } from "node:module";
 const require = __deckbuilderCreateRequire(import.meta.url);
 import {
   buildMarpMarkdown
-} from "./chunk-IMJWZKGS.mjs";
+} from "./chunk-WXRPC2NL.mjs";
 import {
   require_node
 } from "./chunk-ZA7UPLW5.mjs";

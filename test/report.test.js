@@ -1238,6 +1238,10 @@ test('report data tables fail clearly when malformed', async () => {
     /report-data-table totals row has 1 cell\(s\), but 2 column\(s\) were declared/,
   )
   assert.throws(
+    () => renderReportHtml('<report-data-table columns="A" rows="A" totals="true"></report-data-table>', options),
+    /report-data-table totals must be a pipe-separated footer row, not a boolean/,
+  )
+  assert.throws(
     () => renderReportHtml('<report-data-table columns="A" rows="A" highlights="2:orange"></report-data-table>', options),
     /report-data-table highlights must target an existing 1-based row number/,
   )
@@ -1677,6 +1681,46 @@ test('expands report metric grid components into reusable metric cards', async (
   assert.match(rendered.document, /<div class="report-metric-label">Total cases<\/div>/)
   assert.match(rendered.document, /<div class="report-metric-sub">[+]12% vs prior<\/div>/)
   assert.match(rendered.document, /<div class="report-metric-sub down">-1\.1 pp<\/div>/)
+})
+
+test('expands self-closing report component tags before HTML parsing', async () => {
+  const definitions = await loadDefinitions(new URL('../resources/definitions', import.meta.url))
+  const rendered = renderReportHtml(
+    `# Self-closing report
+
+<report-metric-grid>
+  <report-metric value="77,951" label="Total cases" />
+  <report-metric value="94.3%" label="Completion rate" />
+</report-metric-grid>
+
+<report-chart type="bar" labels="A" values="1" />
+
+<report-data-table
+  title="Status Breakdown"
+  compact="true"
+  columns="Status|Cases|Notes"
+  types="text|number|text"
+  rows="Created|11919|New case initiated;eDisclosure|2834|Disclosure step reached"
+  caption="First-time status reached."
+/>
+`,
+    {
+      resourcesDir: path.resolve('resources'),
+      definitions,
+      inlineAssets: true,
+    },
+  )
+
+  assert.doesNotMatch(rendered.document, /<report-(metric|chart|data-table)/i)
+  assert.equal((rendered.document.match(/class="report-metric(?:\s|")/g) || []).length, 2)
+  assert.match(rendered.document, /<div class="report-metric-value">77,951<\/div>/)
+  assert.match(rendered.document, /<div class="report-metric-value">94\.3%<\/div>/)
+  assert.match(rendered.document, /class="report-chart report-chart-bar"/)
+  assert.match(
+    rendered.document,
+    /<figure class="report-data-table report-data-table-compact">[\s\S]*<div class="report-data-table-scroll">[\s\S]*<table>[\s\S]*Created[\s\S]*<\/table>[\s\S]*<\/figure>/,
+  )
+  assert.doesNotMatch(rendered.document, /&lt;\/table&gt;/)
 })
 
 test('report metric grids fail clearly when malformed', async () => {
