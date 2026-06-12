@@ -1,24 +1,28 @@
 import { createRequire as __deckbuilderCreateRequire } from "node:module";
+import { fileURLToPath as __deckbuilderFileURLToPath } from "node:url";
+import { dirname as __deckbuilderDirname } from "node:path";
 const require = __deckbuilderCreateRequire(import.meta.url);
+const __filename = __deckbuilderFileURLToPath(import.meta.url);
+const __dirname = __deckbuilderDirname(__filename);
 import {
   require_punycode,
   resolveResourceUrls
-} from "./chunk-4HN4Q4GM.mjs";
+} from "./chunk-D77AA7BA.mjs";
 import {
   decodeHTML,
   expandSelfClosingComponentTags,
   load,
   splitFrontmatter
-} from "./chunk-WXRPC2NL.mjs";
-import "./chunk-ZA7UPLW5.mjs";
+} from "./chunk-PTLWGEID.mjs";
+import "./chunk-MGQWBMZO.mjs";
 import {
   normalizeResourceReference,
   resolveSurfaceResourceFile
-} from "./chunk-YFTCHU5C.mjs";
+} from "./chunk-MQE5FU5S.mjs";
 import {
   __export,
   __toESM
-} from "./chunk-IDDWZGZI.mjs";
+} from "./chunk-FUPIT6VP.mjs";
 
 // node_modules/markdown-it/lib/common/utils.mjs
 var utils_exports = {};
@@ -7374,8 +7378,16 @@ function appendReportComponentScripts(source, scripts = []) {
   return `${source}
 
 <script data-report-component-script="chart">
-document.addEventListener("DOMContentLoaded", function() {
+window.__marpReportComponentsReady = new Promise(function(resolve) {
+  function finish() {
+    requestAnimationFrame(function() {
+      requestAnimationFrame(resolve);
+    });
+  }
+  document.addEventListener("DOMContentLoaded", function() {
 ${scripts.map((script) => indent(script, 2)).join("\n\n")}
+    finish();
+  });
 });
 </script>`;
 }
@@ -9771,39 +9783,110 @@ ${backgroundRule}
 
 @page {
   size: A4;
-  margin: 14mm;
+  margin: 0;
 }
 
 @media print {
-  body {
-    background: #ffffff;
-  }
-
-  .deck-report {
-    max-width: none;
-    box-shadow: none;
-  }
-
-  .report-cover {
-    min-height: 220px;
-    padding: 34px 0 42px;
-    background: #${dark} !important;
+  *,
+  *::before,
+  *::after {
     print-color-adjust: exact;
     -webkit-print-color-adjust: exact;
   }
 
+  html,
+  body {
+    background: var(--bg, #ffffff) !important;
+    margin: 0;
+    min-height: 100%;
+  }
+
+  body.report-theme-dark-page {
+    background: var(--bg, #060D18) !important;
+  }
+
+  .report-layout {
+    display: block;
+  }
+
+  .deck-report {
+    max-width: none;
+    width: 100%;
+    box-shadow: none;
+    background: var(--surface, #ffffff) !important;
+  }
+
+  .deck-report.report-theme-dark {
+    background: var(--bg-subtle, #071228) !important;
+    color: var(--text, #${darkBody});
+  }
+
+  .report-sidebar {
+    display: none !important;
+  }
+
+  .report-main {
+    padding: 0;
+  }
+
+  .report-cover {
+    min-height: 220px;
+    padding: 18mm 16mm 14mm;
+    background: #${dark} !important;
+  }
+
   .report-logo {
-    top: 22px;
-    right: 0;
+    top: 14mm;
+    right: 16mm;
   }
 
   .report-body {
-    padding: 34px 0 0;
+    padding: 12mm 16mm 0;
   }
 
   .report-body h1,
   .report-body h2 {
     break-after: avoid;
+  }
+
+  .report-chart,
+  .report-chart-stage,
+  .report-data-table,
+  .report-key-values,
+  .report-metric-grid,
+  .report-insight,
+  .report-recommendation,
+  .report-source-note,
+  .report-source-list,
+  .report-card-grid-card,
+  .report-timeline-event,
+  .report-accent-card,
+  .report-callout,
+  .report-figure {
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+
+  .deck-report.report-theme-dark .report-chart,
+  .deck-report.report-theme-dark .report-data-table,
+  .deck-report.report-theme-dark .report-key-values,
+  .deck-report.report-theme-dark .report-insight,
+  .deck-report.report-theme-dark .report-recommendation,
+  .deck-report.report-theme-dark .report-source-list,
+  .deck-report.report-theme-dark .report-card-grid-card,
+  .deck-report.report-theme-dark .report-timeline-content,
+  .deck-report.report-theme-dark .report-accent-card,
+  .deck-report.report-theme-dark .report-callout {
+    background: var(--bg-card, #${cardDark}) !important;
+    border-color: var(--border, #${darkBorder}) !important;
+  }
+
+  .report-chart canvas,
+  .report-chart svg,
+  .report-figure img,
+  .report-logo {
+    break-inside: avoid;
+    page-break-inside: avoid;
   }
 
   .report-page-break {
@@ -9824,6 +9907,13 @@ ${backgroundRule}
   .report-body blockquote,
   pre {
     break-inside: avoid;
+    page-break-inside: avoid;
+  }
+
+  p,
+  li {
+    orphans: 3;
+    widows: 3;
   }
 }
 `;

@@ -5,6 +5,8 @@ import { dirname, join, resolve } from 'node:path'
 import { spawn } from 'node:child_process'
 import { fileURLToPath } from 'node:url'
 
+import { resolveReportBrowserExecutable } from '../src/report-pdf.js'
+
 const repoRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..')
 const smokeRoot = resolve(repoRoot, '.tmp', 'skill-smoke')
 
@@ -39,13 +41,17 @@ async function smokeReportSkill() {
   const skillRoot = join(smokeRoot, 'marp-report')
   const outputDir = join(skillRoot, 'output')
   await copySkill(sourceRoot, skillRoot)
+  const pdfEnabled = await canRunPdfSmoke()
 
-  await run(process.execPath, [
+  const commandArgs = [
     'scripts/build-report.mjs',
     'examples/example.md',
     '--out-dir',
     'output',
-  ], skillRoot)
+  ]
+  if (pdfEnabled) commandArgs.push('--pdf')
+
+  await run(process.execPath, commandArgs, skillRoot)
 
   const htmlPath = join(outputDir, 'example.html')
   await assertFile(htmlPath, 1000)
@@ -54,6 +60,22 @@ async function smokeReportSkill() {
     throw new Error(`Expected report HTML to include offline vendor scripts: ${htmlPath}`)
   }
   await assertVendorInjection(htmlPath, 'data-marp-report-vendor')
+
+  if (pdfEnabled) {
+    const pdfPath = join(outputDir, 'example.pdf')
+    await assertFile(pdfPath, 1000)
+    await assertPdf(pdfPath)
+  }
+}
+
+async function canRunPdfSmoke() {
+  try {
+    await resolveReportBrowserExecutable()
+    return true
+  } catch (error) {
+    console.log(`PDF smoke skipped: ${error.message}`)
+    return false
+  }
 }
 
 async function copySkill(sourceRoot, targetRoot) {
@@ -92,6 +114,13 @@ async function assertFile(path, minBytes) {
   const info = await stat(path)
   if (!info.isFile() || info.size < minBytes) {
     throw new Error(`Expected smoke output ${path} to be a file larger than ${minBytes} bytes.`)
+  }
+}
+
+async function assertPdf(path) {
+  const bytes = await readFile(path)
+  if (bytes.subarray(0, 5).toString('utf8') !== '%PDF-') {
+    throw new Error(`Expected ${path} to be a PDF file.`)
   }
 }
 

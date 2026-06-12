@@ -7,6 +7,7 @@ import { promisify } from 'node:util'
 
 import { loadDefinitions } from '../src/brand.js'
 import { renderReportHtml } from '../src/report.js'
+import { injectReportVendorScripts } from '../src/report-vendors.js'
 
 const tmpDir = path.resolve('.tmp', 'report-tests')
 const execFileAsync = promisify(execFile)
@@ -64,6 +65,66 @@ The report can hold more detail than a slide deck.
   assert.doesNotMatch(rendered.document, /resource:logo\.svg/)
 })
 
+test('report print CSS preserves dark backgrounds and print layout', async () => {
+  const definitions = await loadDefinitions(new URL('../resources/definitions', import.meta.url))
+  const rendered = renderReportHtml(
+    `---
+title: Print Report
+reportTheme: dark
+reportNav: true
+---
+
+## Summary
+
+<report-chart title="Cases" labels="A,B" values="10,20"></report-chart>
+
+<report-page-break label="Next"></report-page-break>
+
+<report-callout variant="warning" title="Finding">Backgrounds must survive print.</report-callout>
+`,
+    {
+      resourcesDir: path.resolve('resources'),
+      definitions,
+      inlineAssets: true,
+    },
+  )
+
+  assert.match(rendered.css, /@media print \{[\s\S]*print-color-adjust: exact;/)
+  assert.match(rendered.css, /@page \{[\s\S]*size: A4;[\s\S]*margin: 0;/)
+  assert.match(rendered.css, /-webkit-print-color-adjust: exact;/)
+  assert.match(rendered.css, /body\.report-theme-dark-page \{[\s\S]*background: var\(--bg, #060D18\) !important;/)
+  assert.match(rendered.css, /\.report-cover \{[\s\S]*padding: 18mm 16mm 14mm;/)
+  assert.match(rendered.css, /\.report-body \{[\s\S]*padding: 12mm 16mm 0;/)
+  assert.match(rendered.css, /\.report-sidebar \{[\s\S]*display: none !important;/)
+  assert.match(rendered.css, /\.report-chart,[\s\S]*\.report-callout,[\s\S]*break-inside: avoid;/)
+  assert.match(rendered.css, /\.report-page-break \{[\s\S]*break-after: page;/)
+})
+
+test('report vendor injection strips CDN tags and is idempotent', async () => {
+  const resourcesDir = path.join(tmpDir, 'vendor-injection')
+  const vendorDir = path.join(resourcesDir, 'vendor')
+  await mkdir(vendorDir, { recursive: true })
+  await writeFile(path.join(vendorDir, 'd3.min.js'), 'window.d3 = {};')
+  await writeFile(path.join(vendorDir, 'plot.min.js'), 'window.Plot = {};')
+  await writeFile(path.join(vendorDir, 'chart.min.js'), 'window.Chart = function Chart() {};')
+
+  const html = `<!doctype html><html><head>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
+<script src="https://cdn.jsdelivr.net/npm/@observablehq/plot@0.6"></script>
+<script src="https://cdn.jsdelivr.net/npm/d3@7"></script>
+</head><body><h1>Report</h1></body></html>`
+  const first = await injectReportVendorScripts(html, resourcesDir)
+  const second = await injectReportVendorScripts(first.html, resourcesDir)
+
+  assert.equal(first.injected.length, 3)
+  assert.equal(second.injected.length, 0)
+  assert.doesNotMatch(first.html, /cdn\.jsdelivr\.net/)
+  assert.equal([...first.html.matchAll(/data-marp-report-vendor=/g)].length, 3)
+  assert.equal([...second.html.matchAll(/data-marp-report-vendor=/g)].length, 3)
+  assert.ok(first.html.indexOf('data-marp-report-vendor="d3"') < first.html.indexOf('data-marp-report-vendor="observable-plot"'))
+  assert.ok(first.html.indexOf('data-marp-report-vendor="observable-plot"') < first.html.indexOf('data-marp-report-vendor="chart.js"'))
+})
+
 test('report command rejects copied sidecar assets', async () => {
   const reportDir = path.join(tmpDir, 'cli-inline')
   await mkdir(reportDir, { recursive: true })
@@ -83,6 +144,36 @@ test('report command rejects copied sidecar assets', async () => {
       'copy',
     ]),
     /Report HTML is always self-contained/,
+  )
+})
+
+test('report command accepts pdf option and fails clearly when browser is missing', async () => {
+  const reportDir = path.join(tmpDir, 'cli-pdf-missing-browser')
+  await mkdir(reportDir, { recursive: true })
+  const inputPath = path.join(reportDir, 'report.md')
+  const pdfPath = path.join(reportDir, 'report.pdf')
+  await writeFile(inputPath, '# PDF report\n\nBody copy.')
+
+  await assert.rejects(
+    execFileAsync(
+      process.execPath,
+      [
+        'src/cli.js',
+        'report',
+        inputPath,
+        '--pdf',
+        pdfPath,
+        '--resources',
+        'resources',
+      ],
+      {
+        env: {
+          ...process.env,
+          MARP_REPORT_BROWSER_PATH: path.join(reportDir, 'missing-browser.exe'),
+        },
+      },
+    ),
+    /MARP_REPORT_BROWSER_PATH points to a browser that could not be found/,
   )
 })
 

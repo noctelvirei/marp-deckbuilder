@@ -1,14 +1,18 @@
 import { createRequire as __deckbuilderCreateRequire } from "node:module";
+import { fileURLToPath as __deckbuilderFileURLToPath } from "node:url";
+import { dirname as __deckbuilderDirname } from "node:path";
 const require = __deckbuilderCreateRequire(import.meta.url);
+const __filename = __deckbuilderFileURLToPath(import.meta.url);
+const __dirname = __deckbuilderDirname(__filename);
 import {
   normalizeResourceReference
-} from "./chunk-YFTCHU5C.mjs";
+} from "./chunk-MQE5FU5S.mjs";
 import {
   __commonJS,
   __export,
   __require,
   __toESM
-} from "./chunk-IDDWZGZI.mjs";
+} from "./chunk-FUPIT6VP.mjs";
 
 // node_modules/css-what/lib/commonjs/types.js
 var require_types = __commonJS({

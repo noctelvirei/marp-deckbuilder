@@ -1,0 +1,52 @@
+import { existsSync } from 'node:fs'
+import { readFile } from 'node:fs/promises'
+import path from 'node:path'
+
+export const reportVendorMarker = 'data-marp-report-vendor'
+
+const reportVendors = [
+  { file: 'd3.min.js', label: 'd3' },
+  { file: 'plot.min.js', label: 'observable-plot' },
+  { file: 'chart.min.js', label: 'chart.js' },
+]
+
+export async function injectReportVendorScripts(html, resourcesDir, options = {}) {
+  let document = stripKnownReportCdnTags(html)
+  if (document.includes(reportVendorMarker)) {
+    return { html: document, injected: [], missing: [] }
+  }
+
+  const vendorDir = path.join(resourcesDir, 'vendor')
+  const scripts = []
+  const injected = []
+  const missing = []
+
+  for (const { file, label } of reportVendors) {
+    const vendorPath = path.join(vendorDir, file)
+    if (!existsSync(vendorPath)) {
+      missing.push({ file, label, path: vendorPath })
+      continue
+    }
+    const source = await readFile(vendorPath, 'utf8')
+    scripts.push(`<script ${reportVendorMarker}="${label}">\n${source}\n</script>`)
+    injected.push({ file, label, path: vendorPath })
+    options.log?.(`${label}: injected into <head> (offline-safe)`)
+  }
+
+  if (!scripts.length) return { html: document, injected, missing }
+  document = injectBeforeClosingHead(document, `${scripts.join('\n')}\n`)
+  return { html: document, injected, missing }
+}
+
+export function stripKnownReportCdnTags(html) {
+  return String(html || '')
+    .replace(/<script\s+src=["']https?:\/\/cdn\.jsdelivr\.net\/npm\/chart\.js@[^"']*["']\s*><\/script>\s*/gi, '')
+    .replace(/<script\s+src=["']https?:\/\/cdn\.jsdelivr\.net\/npm\/@observablehq\/plot@[^"']*["']\s*><\/script>\s*/gi, '')
+    .replace(/<script\s+src=["']https?:\/\/cdn\.jsdelivr\.net\/npm\/d3@[^"']*["']\s*><\/script>\s*/gi, '')
+}
+
+function injectBeforeClosingHead(html, injection) {
+  const headCloseIndex = String(html || '').toLowerCase().lastIndexOf('</head>')
+  if (headCloseIndex < 0) return `${injection}${html}`
+  return `${html.slice(0, headCloseIndex)}${injection}${html.slice(headCloseIndex)}`
+}

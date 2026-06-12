@@ -3,7 +3,7 @@
 This repository builds two portable, brandable Markdown skills:
 
 - `marp-deckbuilder`: builds presentation decks as HTML slideshows and editable PPTX files.
-- `marp-report`: builds long-form, scrollable HTML reports that can be printed to PDF.
+- `marp-report`: builds long-form, scrollable HTML reports and optional PDF exports.
 
 This README is written for coding agents. It explains the project shape, the safe editing surface, the branding contract, and how to make changes without confusing authored Markdown, generated bundles, brand assets, and runtime code.
 
@@ -33,7 +33,7 @@ There are three layers:
 | Need | Use | Output | Notes |
 | --- | --- | --- | --- |
 | A presentation, PowerPoint, slide deck, board deck, sales deck, or executive deck | `skills/marp-deckbuilder` | HTML slideshow plus editable PPTX | Use known `deck-*` components when PPTX editability matters. |
-| A written report, readout, analysis document, findings summary, or browser page to print | `skills/marp-report` | Single HTML report | Browser charts can be higher fidelity than PPTX. Print to PDF from the browser. |
+| A written report, readout, analysis document, findings summary, or browser page to print | `skills/marp-report` | Single HTML report plus optional PDF | Browser charts can be higher fidelity than PPTX. Built-in PDF export uses local Chrome, Edge, or Chromium. |
 
 Keep these skills separate. They can share capabilities and visual language, but one creates decks and the other creates reports.
 
@@ -109,7 +109,7 @@ node src/cli.js build samples/demo.md --html dist/demo.html --pptx dist/demo.ppt
 Build a report directly from source:
 
 ```powershell
-node src/cli.js report skills/marp-report/examples/example.md --html dist/report.html --resources resources
+node src/cli.js report skills/marp-report/examples/example.md --html dist/report.html --pdf dist/report.pdf --resources skills/marp-report/tool/resources
 ```
 
 Build through the deck skill wrapper:
@@ -121,7 +121,7 @@ node skills\marp-deckbuilder\scripts\build-deck.mjs skills\marp-deckbuilder\exam
 Build through the report skill wrapper:
 
 ```powershell
-node skills\marp-report\scripts\build-report.mjs skills\marp-report\examples\example.md --out-dir dist\skill-report
+node skills\marp-report\scripts\build-report.mjs skills\marp-report\examples\example.md --out-dir dist\skill-report --pdf
 ```
 
 Run validation:
@@ -347,7 +347,7 @@ Use reports for:
 - Usage reports.
 - Customer analytics readouts.
 - Long-form executive documents.
-- Outputs where browser rendering, high-resolution charts, and print-to-PDF are better than PPTX.
+- Outputs where browser rendering, high-resolution charts, and PDF export are better than PPTX.
 
 Reports can use:
 
@@ -388,7 +388,7 @@ Reports can use:
 - D3 heatmaps via `report-chart type="heatmap"`.
 - D3 Sankey flows via `report-chart type="sankey"`.
 
-The report build wrapper injects vendored chart libraries into the generated HTML head and strips known CDN tags. Report Markdown should contain prose, Markdown tables/lists, and supported `report-*` component calls only. Agents should not paste raw HTML, inline SVG, CSS, minified library code, chart containers, or chart initializer scripts into report Markdown. If a display type is missing, the report authoring skill should tell the user to ask the skill maker to add it as a renderer-backed report component.
+The report renderer injects vendored chart libraries into the generated HTML head and strips known CDN tags. The report skill wrapper can also generate a PDF with `--pdf` when local Chrome, Edge, or Chromium is available; set `MARP_REPORT_BROWSER_PATH` if auto-discovery cannot find the browser executable. Report Markdown should contain prose, Markdown tables/lists, and supported `report-*` component calls only. Agents should not paste raw HTML, inline SVG, CSS, minified library code, chart containers, or chart initializer scripts into report Markdown. If a display type is missing, the report authoring skill should tell the user to ask the skill maker to add it as a renderer-backed report component.
 
 Report component attributes use one separator convention: semicolons separate repeated records or items, pipes separate fields inside one record, and commas separate simple one-dimensional chart series. For example, `report-key-values` uses `items="Scope: TD; Platform: v2"`, while table rows use `rows="A|1; B|2"`.
 

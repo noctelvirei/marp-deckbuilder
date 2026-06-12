@@ -5,12 +5,12 @@
 From the `skills/marp-report` folder:
 
 ```bash
-node scripts/build-report.mjs report.md --out-dir output
+node scripts/build-report.mjs report.md --out-dir output --pdf
 ```
 
 The wrapper calls the bundled renderer at `tool/dist/deckbuilder.mjs` and uses resources from `tool/resources`. Generated report HTML is self-contained: images and brand assets are embedded into the HTML rather than written beside it as copied resource files.
 
-For PDF, open the generated HTML in a browser and use Print to PDF. No browser engine is bundled.
+With `--pdf`, the wrapper also writes `output/report.pdf` using a local Chrome, Edge, or Chromium executable with print backgrounds enabled. No browser engine is bundled; set `MARP_REPORT_BROWSER_PATH` if the browser cannot be discovered automatically. Browser Print to PDF remains a fallback.
 
 ## Report Skeleton
 

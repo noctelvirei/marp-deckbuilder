@@ -1,22 +1,26 @@
 import { createRequire as __deckbuilderCreateRequire } from "node:module";
+import { fileURLToPath as __deckbuilderFileURLToPath } from "node:url";
+import { dirname as __deckbuilderDirname } from "node:path";
 const require = __deckbuilderCreateRequire(import.meta.url);
+const __filename = __deckbuilderFileURLToPath(import.meta.url);
+const __dirname = __deckbuilderDirname(__filename);
 import {
   color,
   font,
   ptToIn
-} from "./chunk-OR5XALJV.mjs";
+} from "./chunk-QTVTLJNA.mjs";
 import {
   require_node
-} from "./chunk-ZA7UPLW5.mjs";
+} from "./chunk-MGQWBMZO.mjs";
 import {
   resolveResourceFile,
   resolveSurfaceResourceFile
-} from "./chunk-YFTCHU5C.mjs";
+} from "./chunk-MQE5FU5S.mjs";
 import {
   __commonJS,
   __require,
   __toESM
-} from "./chunk-IDDWZGZI.mjs";
+} from "./chunk-FUPIT6VP.mjs";
 
 // node_modules/process-nextick-args/index.js
 var require_process_nextick_args = __commonJS({

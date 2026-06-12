@@ -1,5 +1,9 @@
 import { createRequire as __deckbuilderCreateRequire } from "node:module";
+import { fileURLToPath as __deckbuilderFileURLToPath } from "node:url";
+import { dirname as __deckbuilderDirname } from "node:path";
 const require = __deckbuilderCreateRequire(import.meta.url);
+const __filename = __deckbuilderFileURLToPath(import.meta.url);
+const __dirname = __deckbuilderDirname(__filename);
 import {
   buildMarpMarkdown,
   extractDirectives,
@@ -7,9 +11,9 @@ import {
   parseSlide,
   splitFrontmatter,
   splitSlides
-} from "./chunk-WXRPC2NL.mjs";
-import "./chunk-YFTCHU5C.mjs";
-import "./chunk-IDDWZGZI.mjs";
+} from "./chunk-PTLWGEID.mjs";
+import "./chunk-MQE5FU5S.mjs";
+import "./chunk-FUPIT6VP.mjs";
 export {
   buildMarpMarkdown,
   extractDirectives,

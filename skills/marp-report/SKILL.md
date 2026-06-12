@@ -5,7 +5,7 @@ description: Builds long-form, scrollable, brandable HTML reports from source da
 
 # Marp Report
 
-Use this skill to turn source material into a long-form HTML report: a scrollable, self-contained document designed to be read in a browser and printed to PDF. The generated HTML must embed image assets and vendor scripts; source assets can live under `tool/resources`, but report output should not depend on sidecar resource files. Use `marp-deckbuilder` instead when the user asks for slides, a presentation, or editable PPTX.
+Use this skill to turn source material into a long-form HTML report: a scrollable, self-contained document designed to be read in a browser and exported to PDF. The generated HTML must embed image assets and vendor scripts; source assets can live under `tool/resources`, but report output should not depend on sidecar resource files. Use `marp-deckbuilder` instead when the user asks for slides, a presentation, or editable PPTX.
 
 ## Core Rule
 
@@ -25,10 +25,10 @@ The report wrapper injects Chart.js, Observable Plot, and D3 into the generated 
 7. Build from this skill folder:
 
 ```bash
-node scripts/build-report.mjs <output-folder>/report.md --out-dir <output-folder>
+node scripts/build-report.mjs <output-folder>/report.md --out-dir <output-folder> --pdf
 ```
 
-8. Return the generated `.html` and source `.md` paths. Do not create or return a generated resource folder for report images; they should be embedded in the HTML. For PDF, tell the user to open the HTML and use browser Print to PDF.
+8. Return the generated `.html`, `.pdf`, and source `.md` paths. Do not create or return a generated resource folder for report images; they should be embedded in the HTML. If PDF generation fails because no browser is available, tell the user to install Chrome, Edge, or Chromium, or set `MARP_REPORT_BROWSER_PATH`; browser Print to PDF is the fallback.
 
 ## Available Components
 
@@ -153,8 +153,9 @@ Report Markdown is a compact data-and-copy layer. The renderer owns all HTML str
 `scripts/build-report.mjs` writes:
 
 - `report.html`: self-contained report HTML with brand resources and vendor chart libraries inlined.
+- `report.pdf`: generated when `--pdf` is supplied and a local Chrome, Edge, or Chromium executable is available.
 - `report.md`: unchanged source file.
 
-The skill intentionally does not bundle a browser engine. PDF export is done with browser Print to PDF.
+The skill intentionally does not bundle a browser engine. PDF export uses a locally installed Chrome, Edge, or Chromium executable; set `MARP_REPORT_BROWSER_PATH` if auto-discovery cannot find it.
 
 See [REFERENCE.md](REFERENCE.md) for the full report component library and working examples.
