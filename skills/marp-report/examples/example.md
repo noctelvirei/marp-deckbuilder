@@ -49,6 +49,18 @@ April volume is concentrated in one dominant journey. The top three journeys acc
   rows="J0107|52208|67.1|Active;J0106|11119|14.3|Active;J0101|8648|11.1|Active;J0116|3751|4.8|Review"
 ></report-dataset>
 
+<report-dataset
+  id="weekly-outcomes"
+  columns="Week|Opened|Completed|Exceptions"
+  rows="Week 1|17240|15020|640;Week 2|18990|16880|720;Week 3|20530|18030|760;Week 4|21191|19050|810"
+></report-dataset>
+
+<report-dataset
+  id="weekly-composition"
+  columns="Week|J0107|J0106|J0101|J0116"
+  rows="Week 1|11420|2450|2020|620;Week 2|12680|2680|2240|720;Week 3|13750|2940|2330|760;Week 4|14358|3049|2058|810"
+></report-dataset>
+
 ## Volume Chart
 
 <report-chart
@@ -75,10 +87,10 @@ April volume is concentrated in one dominant journey. The top three journeys acc
 <report-chart
   type="grouped-bar"
   title="Weekly journey outcomes"
-  series="Opened|Completed|Exceptions"
+  data-ref="weekly-outcomes"
+  label-column="Week"
+  series-columns="Opened|Completed|Exceptions"
   value-suffix=" cases"
-  labels="Week 1,Week 2,Week 3,Week 4"
-  values="17240|15020|640;18990|16880|720;20530|18030|760;21191|19050|810"
 ></report-chart>
 
 ## Case Composition
@@ -86,10 +98,9 @@ April volume is concentrated in one dominant journey. The top three journeys acc
 <report-chart
   type="stacked-bar"
   title="Weekly case composition"
-  series="J0107|J0106|J0101|J0116"
+  data-ref="weekly-composition"
+  label-column="Week"
   value-suffix=" cases"
-  labels="Week 1,Week 2,Week 3,Week 4"
-  values="11420|2450|2020|620;12680|2680|2240|720;13750|2940|2330|760;14358|3049|2058|810"
 ></report-chart>
 
 ## Monthly Movement

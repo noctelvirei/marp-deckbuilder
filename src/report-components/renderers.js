@@ -518,6 +518,7 @@ ${chartBoilerplate(chart, 'canvas')}
         label: ${jsString(chart.series || 'Value')},
         data: ${jsValue(rows.map((row) => row.value))},
         yAxisID: "y",
+        order: 2,
         backgroundColor: ${jsString(hexToRgba(barColor, 0.82))},
         borderColor: ${jsString(barColor)},
         borderWidth: 1,
@@ -527,6 +528,7 @@ ${chartBoilerplate(chart, 'canvas')}
         label: "Cumulative %",
         data: ${jsValue(cumulative)},
         yAxisID: "yPercent",
+        order: 1,
         borderColor: ${jsString(lineColor)},
         backgroundColor: ${jsString(lineColor)},
         borderWidth: 3,
@@ -1505,20 +1507,22 @@ ${chartBoilerplate(chart, 'target')}
   const maxColumnWeight = Math.max(...Array.from(columns.values(), (column) =>
     d3.sum(column, (node) => Math.max(node.incoming, node.outgoing, 1))
   ), 1);
-  const linkScale = Math.max(1, innerHeight / maxColumnWeight);
+  const linkScale = innerHeight / maxColumnWeight;
+  links.forEach((link) => {
+    const maxLinkWidth = Math.max(2, Math.min(link.source.height, link.target.height, innerHeight * 0.24));
+    link.width = Math.min(maxLinkWidth, Math.max(2, link.value * linkScale));
+  });
   nodeMap.forEach((node) => {
     node.sourceLinks.sort((a, b) => a.target.y - b.target.y);
     node.targetLinks.sort((a, b) => a.source.y - b.source.y);
     let sourceOffset = 0;
     node.sourceLinks.forEach((link) => {
-      link.width = Math.max(2, link.value * linkScale);
-      link.y0 = node.y + Math.min(node.height, sourceOffset + link.width / 2);
+      link.y0 = node.y + Math.min(node.height - link.width / 2, sourceOffset + link.width / 2);
       sourceOffset += link.width;
     });
     let targetOffset = 0;
     node.targetLinks.forEach((link) => {
-      link.width = Math.max(2, link.value * linkScale);
-      link.y1 = node.y + Math.min(node.height, targetOffset + link.width / 2);
+      link.y1 = node.y + Math.min(node.height - link.width / 2, targetOffset + link.width / 2);
       targetOffset += link.width;
     });
   });

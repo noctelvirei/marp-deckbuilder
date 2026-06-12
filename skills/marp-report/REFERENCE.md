@@ -78,8 +78,8 @@ Reports use normal Markdown plus compact `report-*` component tags. The renderer
 | Chart.js bar chart | `<report-chart type="bar">` | `labels`, `values` |
 | Chart.js line chart | `<report-chart type="line">` | `labels`, `values` |
 | Chart.js doughnut chart | `<report-chart type="doughnut">` | `labels`, `values` |
-| Chart.js grouped bar chart | `<report-chart type="grouped-bar">` | `labels`, `series`, matrix `values` |
-| Chart.js stacked bar chart | `<report-chart type="stacked-bar">` | `labels`, `series`, matrix `values` |
+| Chart.js grouped bar chart | `<report-chart type="grouped-bar">` | `data-ref` with `series-columns`, or `labels`, `series`, matrix `values` |
+| Chart.js stacked bar chart | `<report-chart type="stacked-bar">` | `data-ref` with `series-columns`, or `labels`, `series`, matrix `values` |
 | Chart.js waterfall chart | `<report-chart type="waterfall">` | `labels`, `values` as sequential deltas |
 | Chart.js bullet chart | `<report-chart type="bullet">` | `labels`, `values`, `targets` |
 | Chart.js scatter chart | `<report-chart type="scatter">` | numeric `points` as `x:y` pairs |
@@ -112,14 +112,14 @@ Use `report-dataset` when a table and a supported Chart.js chart need the same r
 ```md
 <report-dataset
   id="journey-volume"
-  columns="Journey|Cases|Share|Status"
-  rows="J0107|52208|67.1|Active;J0106|11119|14.3|Active"
+  columns="Journey|Cases|Target|Status"
+  rows="J0107|52208|55000|Active;J0106|11119|12000|Active"
 ></report-dataset>
 
 <report-data-table
   title="Journey breakdown"
   data-ref="journey-volume"
-  types="text|number|percent|status"
+  types="text|number|number|status"
 ></report-data-table>
 
 <report-chart
@@ -129,9 +129,17 @@ Use `report-dataset` when a table and a supported Chart.js chart need the same r
   label-column="Journey"
   value-column="Cases"
 ></report-chart>
+
+<report-chart
+  type="grouped-bar"
+  title="Cases vs target by journey"
+  data-ref="journey-volume"
+  label-column="Journey"
+  series-columns="Cases|Target"
+></report-chart>
 ```
 
-Dataset `data-ref` support currently covers `report-data-table` and single-series Chart.js charts: `bar`, `line`, `doughnut`, `waterfall`, `bullet`, and `pareto`. For `bullet`, include `target-column`. If a chart type needs dataset support and is not listed, ask the skill maker to add it.
+Dataset `data-ref` support currently covers `report-data-table` and these Chart.js charts: `bar`, `line`, `doughnut`, `waterfall`, `bullet`, `pareto`, `grouped-bar`, and `stacked-bar`. For `bullet`, include `target-column`. For `grouped-bar` and `stacked-bar`, use `series-columns` to select multiple numeric dataset columns; if omitted, the renderer uses all non-label dataset columns that contain numeric values. If a chart type needs dataset support and is not listed, ask the skill maker to add it.
 
 Supported `report-dataset` attributes:
 
@@ -360,6 +368,7 @@ Supported attributes:
 | `type` | no | Supports `bar`, `line`, `doughnut`, `grouped-bar`, `stacked-bar`, `waterfall`, `bullet`, `scatter`, `bubble`, `histogram`, `boxplot`, `pareto`, `area`, `treemap`, `funnel`, `heatmap`, and `sankey`. Defaults to `bar`. Aliases: `donut`, `tree-map`, `grouped`, `clustered-bar`, `stacked`. |
 | `title` | no | Rendered above the chart and used as the accessible label. |
 | `series` | no | Dataset label for single-series charts. For `grouped-bar` and `stacked-bar`, use pipe-separated series names such as `Opened|Completed`. Aliases: `datasets`, `series-labels`. |
+| `series-columns` | no | Dataset-only selector for `grouped-bar` and `stacked-bar`. Pipe-separated dataset column names such as `Opened|Completed|Exceptions`. If omitted for a multi-series dataset chart, every non-label numeric column is used. Aliases: `value-columns`, `series-fields`, `value-fields`. |
 | `labels` | yes for Chart.js, `treemap`, and `funnel` types | Comma-separated labels. For `area`, this can be used with `values` as an alternative to `points`. |
 | `values` | yes for Chart.js, `treemap`, and `funnel` types | Comma-separated numeric values. Must match label count. For `area`, this can be used with `labels` as an alternative to `points`. |
 | `values` for `waterfall` | yes | Comma-separated sequential deltas. Positive values move the running total up; negative values move it down. |

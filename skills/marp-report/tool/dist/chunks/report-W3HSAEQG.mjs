@@ -4798,6 +4798,9 @@ function parseReportChart(chart, index = 0) {
   const dataRef = chart.attr("data-ref") || chart.attr("dataset") || "";
   const labelColumn = chart.attr("label-column") || chart.attr("label-field") || chart.attr("label") || "";
   const valueColumn = chart.attr("value-column") || chart.attr("value-field") || chart.attr("value") || "";
+  const seriesColumns = splitPipe(
+    chart.attr("series-columns") || chart.attr("value-columns") || chart.attr("series-fields") || chart.attr("value-fields") || ""
+  );
   const targetColumn = chart.attr("target-column") || chart.attr("target-field") || "";
   const xColumn = chart.attr("x-column") || chart.attr("x-field") || "";
   const yColumn = chart.attr("y-column") || chart.attr("y-field") || "";
@@ -4841,6 +4844,7 @@ function parseReportChart(chart, index = 0) {
     dataRef,
     labelColumn,
     valueColumn,
+    seriesColumns,
     targetColumn,
     xColumn,
     yColumn,
@@ -5638,6 +5642,7 @@ ${chartBoilerplate(chart, "canvas")}
         label: ${jsString(chart.series || "Value")},
         data: ${jsValue(rows.map((row) => row.value))},
         yAxisID: "y",
+        order: 2,
         backgroundColor: ${jsString(hexToRgba(barColor, 0.82))},
         borderColor: ${jsString(barColor)},
         borderWidth: 1,
@@ -5647,6 +5652,7 @@ ${chartBoilerplate(chart, "canvas")}
         label: "Cumulative %",
         data: ${jsValue(cumulative)},
         yAxisID: "yPercent",
+        order: 1,
         borderColor: ${jsString(lineColor)},
         backgroundColor: ${jsString(lineColor)},
         borderWidth: 3,
@@ -6606,20 +6612,22 @@ ${chartBoilerplate(chart, "target")}
   const maxColumnWeight = Math.max(...Array.from(columns.values(), (column) =>
     d3.sum(column, (node) => Math.max(node.incoming, node.outgoing, 1))
   ), 1);
-  const linkScale = Math.max(1, innerHeight / maxColumnWeight);
+  const linkScale = innerHeight / maxColumnWeight;
+  links.forEach((link) => {
+    const maxLinkWidth = Math.max(2, Math.min(link.source.height, link.target.height, innerHeight * 0.24));
+    link.width = Math.min(maxLinkWidth, Math.max(2, link.value * linkScale));
+  });
   nodeMap.forEach((node) => {
     node.sourceLinks.sort((a, b) => a.target.y - b.target.y);
     node.targetLinks.sort((a, b) => a.source.y - b.source.y);
     let sourceOffset = 0;
     node.sourceLinks.forEach((link) => {
-      link.width = Math.max(2, link.value * linkScale);
-      link.y0 = node.y + Math.min(node.height, sourceOffset + link.width / 2);
+      link.y0 = node.y + Math.min(node.height - link.width / 2, sourceOffset + link.width / 2);
       sourceOffset += link.width;
     });
     let targetOffset = 0;
     node.targetLinks.forEach((link) => {
-      link.width = Math.max(2, link.value * linkScale);
-      link.y1 = node.y + Math.min(node.height, targetOffset + link.width / 2);
+      link.y1 = node.y + Math.min(node.height - link.width / 2, targetOffset + link.width / 2);
       targetOffset += link.width;
     });
   });
@@ -6937,7 +6945,7 @@ function clampPercent(value) {
 }
 
 // src/report-components.js
-var dataRefChartTypes = ["bar", "line", "doughnut", "waterfall", "bullet", "pareto"];
+var dataRefChartTypes = ["bar", "line", "doughnut", "waterfall", "bullet", "pareto", "grouped-bar", "stacked-bar"];
 var dataRefChartTypeList = formatReportList(dataRefChartTypes);
 var knownReportTags = /* @__PURE__ */ new Set([
   "report-accent-card",
@@ -7150,10 +7158,17 @@ function resolveReportChartDataset(chart, datasetRegistry, context) {
       context
     );
   }
-  if (chart.labels.length > 0 || chart.values.length > 0 || chart.targets.length > 0) {
-    fail("report-chart data-ref cannot be combined with labels, values, or targets. Use the dataset or inline chart data, not both.", context);
+  if (chart.labels.length > 0 || chart.values.length > 0 || chart.targets.length > 0 || chart.matrix.length > 0) {
+    fail(
+      "report-chart data-ref cannot be combined with labels, values, targets, or matrix data. Use the dataset or inline chart data, not both.",
+      context
+    );
   }
   const labelIndex = reportDatasetColumnIndex(dataset, chart.labelColumn || dataset.columns[0], "label-column", context);
+  if (chart.chartType === "grouped-bar" || chart.chartType === "stacked-bar") {
+    resolveReportMultiSeriesChartDataset(chart, dataset, labelIndex, context);
+    return;
+  }
   const defaultValueColumn = chart.valueColumn || dataset.columns.find((column, index) => index !== labelIndex) || "";
   const valueIndex = reportDatasetColumnIndex(dataset, defaultValueColumn, "value-column", context);
   chart.labels = dataset.rows.map((row) => row[labelIndex]);
@@ -7162,6 +7177,37 @@ function resolveReportChartDataset(chart, datasetRegistry, context) {
     const targetIndex = reportDatasetColumnIndex(dataset, chart.targetColumn, "target-column", context);
     chart.targets = dataset.rows.map((row) => parseDatasetNumber(row[targetIndex]));
   }
+}
+function resolveReportMultiSeriesChartDataset(chart, dataset, labelIndex, context) {
+  if (chart.valueColumn) {
+    fail("report-chart data-ref grouped-bar and stacked-bar charts use series-columns, not value-column.", context);
+  }
+  const explicitColumns = chart.seriesColumns || [];
+  const seriesIndexes = explicitColumns.length > 0 ? explicitColumns.map((column) => reportDatasetColumnIndex(dataset, column, "series-columns", context)) : dataset.columns.map((_, index) => index).filter((index) => index !== labelIndex && reportDatasetColumnIsNumeric(dataset, index));
+  if (seriesIndexes.length === 0) {
+    fail("report-chart data-ref grouped-bar and stacked-bar charts require series-columns or at least one numeric dataset column.", context);
+  }
+  const duplicateColumns = seriesIndexes.filter((index, position) => seriesIndexes.indexOf(index) !== position);
+  if (duplicateColumns.length > 0) {
+    fail("report-chart data-ref series-columns must not repeat dataset columns.", context);
+  }
+  if (chart.seriesNames.length > 0 && chart.seriesNames.length !== seriesIndexes.length) {
+    fail("report-chart data-ref series-labels must match the number of selected series-columns.", context);
+  }
+  chart.labels = dataset.rows.map((row) => row[labelIndex]);
+  chart.seriesNames = chart.seriesNames.length > 0 ? chart.seriesNames : seriesIndexes.map((index) => dataset.columns[index]);
+  chart.matrix = dataset.rows.map(
+    (row, rowIndex) => seriesIndexes.map((columnIndex) => {
+      const value = parseDatasetNumber(row[columnIndex]);
+      if (!Number.isFinite(value)) {
+        fail(
+          `report-chart data-ref row ${rowIndex + 1} column "${dataset.columns[columnIndex]}" values must all be numeric.`,
+          context
+        );
+      }
+      return value;
+    })
+  );
 }
 function reportDatasetColumnIndex(dataset, columnName, attributeName, context) {
   const normalized = String(columnName || "").trim().toLowerCase();
@@ -7173,6 +7219,9 @@ function reportDatasetColumnIndex(dataset, columnName, attributeName, context) {
     fail(`report dataset "${dataset.id}" does not include ${attributeName} "${columnName}".`, context);
   }
   return index;
+}
+function reportDatasetColumnIsNumeric(dataset, columnIndex) {
+  return dataset.rows.every((row) => Number.isFinite(parseDatasetNumber(row[columnIndex])));
 }
 function parseDatasetNumber(value) {
   return Number(String(value || "").replace(/,/g, "").replace(/%$/, "").trim());
@@ -8986,6 +9035,7 @@ body {
   border-radius: 8px;
   background: var(--bg-card, #ffffff);
   box-shadow: 0 12px 30px rgba(15, 23, 42, 0.07);
+  overflow: hidden;
 }
 
 .report-chart-title {
@@ -9001,6 +9051,7 @@ body {
   position: relative;
   width: 100%;
   min-height: 180px;
+  overflow: hidden;
 }
 
 .report-chart-stage canvas {
@@ -9013,13 +9064,14 @@ body {
   position: relative;
   width: 100%;
   height: 100%;
+  overflow: hidden;
 }
 
 .report-chart-plot svg {
   display: block;
   width: 100%;
   height: 100%;
-  overflow: visible;
+  overflow: hidden;
 }
 
 .report-chart-floating-tooltip {

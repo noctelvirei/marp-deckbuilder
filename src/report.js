@@ -1091,6 +1091,7 @@ body {
   border-radius: 8px;
   background: var(--bg-card, #ffffff);
   box-shadow: 0 12px 30px rgba(15, 23, 42, 0.07);
+  overflow: hidden;
 }
 
 .report-chart-title {
@@ -1106,6 +1107,7 @@ body {
   position: relative;
   width: 100%;
   min-height: 180px;
+  overflow: hidden;
 }
 
 .report-chart-stage canvas {
@@ -1118,13 +1120,14 @@ body {
   position: relative;
   width: 100%;
   height: 100%;
+  overflow: hidden;
 }
 
 .report-chart-plot svg {
   display: block;
   width: 100%;
   height: 100%;
-  overflow: visible;
+  overflow: hidden;
 }
 
 .report-chart-floating-tooltip {

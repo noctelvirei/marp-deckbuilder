@@ -20,6 +20,13 @@ export function parseReportChart(chart, index = 0) {
   const dataRef = chart.attr('data-ref') || chart.attr('dataset') || ''
   const labelColumn = chart.attr('label-column') || chart.attr('label-field') || chart.attr('label') || ''
   const valueColumn = chart.attr('value-column') || chart.attr('value-field') || chart.attr('value') || ''
+  const seriesColumns = splitPipe(
+    chart.attr('series-columns') ||
+      chart.attr('value-columns') ||
+      chart.attr('series-fields') ||
+      chart.attr('value-fields') ||
+      '',
+  )
   const targetColumn = chart.attr('target-column') || chart.attr('target-field') || ''
   const xColumn = chart.attr('x-column') || chart.attr('x-field') || ''
   const yColumn = chart.attr('y-column') || chart.attr('y-field') || ''
@@ -69,6 +76,7 @@ export function parseReportChart(chart, index = 0) {
     dataRef,
     labelColumn,
     valueColumn,
+    seriesColumns,
     targetColumn,
     xColumn,
     yColumn,

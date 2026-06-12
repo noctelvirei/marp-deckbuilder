@@ -385,6 +385,12 @@ test('expands report sankey charts into D3 flow diagrams', async () => {
   assert.match(rendered.document, /"source":"Opened","target":"Started","value":44120/)
   assert.match(rendered.document, /class", "report-sankey-link"/)
   assert.match(rendered.document, /class", "report-sankey-node"/)
+  assert.match(rendered.document, /const linkScale = innerHeight \/ maxColumnWeight/)
+  assert.match(
+    rendered.document,
+    /const maxLinkWidth = Math\.max\(2, Math\.min\(link\.source\.height, link\.target\.height, innerHeight \* 0\.24\)\)/,
+  )
+  assert.doesNotMatch(rendered.document, /Math\.max\(1, innerHeight \/ maxColumnWeight\)/)
   assert.match(rendered.document, /tooltip\.textContent = link\.source\.label \+ " -> " \+ link\.target\.label/)
   assert.match(rendered.document, /const valueSuffix = " cases"/)
 })
@@ -696,7 +702,9 @@ test('expands report pareto charts into sorted bars and cumulative line', async 
   assert.match(rendered.document, /labels: \["Identity","Income","Address","Consent"\]/)
   assert.match(rendered.document, /data: \[42,27,18,13\]/)
   assert.match(rendered.document, /data: \[42,69,87,100\]/)
+  assert.match(rendered.document, /yAxisID: "y",\s*order: 2/)
   assert.match(rendered.document, /yAxisID: "yPercent"/)
+  assert.match(rendered.document, /yAxisID: "yPercent",\s*order: 1/)
   assert.match(rendered.document, /"Cumulative: " \+ valueFormatter\.format\(context\.parsed\.y\) \+ "%"/)
 })
 
@@ -1099,6 +1107,49 @@ test('expands report datasets into referenced tables and charts', async () => {
   assert.match(rendered.document, /<td class="report-data-table-cell report-data-table-cell-number report-data-table-align-right">52,208<\/td>/)
   assert.match(rendered.document, /labels: \["Digital","Assisted","Exceptions"\]/)
   assert.match(rendered.document, /data: \[52208,11119,3751\]/)
+})
+
+test('expands report datasets into referenced grouped and stacked charts', async () => {
+  const definitions = await loadDefinitions(new URL('../resources/definitions', import.meta.url))
+  const rendered = renderReportHtml(
+    `# Multi-series dataset report
+
+<report-dataset
+  id="journey-outcomes"
+  columns="Journey|Opened|Completed|Exceptions|Status"
+  rows="Digital|44120|37980|1240|Active;Assisted|11850|9220|710|Watch"
+></report-dataset>
+
+<report-chart
+  type="grouped-bar"
+  title="Dataset grouped outcomes"
+  data-ref="journey-outcomes"
+  label-column="Journey"
+  series-columns="Opened|Completed|Exceptions"
+></report-chart>
+
+<report-chart
+  type="stacked-bar"
+  title="Dataset stacked outcomes"
+  data-ref="journey-outcomes"
+  label-column="Journey"
+></report-chart>
+`,
+    {
+      resourcesDir: path.resolve('resources'),
+      definitions,
+      inlineAssets: true,
+    },
+  )
+
+  assert.doesNotMatch(rendered.document, /<report-dataset/i)
+  assert.match(rendered.document, /class="report-chart report-chart-grouped-bar"/)
+  assert.match(rendered.document, /class="report-chart report-chart-stacked-bar"/)
+  assert.match(rendered.document, /labels: \["Digital","Assisted"\]/)
+  assert.match(rendered.document, /"label":"Opened","data":\[44120,11850\]/)
+  assert.match(rendered.document, /"label":"Completed","data":\[37980,9220\]/)
+  assert.match(rendered.document, /"label":"Exceptions","data":\[1240,710\]/)
+  assert.doesNotMatch(rendered.document, /"label":"Status"/)
 })
 
 test('expands enhanced report data table options', async () => {
@@ -1877,7 +1928,7 @@ test('report chart components fail clearly when data is invalid', async () => {
         '<report-dataset id="d" columns="Label|Value" rows="A|1"></report-dataset><report-chart type="treemap" data-ref="d"></report-chart>',
         options,
       ),
-    /report-chart data-ref currently supports bar, line, doughnut, waterfall, bullet, and pareto charts/,
+    /report-chart data-ref currently supports bar, line, doughnut, waterfall, bullet, pareto, grouped-bar, and stacked-bar charts/,
   )
   assert.throws(
     () =>
@@ -1902,6 +1953,54 @@ test('report chart components fail clearly when data is invalid', async () => {
         options,
       ),
     /report-chart data-ref requires target-column/,
+  )
+  assert.throws(
+    () =>
+      renderReportHtml(
+        '<report-dataset id="d" columns="Label|Opened|Closed" rows="A|10|9"></report-dataset><report-chart type="grouped-bar" data-ref="d" value-column="Opened"></report-chart>',
+        options,
+      ),
+    /report-chart data-ref grouped-bar and stacked-bar charts use series-columns, not value-column/,
+  )
+  assert.throws(
+    () =>
+      renderReportHtml(
+        '<report-dataset id="d" columns="Label|Opened" rows="A|10"></report-dataset><report-chart type="grouped-bar" data-ref="d" series-columns="Opened|Opened"></report-chart>',
+        options,
+      ),
+    /report-chart data-ref series-columns must not repeat dataset columns/,
+  )
+  assert.throws(
+    () =>
+      renderReportHtml(
+        '<report-dataset id="d" columns="Label|Opened" rows="A|10"></report-dataset><report-chart type="grouped-bar" data-ref="d" series-columns="Missing"></report-chart>',
+        options,
+      ),
+    /report dataset "d" does not include series-columns "Missing"/,
+  )
+  assert.throws(
+    () =>
+      renderReportHtml(
+        '<report-dataset id="d" columns="Label|Opened|Closed" rows="A|10|9"></report-dataset><report-chart type="grouped-bar" data-ref="d" series-columns="Opened|Closed" series-labels="Only one"></report-chart>',
+        options,
+      ),
+    /report-chart data-ref series-labels must match the number of selected series-columns/,
+  )
+  assert.throws(
+    () =>
+      renderReportHtml(
+        '<report-dataset id="d" columns="Label|Status" rows="A|Active"></report-dataset><report-chart type="stacked-bar" data-ref="d"></report-chart>',
+        options,
+      ),
+    /report-chart data-ref grouped-bar and stacked-bar charts require series-columns or at least one numeric dataset column/,
+  )
+  assert.throws(
+    () =>
+      renderReportHtml(
+        '<report-dataset id="d" columns="Label|Opened" rows="A|not-a-number"></report-dataset><report-chart type="stacked-bar" data-ref="d" series-columns="Opened"></report-chart>',
+        options,
+      ),
+    /report-chart data-ref row 1 column "Opened" values must all be numeric/,
   )
   assert.throws(
     () => renderReportHtml('<report-chart type="radar" labels="A" values="10"></report-chart>', options),

@@ -42,7 +42,7 @@ import {
 } from './report-components/renderers.js'
 import { isKnownBadgeVariant, parseDataTableNumber } from './report-components/utils.js'
 
-const dataRefChartTypes = ['bar', 'line', 'doughnut', 'waterfall', 'bullet', 'pareto']
+const dataRefChartTypes = ['bar', 'line', 'doughnut', 'waterfall', 'bullet', 'pareto', 'grouped-bar', 'stacked-bar']
 const dataRefChartTypeList = formatReportList(dataRefChartTypes)
 
 const knownReportTags = new Set([
@@ -282,10 +282,17 @@ function resolveReportChartDataset(chart, datasetRegistry, context) {
       context,
     )
   }
-  if (chart.labels.length > 0 || chart.values.length > 0 || chart.targets.length > 0) {
-    fail('report-chart data-ref cannot be combined with labels, values, or targets. Use the dataset or inline chart data, not both.', context)
+  if (chart.labels.length > 0 || chart.values.length > 0 || chart.targets.length > 0 || chart.matrix.length > 0) {
+    fail(
+      'report-chart data-ref cannot be combined with labels, values, targets, or matrix data. Use the dataset or inline chart data, not both.',
+      context,
+    )
   }
   const labelIndex = reportDatasetColumnIndex(dataset, chart.labelColumn || dataset.columns[0], 'label-column', context)
+  if (chart.chartType === 'grouped-bar' || chart.chartType === 'stacked-bar') {
+    resolveReportMultiSeriesChartDataset(chart, dataset, labelIndex, context)
+    return
+  }
   const defaultValueColumn = chart.valueColumn || dataset.columns.find((column, index) => index !== labelIndex) || ''
   const valueIndex = reportDatasetColumnIndex(dataset, defaultValueColumn, 'value-column', context)
   chart.labels = dataset.rows.map((row) => row[labelIndex])
@@ -294,6 +301,44 @@ function resolveReportChartDataset(chart, datasetRegistry, context) {
     const targetIndex = reportDatasetColumnIndex(dataset, chart.targetColumn, 'target-column', context)
     chart.targets = dataset.rows.map((row) => parseDatasetNumber(row[targetIndex]))
   }
+}
+
+function resolveReportMultiSeriesChartDataset(chart, dataset, labelIndex, context) {
+  if (chart.valueColumn) {
+    fail('report-chart data-ref grouped-bar and stacked-bar charts use series-columns, not value-column.', context)
+  }
+  const explicitColumns = chart.seriesColumns || []
+  const seriesIndexes =
+    explicitColumns.length > 0
+      ? explicitColumns.map((column) => reportDatasetColumnIndex(dataset, column, 'series-columns', context))
+      : dataset.columns
+          .map((_, index) => index)
+          .filter((index) => index !== labelIndex && reportDatasetColumnIsNumeric(dataset, index))
+  if (seriesIndexes.length === 0) {
+    fail('report-chart data-ref grouped-bar and stacked-bar charts require series-columns or at least one numeric dataset column.', context)
+  }
+  const duplicateColumns = seriesIndexes.filter((index, position) => seriesIndexes.indexOf(index) !== position)
+  if (duplicateColumns.length > 0) {
+    fail('report-chart data-ref series-columns must not repeat dataset columns.', context)
+  }
+  if (chart.seriesNames.length > 0 && chart.seriesNames.length !== seriesIndexes.length) {
+    fail('report-chart data-ref series-labels must match the number of selected series-columns.', context)
+  }
+  chart.labels = dataset.rows.map((row) => row[labelIndex])
+  chart.seriesNames =
+    chart.seriesNames.length > 0 ? chart.seriesNames : seriesIndexes.map((index) => dataset.columns[index])
+  chart.matrix = dataset.rows.map((row, rowIndex) =>
+    seriesIndexes.map((columnIndex) => {
+      const value = parseDatasetNumber(row[columnIndex])
+      if (!Number.isFinite(value)) {
+        fail(
+          `report-chart data-ref row ${rowIndex + 1} column "${dataset.columns[columnIndex]}" values must all be numeric.`,
+          context,
+        )
+      }
+      return value
+    }),
+  )
 }
 
 function reportDatasetColumnIndex(dataset, columnName, attributeName, context) {
@@ -306,6 +351,10 @@ function reportDatasetColumnIndex(dataset, columnName, attributeName, context) {
     fail(`report dataset "${dataset.id}" does not include ${attributeName} "${columnName}".`, context)
   }
   return index
+}
+
+function reportDatasetColumnIsNumeric(dataset, columnIndex) {
+  return dataset.rows.every((row) => Number.isFinite(parseDatasetNumber(row[columnIndex])))
 }
 
 function parseDatasetNumber(value) {

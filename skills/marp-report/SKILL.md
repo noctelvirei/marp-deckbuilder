@@ -56,8 +56,8 @@ Use these renderer-backed component tags in `report.md`. They look like HTML tag
 | Chart.js bar chart | `<report-chart type="bar">` | `labels`, `values` |
 | Chart.js line chart | `<report-chart type="line">` | `labels`, `values` |
 | Chart.js doughnut chart | `<report-chart type="doughnut">` | `labels`, `values` |
-| Chart.js grouped bar chart | `<report-chart type="grouped-bar">` | `labels`, `series`, matrix `values` |
-| Chart.js stacked bar chart | `<report-chart type="stacked-bar">` | `labels`, `series`, matrix `values` |
+| Chart.js grouped bar chart | `<report-chart type="grouped-bar">` | `data-ref` with `series-columns`, or `labels`, `series`, matrix `values` |
+| Chart.js stacked bar chart | `<report-chart type="stacked-bar">` | `data-ref` with `series-columns`, or `labels`, `series`, matrix `values` |
 | Chart.js waterfall chart | `<report-chart type="waterfall">` | `labels`, `values` as sequential deltas |
 | Chart.js bullet chart | `<report-chart type="bullet">` | `labels`, `values`, `targets` |
 | Chart.js scatter chart | `<report-chart type="scatter">` | numeric `points` as `x:y` pairs |
@@ -90,8 +90,8 @@ Generate `report.md` in this order:
 - Keep branding renderer-owned through `brand.json` and bundled resources; report Markdown should not declare corporate logos, brand colors, fonts, or background chrome.
 - Keep technical field names as plain text in dark reports unless code formatting is truly necessary.
 - Use `<report-chart type="bar">`, `<report-chart type="line">`, or `<report-chart type="doughnut">` for standard Chart.js charts with renderer-owned hover tooltips.
-- Use `<report-chart type="grouped-bar">` for Chart.js grouped comparisons with matrix `values` like `10|20;12|24`.
-- Use `<report-chart type="stacked-bar">` for Chart.js cumulative comparisons with the same matrix syntax.
+- Use `<report-chart type="grouped-bar">` for Chart.js grouped comparisons. Prefer `data-ref` plus `series-columns` when the data is already in a reusable dataset; use matrix `values` like `10|20;12|24` only for inline-only data.
+- Use `<report-chart type="stacked-bar">` for Chart.js cumulative comparisons. Prefer `data-ref` plus `series-columns`; if `series-columns` is omitted, the renderer uses all non-label dataset columns that are numeric.
 - Use `<report-chart type="waterfall">` for sequential positive/negative movement; each `values` entry is a delta.
 - Use `<report-chart type="bullet">` for actual-vs-target comparisons; `values` are actuals and `targets` are target markers.
 - Use `<report-chart type="scatter">` for numeric relationship plots; provide `points` as `x:y` pairs and optional `x-label`/`y-label`.
@@ -108,7 +108,7 @@ Generate `report.md` in this order:
 - Use `<report-key-values>` for metadata, report context, parameters, and compact label/value summaries.
 - Use `<report-rate-bars>` for ranked distribution bars.
 - Use `<report-data-table>` for formatted tables with text, number, percent, status columns, compact mode, alignment, totals, and row/cell highlights.
-- Use `<report-dataset>` when the same rows should feed a table and a supported Chart.js chart. Reference it with `data-ref`; do not repeat the same data manually.
+- Use `<report-dataset>` when the same rows should feed a table and a supported Chart.js chart. Reference it with `data-ref`; do not repeat the same data manually. For grouped and stacked bars, use `series-columns="Opened|Completed|Exceptions"` to choose multiple numeric dataset columns.
 - Use `<report-insight>` for structured finding, evidence, impact, and action narrative.
 - Use `<report-recommendation>` for owned actions with priority, due date, and status.
 - Use `<report-source-note>` for citations, methodology, assumptions, and data freshness notes.
