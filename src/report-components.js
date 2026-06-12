@@ -1052,6 +1052,12 @@ function validateReportBadge(badge, context) {
   if (!badge.label) {
     fail('report-badge requires label or text content.', context)
   }
+  if (isIdentifierLikeBadgeLabel(badge.label)) {
+    fail(
+      `report-badge label "${badge.label}" looks like a product, field, or identifier. Use plain Markdown text for named products and identifiers; reserve report-badge for short statuses such as Active, Review, Blocked, or Pending.`,
+      context,
+    )
+  }
 }
 
 function uniqueDomId(value, usedIds, prefix) {
@@ -1079,6 +1085,12 @@ function isSixDigitHexColor(value) {
 
 function isBooleanAttributeToken(value = '') {
   return ['true', 'false', 'yes', 'no', 'on', 'off', '1', '0'].includes(String(value || '').trim().toLowerCase())
+}
+
+function isIdentifierLikeBadgeLabel(value = '') {
+  const token = String(value || '').trim()
+  if (!token || /\s/.test(token)) return false
+  return /^[a-z][A-Za-z0-9]*[A-Z][A-Za-z0-9]*$/.test(token) || /^[A-Za-z][A-Za-z0-9]*(?:[_-][A-Za-z0-9]+)+$/.test(token)
 }
 
 function reportSourceDomId(id = '') {

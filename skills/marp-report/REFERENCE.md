@@ -76,7 +76,7 @@ Self-closing syntax is supported for attribute-only components, such as `<report
 | Finding, risk, or action block | `<report-callout>` | Body text or `text`; optional `variant`, `title` |
 | Highlighted recommendation card | `<report-accent-card>` | Body text or `body`; optional `accent`, `title` |
 | Captioned embedded image | `<report-figure>` | `src`, `alt`; optional `caption`, `source`, `size` |
-| Inline status label | `<report-badge>` | Body text or `label`; optional `status`, `variant` |
+| Status label | `<report-badge>` | Short status text or `label`; optional `status`, `variant` |
 | Chart.js bar chart | `<report-chart type="bar">` | `labels`, `values` |
 | Chart.js line chart | `<report-chart type="line">` | `labels`, `values` |
 | Chart.js doughnut chart | `<report-chart type="doughnut">` | `labels`, `values` |
@@ -709,7 +709,7 @@ Supported attributes:
 
 ### Report Badge
 
-Use `report-badge` for table statuses and compact inline state labels. Do not hand-author `r-badge` spans.
+Use `report-badge` for table statuses and compact inline state labels such as `Active`, `Review`, `Blocked`, or `Pending`. Do not hand-author `r-badge` spans. Do not use badges to highlight product names, customer names, field names, journey IDs, or other named entities in prose; write those as plain Markdown text.
 
 ```md
 <report-badge status="active">Active</report-badge>
@@ -722,7 +722,7 @@ Supported attributes:
 | --- | --- | --- |
 | `variant` | no | Supports `blue`, `green`, `orange`, `red`, `muted`. Aliases: `color`, `tone`. |
 | `status` | no | Maps common statuses such as `active`, `review`, `blocked`, and `pending` to badge colors. |
-| `label` | no | Badge text when you prefer attribute-only authoring. Otherwise use the tag body. |
+| `label` | no | Short status text when you prefer attribute-only authoring. Otherwise use the tag body. Identifier-style labels such as `fraudCreditCard`, `case_product`, or `case-product` are rejected. |
 
 ### Report Figure
 
@@ -770,3 +770,4 @@ Do not use `deck-*` tags in reports. They are presentation components.
 - No CSS, SVG, canvas, script tags, chart containers, chart initializer scripts, CDN tags, or minified library source in Markdown.
 - No hand-placed logos, brand colors, font declarations, or background chrome.
 - No unsupported visuals. Ask the skill maker to add a renderer-backed component.
+- No `report-badge` highlighters for product names, customer names, journey IDs, field names, or other named entities in prose. Badges are status labels only.

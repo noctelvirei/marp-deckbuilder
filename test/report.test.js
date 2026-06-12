@@ -1928,6 +1928,31 @@ test('expands report badges inside markdown tables', async () => {
   assert.match(rendered.document, /<table>/)
 })
 
+test('report badge colors use dark-theme contrast tokens', async () => {
+  const definitions = await loadDefinitions(new URL('../resources/definitions', import.meta.url))
+  const rendered = renderReportHtml(
+    `---
+title: Badge contrast
+reportTheme: dark
+---
+
+# Badge report
+
+<report-badge status="active">Active</report-badge>
+<report-badge status="pending">Pending</report-badge>
+`,
+    {
+      resourcesDir: path.resolve('resources'),
+      definitions,
+      inlineAssets: true,
+    },
+  )
+
+  assert.match(rendered.document, /<main class="deck-report report-theme-dark">/)
+  assert.match(rendered.css, /\.deck-report\.report-theme-dark \.report-badge-green \{[\s\S]*--report-badge-text: #DFFBEA;/)
+  assert.match(rendered.css, /\.deck-report\.report-theme-dark \.report-badge-muted \{[\s\S]*--report-badge-text: #D7E2F2;/)
+})
+
 test('report badges fail clearly when malformed', async () => {
   const definitions = await loadDefinitions(new URL('../resources/definitions', import.meta.url))
   const options = {
@@ -1943,6 +1968,14 @@ test('report badges fail clearly when malformed', async () => {
   assert.throws(
     () => renderReportHtml('<report-badge variant="green"></report-badge>', options),
     /report-badge requires label or text content/,
+  )
+  assert.throws(
+    () => renderReportHtml('<report-badge status="muted">fraudCreditCard</report-badge>', options),
+    /report-badge label "fraudCreditCard" looks like a product, field, or identifier/,
+  )
+  assert.throws(
+    () => renderReportHtml('<report-badge status="blue" label="case-product-name"></report-badge>', options),
+    /Use plain Markdown text for named products and identifiers/,
   )
 })
 

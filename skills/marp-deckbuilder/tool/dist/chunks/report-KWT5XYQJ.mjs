@@ -7887,6 +7887,12 @@ function validateReportBadge(badge, context) {
   if (!badge.label) {
     fail("report-badge requires label or text content.", context);
   }
+  if (isIdentifierLikeBadgeLabel(badge.label)) {
+    fail(
+      `report-badge label "${badge.label}" looks like a product, field, or identifier. Use plain Markdown text for named products and identifiers; reserve report-badge for short statuses such as Active, Review, Blocked, or Pending.`,
+      context
+    );
+  }
 }
 function uniqueDomId(value, usedIds, prefix) {
   const base = sanitizeDomId(value) || prefix;
@@ -7907,6 +7913,11 @@ function isSixDigitHexColor(value) {
 }
 function isBooleanAttributeToken(value = "") {
   return ["true", "false", "yes", "no", "on", "off", "1", "0"].includes(String(value || "").trim().toLowerCase());
+}
+function isIdentifierLikeBadgeLabel(value = "") {
+  const token = String(value || "").trim();
+  if (!token || /\s/.test(token)) return false;
+  return /^[a-z][A-Za-z0-9]*[A-Z][A-Za-z0-9]*$/.test(token) || /^[A-Za-z][A-Za-z0-9]*(?:[_-][A-Za-z0-9]+)+$/.test(token);
 }
 function reportSourceDomId(id = "") {
   return `report-source-${String(id).replace(/[^a-z0-9_-]/gi, "-").toLowerCase()}`;
@@ -9322,31 +9333,61 @@ body {
 .report-badge-blue {
   --report-badge-bg: rgba(15, 130, 245, 0.12);
   --report-badge-border: rgba(15, 130, 245, 0.35);
-  --report-badge-text: var(--blue, #0F82F5);
+  --report-badge-text: #075AAB;
 }
 
 .report-badge-green {
   --report-badge-bg: rgba(102, 204, 142, 0.12);
   --report-badge-border: rgba(102, 204, 142, 0.35);
-  --report-badge-text: var(--green, #16a34a);
+  --report-badge-text: #166534;
 }
 
 .report-badge-orange {
   --report-badge-bg: rgba(249, 147, 91, 0.12);
   --report-badge-border: rgba(249, 147, 91, 0.35);
-  --report-badge-text: var(--orange, #F9935B);
+  --report-badge-text: #9A3412;
 }
 
 .report-badge-red {
   --report-badge-bg: rgba(252, 81, 97, 0.12);
   --report-badge-border: rgba(252, 81, 97, 0.38);
-  --report-badge-text: var(--red, #dc2626);
+  --report-badge-text: #B91C1C;
 }
 
 .report-badge-muted {
   --report-badge-bg: rgba(139, 154, 181, 0.1);
   --report-badge-border: rgba(139, 154, 181, 0.28);
   --report-badge-text: var(--text-dim, #64748b);
+}
+
+.deck-report.report-theme-dark .report-badge-blue {
+  --report-badge-bg: rgba(89, 214, 253, 0.16);
+  --report-badge-border: rgba(89, 214, 253, 0.42);
+  --report-badge-text: #DDF6FF;
+}
+
+.deck-report.report-theme-dark .report-badge-green {
+  --report-badge-bg: rgba(102, 204, 142, 0.16);
+  --report-badge-border: rgba(102, 204, 142, 0.42);
+  --report-badge-text: #DFFBEA;
+}
+
+.deck-report.report-theme-dark .report-badge-orange {
+  --report-badge-bg: rgba(249, 147, 91, 0.18);
+  --report-badge-border: rgba(249, 147, 91, 0.44);
+  --report-badge-text: #FFE8D6;
+}
+
+.deck-report.report-theme-dark .report-badge-red {
+  --report-badge-bg: rgba(252, 81, 97, 0.18);
+  --report-badge-border: rgba(252, 81, 97, 0.44);
+  --report-badge-text: #FFE2E6;
+}
+
+.deck-report.report-theme-dark .report-badge-muted {
+  --report-badge-bg: rgba(139, 154, 181, 0.18);
+  --report-badge-border: rgba(139, 154, 181, 0.42);
+  --report-badge-text: #D7E2F2;
 }
 
 .report-layout {

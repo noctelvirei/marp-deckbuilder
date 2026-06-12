@@ -52,7 +52,7 @@ Use these renderer-backed component tags in `report.md`. They look like HTML tag
 | Findings and actions | `<report-callout>` | Body text or `text`; optional `variant`, `title` |
 | Recommendation or insight card | `<report-accent-card>` | Body text or `body`; optional `accent`, `title` |
 | Captioned embedded image | `<report-figure>` | `src`, `alt`; optional `caption`, `source`, `size` |
-| Table status label | `<report-badge>` | Body text or `label`; optional `status`, `variant` |
+| Table status label | `<report-badge>` | Short status text or `label`; optional `status`, `variant` |
 | Chart.js bar chart | `<report-chart type="bar">` | `labels`, `values` |
 | Chart.js line chart | `<report-chart type="line">` | `labels`, `values` |
 | Chart.js doughnut chart | `<report-chart type="doughnut">` | `labels`, `values` |
@@ -121,7 +121,7 @@ Generate `report.md` in this order:
 - Use `<report-callout>` for info, warning, success, and danger findings.
 - Use `<report-accent-card>` for highlighted recommendations, risks, or ownership notes.
 - Use `<report-figure>` for captioned images, screenshots, and diagrams stored under resources.
-- Use `<report-badge>` for table statuses and small inline state labels.
+- Use `<report-badge>` for table statuses and small inline state labels only. Do not use badges to highlight product names, customer names, journey IDs, field names, or other named entities in prose; keep those as plain Markdown text.
 - For chart types that are not yet supported, do not write Chart.js, Observable Plot, D3, SVG, or HTML manually. Tell the user to ask the skill maker to add that chart type.
 
 ## Renderer-Only Rules
@@ -132,8 +132,9 @@ Report Markdown is a compact data-and-copy layer. The renderer owns all HTML str
 2. Do not write `<style>`, `<script>`, `<canvas>`, `<svg>`, or chart container elements in `report.md`.
 3. Do not include CDN tags, vendored library source, or chart initializers in `report.md`.
 4. Do not hand-place logos, background assets, brand colors, or fonts in `report.md`.
-5. When a supported capability exists, remove any legacy raw-code guidance for it from this skill.
-6. When a requested capability does not exist, tell the user to ask the skill maker to add it as a renderer-backed component.
+5. Do not use `report-badge` as a visual highlighter for named products, fields, journeys, customers, or prose emphasis. Badges are status labels only.
+6. When a supported capability exists, remove any legacy raw-code guidance for it from this skill.
+7. When a requested capability does not exist, tell the user to ask the skill maker to add it as a renderer-backed component.
 
 ## Dark-Mode Rules
 
