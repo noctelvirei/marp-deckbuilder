@@ -90,14 +90,54 @@ reportNav: true
   )
 
   assert.match(rendered.css, /@media print \{[\s\S]*print-color-adjust: exact;/)
-  assert.match(rendered.css, /@page \{[\s\S]*size: A4;[\s\S]*margin: 0;/)
+  assert.match(rendered.css, /@page \{[\s\S]*size: A4;[\s\S]*margin: 12mm 14mm 16mm;[\s\S]*background: #071228;/)
+  assert.match(rendered.css, /@bottom-right \{[\s\S]*content: "Page " counter\(page\) " of " counter\(pages\);/)
   assert.match(rendered.css, /-webkit-print-color-adjust: exact;/)
   assert.match(rendered.css, /body\.report-theme-dark-page \{[\s\S]*background: var\(--bg, #060D18\) !important;/)
-  assert.match(rendered.css, /\.report-cover \{[\s\S]*padding: 18mm 16mm 14mm;/)
-  assert.match(rendered.css, /\.report-body \{[\s\S]*padding: 12mm 16mm 0;/)
+  assert.match(rendered.css, /body\.report-theme-dark-page::before \{[\s\S]*position: fixed;[\s\S]*background: var\(--bg-subtle, #071228\) !important;/)
+  assert.match(rendered.css, /\.report-cover \{[\s\S]*padding: 10mm 0 12mm;/)
+  assert.match(rendered.css, /\.report-body \{[\s\S]*padding: 10mm 0 0;/)
+  assert.match(rendered.css, /\.report-layout \{[\s\S]*display: block;[\s\S]*padding: 0;/)
   assert.match(rendered.css, /\.report-sidebar \{[\s\S]*display: none !important;/)
   assert.match(rendered.css, /\.report-chart,[\s\S]*\.report-callout,[\s\S]*break-inside: avoid;/)
-  assert.match(rendered.css, /\.report-page-break \{[\s\S]*break-after: page;/)
+  assert.match(rendered.css, /\.report-body ol,[\s\S]*\.report-body ul,[\s\S]*break-inside: avoid;/)
+  assert.match(rendered.css, /\.report-page-break \{[\s\S]*break-before: page;/)
+  assert.match(rendered.css, /\.report-page-break \{[\s\S]*break-after: auto;/)
+})
+
+test('renders report legal notice from brand config', async () => {
+  const definitions = await loadDefinitions(new URL('../resources/definitions', import.meta.url))
+  const rendered = renderReportHtml(
+    `---
+title: Legal report
+reportTheme: dark
+---
+
+# Summary
+`,
+    {
+      resourcesDir: path.resolve('resources'),
+      definitions: {
+        brand: {
+          ...definitions.brand,
+          report: {
+            legal: {
+              title: 'Legal notice',
+              text: ['Confidential business report.', 'Do not distribute without approval.'],
+            },
+          },
+        },
+      },
+      inlineAssets: true,
+    },
+  )
+
+  assert.match(rendered.document, /<footer class="report-legal" aria-label="Legal notice">/)
+  assert.match(rendered.document, /<div class="report-legal-title">Legal notice<\/div>/)
+  assert.match(rendered.document, /<p>Confidential business report\.<\/p>/)
+  assert.match(rendered.document, /<p>Do not distribute without approval\.<\/p>/)
+  assert.match(rendered.css, /\.report-legal \{[\s\S]*border-top:/)
+  assert.match(rendered.css, /@media print \{[\s\S]*\.report-legal \{[\s\S]*break-inside: avoid;/)
 })
 
 test('report vendor injection strips CDN tags and is idempotent', async () => {
@@ -233,7 +273,8 @@ Second page.
 
   assert.doesNotMatch(rendered.document, /<report-page-break/i)
   assert.match(rendered.document, /<div class="report-page-break" role="separator" aria-label="Appendix"><span>Appendix<\/span><\/div>/)
-  assert.match(rendered.document, /page-break-after:\s*always/)
+  assert.match(rendered.document, /page-break-before:\s*always/)
+  assert.match(rendered.document, /page-break-after:\s*auto/)
 })
 
 test('expands report bar chart components into chart HTML and initializer', async () => {
@@ -350,6 +391,7 @@ test('expands report doughnut chart components into Chart.js doughnut initialize
   assert.doesNotMatch(rendered.document, /<report-chart/i)
   assert.match(rendered.document, /class="report-chart report-chart-doughnut"/)
   assert.match(rendered.document, /type:\s*"doughnut"/)
+  assert.match(rendered.document, /animation:\s*false/)
   assert.match(rendered.document, /hoverOffset:\s*8/)
   assert.match(rendered.document, /legend:\s*\{\s*display:\s*true,\s*position:\s*"right"/)
   assert.match(rendered.document, /const parsedValue = context\.parsed && typeof context\.parsed === "object"/)
@@ -444,7 +486,10 @@ test('expands report funnel chart components into D3 funnel initializers', async
   assert.match(rendered.document, /<div id="report-chart-1" class="report-chart-plot" role="img"/)
   assert.match(rendered.document, /const segmentHeight = Math\.max/)
   assert.match(rendered.document, /class", "report-funnel-segment"/)
-  assert.doesNotMatch(rendered.document, /\.append\("text"\)/)
+  assert.match(rendered.document, /\.append\("text"\)/)
+  assert.match(rendered.document, /class", "report-funnel-print-label"/)
+  assert.match(rendered.css, /\.report-funnel-print-label \{[\s\S]*display: none;/)
+  assert.match(rendered.css, /@media print \{[\s\S]*\.report-funnel-print-label \{[\s\S]*display: block;/)
   assert.match(rendered.document, /cell\.on\("mousemove"/)
   assert.match(rendered.document, /tooltip\.className = "report-chart-floating-tooltip"/)
   assert.match(rendered.document, /const valueSuffix = " cases"/)

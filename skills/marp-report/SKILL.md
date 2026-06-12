@@ -20,7 +20,7 @@ The report wrapper injects Chart.js, Observable Plot, and D3 into the generated 
    `Dark navy report theme (recommended) or light print theme?`
 3. Create one output folder for the request. Prefer `Documents/Presentations/YYYY-MM-DD/<report-title-slug>/` when the user has not specified a location.
 4. Draft `report.md` in that folder. For dark navy, set `reportTheme: dark` in frontmatter. For reports with four or more sections, set `reportNav: true` to generate a sticky sidebar from headings. Use frontmatter fields `reportDate`, `preparedFor`, `preparedBy`, `classification`, and `version` for report metadata.
-5. Let the renderer own brand chrome. Corporate logos, colors, fonts, and report background assets come from `tool/resources/definitions/brand.json` and `tool/resources`; do not hand-place branding in report Markdown.
+5. Let the renderer own brand chrome. Corporate logos, colors, fonts, report background assets, and legal boilerplate come from `tool/resources/definitions/brand.json` and `tool/resources`; do not hand-place branding or legal footer text in report Markdown.
 6. Use report components for fidelity. Use `<report-metric-grid>` for KPI cards, `<report-key-values>` for metadata summaries, `<report-rate-bars>` for ranked distributions, `<report-data-table>` for formatted tabular data, `<report-insight>` for finding/evidence/impact/action blocks, `<report-recommendation>` for owned actions, `<report-source-note>` for one-off methodology, `<report-source-list>` with `<report-source>` and inline `<report-cite>` for reusable citations, `<report-callout>` for findings or actions, `<report-accent-card>` for recommendation cards, `<report-badge>` for inline statuses, and `<report-chart>` for supported chart types. Do not use raw HTML or JavaScript as a fallback. If a component type is missing, tell the user to ask the skill maker to add it.
 7. Build from this skill folder:
 
@@ -87,7 +87,7 @@ Generate `report.md` in this order:
 - Use prose, headings, Markdown lists, Markdown tables, and report components freely.
 - Prefer `reportNav: true` for reports with four or more sections.
 - Prefer `reportTheme: dark` for dark navy reports instead of pasting CSS into Markdown.
-- Keep branding renderer-owned through `brand.json` and bundled resources; report Markdown should not declare corporate logos, brand colors, fonts, or background chrome.
+- Keep branding renderer-owned through `brand.json` and bundled resources; report Markdown should not declare corporate logos, brand colors, fonts, background chrome, or legal boilerplate.
 - Keep technical field names as plain text in dark reports unless code formatting is truly necessary.
 - Use only attributes documented in `REFERENCE.md`. Unsupported attributes on any `report-*` component fail validation; do not invent aliases.
 - Follow the report separator convention: semicolons separate repeated records or items, pipes separate fields inside one record, and commas separate simple one-dimensional chart series. Use `items="Scope: TD; Platform: v2"` for `report-key-values`, never `items="Scope: TD|Platform: v2"`.
@@ -134,10 +134,11 @@ Report Markdown is a compact data-and-copy layer. The renderer owns all HTML str
 2. Do not write `<style>`, `<script>`, `<canvas>`, `<svg>`, or chart container elements in `report.md`.
 3. Do not include CDN tags, vendored library source, or chart initializers in `report.md`.
 4. Do not hand-place logos, background assets, brand colors, or fonts in `report.md`.
-5. Do not add undocumented attributes to `report-*` tags. The renderer rejects them; use the documented attribute or ask the skill maker to add support.
-6. Do not use `report-badge` as a visual highlighter for named products, fields, journeys, customers, or prose emphasis. Badges are status labels only.
-7. When a supported capability exists, remove any legacy raw-code guidance for it from this skill.
-8. When a requested capability does not exist, tell the user to ask the skill maker to add it as a renderer-backed component.
+5. Do not hand-place legal boilerplate in `report.md`; approved report legal text belongs in `brand.json` under `report.legal` or `report.legalNotice`.
+6. Do not add undocumented attributes to `report-*` tags. The renderer rejects them; use the documented attribute or ask the skill maker to add support.
+7. Do not use `report-badge` as a visual highlighter for named products, fields, journeys, customers, or prose emphasis. Badges are status labels only.
+8. When a supported capability exists, remove any legacy raw-code guidance for it from this skill.
+9. When a requested capability does not exist, tell the user to ask the skill maker to add it as a renderer-backed component.
 
 ## Dark-Mode Rules
 

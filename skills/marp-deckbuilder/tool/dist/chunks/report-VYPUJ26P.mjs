@@ -5532,6 +5532,13 @@ function chartBoilerplate(chart, targetName = "canvas") {
   const formatTooltipValue = (value) => {
     const formatted = formatAxisValue(value);
     return valuePrefix + formatted + valueSuffix;
+  };
+  const reportStaticChartOptions = {
+    animation: false,
+    transitions: {
+      active: { animation: { duration: 0 } },
+      resize: { animation: { duration: 0 } }
+    }
   };`;
 }
 function renderReportChartScript(chart, context = {}) {
@@ -5597,6 +5604,7 @@ ${datasetOptions}
     options: {
       responsive: true,
       maintainAspectRatio: false,
+      ...reportStaticChartOptions,
       interaction: {
         mode: "index",
         intersect: false
@@ -5676,6 +5684,7 @@ ${chartBoilerplate(chart, "canvas")}
     options: {
       responsive: true,
       maintainAspectRatio: false,
+      ...reportStaticChartOptions,
       interaction: {
         mode: "index",
         intersect: false
@@ -5802,6 +5811,7 @@ ${chartBoilerplate(chart, "canvas")}
     options: {
       responsive: true,
       maintainAspectRatio: false,
+      ...reportStaticChartOptions,
       interaction: {
         mode: "index",
         intersect: false
@@ -5902,6 +5912,7 @@ ${chartBoilerplate(chart, "canvas")}
     options: {
       responsive: true,
       maintainAspectRatio: false,
+      ...reportStaticChartOptions,
       interaction: {
         mode: "index",
         intersect: false
@@ -5983,6 +5994,7 @@ ${chartBoilerplate(chart, "canvas")}
     options: {
       responsive: true,
       maintainAspectRatio: false,
+      ...reportStaticChartOptions,
       interaction: {
         mode: "nearest",
         intersect: true
@@ -6065,6 +6077,7 @@ ${chartBoilerplate(chart, "canvas")}
     options: {
       responsive: true,
       maintainAspectRatio: false,
+      ...reportStaticChartOptions,
       interaction: {
         mode: "nearest",
         intersect: true
@@ -6171,6 +6184,7 @@ ${chartBoilerplate(chart, "canvas")}
       indexAxis: "y",
       responsive: true,
       maintainAspectRatio: false,
+      ...reportStaticChartOptions,
       interaction: {
         mode: "nearest",
         intersect: true
@@ -6353,6 +6367,7 @@ ${chartBoilerplate(chart, "canvas")}
     options: {
       responsive: true,
       maintainAspectRatio: false,
+      ...reportStaticChartOptions,
       interaction: {
         mode: "index",
         intersect: false
@@ -6416,6 +6431,7 @@ ${chartBoilerplate(chart, "canvas")}
     options: {
       responsive: true,
       maintainAspectRatio: false,
+      ...reportStaticChartOptions,
       interaction: {
         mode: "index",
         intersect: false
@@ -6532,6 +6548,23 @@ ${chartBoilerplate(chart, "target")}
     .attr("fill-opacity", 0.9)
     .attr("stroke", tooltipBg)
     .attr("stroke-width", 1.5);
+  const printLabels = cell.append("text")
+    .attr("class", "report-funnel-print-label")
+    .attr("x", width / 2)
+    .attr("y", (segment) => (segment.y0 + segment.y1) / 2 - 7)
+    .attr("text-anchor", "middle")
+    .attr("dominant-baseline", "middle");
+  printLabels.append("tspan")
+    .attr("class", "report-funnel-print-label-name")
+    .text((segment) => segment.label);
+  printLabels.append("tspan")
+    .attr("class", "report-funnel-print-label-value")
+    .attr("x", width / 2)
+    .attr("dy", "1.25em")
+    .text((segment) => {
+      const conversion = segment.conversion === null ? "Start" : (Math.round(segment.conversion * 10) / 10).toString().replace(/\\.0$/, "") + "% from prior";
+      return formatTooltipValue(segment.value) + " \xB7 " + conversion;
+    });
   cell.on("mousemove", (event, segment) => {
     const rect = target.getBoundingClientRect();
     const conversion = segment.conversion === null ? "Start" : (Math.round(segment.conversion * 10) / 10).toString().replace(/\\.0$/, "") + "% from prior";
@@ -8177,8 +8210,9 @@ function renderReportHtml(source, options = {}) {
   const compiled = compileReportComponents(prepared, { brand, reportName: title });
   const presentation = prepareReportPresentation(markdown.render(compiled.source), frontmatter);
   const content = resolveResourceUrls(presentation.content, options.resourcesDir, resolverOptions);
-  const css = resolveResourceUrls(reportCss(brand), options.resourcesDir, resolverOptions);
+  const css = resolveResourceUrls(reportCss(brand, presentation.theme), options.resourcesDir, resolverOptions);
   const logo = reportLogo(brand, presentation.theme || "light", options.resourcesDir);
+  const legal = reportLegalNotice(brand);
   const document = resolveResourceUrls(
     reportDocument({
       title,
@@ -8188,6 +8222,7 @@ function renderReportHtml(source, options = {}) {
       css,
       logo,
       brandName: brand.name || "Brand",
+      legal,
       bodyClass: reportBodyClass(presentation.theme),
       mainClass: reportMainClass(presentation.theme),
       articleClass: reportArticleClass(presentation.hasLayout)
@@ -8239,6 +8274,7 @@ function reportDocument({
   css,
   logo = "",
   brandName = "Brand",
+  legal = null,
   bodyClass = "",
   mainClass = "deck-report",
   articleClass = "report-body"
@@ -8264,10 +8300,44 @@ function reportDocument({
     <article class="${escapeAttr(articleClass)}">
 ${content}
     </article>
+    ${renderReportLegalNotice(legal)}
   </main>
 </body>
 </html>
 `;
+}
+function reportLegalNotice(brand = {}) {
+  const candidate = brand.report?.legal || brand.report?.legalNotice || brand.report?.boilerplate || brand.legal || brand.legalNotice || brand.reportLegal || null;
+  if (!candidate) return null;
+  if (typeof candidate === "string") {
+    const text2 = cleanLegalText(candidate);
+    return text2 ? { title: "", paragraphs: [text2] } : null;
+  }
+  if (Array.isArray(candidate)) {
+    const paragraphs2 = candidate.map(cleanLegalText).filter(Boolean);
+    return paragraphs2.length ? { title: "", paragraphs: paragraphs2 } : null;
+  }
+  const title = cleanLegalText(candidate.title || candidate.heading || "Legal notice");
+  const paragraphs = [];
+  const body = candidate.text ?? candidate.body ?? candidate.notice ?? candidate.paragraphs ?? "";
+  if (Array.isArray(body)) {
+    paragraphs.push(...body.map(cleanLegalText).filter(Boolean));
+  } else {
+    paragraphs.push(...String(body || "").split(/\n{2,}/).map(cleanLegalText).filter(Boolean));
+  }
+  return title || paragraphs.length ? { title, paragraphs } : null;
+}
+function renderReportLegalNotice(legal) {
+  if (!legal) return "";
+  const title = legal.title ? `<div class="report-legal-title">${escapeHtml2(legal.title)}</div>` : "";
+  const paragraphs = legal.paragraphs.map((paragraph2) => `<p>${escapeHtml2(paragraph2)}</p>`).join("\n");
+  return `<footer class="report-legal" aria-label="Legal notice">
+  ${title}
+  ${paragraphs}
+</footer>`;
+}
+function cleanLegalText(value) {
+  return String(value || "").replace(/\s+/g, " ").trim();
 }
 function reportMetadata(frontmatter = {}) {
   return [
@@ -8294,7 +8364,7 @@ ${metadata.map(
   ).join("\n")}
       </dl>`;
 }
-function reportCss(brand = {}) {
+function reportCss(brand = {}, theme = "light") {
   const colors = brand.colors || {};
   const dark = hex(colors.dark, "060D18");
   const white = hex(colors.white, "FFFFFF");
@@ -8307,6 +8377,8 @@ function reportCss(brand = {}) {
   const darkBody = hex(colors.bodyOnDark || colors.reportBodyDark, "C8D8F0");
   const darkMuted = hex(colors.mutedOnDark || colors.reportMutedDark, "8B9AB5");
   const darkBorder = hex(colors.borderDark || colors.reportBorderDark, "1E3A5F");
+  const printPageBackground = theme === "dark" ? "071228" : "FFFFFF";
+  const printPageNumber = theme === "dark" ? "9DB5D2" : "64748B";
   const font = fontFamily(brand);
   const background = brand.assets?.backgrounds?.content || "";
   const backgroundRule = background ? `
@@ -8439,6 +8511,33 @@ body {
 
 .report-body.report-body-has-layout {
   padding: 0;
+}
+
+.report-legal {
+  max-width: 1080px;
+  margin: 0 auto;
+  padding: 22px 76px 30px;
+  border-top: 1px solid var(--border-dim, #e2e8f0);
+  color: var(--text-dim, #64748b);
+  font-size: 11px;
+  line-height: 1.45;
+}
+
+.report-legal-title {
+  margin: 0 0 6px;
+  color: var(--text, #334155);
+  font-size: 11px;
+  font-weight: 750;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.report-legal p {
+  margin: 0;
+}
+
+.report-legal p + p {
+  margin-top: 7px;
 }
 
 .report-body > *:first-child {
@@ -9254,6 +9353,10 @@ body {
   display: none;
 }
 
+.report-funnel-print-label {
+  display: none;
+}
+
 .report-metric-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
@@ -9626,6 +9729,15 @@ body.report-theme-dark-page {
   color: var(--text);
 }
 
+.deck-report.report-theme-dark .report-legal {
+  border-color: var(--border);
+  color: var(--text-dim);
+}
+
+.deck-report.report-theme-dark .report-legal-title {
+  color: var(--text);
+}
+
 .deck-report.report-theme-dark .report-body table {
   color: var(--text);
   font-size: 14px;
@@ -9783,7 +9895,15 @@ ${backgroundRule}
 
 @page {
   size: A4;
-  margin: 0;
+  margin: 12mm 14mm 16mm;
+  background: #${printPageBackground};
+
+  @bottom-right {
+    content: "Page " counter(page) " of " counter(pages);
+    color: #${printPageNumber};
+    font-family: ${font};
+    font-size: 8px;
+  }
 }
 
 @media print {
@@ -9805,8 +9925,19 @@ ${backgroundRule}
     background: var(--bg, #060D18) !important;
   }
 
+  body.report-theme-dark-page::before {
+    content: "";
+    position: fixed;
+    inset: 0;
+    z-index: -1;
+    background: var(--bg-subtle, #071228) !important;
+  }
+
   .report-layout {
     display: block;
+    gap: 0;
+    max-width: none;
+    padding: 0;
   }
 
   .deck-report {
@@ -9831,17 +9962,25 @@ ${backgroundRule}
 
   .report-cover {
     min-height: 220px;
-    padding: 18mm 16mm 14mm;
+    padding: 10mm 0 12mm;
     background: #${dark} !important;
   }
 
   .report-logo {
-    top: 14mm;
-    right: 16mm;
+    top: 8mm;
+    right: 0;
   }
 
   .report-body {
-    padding: 12mm 16mm 0;
+    padding: 10mm 0 0;
+  }
+
+  .report-legal {
+    max-width: none;
+    padding: 8mm 0 0;
+    border-color: var(--border, #dbe5f2) !important;
+    break-inside: avoid;
+    page-break-inside: avoid;
   }
 
   .report-body h1,
@@ -9858,6 +9997,7 @@ ${backgroundRule}
   .report-recommendation,
   .report-source-note,
   .report-source-list,
+  .report-legal,
   .report-card-grid-card,
   .report-timeline-event,
   .report-accent-card,
@@ -9889,9 +10029,26 @@ ${backgroundRule}
     page-break-inside: avoid;
   }
 
+  .report-funnel-print-label {
+    display: block;
+    fill: var(--white, #FFFFFF);
+    font-size: 13px;
+    font-weight: 800;
+    letter-spacing: 0;
+    pointer-events: none;
+  }
+
+  .report-funnel-print-label-value {
+    fill: rgba(255, 255, 255, 0.78);
+    font-size: 11px;
+    font-weight: 700;
+  }
+
   .report-page-break {
-    break-after: page;
-    page-break-after: always;
+    break-before: page;
+    page-break-before: always;
+    break-after: auto;
+    page-break-after: auto;
     height: 0;
     margin: 0;
     overflow: hidden;
@@ -9904,6 +10061,8 @@ ${backgroundRule}
   }
 
   .report-body table,
+  .report-body ol,
+  .report-body ul,
   .report-body blockquote,
   pre {
     break-inside: avoid;
@@ -9914,6 +10073,11 @@ ${backgroundRule}
   li {
     orphans: 3;
     widows: 3;
+  }
+
+  li {
+    break-inside: avoid;
+    page-break-inside: avoid;
   }
 }
 `;

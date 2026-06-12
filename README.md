@@ -364,6 +364,7 @@ Reports can use:
 - Source and methodology notes via `report-source-note`.
 - Reusable numbered sources and inline citations via `report-source-list`, `report-source`, and `report-cite`.
 - Cover metadata and print/PDF page breaks via report frontmatter and `report-page-break`.
+- Optional report legal boilerplate from `brand.json` (`report.legal` or `report.legalNotice`) rendered into both HTML and PDF output.
 - Mixed action/insight grids via `report-card-grid`.
 - Ordered milestones via `report-timeline`.
 - Callouts via `report-callout`.
@@ -388,7 +389,9 @@ Reports can use:
 - D3 heatmaps via `report-chart type="heatmap"`.
 - D3 Sankey flows via `report-chart type="sankey"`.
 
-The report renderer injects vendored chart libraries into the generated HTML head and strips known CDN tags. The report skill wrapper can also generate a PDF with `--pdf` when local Chrome, Edge, or Chromium is available; set `MARP_REPORT_BROWSER_PATH` if auto-discovery cannot find the browser executable. Report Markdown should contain prose, Markdown tables/lists, and supported `report-*` component calls only. Agents should not paste raw HTML, inline SVG, CSS, minified library code, chart containers, or chart initializer scripts into report Markdown. If a display type is missing, the report authoring skill should tell the user to ask the skill maker to add it as a renderer-backed report component.
+The report renderer injects vendored chart libraries into the generated HTML head and strips known CDN tags. The report skill wrapper can also generate a PDF with `--pdf` when local Chrome, Edge, or Chromium is available; set `MARP_REPORT_BROWSER_PATH` if auto-discovery cannot find the browser executable. Report Markdown should contain prose, Markdown tables/lists, and supported `report-*` component calls only. Agents should not paste raw HTML, inline SVG, CSS, minified library code, chart containers, legal boilerplate, or chart initializer scripts into report Markdown. If a display type is missing, the report authoring skill should tell the user to ask the skill maker to add it as a renderer-backed report component.
+
+Legal boilerplate is part of the branded report chrome. Put approved wording in `resources/definitions/brand.json` or a branded fork's `tool/resources/definitions/brand.json` under `report.legal` or `report.legalNotice`; do not ask report authors to paste legal footer text into individual Markdown files.
 
 Report component attributes use one separator convention: semicolons separate repeated records or items, pipes separate fields inside one record, and commas separate simple one-dimensional chart series. For example, `report-key-values` uses `items="Scope: TD; Platform: v2"`, while table rows use `rows="A|1; B|2"`.
 

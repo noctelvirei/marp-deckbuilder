@@ -16,6 +16,23 @@ With `--pdf`, the wrapper also writes `output/report.pdf` using a local Chrome, 
 
 Use this shape for rich reports. `reportTheme: dark` applies the built-in dark navy report theme. `reportNav: true` generates a sticky sidebar from section headings.
 Branding is renderer-owned and comes from `tool/resources/definitions/brand.json` plus bundled resources; do not add logo `<img>` tags, brand colors, font declarations, or background chrome to report Markdown. Dark reports use `assets.logo.reportDark`, `companyDark`, or `dark`; light reports use `assets.logo.reportLight`, `companyLight`, or `light`.
+Optional legal boilerplate is also renderer-owned. Put approved wording in `brand.json` under `report.legal` or `report.legalNotice`; do not write legal footer text directly into report Markdown unless the user explicitly asks for one-off narrative content.
+
+Example brand config:
+
+```json
+{
+  "report": {
+    "legal": {
+      "title": "Legal notice",
+      "text": [
+        "Approved boilerplate from the business legal team.",
+        "Additional distribution or confidentiality wording."
+      ]
+    }
+  }
+}
+```
 
 ```md
 ---
