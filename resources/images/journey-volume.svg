@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 360" role="img" aria-label="Sample journey volume snapshot">
+  <rect width="960" height="360" rx="18" fill="#071228"/>
+  <rect x="48" y="44" width="864" height="256" rx="12" fill="#0D1D36" stroke="#1E3A5F"/>
+  <text x="72" y="82" fill="#59D6FD" font-family="Arial, sans-serif" font-size="18" font-weight="700" letter-spacing="2">JOURNEY VOLUME SNAPSHOT</text>
+  <g fill="#C8D8F0" font-family="Arial, sans-serif" font-size="13">
+    <text x="72" y="282">J0107</text>
+    <text x="250" y="282">J0106</text>
+    <text x="428" y="282">J0101</text>
+    <text x="606" y="282">J0116</text>
+    <text x="784" y="282">Other</text>
+  </g>
+  <g transform="translate(72 112)">
+    <rect x="0" y="18" width="104" height="130" rx="6" fill="#0F82F5"/>
+    <rect x="178" y="82" width="104" height="66" rx="6" fill="#59D6FD"/>
+    <rect x="356" y="96" width="104" height="52" rx="6" fill="#5143D5"/>
+    <rect x="534" y="122" width="104" height="26" rx="6" fill="#F9935B"/>
+    <rect x="712" y="132" width="104" height="16" rx="6" fill="#66CC8E"/>
+    <path d="M0 158H830" stroke="#1E3A5F" stroke-width="2"/>
+  </g>
+  <g fill="#FFFFFF" font-family="Arial, sans-serif" font-size="18" font-weight="700">
+    <text x="85" y="156">52k</text>
+    <text x="264" y="220">11k</text>
+    <text x="442" y="234">8.6k</text>
+    <text x="615" y="260">3.8k</text>
+    <text x="800" y="270">1.2k</text>
+  </g>
+</svg>

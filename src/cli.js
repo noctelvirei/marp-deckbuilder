@@ -107,25 +107,22 @@ async function reportCommand(argv) {
   const definitions = await loadDefinitions(definitionsDir)
   const source = await readFile(inputPath, 'utf8')
   const htmlPath = argv.html ? path.resolve(argv.html) : ''
-  const htmlResourcesDir = htmlPath ? path.join(path.dirname(htmlPath), 'resources') : ''
-  const htmlAssets = argv.htmlAssets || 'inline'
+  if (argv.htmlAssets && argv.htmlAssets !== 'inline') {
+    throw new Error(
+      'Report HTML is always self-contained. Use --html-assets only with build mode.',
+    )
+  }
   const rendered = renderReportHtml(source, {
     resourcesDir,
     definitions,
-    collectResources: htmlAssets === 'copy' && Boolean(htmlResourcesDir),
-    inlineAssets: htmlAssets === 'inline',
-    assetUrlPrefix: htmlResourcesDir ? 'resources' : '',
+    inlineAssets: true,
   })
 
   if (argv.html) {
     await mkdir(path.dirname(htmlPath), { recursive: true })
-    if (htmlAssets === 'copy') await copyHtmlResources(rendered.assets, htmlResourcesDir)
     await writeFile(htmlPath, rendered.document, 'utf8')
     console.log(`Report HTML written to ${htmlPath}`)
     console.log('PDF: open the HTML in a browser and use Print to PDF.')
-    if (htmlAssets === 'copy' && rendered.assets?.length) {
-      console.log(`Resources written to ${htmlResourcesDir}`)
-    }
     return
   }
 
@@ -208,7 +205,7 @@ Options:
   --resources <dir>     Resource folder. Defaults to resources.
   --definitions <dir>   Folder containing brand.json and theme.css.
   --mode <mode>         native or editable. Defaults to native.
-  --html-assets <mode>  inline, copy, or file. Defaults to inline.
+  --html-assets <mode>  build mode only: inline, copy, or file. Reports always inline assets.
   --help, -h            Show this help.
 `
 }

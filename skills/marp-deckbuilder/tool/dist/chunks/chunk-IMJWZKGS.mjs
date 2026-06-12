@@ -48081,6 +48081,7 @@ function decodeHtml(value) {
 
 export {
   decodeHTML,
+  load2 as load,
   parseDeckMarkdown,
   splitFrontmatter,
   buildMarpMarkdown,

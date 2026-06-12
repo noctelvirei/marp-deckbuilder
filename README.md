@@ -351,18 +351,44 @@ Use reports for:
 
 Reports can use:
 
+- Built-in dark report theme via `reportTheme: dark`.
+- Generated sticky navigation via `reportNav: true`.
 - Sticky sidebars.
-- Metric cards.
-- Rate bars.
-- Callouts.
-- Badges.
+- Compact `report-*` component tags that the renderer expands into HTML, CSS, and JavaScript.
+- Metric cards via `report-metric-grid`.
+- Metadata summaries via `report-key-values`.
+- Ranked rate bars via `report-rate-bars`.
+- Formatted data tables with compact mode, totals, alignment, and highlights via `report-data-table`.
+- Structured finding/evidence/impact/action blocks via `report-insight`.
+- Owned action cards via `report-recommendation`.
+- Source and methodology notes via `report-source-note`.
+- Reusable numbered sources and inline citations via `report-source-list`, `report-source`, and `report-cite`.
+- Cover metadata and print/PDF page breaks via report frontmatter and `report-page-break`.
+- Mixed action/insight grids via `report-card-grid`.
+- Ordered milestones via `report-timeline`.
+- Callouts via `report-callout`.
+- Accent cards via `report-accent-card`.
+- Badges via `report-badge`.
+- Captioned embedded images via `report-figure`.
+- Reusable datasets via `report-dataset` plus `data-ref`.
 - Tables.
-- Inline SVG.
-- Chart.js.
-- Observable Plot.
-- D3.
+- Chart.js charts via `report-chart type="bar"`, `line`, and `doughnut`.
+- Chart.js grouped bars via `report-chart type="grouped-bar"`.
+- Chart.js stacked bars via `report-chart type="stacked-bar"`.
+- Chart.js waterfall charts via `report-chart type="waterfall"`.
+- Chart.js bullet charts via `report-chart type="bullet"`.
+- Chart.js scatter charts via `report-chart type="scatter"`.
+- Chart.js bubble charts via `report-chart type="bubble"`.
+- Chart.js histograms via `report-chart type="histogram"`.
+- Chart.js boxplots via `report-chart type="boxplot"`.
+- Chart.js Pareto charts via `report-chart type="pareto"`.
+- Observable Plot charts via `report-chart type="area"`.
+- D3 charts via `report-chart type="treemap"`.
+- D3 funnels via `report-chart type="funnel"`.
+- D3 heatmaps via `report-chart type="heatmap"`.
+- D3 Sankey flows via `report-chart type="sankey"`.
 
-The report build wrapper injects vendored chart libraries into the generated HTML head and strips known CDN tags. Agents should not paste minified library code into Markdown.
+The report build wrapper injects vendored chart libraries into the generated HTML head and strips known CDN tags. Report Markdown should contain prose, Markdown tables/lists, and supported `report-*` component calls only. Agents should not paste raw HTML, inline SVG, CSS, minified library code, chart containers, or chart initializer scripts into report Markdown. If a display type is missing, the report authoring skill should tell the user to ask the skill maker to add it as a renderer-backed report component.
 
 Use `skills/marp-report/SKILL.md` and `skills/marp-report/REFERENCE.md` for report-specific syntax. Keep report guidance out of the presentation skill unless it is a shared concept.
 
@@ -400,10 +426,13 @@ When adding a deck component, update the whole pipeline:
 When adding report capability, update:
 
 - `src/report.js`
+- `src/report-components.js`
+- `src/report-components/parsers.js`
+- `src/report-components/renderers.js`
 - `skills/marp-report/SKILL.md`
 - `skills/marp-report/REFERENCE.md`
 - `skills/marp-report/examples/`
-- report smoke coverage if relevant
+- report tests and smoke coverage if relevant
 
 ## Common Agent Mistakes
 

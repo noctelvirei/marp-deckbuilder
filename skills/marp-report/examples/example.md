@@ -1,148 +1,303 @@
 ---
 title: Sample Usage Report
 subtitle: April 2026 journey volume
+reportDate: 2026-06-11
+preparedFor: Customer Operations
+preparedBy: Analytics
+classification: Internal
+version: v1.0
+reportTheme: dark
+reportNav: true
 ---
 
-<style>
-:root {
-  --bg: #060D18;
-  --bg-card: #0D1D36;
-  --bg-subtle: #071228;
-  --border: #1E3A5F;
-  --border-dim: rgba(30,58,95,.45);
-  --blue: #0F82F5;
-  --cyan: #59D6FD;
-  --purple: #5143D5;
-  --green: #66CC8E;
-  --orange: #F99358;
-  --white: #FFFFFF;
-  --text: #C8D8F0;
-  --text-dim: #8B9AB5;
-  --font-mono: "Consolas", "SFMono-Regular", monospace;
-}
-body { background: var(--bg) !important; color: var(--text) !important; }
-.deck-report { background: var(--bg-subtle) !important; box-shadow: none !important; max-width: 1200px !important; }
-.report-body { padding: 0 !important; }
-.report-body h2 { color: var(--cyan) !important; border-top: none !important; border-bottom: 1px solid var(--border) !important; font-size: 1.15rem !important; font-weight: 500 !important; text-transform: uppercase; letter-spacing: .06em; padding-bottom: 8px; margin-top: 40px !important; }
-.report-body p, .report-body li { color: var(--text) !important; font-size: .93rem; }
-.report-body table { font-size: .87rem; }
-.report-body th { color: var(--white) !important; background: var(--bg-card) !important; border-color: var(--border) !important; }
-.report-body td { color: var(--text) !important; border-color: var(--border-dim) !important; }
-.report-body tr:nth-child(even) td { background: rgba(13,31,56,.4) !important; }
-.r-layout { display: grid; grid-template-columns: 200px 1fr; gap: 40px; max-width: 1200px; margin: 0 auto; padding: 32px; }
-.r-sidebar { position: sticky; top: 24px; background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px; padding: 20px; align-self: start; }
-.r-sidebar-title { font-size: .65rem; font-weight: 600; text-transform: uppercase; letter-spacing: .1em; color: var(--text-dim); margin-bottom: 12px; }
-.r-sidebar a { display: block; color: var(--text-dim); text-decoration: none; font-size: .82rem; padding: 7px 10px; border-radius: 4px; }
-.r-sidebar a:hover { color: var(--cyan); background: rgba(89,214,253,.08); }
-.r-main { min-width: 0; padding: 32px 40px 60px; }
-.r-metric-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px,1fr)); gap: 14px; margin: 18px 0; }
-.r-metric { background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px; padding: 18px; text-align: center; }
-.r-metric-value { font-size: 1.9rem; font-weight: 300; color: var(--white); line-height: 1; margin-bottom: 5px; }
-.r-metric-label { font-size: .7rem; font-weight: 500; text-transform: uppercase; letter-spacing: .08em; color: var(--text-dim); }
-.r-chart-wrap { background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px; padding: 22px; margin: 18px 0; }
-.r-chart-title { font-size: .75rem; font-weight: 600; text-transform: uppercase; letter-spacing: .08em; color: var(--text-dim); margin-bottom: 16px; }
-.r-rate-bar { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
-.r-rate-label { font-size: .82rem; min-width: 90px; color: var(--text); }
-.r-rate-track { flex: 1; height: 22px; background: rgba(30,58,95,.6); border-radius: 4px; overflow: hidden; }
-.r-rate-fill { height: 100%; border-radius: 4px; display: flex; align-items: center; padding-left: 10px; font-size: .72rem; font-weight: 600; color: var(--white); white-space: nowrap; }
-.r-rate-pct { font-size: .76rem; font-family: var(--font-mono); color: var(--text-dim); min-width: 42px; text-align: right; }
-.r-callout { display: flex; gap: 14px; padding: 14px 18px; border-radius: 8px; margin: 16px 0; border: 1px solid; }
-.r-callout.warning { background: rgba(249,147,88,.1); border-color: rgba(249,147,88,.3); color: #fdba74; }
-.r-badge { display: inline-flex; align-items: center; font-size: .66rem; font-weight: 600; text-transform: uppercase; letter-spacing: .07em; padding: 2px 7px; border-radius: 999px; border: 1px solid; }
-.r-badge.green { background: rgba(102,204,142,.12); color: var(--green); border-color: rgba(102,204,142,.35); }
-.r-badge.orange { background: rgba(249,147,88,.12); color: var(--orange); border-color: rgba(249,147,88,.35); }
-</style>
+## Executive Summary
 
-<div class="r-layout">
-<aside class="r-sidebar">
-<div class="r-sidebar-title">Contents</div>
-<nav>
-<a href="#summary">Summary</a>
-<a href="#volume">Volume</a>
-<a href="#breakdown">Breakdown</a>
-<a href="#next-steps">Next steps</a>
-</nav>
-</aside>
-<main class="r-main">
+April volume is concentrated in one dominant journey. The top three journeys account for 92.4% of activity, while one unregistered journey requires follow-up <report-cite source="journey-export"></report-cite>.
 
-<h2 id="summary">Executive Summary</h2>
+<report-key-values
+  title="Report context"
+  columns="3"
+  items="Period: April 2026; Source: Journey export; Owner: Operations"
+></report-key-values>
 
-April volume is concentrated in one dominant journey. The top three journeys account for 92.4% of activity, while one unregistered journey requires follow-up.
+<report-metric-grid>
+  <report-metric value="77,951" label="Total cases"></report-metric>
+  <report-metric value="67.1%" label="J0107 share" accent="blue"></report-metric>
+  <report-metric value="92.4%" label="Top 3 journeys" accent="cyan"></report-metric>
+</report-metric-grid>
 
-<div class="r-metric-grid">
-  <div class="r-metric">
-    <div class="r-metric-value">77,951</div>
-    <div class="r-metric-label">Total cases</div>
-  </div>
-  <div class="r-metric">
-    <div class="r-metric-value" style="color:var(--blue)">67.1%</div>
-    <div class="r-metric-label">J0107 share</div>
-  </div>
-  <div class="r-metric">
-    <div class="r-metric-value" style="color:var(--cyan)">92.4%</div>
-    <div class="r-metric-label">Top 3 journeys</div>
-  </div>
-</div>
+<report-insight
+  variant="warning"
+  title="Journey concentration"
+  finding="One journey dominates April activity."
+  evidence="J0107 accounts for 67.1% of observed volume."
+  impact="Operational monitoring should be tuned around the dominant journey before month-end review."
+  action="Validate whether J0116 is a real journey while calibrating J0107 thresholds."
+></report-insight>
 
-<h2 id="volume">Volume Chart</h2>
+<report-figure
+  src="images/journey-volume.svg"
+  alt="Sample journey volume snapshot"
+  caption="Volume distribution snapshot for the top journeys."
+  source="Source: April journey export"
+  size="wide"
+></report-figure>
 
-<div class="r-chart-wrap">
-  <div class="r-chart-title">Cases by journey</div>
-  <div style="position:relative;height:320px">
-    <canvas id="journeyChart" role="img" aria-label="Bar chart of cases by journey"></canvas>
-  </div>
-</div>
+<report-dataset
+  id="journey-volume"
+  columns="Journey|Cases|Share|Status"
+  rows="J0107|52208|67.1|Active;J0106|11119|14.3|Active;J0101|8648|11.1|Active;J0116|3751|4.8|Review"
+></report-dataset>
 
-<h2 id="breakdown">Breakdown</h2>
+## Volume Chart
 
-| Journey | Cases | Share | Status |
-| --- | ---: | ---: | --- |
-| J0107 | 52,208 | 67.1% | <span class="r-badge green">Active</span> |
-| J0106 | 11,119 | 14.3% | <span class="r-badge green">Active</span> |
-| J0101 | 8,648 | 11.1% | <span class="r-badge green">Active</span> |
-| J0116 | 3,751 | 4.8% | <span class="r-badge orange">Review</span> |
+<report-chart
+  type="bar"
+  title="Cases by journey"
+  series="Cases"
+  data-ref="journey-volume"
+  label-column="Journey"
+  value-column="Cases"
+></report-chart>
 
-<div class="r-rate-bar"><span class="r-rate-label">J0107</span><div class="r-rate-track"><div class="r-rate-fill" style="width:67%;background:var(--blue)">52,208</div></div><span class="r-rate-pct">67.1%</span></div>
-<div class="r-rate-bar"><span class="r-rate-label">J0106</span><div class="r-rate-track"><div class="r-rate-fill" style="width:14%;background:var(--cyan)">11,119</div></div><span class="r-rate-pct">14.3%</span></div>
-<div class="r-rate-bar"><span class="r-rate-label">J0101</span><div class="r-rate-track"><div class="r-rate-fill" style="width:11%;background:var(--purple)">8,648</div></div><span class="r-rate-pct">11.1%</span></div>
-<div class="r-rate-bar"><span class="r-rate-label" style="color:var(--orange)">J0116</span><div class="r-rate-track"><div class="r-rate-fill" style="width:5%;background:var(--orange)">3,751</div></div><span class="r-rate-pct" style="color:var(--orange)">4.8%</span></div>
+## Weekly Trend
 
-<div class="r-callout warning">
-  <div><strong>Action:</strong> J0116 generated meaningful volume but is not in the registered journey profile.</div>
-</div>
+<report-chart
+  type="line"
+  title="Weekly case volume"
+  series="Cases"
+  labels="Week 1,Week 2,Week 3,Week 4"
+  values="17240,18990,20530,21191"
+></report-chart>
 
-<h2 id="next-steps">Next Steps</h2>
+## Outcome Comparison
+
+<report-chart
+  type="grouped-bar"
+  title="Weekly journey outcomes"
+  series="Opened|Completed|Exceptions"
+  value-suffix=" cases"
+  labels="Week 1,Week 2,Week 3,Week 4"
+  values="17240|15020|640;18990|16880|720;20530|18030|760;21191|19050|810"
+></report-chart>
+
+## Case Composition
+
+<report-chart
+  type="stacked-bar"
+  title="Weekly case composition"
+  series="J0107|J0106|J0101|J0116"
+  value-suffix=" cases"
+  labels="Week 1,Week 2,Week 3,Week 4"
+  values="11420|2450|2020|620;12680|2680|2240|720;13750|2940|2330|760;14358|3049|2058|810"
+></report-chart>
+
+## Monthly Movement
+
+<report-chart
+  type="waterfall"
+  title="Monthly volume movement"
+  series="Cases"
+  value-suffix=" cases"
+  labels="Opening,New cases,Exceptions,Recoveries"
+  values="52000,6400,-1200,3750"
+></report-chart>
+
+## SLA Against Target
+
+<report-chart
+  type="bullet"
+  title="SLA attainment against target"
+  series="Actual"
+  value-suffix="%"
+  labels="Digital,Assisted,Exceptions"
+  values="92,84,63"
+  targets="95,90,75"
+></report-chart>
+
+## Effort And Completion
+
+<report-chart
+  type="scatter"
+  title="Journey effort vs completion"
+  series="Journeys"
+  x-label="Touches"
+  y-label="Completion"
+  value-suffix="%"
+  points="2:93,4:88,7:72,9:61"
+></report-chart>
+
+## Impact Concentration
+
+<report-chart
+  type="bubble"
+  title="Journey effort, completion, and impact"
+  series="Journeys"
+  x-label="Touches"
+  y-label="Completion"
+  value-suffix="%"
+  points="2:93:10,4:88:14,7:72:18,9:61:9"
+></report-chart>
+
+## Cycle Time Distribution
+
+<report-chart
+  type="histogram"
+  title="Cycle time distribution"
+  series="Journeys"
+  x-label="Days"
+  y-label="Journeys"
+  bins="6"
+  values="5,6,7,7,8,10,11,12,12,13,15,17,18,21,23,24,26,28"
+></report-chart>
+
+## Cycle Time Spread
+
+<report-chart
+  type="boxplot"
+  title="Cycle time spread by journey type"
+  series="Days"
+  y-label="Days"
+  labels="Digital,Assisted,Exceptions"
+  values="5|6|7|7|8|10|12;8|10|11|12|14|15|18;14|16|18|21|23|24|28"
+></report-chart>
+
+## Exception Drivers
+
+<report-chart
+  type="pareto"
+  title="Exception drivers"
+  series="Cases"
+  value-suffix=" cases"
+  labels="Identity,Address,Income,Consent"
+  values="42,18,27,13"
+></report-chart>
+
+## Completion Funnel
+
+<report-chart
+  type="funnel"
+  title="Journey completion funnel"
+  series="Cases"
+  value-suffix=" cases"
+  labels="Opened,Started,Completed,Exception"
+  values="52208,44120,37980,3751"
+></report-chart>
+
+## Journey Flow
+
+<report-chart
+  type="sankey"
+  title="Journey flow"
+  series="Cases"
+  value-suffix=" cases"
+  links="Opened>Started:44120,Started>Completed:37980,Started>Exception:3751,Exception>Recovered:2160"
+></report-chart>
+
+## Journey Mix
+
+<report-chart
+  type="doughnut"
+  title="Journey mix"
+  series="Cases"
+  labels="J0107,J0106,J0101,J0116"
+  values="52208,11119,8648,3751"
+></report-chart>
+
+## Daily Volume
+
+<report-chart
+  type="area"
+  title="Daily volume"
+  series="Cases"
+  points="2026-04-01:2200,2026-04-02:2600,2026-04-03:2450,2026-04-04:3100,2026-04-05:3380,2026-04-06:3520"
+></report-chart>
+
+## Weekday Intensity
+
+<report-chart
+  type="heatmap"
+  title="Journey weekday intensity"
+  value-suffix=" cases"
+  x-labels="Mon|Tue|Wed|Thu|Fri"
+  y-labels="J0107|J0106|J0101|J0116"
+  values="11920|12380|11650|12710|13120;2480|2640|2710|2820|2469;2020|2140|1980|2230|2278;620|720|760|810|841"
+></report-chart>
+
+## Distribution
+
+<report-rate-bars
+  title="Share by journey"
+  labels="J0107,J0106,J0101,J0116"
+  values="52208,11119,8648,3751"
+  shares="67.1,14.3,11.1,4.8"
+></report-rate-bars>
+
+## Journey Treemap
+
+<report-chart
+  type="treemap"
+  title="Volume by journey"
+  series="Cases"
+  labels="J0107,J0106,J0101,J0116"
+  values="52208,11119,8648,3751"
+></report-chart>
+
+## Breakdown
+
+<report-data-table
+  title="Journey breakdown"
+  compact="true"
+  data-ref="journey-volume"
+  types="text|number|percent|status"
+  align="left|right|right|center"
+  totals="Total|75726|97.3|"
+  highlights="4:orange;1.3:green"
+  caption="Registered and unregistered journey volume."
+  source="Source: April journey export"
+></report-data-table>
+
+<report-source-note title="Methodology" source="Journey export" date="April 2026">
+Cases are counted from completed journey records and exclude test journeys and duplicate retries.
+</report-source-note>
+
+<report-source-list title="Sources">
+  <report-source id="journey-export" title="April journey export" publisher="Operations" date="April 2026">Completed journey records excluding test journeys and duplicate retries.</report-source>
+  <report-source id="profile-register" title="Registered journey profile" publisher="Journey governance" date="April 2026">Reference list used to identify unregistered journeys.</report-source>
+</report-source-list>
+
+<report-callout variant="warning" title="Action">
+J0116 generated meaningful volume but is not in the registered journey profile.
+</report-callout>
+
+<report-page-break label="Next steps"></report-page-break>
+
+## Next Steps
+
+<report-card-grid title="Action plan" columns="3">
+  <report-card title="Confirm" accent="orange">Determine whether J0116 is a new journey or a data quality issue.</report-card>
+  <report-card title="Track" accent="blue">Add month-over-month monitoring for the top three journeys.</report-card>
+  <report-card title="Calibrate" accent="green">Tune operational monitoring around the dominant journey.</report-card>
+</report-card-grid>
+
+<report-timeline title="Delivery path">
+  <report-event date="Week 1" title="Confirm journey mapping" status="watch">Resolve whether J0116 is a new journey or a data quality issue.</report-event>
+  <report-event date="Week 2" title="Add monthly tracking" status="active">Add month-over-month monitoring for the top three journeys.</report-event>
+  <report-event date="Week 3" title="Tune monitoring" status="pending">Calibrate operational monitoring around the dominant journey.</report-event>
+</report-timeline>
+
+<report-accent-card accent="green" title="Recommended focus">
+Prioritise monitoring for J0107 while validating whether J0116 is a real journey or a data quality issue.
+</report-accent-card>
+
+<report-recommendation
+  title="Validate the unregistered journey"
+  owner="Operations"
+  priority="High"
+  due="Week 1"
+  status="Watch"
+>Confirm whether J0116 is a new production journey or a data quality issue before the next monitoring cycle.</report-recommendation>
 
 1. Confirm whether J0116 is a new journey or a data quality issue.
 2. Add month-over-month tracking for the top three journeys.
 3. Calibrate operational monitoring to the dominant journey.
-
-<script>
-document.addEventListener('DOMContentLoaded', function() {
-  const gridColor = 'rgba(30,58,95,.5)';
-  const tickColor = '#8B9AB5';
-  new Chart(document.getElementById('journeyChart'), {
-    type: 'bar',
-    data: {
-      labels: ['J0107', 'J0106', 'J0101', 'J0116'],
-      datasets: [{
-        data: [52208, 11119, 8648, 3751],
-        backgroundColor: ['#0f82f5', '#59d6fd', '#5143d5', '#f99358'],
-        borderRadius: 4
-      }]
-    },
-    options: {
-      responsive: true,
-      maintainAspectRatio: false,
-      plugins: { legend: { display: false } },
-      scales: {
-        x: { ticks: { color: tickColor }, grid: { color: gridColor } },
-        y: { ticks: { color: tickColor, callback: v => v.toLocaleString() }, grid: { color: gridColor } }
-      }
-    }
-  });
-});
-</script>
-
-</main>
-</div>

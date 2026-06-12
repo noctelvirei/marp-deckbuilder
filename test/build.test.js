@@ -13,6 +13,17 @@ import { writePptx } from '../src/pptx.js'
 
 const tmpDir = path.resolve('.tmp', 'tests')
 
+function withoutBrandLogo(definitions) {
+  const { logo, ...assets } = definitions.brand.assets || {}
+  return {
+    ...definitions,
+    brand: {
+      ...definitions.brand,
+      assets,
+    },
+  }
+}
+
 test('renders Marp Deckbuilder HTML', async () => {
   const source = await readFile(new URL('../samples/demo.md', import.meta.url), 'utf8')
   const definitions = await loadDefinitions(new URL('../resources/definitions', import.meta.url))
@@ -298,7 +309,7 @@ test('inlines extensionless deck-card icons into HTML', async () => {
     '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/></svg>',
   )
 
-  const definitions = await loadDefinitions(new URL('../resources/definitions', import.meta.url))
+  const definitions = withoutBrandLogo(await loadDefinitions(new URL('../resources/definitions', import.meta.url)))
   const deck = parseDeckMarkdown(`# Cover
 
 ---
@@ -323,7 +334,7 @@ test('throws when a referenced deck-card icon is missing', async () => {
   await rm(tmpDir, { recursive: true, force: true })
   await mkdir(path.join(tmpDir, 'resources'), { recursive: true })
 
-  const definitions = await loadDefinitions(new URL('../resources/definitions', import.meta.url))
+  const definitions = withoutBrandLogo(await loadDefinitions(new URL('../resources/definitions', import.meta.url)))
   const deck = parseDeckMarkdown(`# Cover
 
 ---
@@ -353,7 +364,7 @@ test('writes deck-card icons into PPTX media', async () => {
     '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/></svg>',
   )
 
-  const definitions = await loadDefinitions(new URL('../resources/definitions', import.meta.url))
+  const definitions = withoutBrandLogo(await loadDefinitions(new URL('../resources/definitions', import.meta.url)))
   const deck = parseDeckMarkdown(`# Cover
 
 ---
@@ -510,7 +521,7 @@ test('resolves resource URLs inside brand theme CSS', async () => {
     new URL('../resources/definitions', import.meta.url),
   )
   const definitions = {
-    ...baseDefinitions,
+    ...withoutBrandLogo(baseDefinitions),
     themeCss: `${baseDefinitions.themeCss}
 section.cover { background-image: url(resource:cover-bg.png); }`,
   }
@@ -533,7 +544,7 @@ test('can rewrite brand resources as portable HTML assets', async () => {
     new URL('../resources/definitions', import.meta.url),
   )
   const definitions = {
-    ...baseDefinitions,
+    ...withoutBrandLogo(baseDefinitions),
     themeCss: `${baseDefinitions.themeCss}
 section.cover { background-image: url(resource:images/cover-bg.png); }`,
   }
@@ -567,7 +578,7 @@ test('can inline brand resources as self-contained HTML assets', async () => {
     new URL('../resources/definitions', import.meta.url),
   )
   const definitions = {
-    ...baseDefinitions,
+    ...withoutBrandLogo(baseDefinitions),
     themeCss: `${baseDefinitions.themeCss}
 section.cover { background-image: url(resource:logo.svg); }`,
   }
@@ -1259,7 +1270,7 @@ test('PPTX logo wall contains wide logos without stretching them', async () => {
     '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 100"><rect width="800" height="100"/></svg>',
   )
 
-  const definitions = await loadDefinitions(new URL('../resources/definitions', import.meta.url))
+  const definitions = withoutBrandLogo(await loadDefinitions(new URL('../resources/definitions', import.meta.url)))
   const deck = parseDeckMarkdown(`# Trusted logos
 
 <deck-logo-wall>
