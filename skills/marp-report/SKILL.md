@@ -89,6 +89,7 @@ Generate `report.md` in this order:
 - Prefer `reportTheme: dark` for dark navy reports instead of pasting CSS into Markdown.
 - Keep branding renderer-owned through `brand.json` and bundled resources; report Markdown should not declare corporate logos, brand colors, fonts, or background chrome.
 - Keep technical field names as plain text in dark reports unless code formatting is truly necessary.
+- Use only attributes documented in `REFERENCE.md`. Unsupported attributes on any `report-*` component fail validation; do not invent aliases.
 - Follow the report separator convention: semicolons separate repeated records or items, pipes separate fields inside one record, and commas separate simple one-dimensional chart series. Use `items="Scope: TD; Platform: v2"` for `report-key-values`, never `items="Scope: TD|Platform: v2"`.
 - Use self-closing syntax for attribute-only components when it keeps Markdown compact, for example `<report-chart ... />`, `<report-data-table ... />`, `<report-dataset ... />`, `<report-figure ... />`, and `<report-metric ... />` inside a metric grid.
 - Do not self-close components that need body text or nested children, such as `<report-metric-grid>...</report-metric-grid>`, `<report-source-list>...</report-source-list>`, `<report-insight>...</report-insight>`, or `<report-recommendation>...</report-recommendation>`.
@@ -115,7 +116,7 @@ Generate `report.md` in this order:
 - Use `<report-insight>` for structured finding, evidence, impact, and action narrative.
 - Use `<report-recommendation>` for owned actions with priority, due date, and status.
 - Use `<report-source-note>` for citations, methodology, assumptions, and data freshness notes.
-- Use `<report-source-list>` with `<report-source>` children for reusable numbered sources, and `<report-cite source="..."></report-cite>` for inline citations.
+- Use `<report-source-list>` with `<report-source>` children for reusable numbered sources, and `<report-cite source="..."></report-cite>` for inline citations. For source detail text, use `note`, `text`, `body`, or the tag body; never use `description`.
 - Use `<report-page-break>` for deliberate print/PDF page breaks.
 - Use `<report-card-grid>` for grouped insights, action plans, ownership summaries, and mixed card layouts.
 - Use `<report-timeline>` for ordered milestones, delivery paths, decision logs, and event sequences.
@@ -133,9 +134,10 @@ Report Markdown is a compact data-and-copy layer. The renderer owns all HTML str
 2. Do not write `<style>`, `<script>`, `<canvas>`, `<svg>`, or chart container elements in `report.md`.
 3. Do not include CDN tags, vendored library source, or chart initializers in `report.md`.
 4. Do not hand-place logos, background assets, brand colors, or fonts in `report.md`.
-5. Do not use `report-badge` as a visual highlighter for named products, fields, journeys, customers, or prose emphasis. Badges are status labels only.
-6. When a supported capability exists, remove any legacy raw-code guidance for it from this skill.
-7. When a requested capability does not exist, tell the user to ask the skill maker to add it as a renderer-backed component.
+5. Do not add undocumented attributes to `report-*` tags. The renderer rejects them; use the documented attribute or ask the skill maker to add support.
+6. Do not use `report-badge` as a visual highlighter for named products, fields, journeys, customers, or prose emphasis. Badges are status labels only.
+7. When a supported capability exists, remove any legacy raw-code guidance for it from this skill.
+8. When a requested capability does not exist, tell the user to ask the skill maker to add it as a renderer-backed component.
 
 ## Dark-Mode Rules
 

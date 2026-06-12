@@ -1524,6 +1524,26 @@ Completion rates use the April extract <report-cite source="journey-export"></re
   assert.match(rendered.document, /<li id="report-source-quality-review">/)
 })
 
+test('report source lists render metadata-only sources without escaped closing tags', async () => {
+  const definitions = await loadDefinitions(new URL('../resources/definitions', import.meta.url))
+  const rendered = renderReportHtml(
+    `# Sources report
+
+<report-source-list title="Sources">
+  <report-source id="vdwh-case" title="VizWarehouse V_DWH_Case" date="2026-06-12"></report-source>
+</report-source-list>
+`,
+    {
+      resourcesDir: path.resolve('resources'),
+      definitions,
+      inlineAssets: true,
+    },
+  )
+
+  assert.match(rendered.document, /<li id="report-source-vdwh-case">[\s\S]*<span>2026-06-12<\/span>[\s\S]*<\/li>/)
+  assert.doesNotMatch(rendered.document, /&lt;\/(?:div|li)&gt;/)
+})
+
 test('report source lists and cites fail clearly when malformed', async () => {
   const definitions = await loadDefinitions(new URL('../resources/definitions', import.meta.url))
   const options = {
@@ -1543,6 +1563,30 @@ test('report source lists and cites fail clearly when malformed', async () => {
   assert.throws(
     () => renderReportHtml('<report-source-list><report-source title="Missing id"></report-source></report-source-list>', options),
     /report-source requires an id attribute/,
+  )
+  assert.throws(
+    () =>
+      renderReportHtml(
+        '<report-source-list><report-source id="vdwh-case" title="VizWarehouse V_DWH_Case" description="Primary case fact view." date="2026-06-12"></report-source></report-source-list>',
+        options,
+      ),
+    /Unsupported <report-source> attribute "description". Use note="\.\.\." instead/,
+  )
+  assert.throws(
+    () =>
+      renderReportHtml(
+        '<report-source-list><report-source id="vdwh-case" title="VizWarehouse V_DWH_Case" summary="Primary case fact view."></report-source></report-source-list>',
+        options,
+      ),
+    /Unsupported <report-source> attribute "summary"/,
+  )
+  assert.throws(
+    () =>
+      renderReportHtml(
+        '<report-metric-grid><report-metric value="77,951" label="Total cases" context="YTD"></report-metric></report-metric-grid>',
+        options,
+      ),
+    /Unsupported <report-metric> attribute "context"/,
   )
   assert.throws(
     () =>

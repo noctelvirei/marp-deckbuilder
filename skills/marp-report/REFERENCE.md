@@ -56,6 +56,8 @@ Reports use normal Markdown plus compact `report-*` component tags. The renderer
 
 Self-closing syntax is supported for attribute-only components, such as `<report-chart ... />`, `<report-data-table ... />`, `<report-dataset ... />`, `<report-figure ... />`, `<report-page-break />`, and child items such as `<report-metric ... />`. Do not self-close components that need body text or nested children, such as `<report-metric-grid>...</report-metric-grid>`, `<report-source-list>...</report-source-list>`, `<report-insight>...</report-insight>`, or `<report-recommendation>...</report-recommendation>`.
 
+Only documented attributes are valid. The renderer rejects unsupported attributes on all `report-*` components instead of ignoring them. If the attribute you need is not listed here, ask the skill maker to add it.
+
 ## Separator Convention
 
 Use semicolons to separate repeated records or items, and pipes to separate fields inside one record. Examples: `items="Scope: TD; Platform: v2"`, `rows="A|1; B|2"`, and `values="10|20; 12|24"` for matrix-style chart values. Use commas only for simple one-dimensional chart series such as `labels="A,B"` or `values="10,20"`.
@@ -606,9 +608,9 @@ Supported `report-source` attributes:
 | `publisher` | no | Source owner or publisher. Alias: `source`. |
 | `date` | no | Date, period, or freshness indicator. Alias: `period`. |
 | `url` | no | Source URL. Alias: `href`. |
-| `note` | no | Source detail when you prefer attribute-only authoring. Aliases: `text`, `body`. Otherwise use the tag body. |
+| `note` | no | Source detail when you prefer attribute-only authoring. Aliases: `text`, `body`. Otherwise use the tag body. Do not use `description`; it is invalid and the renderer rejects it. |
 
-Each `report-source` must be directly inside `report-source-list`, and ids must be unique.
+Each `report-source` must be directly inside `report-source-list`, ids must be unique, and unsupported attributes fail validation. If you need descriptive source text, use `note="..."`, `text="..."`, `body="..."`, or the tag body.
 
 Supported `report-cite` attributes:
 

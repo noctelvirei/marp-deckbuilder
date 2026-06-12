@@ -71,6 +71,96 @@ const knownReportTags = new Set([
   'report-event',
 ])
 
+const reportComponentAttributeAllowList = new Map([
+  ['report-accent-card', ['accent', 'color', 'tone', 'title', 'body', 'text']],
+  ['report-badge', ['label', 'variant', 'color', 'tone', 'status']],
+  ['report-callout', ['variant', 'type', 'tone', 'title', 'text']],
+  ['report-card-grid', ['title', 'columns', 'cols']],
+  ['report-card', ['title', 'body', 'text', 'accent', 'color', 'tone']],
+  [
+    'report-chart',
+    [
+      'type',
+      'labels',
+      'values',
+      'targets',
+      'target-values',
+      'target',
+      'title',
+      'series',
+      'datasets',
+      'series-labels',
+      'colors',
+      'height',
+      'id',
+      'chart-id',
+      'value-prefix',
+      'prefix',
+      'value-suffix',
+      'suffix',
+      'x-label',
+      'x-axis-label',
+      'x-title',
+      'y-label',
+      'y-axis-label',
+      'y-title',
+      'data-ref',
+      'dataset',
+      'label-column',
+      'label-field',
+      'label',
+      'value-column',
+      'value-field',
+      'value',
+      'series-columns',
+      'value-columns',
+      'series-fields',
+      'value-fields',
+      'target-column',
+      'target-field',
+      'x-column',
+      'x-field',
+      'y-column',
+      'y-field',
+      'r-column',
+      'radius-column',
+      'bins',
+      'bucket-count',
+      'buckets',
+      'points',
+      'data',
+      'links',
+      'flows',
+      'edges',
+      'x-labels',
+      'columns',
+      'x',
+      'y-labels',
+      'rows',
+      'y',
+      'matrix',
+      'series-values',
+      'aria-label',
+    ],
+  ],
+  ['report-cite', ['source', 'ref', 'id', 'label']],
+  ['report-data-table', ['title', 'columns', 'headers', 'types', 'formats', 'rows', 'data', 'compact', 'dense', 'align', 'alignment', 'totals', 'total', 'footer', 'highlights', 'highlight', 'data-ref', 'dataset', 'caption', 'source']],
+  ['report-dataset', ['id', 'name', 'columns', 'headers', 'rows', 'data']],
+  ['report-figure', ['src', 'image', 'alt', 'caption', 'source', 'size', 'width']],
+  ['report-insight', ['variant', 'type', 'tone', 'title', 'finding', 'text', 'body', 'evidence', 'impact', 'action', 'next']],
+  ['report-key-values', ['title', 'items', 'data', 'columns', 'cols']],
+  ['report-metric-grid', []],
+  ['report-metric', ['value', 'label', 'sub', 'delta', 'change', 'direction', 'trend', 'accent', 'color']],
+  ['report-page-break', ['label', 'title']],
+  ['report-rate-bars', ['title', 'labels', 'values', 'shares', 'percentages', 'percents', 'colors', 'aria-label']],
+  ['report-recommendation', ['title', 'body', 'text', 'owner', 'priority', 'due', 'date', 'status', 'state']],
+  ['report-source-list', ['title', 'label']],
+  ['report-source-note', ['title', 'label', 'text', 'body', 'source', 'date', 'period']],
+  ['report-source', ['id', 'source-id', 'title', 'label', 'publisher', 'source', 'date', 'period', 'url', 'href', 'note', 'text', 'body']],
+  ['report-timeline', ['title']],
+  ['report-event', ['date', 'time', 'period', 'title', 'body', 'text', 'status', 'variant', 'tone']],
+])
+
 export function compileReportComponents(source, options = {}) {
   const context = reportComponentContext(options)
   validateReportComponentSyntax(source, context)
@@ -81,6 +171,7 @@ export function compileReportComponents(source, options = {}) {
     lowerCaseAttributeNames: true,
   })
   validateReportComponentTree(root, context)
+  validateReportComponentAttributes(root, context)
 
   const scripts = []
   const usedIds = new Set()
@@ -388,6 +479,26 @@ function validateReportComponentTree(root, context) {
       fail('<report-source> must be placed directly inside <report-source-list>.', context)
     }
   })
+}
+
+function validateReportComponentAttributes(root, context) {
+  for (const [tag, supportedAttributes] of reportComponentAttributeAllowList.entries()) {
+    const supported = new Set(supportedAttributes)
+    root(tag).each((_, element) => {
+      const attributes = root(element).attr() || {}
+      const unsupported = Object.keys(attributes).find((attribute) => !supported.has(attribute))
+      if (!unsupported) return
+      fail(unsupportedReportAttributeMessage(tag, unsupported, supportedAttributes), context)
+    })
+  }
+}
+
+function unsupportedReportAttributeMessage(tag, attribute, supportedAttributes = []) {
+  const supported = supportedAttributes.length ? supportedAttributes.join(', ') : 'none'
+  if (tag === 'report-source' && attribute === 'description') {
+    return `Unsupported <${tag}> attribute "description". Use note="..." instead, or put the source detail in the <${tag}> body. Supported attributes: ${supported}.`
+  }
+  return `Unsupported <${tag}> attribute "${attribute}". Fix the report Markdown or ask the skill maker to add support. Supported attributes: ${supported}.`
 }
 
 function appendReportComponentScripts(source, scripts = []) {

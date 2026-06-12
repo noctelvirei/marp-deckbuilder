@@ -292,13 +292,17 @@ function renderReportSourceItem(source) {
   ]
     .filter(Boolean)
     .join('\n        ')
+  const blocks = [
+    source.note ? `<div class="report-source-list-note">${escapeHtml(source.note)}</div>` : '',
+    meta ? `<div class="report-source-list-meta">\n        ${meta}\n      </div>` : '',
+  ]
+    .filter(Boolean)
+    .join('\n      ')
   return `    <li id="${escapeAttr(source.domId)}">
       <div class="report-source-list-heading">
         <span class="report-source-list-number">[${escapeHtml(source.number)}]</span>
         <span class="report-source-list-name">${escapeHtml(source.title)}</span>
-      </div>
-      ${source.note ? `<div class="report-source-list-note">${escapeHtml(source.note)}</div>` : ''}
-      ${meta ? `<div class="report-source-list-meta">\n        ${meta}\n      </div>` : ''}
+      </div>${blocks ? `\n      ${blocks}` : ''}
     </li>`
 }
 
