@@ -382,6 +382,13 @@ function chartBoilerplate(chart, targetName = 'canvas') {
   const formatTooltipValue = (value) => {
     const formatted = formatAxisValue(value);
     return valuePrefix + formatted + valueSuffix;
+  };
+  const reportStaticChartOptions = {
+    animation: false,
+    transitions: {
+      active: { animation: { duration: 0 } },
+      resize: { animation: { duration: 0 } }
+    }
   };`
 }
 
@@ -461,6 +468,7 @@ ${datasetOptions}
     options: {
       responsive: true,
       maintainAspectRatio: false,
+      ...reportStaticChartOptions,
       interaction: {
         mode: "index",
         intersect: false
@@ -544,6 +552,7 @@ ${chartBoilerplate(chart, 'canvas')}
     options: {
       responsive: true,
       maintainAspectRatio: false,
+      ...reportStaticChartOptions,
       interaction: {
         mode: "index",
         intersect: false
@@ -672,6 +681,7 @@ ${chartBoilerplate(chart, 'canvas')}
     options: {
       responsive: true,
       maintainAspectRatio: false,
+      ...reportStaticChartOptions,
       interaction: {
         mode: "index",
         intersect: false
@@ -774,6 +784,7 @@ ${chartBoilerplate(chart, 'canvas')}
     options: {
       responsive: true,
       maintainAspectRatio: false,
+      ...reportStaticChartOptions,
       interaction: {
         mode: "index",
         intersect: false
@@ -857,6 +868,7 @@ ${chartBoilerplate(chart, 'canvas')}
     options: {
       responsive: true,
       maintainAspectRatio: false,
+      ...reportStaticChartOptions,
       interaction: {
         mode: "nearest",
         intersect: true
@@ -941,6 +953,7 @@ ${chartBoilerplate(chart, 'canvas')}
     options: {
       responsive: true,
       maintainAspectRatio: false,
+      ...reportStaticChartOptions,
       interaction: {
         mode: "nearest",
         intersect: true
@@ -1049,6 +1062,7 @@ ${chartBoilerplate(chart, 'canvas')}
       indexAxis: "y",
       responsive: true,
       maintainAspectRatio: false,
+      ...reportStaticChartOptions,
       interaction: {
         mode: "nearest",
         intersect: true
@@ -1235,6 +1249,7 @@ ${chartBoilerplate(chart, 'canvas')}
     options: {
       responsive: true,
       maintainAspectRatio: false,
+      ...reportStaticChartOptions,
       interaction: {
         mode: "index",
         intersect: false
@@ -1300,6 +1315,7 @@ ${chartBoilerplate(chart, 'canvas')}
     options: {
       responsive: true,
       maintainAspectRatio: false,
+      ...reportStaticChartOptions,
       interaction: {
         mode: "index",
         intersect: false
@@ -1418,6 +1434,23 @@ ${chartBoilerplate(chart, 'target')}
     .attr("fill-opacity", 0.9)
     .attr("stroke", tooltipBg)
     .attr("stroke-width", 1.5);
+  const printLabels = cell.append("text")
+    .attr("class", "report-funnel-print-label")
+    .attr("x", width / 2)
+    .attr("y", (segment) => (segment.y0 + segment.y1) / 2 - 7)
+    .attr("text-anchor", "middle")
+    .attr("dominant-baseline", "middle");
+  printLabels.append("tspan")
+    .attr("class", "report-funnel-print-label-name")
+    .text((segment) => segment.label);
+  printLabels.append("tspan")
+    .attr("class", "report-funnel-print-label-value")
+    .attr("x", width / 2)
+    .attr("dy", "1.25em")
+    .text((segment) => {
+      const conversion = segment.conversion === null ? "Start" : (Math.round(segment.conversion * 10) / 10).toString().replace(/\\.0$/, "") + "% from prior";
+      return formatTooltipValue(segment.value) + " · " + conversion;
+    });
   cell.on("mousemove", (event, segment) => {
     const rect = target.getBoundingClientRect();
     const conversion = segment.conversion === null ? "Start" : (Math.round(segment.conversion * 10) / 10).toString().replace(/\\.0$/, "") + "% from prior";

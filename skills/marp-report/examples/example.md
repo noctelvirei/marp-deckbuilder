@@ -281,8 +281,6 @@ Cases are counted from completed journey records and exclude test journeys and d
 J0116 generated meaningful volume but is not in the registered journey profile.
 </report-callout>
 
-<report-page-break label="Next steps"></report-page-break>
-
 ## Next Steps
 
 <report-card-grid title="Action plan" columns="3">
@@ -308,7 +306,3 @@ Prioritise monitoring for J0107 while validating whether J0116 is a real journey
   due="Week 1"
   status="Watch"
 >Confirm whether J0116 is a new production journey or a data quality issue before the next monitoring cycle.</report-recommendation>
-
-1. Confirm whether J0116 is a new journey or a data quality issue.
-2. Add month-over-month tracking for the top three journeys.
-3. Calibrate operational monitoring to the dominant journey.

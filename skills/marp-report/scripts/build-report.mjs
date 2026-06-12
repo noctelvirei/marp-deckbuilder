@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 import { existsSync } from 'node:fs'
-import { mkdir, readFile, writeFile } from 'node:fs/promises'
+import { mkdir } from 'node:fs/promises'
 import { dirname, join, resolve, basename, extname } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { spawn } from 'node:child_process'
@@ -10,11 +10,12 @@ const toolRoot = join(skillRoot, 'tool')
 const bundledCli = join(toolRoot, 'dist', 'deckbuilder.mjs')
 
 const args = process.argv.slice(2)
-const input = args.find((arg) => !arg.startsWith('-'))
-const outDir = readOption(args, '--out-dir') || 'output'
+const parsed = parseArgs(args)
+const input = parsed.input
+const outDir = parsed.outDir || 'output'
 
 if (!input) {
-  console.error('Usage: node scripts/build-report.mjs report.md --out-dir output')
+  console.error('Usage: node scripts/build-report.mjs report.md --out-dir output [--pdf]')
   process.exit(1)
 }
 
@@ -29,8 +30,8 @@ if (!existsSync(bundledCli)) {
 
 const base = basename(inputPath, extname(inputPath))
 const htmlPath = join(outputDir, `${base}.html`)
-
-await run(process.execPath, [
+const pdfPath = parsed.pdfPath || join(outputDir, `${base}.pdf`)
+const commandArgs = [
   bundledCli,
   'report',
   inputPath,
@@ -38,58 +39,16 @@ await run(process.execPath, [
   htmlPath,
   '--resources',
   join(toolRoot, 'resources'),
-])
+]
 
-await injectVendorScripts(htmlPath)
+if (parsed.pdf) commandArgs.push('--pdf', pdfPath)
+
+await run(process.execPath, commandArgs)
 
 console.log(`Markdown: ${inputPath}`)
 console.log(`HTML:     ${htmlPath}`)
-console.log('PDF:      Open the HTML in a browser and use Print to PDF.')
-
-async function injectVendorScripts(htmlFile) {
-  if (!existsSync(htmlFile)) return
-  let html = await readFile(htmlFile, 'utf8')
-  html = stripKnownCdnTags(html)
-
-  if (html.includes('data-marp-report-vendor')) {
-    await writeFile(htmlFile, html, 'utf8')
-    return
-  }
-
-  const vendorDir = join(toolRoot, 'resources', 'vendor')
-  const vendors = [
-    { file: 'd3.min.js', label: 'd3' },
-    { file: 'plot.min.js', label: 'observable-plot' },
-    { file: 'chart.min.js', label: 'chart.js' },
-  ]
-
-  const scripts = []
-  for (const { file, label } of vendors) {
-    const vendorPath = join(vendorDir, file)
-    if (!existsSync(vendorPath)) continue
-    const source = await readFile(vendorPath, 'utf8')
-    scripts.push(`<script data-marp-report-vendor="${label}">\n${source}\n</script>`)
-    console.log(`${label}: injected into <head> (offline-safe)`)
-  }
-
-  if (scripts.length === 0) return
-  const injection = `${scripts.join('\n')}\n`
-  html = injectBeforeClosingHead(html, injection)
-  await writeFile(htmlFile, html, 'utf8')
-}
-
-function injectBeforeClosingHead(html, injection) {
-  const headCloseIndex = html.toLowerCase().lastIndexOf('</head>')
-  if (headCloseIndex < 0) return `${injection}${html}`
-  return `${html.slice(0, headCloseIndex)}${injection}${html.slice(headCloseIndex)}`
-}
-
-function stripKnownCdnTags(html) {
-  return html
-    .replace(/<script\s+src=["']https?:\/\/cdn\.jsdelivr\.net\/npm\/chart\.js@[^"']*["']\s*><\/script>\s*/gi, '')
-    .replace(/<script\s+src=["']https?:\/\/cdn\.jsdelivr\.net\/npm\/@observablehq\/plot@[^"']*["']\s*><\/script>\s*/gi, '')
-    .replace(/<script\s+src=["']https?:\/\/cdn\.jsdelivr\.net\/npm\/d3@[^"']*["']\s*><\/script>\s*/gi, '')
-}
+if (parsed.pdf) console.log(`PDF:      ${pdfPath}`)
+else console.log('PDF:      Re-run with --pdf to generate a PDF, or use browser Print to PDF as fallback.')
 
 async function run(command, commandArgs, options = {}) {
   await new Promise((resolvePromise, reject) => {
@@ -112,7 +71,33 @@ async function run(command, commandArgs, options = {}) {
   })
 }
 
-function readOption(argv, name) {
-  const index = argv.indexOf(name)
-  return index >= 0 ? argv[index + 1] : ''
+function parseArgs(argv) {
+  const parsedArgs = {
+    input: '',
+    outDir: '',
+    pdf: false,
+    pdfPath: '',
+  }
+
+  for (let index = 0; index < argv.length; index += 1) {
+    const arg = argv[index]
+    if (arg === '--out-dir') {
+      parsedArgs.outDir = argv[index + 1] || ''
+      index += 1
+    } else if (arg === '--pdf') {
+      parsedArgs.pdf = true
+      const next = argv[index + 1] || ''
+      if (next && !next.startsWith('-') && extname(next).toLowerCase() === '.pdf') {
+        parsedArgs.pdfPath = resolve(next)
+        index += 1
+      }
+    } else if (!arg.startsWith('-') && !parsedArgs.input) {
+      parsedArgs.input = arg
+    } else if (arg.startsWith('-')) {
+      console.error(`Unsupported option: ${arg}`)
+      process.exit(1)
+    }
+  }
+
+  return parsedArgs
 }

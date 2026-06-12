@@ -7,6 +7,7 @@ import { promisify } from 'node:util'
 
 import { loadDefinitions } from '../src/brand.js'
 import { renderReportHtml } from '../src/report.js'
+import { injectReportVendorScripts } from '../src/report-vendors.js'
 
 const tmpDir = path.resolve('.tmp', 'report-tests')
 const execFileAsync = promisify(execFile)
@@ -64,6 +65,107 @@ The report can hold more detail than a slide deck.
   assert.doesNotMatch(rendered.document, /resource:logo\.svg/)
 })
 
+test('report print CSS preserves dark backgrounds and print layout', async () => {
+  const definitions = await loadDefinitions(new URL('../resources/definitions', import.meta.url))
+  const rendered = renderReportHtml(
+    `---
+title: Print Report
+reportTheme: dark
+reportNav: true
+---
+
+## Summary
+
+<report-chart title="Cases" labels="A,B" values="10,20"></report-chart>
+
+<report-page-break label="Next"></report-page-break>
+
+<report-callout variant="warning" title="Finding">Backgrounds must survive print.</report-callout>
+`,
+    {
+      resourcesDir: path.resolve('resources'),
+      definitions,
+      inlineAssets: true,
+    },
+  )
+
+  assert.match(rendered.css, /@media print \{[\s\S]*print-color-adjust: exact;/)
+  assert.match(rendered.css, /@page \{[\s\S]*size: A4;[\s\S]*margin: 12mm 14mm 16mm;[\s\S]*background: #071228;/)
+  assert.match(rendered.css, /@bottom-right \{[\s\S]*content: "Page " counter\(page\) " of " counter\(pages\);/)
+  assert.match(rendered.css, /-webkit-print-color-adjust: exact;/)
+  assert.match(rendered.document, /<html lang="en" class="report-theme-dark-page">/)
+  assert.match(rendered.css, /html\.report-theme-dark-page,[\s\S]*body\.report-theme-dark-page \{[\s\S]*background: var\(--bg, #060D18\) !important;/)
+  assert.match(rendered.css, /body\.report-theme-dark-page::before \{[\s\S]*position: fixed;[\s\S]*background: var\(--bg-subtle, #071228\) !important;/)
+  assert.match(rendered.css, /\.report-cover \{[\s\S]*padding: 10mm 0 12mm;/)
+  assert.match(rendered.css, /\.report-body \{[\s\S]*padding: 10mm 0 0;/)
+  assert.match(rendered.css, /\.report-layout \{[\s\S]*display: block;[\s\S]*padding: 0;/)
+  assert.match(rendered.css, /\.report-sidebar \{[\s\S]*display: none !important;/)
+  assert.match(rendered.css, /\.report-chart,[\s\S]*\.report-callout,[\s\S]*break-inside: avoid;/)
+  assert.match(rendered.css, /\.report-body ol,[\s\S]*\.report-body ul,[\s\S]*break-inside: avoid;/)
+  assert.match(rendered.css, /\.report-page-break \{[\s\S]*break-before: page;/)
+  assert.match(rendered.css, /\.report-page-break \{[\s\S]*break-after: auto;/)
+})
+
+test('renders report legal notice from brand config', async () => {
+  const definitions = await loadDefinitions(new URL('../resources/definitions', import.meta.url))
+  const rendered = renderReportHtml(
+    `---
+title: Legal report
+reportTheme: dark
+---
+
+# Summary
+`,
+    {
+      resourcesDir: path.resolve('resources'),
+      definitions: {
+        brand: {
+          ...definitions.brand,
+          report: {
+            legal: {
+              title: 'Legal notice',
+              text: ['Confidential business report.', 'Do not distribute without approval.'],
+            },
+          },
+        },
+      },
+      inlineAssets: true,
+    },
+  )
+
+  assert.match(rendered.document, /<footer class="report-legal" aria-label="Legal notice">/)
+  assert.match(rendered.document, /<div class="report-legal-title">Legal notice<\/div>/)
+  assert.match(rendered.document, /<p>Confidential business report\.<\/p>/)
+  assert.match(rendered.document, /<p>Do not distribute without approval\.<\/p>/)
+  assert.match(rendered.css, /\.report-legal \{[\s\S]*border-top:/)
+  assert.match(rendered.css, /@media print \{[\s\S]*\.report-legal \{[\s\S]*break-inside: avoid;/)
+})
+
+test('report vendor injection strips CDN tags and is idempotent', async () => {
+  const resourcesDir = path.join(tmpDir, 'vendor-injection')
+  const vendorDir = path.join(resourcesDir, 'vendor')
+  await mkdir(vendorDir, { recursive: true })
+  await writeFile(path.join(vendorDir, 'd3.min.js'), 'window.d3 = {};')
+  await writeFile(path.join(vendorDir, 'plot.min.js'), 'window.Plot = {};')
+  await writeFile(path.join(vendorDir, 'chart.min.js'), 'window.Chart = function Chart() {};')
+
+  const html = `<!doctype html><html><head>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
+<script src="https://cdn.jsdelivr.net/npm/@observablehq/plot@0.6"></script>
+<script src="https://cdn.jsdelivr.net/npm/d3@7"></script>
+</head><body><h1>Report</h1></body></html>`
+  const first = await injectReportVendorScripts(html, resourcesDir)
+  const second = await injectReportVendorScripts(first.html, resourcesDir)
+
+  assert.equal(first.injected.length, 3)
+  assert.equal(second.injected.length, 0)
+  assert.doesNotMatch(first.html, /cdn\.jsdelivr\.net/)
+  assert.equal([...first.html.matchAll(/data-marp-report-vendor=/g)].length, 3)
+  assert.equal([...second.html.matchAll(/data-marp-report-vendor=/g)].length, 3)
+  assert.ok(first.html.indexOf('data-marp-report-vendor="d3"') < first.html.indexOf('data-marp-report-vendor="observable-plot"'))
+  assert.ok(first.html.indexOf('data-marp-report-vendor="observable-plot"') < first.html.indexOf('data-marp-report-vendor="chart.js"'))
+})
+
 test('report command rejects copied sidecar assets', async () => {
   const reportDir = path.join(tmpDir, 'cli-inline')
   await mkdir(reportDir, { recursive: true })
@@ -83,6 +185,36 @@ test('report command rejects copied sidecar assets', async () => {
       'copy',
     ]),
     /Report HTML is always self-contained/,
+  )
+})
+
+test('report command accepts pdf option and fails clearly when browser is missing', async () => {
+  const reportDir = path.join(tmpDir, 'cli-pdf-missing-browser')
+  await mkdir(reportDir, { recursive: true })
+  const inputPath = path.join(reportDir, 'report.md')
+  const pdfPath = path.join(reportDir, 'report.pdf')
+  await writeFile(inputPath, '# PDF report\n\nBody copy.')
+
+  await assert.rejects(
+    execFileAsync(
+      process.execPath,
+      [
+        'src/cli.js',
+        'report',
+        inputPath,
+        '--pdf',
+        pdfPath,
+        '--resources',
+        'resources',
+      ],
+      {
+        env: {
+          ...process.env,
+          MARP_REPORT_BROWSER_PATH: path.join(reportDir, 'missing-browser.exe'),
+        },
+      },
+    ),
+    /MARP_REPORT_BROWSER_PATH points to a browser that could not be found/,
   )
 })
 
@@ -142,7 +274,8 @@ Second page.
 
   assert.doesNotMatch(rendered.document, /<report-page-break/i)
   assert.match(rendered.document, /<div class="report-page-break" role="separator" aria-label="Appendix"><span>Appendix<\/span><\/div>/)
-  assert.match(rendered.document, /page-break-after:\s*always/)
+  assert.match(rendered.document, /page-break-before:\s*always/)
+  assert.match(rendered.document, /page-break-after:\s*auto/)
 })
 
 test('expands report bar chart components into chart HTML and initializer', async () => {
@@ -259,6 +392,7 @@ test('expands report doughnut chart components into Chart.js doughnut initialize
   assert.doesNotMatch(rendered.document, /<report-chart/i)
   assert.match(rendered.document, /class="report-chart report-chart-doughnut"/)
   assert.match(rendered.document, /type:\s*"doughnut"/)
+  assert.match(rendered.document, /animation:\s*false/)
   assert.match(rendered.document, /hoverOffset:\s*8/)
   assert.match(rendered.document, /legend:\s*\{\s*display:\s*true,\s*position:\s*"right"/)
   assert.match(rendered.document, /const parsedValue = context\.parsed && typeof context\.parsed === "object"/)
@@ -353,7 +487,10 @@ test('expands report funnel chart components into D3 funnel initializers', async
   assert.match(rendered.document, /<div id="report-chart-1" class="report-chart-plot" role="img"/)
   assert.match(rendered.document, /const segmentHeight = Math\.max/)
   assert.match(rendered.document, /class", "report-funnel-segment"/)
-  assert.doesNotMatch(rendered.document, /\.append\("text"\)/)
+  assert.match(rendered.document, /\.append\("text"\)/)
+  assert.match(rendered.document, /class", "report-funnel-print-label"/)
+  assert.match(rendered.css, /\.report-funnel-print-label \{[\s\S]*display: none;/)
+  assert.match(rendered.css, /@media print \{[\s\S]*\.report-funnel-print-label \{[\s\S]*display: block;/)
   assert.match(rendered.document, /cell\.on\("mousemove"/)
   assert.match(rendered.document, /tooltip\.className = "report-chart-floating-tooltip"/)
   assert.match(rendered.document, /const valueSuffix = " cases"/)

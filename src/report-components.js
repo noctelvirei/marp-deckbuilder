@@ -506,8 +506,16 @@ function appendReportComponentScripts(source, scripts = []) {
   return `${source}
 
 <script data-report-component-script="chart">
-document.addEventListener("DOMContentLoaded", function() {
+window.__marpReportComponentsReady = new Promise(function(resolve) {
+  function finish() {
+    requestAnimationFrame(function() {
+      requestAnimationFrame(resolve);
+    });
+  }
+  document.addEventListener("DOMContentLoaded", function() {
 ${scripts.map((script) => indent(script, 2)).join('\n\n')}
+    finish();
+  });
 });
 </script>`
 }

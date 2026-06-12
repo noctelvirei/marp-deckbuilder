@@ -87,15 +87,11 @@ async function reportCommand(argv) {
   if (argv.pptx) {
     throw new Error('Report mode writes long-form HTML only. Use build mode for slide PPTX output.')
   }
-  if (argv.pdf) {
-    throw new Error(
-      'PDF export is intentionally not bundled because it requires a browser engine. Build the report HTML, open it in a browser, then use Print to PDF.',
-    )
-  }
 
-  const [{ loadDefinitions }, { renderReportHtml }] = await Promise.all([
+  const [{ loadDefinitions }, { renderReportHtml }, { injectReportVendorScripts }] = await Promise.all([
     import('./brand.js'),
     import('./report.js'),
+    import('./report-vendors.js'),
   ])
   const inputPath = path.resolve(argv.input)
   const projectRoot = process.cwd()
@@ -117,16 +113,34 @@ async function reportCommand(argv) {
     definitions,
     inlineAssets: true,
   })
+  const vendorResult = await injectReportVendorScripts(rendered.document, resourcesDir, {
+    log: argv.html || argv.pdf ? (message) => console.log(message) : null,
+  })
+  const document = vendorResult.html
+
+  if (argv.pdf && document.includes('data-report-component-script="chart"') && vendorResult.missing.length) {
+    const missing = vendorResult.missing.map((vendor) => vendor.file).join(', ')
+    throw new Error(
+      `Report PDF export needs vendored chart libraries in ${path.join(resourcesDir, 'vendor')}. Missing: ${missing}.`,
+    )
+  }
 
   if (argv.html) {
     await mkdir(path.dirname(htmlPath), { recursive: true })
-    await writeFile(htmlPath, rendered.document, 'utf8')
+    await writeFile(htmlPath, document, 'utf8')
     console.log(`Report HTML written to ${htmlPath}`)
-    console.log('PDF: open the HTML in a browser and use Print to PDF.')
-    return
   }
 
-  console.log(rendered.document)
+  if (argv.pdf) {
+    const { writeReportPdf } = await import('./report-pdf.js')
+    const pdfPath = path.resolve(argv.pdf)
+    await writeReportPdf({ html: document, outputPath: pdfPath })
+    console.log(`Report PDF written to ${pdfPath}`)
+  }
+
+  if (!argv.html && !argv.pdf) {
+    console.log(document)
+  }
 }
 
 async function copyHtmlResources(assets = [], htmlResourcesDir) {
@@ -162,6 +176,9 @@ function parseArgs(args) {
     } else if (arg.startsWith('--')) {
       const [key, inlineValue] = arg.slice(2).split('=', 2)
       const value = inlineValue ?? args[i + 1]
+      if (optionRequiresValue(key) && (!value || (inlineValue === undefined && value.startsWith('--')))) {
+        throw new Error(`Option --${key} requires a value.`)
+      }
       if (inlineValue === undefined) i += 1
       parsed[toCamelCase(key)] = value
     } else if (!parsed.input) {
@@ -187,6 +204,10 @@ function toCamelCase(value) {
   return value.replace(/-([a-z])/g, (_, letter) => letter.toUpperCase())
 }
 
+function optionRequiresValue(key) {
+  return ['html', 'pptx', 'pdf', 'resources', 'definitions', 'mode', 'html-assets'].includes(key)
+}
+
 function helpText() {
   return `marp-deckbuilder build <input>
 
@@ -194,14 +215,14 @@ Build HTML and native editable PPTX slides from Marp-flavored Markdown.
 
 marp-deckbuilder report <input>
 
-Build a self-contained long-form HTML report from Markdown. For PDF, open the
-HTML in a browser and use Print to PDF; browser PDF export is intentionally not
-bundled to keep the skill small.
+Build a self-contained long-form HTML report from Markdown. PDF export uses a
+local Chrome, Edge, or Chromium executable. Set MARP_REPORT_BROWSER_PATH when
+the browser cannot be discovered automatically.
 
 Options:
   --html <path>         Write rich HTML output.
   --pptx <path>         Write editable PPTX output.
-  --pdf <path>          Not bundled. Build HTML and use browser Print to PDF.
+  --pdf <path>          Write report PDF output.
   --resources <dir>     Resource folder. Defaults to resources.
   --definitions <dir>   Folder containing brand.json and theme.css.
   --mode <mode>         native or editable. Defaults to native.
