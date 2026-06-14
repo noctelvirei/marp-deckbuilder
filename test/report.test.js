@@ -431,6 +431,34 @@ test('expands report area chart components into Observable Plot initializers', a
   assert.match(rendered.document, /const valueSuffix = " cases"/)
 })
 
+test('preserves area chart label order on Observable Plot ordinal x scales', async () => {
+  const definitions = await loadDefinitions(new URL('../resources/definitions', import.meta.url))
+  const rendered = renderReportHtml(
+    `# Monthly area chart report
+
+<report-chart
+  type="area"
+  title="Monthly volume"
+  labels="Jan,Feb,Mar,Apr,May,Jun"
+  values="1200,1540,1325,1800,1710,1960"
+></report-chart>
+`,
+    {
+      resourcesDir: path.resolve('resources'),
+      definitions,
+      inlineAssets: true,
+    },
+  )
+
+  assert.match(
+    rendered.document,
+    /const data = \[\{"x":"Jan","y":1200\},\{"x":"Feb","y":1540\},\{"x":"Mar","y":1325\},\{"x":"Apr","y":1800\},\{"x":"May","y":1710\},\{"x":"Jun","y":1960\}\]/,
+  )
+  assert.match(rendered.document, /const usesOrdinalXScale = data\.every\(\(point\) => !\(point\.x instanceof Date\)\);/)
+  assert.match(rendered.document, /xScale\.domain = Array\.from\(new Set\(data\.map\(\(point\) => point\.x\)\)\);/)
+  assert.match(rendered.document, /x: xScale,/)
+})
+
 test('expands report treemap chart components into D3 treemap initializers', async () => {
   const definitions = await loadDefinitions(new URL('../resources/definitions', import.meta.url))
   const rendered = renderReportHtml(

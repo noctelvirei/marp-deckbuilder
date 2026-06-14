@@ -1761,10 +1761,20 @@ ${chartBoilerplate(chart, 'target')}
     label: point.x,
     y: Number(point.y)
   }));
+  const usesOrdinalXScale = data.every((point) => !(point.x instanceof Date));
   const tickStep = Math.max(1, Math.ceil(data.length / 6));
   const xTickValues = data
     .filter((point, index) => data.length <= 8 || index === 0 || index === data.length - 1 || index % tickStep === 0)
     .map((point) => point.x);
+  const xScale = {
+    grid: true,
+    label: null,
+    ticks: xTickValues,
+    tickFormat: (value) => value instanceof Date ? value.toLocaleDateString("en-US", { month: "short", day: "numeric" }) : String(value)
+  };
+  if (usesOrdinalXScale) {
+    xScale.domain = Array.from(new Set(data.map((point) => point.x)));
+  }
   target.textContent = "";
   const tooltip = document.createElement("div");
   tooltip.className = "report-chart-floating-tooltip";
@@ -1781,12 +1791,7 @@ ${chartBoilerplate(chart, 'target')}
       color: tickColor,
       fontFamily: rootStyle.getPropertyValue("font-family").trim() || "Arial, sans-serif"
     },
-    x: {
-      grid: true,
-      label: null,
-      ticks: xTickValues,
-      tickFormat: (value) => value instanceof Date ? value.toLocaleDateString("en-US", { month: "short", day: "numeric" }) : String(value)
-    },
+    x: xScale,
     y: {
       grid: true,
       label: null,
