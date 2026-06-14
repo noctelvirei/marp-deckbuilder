@@ -393,7 +393,7 @@ The showcase uses compact component Markdown so the renderer owns brand chrome, 
   type="sankey"
   title="Journey flow"
   series="Cases"
-  links="Opened>Started:44120, Started>Completed:37980, Started>Exception:3751, Exception>Recovered:2160"
+  links="Opened>Started:4400, Started>Completed:3800, Started>Exception:380, Exception>Recovered:220"
 ></deck-chart>
 
 ---
@@ -522,8 +522,8 @@ The showcase uses compact component Markdown so the renderer owns brand chrome, 
 
 <deck-treemap
   title="Portfolio mix"
-  labels="J0107, J0106, J0101, J0116, J0124"
-  values="52208, 11119, 8648, 3751, 2410"
+  labels="Journey A, Journey B, Journey C, Journey D, Journey E"
+  values="5200, 1100, 860, 380, 240"
   unit=" cases"
   caption="Tile area is proportional to case volume."
 ></deck-treemap>
@@ -642,7 +642,7 @@ The showcase uses compact component Markdown so the renderer owns brand chrome, 
   customer="SampleBank"
   logo="resource:logos/sample-customer.svg"
   bridge="Prospect relevance: the same operating controls apply to high-volume service journeys."
-  source="Source: sample operating benchmark, June 2026"
+  source="Source: synthetic benchmark"
 >
   <deck-stat value="44%" label="less manual follow-up"></deck-stat>
   <deck-stat value="2.1x" label="faster completion"></deck-stat>

@@ -7793,7 +7793,7 @@ function validateReportDataTable(table2, context) {
     fail("report-data-table requires at least one row in rows or data.", context);
   }
   if (isBooleanAttributeToken(table2.rawTotals)) {
-    fail('report-data-table totals must be a pipe-separated footer row, not a boolean. Example: totals="Total|55959|71.9|".', context);
+    fail('report-data-table totals must be a pipe-separated footer row, not a boolean. Example: totals="Total|5580|71.9|".', context);
   }
   if (table2.types.length !== table2.columns.length) {
     fail(
@@ -7869,7 +7869,7 @@ function validateReportKeyValues(keyValues, context) {
   }
   if (looksLikePipeDelimitedKeyValueItems(keyValues.rawItems)) {
     fail(
-      'report-key-values items must separate items with semicolons, not pipes. Use items="Scope: TD (T011); Platform: v2; Period: 1 Jan - 11 Jun 2026". Pipes are reserved for fields inside table rows, datasets, and matrix values.',
+      'report-key-values items must separate items with semicolons, not pipes. Use items="Scope: Pilot (P001); Platform: v2; Period: Demo period". Pipes are reserved for fields inside table rows, datasets, and matrix values.',
       context
     );
   }

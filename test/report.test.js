@@ -292,8 +292,8 @@ title: Chart Component Report
   title="Cases by journey"
   series="Cases"
   value-suffix=" cases"
-  labels="J0107,J0106,J0101"
-  values="52208,11119,8648"
+  labels="Journey A,Journey B,Journey C"
+  values="5200,1100,860"
 ></report-chart>
 `,
     {
@@ -309,8 +309,8 @@ title: Chart Component Report
   assert.match(rendered.document, /data-report-component-script="chart"/)
   assert.match(rendered.document, /const canvas = document\.getElementById\("report-chart-1"\)/)
   assert.match(rendered.document, /new Chart\(canvas, /)
-  assert.match(rendered.document, /labels:\s*\["J0107","J0106","J0101"\]/)
-  assert.match(rendered.document, /data:\s*\[52208,11119,8648\]/)
+  assert.match(rendered.document, /labels:\s*\["Journey A","Journey B","Journey C"\]/)
+  assert.match(rendered.document, /data:\s*\[5200,1100,860\]/)
   assert.match(rendered.document, /interaction:\s*\{\s*mode:\s*"index",\s*intersect:\s*false\s*\}/)
   assert.match(rendered.document, /tooltip:\s*\{[\s\S]*enabled:\s*true/)
   assert.match(rendered.document, /label:\s*\(context\)\s*=>\s*\{[\s\S]*formatTooltipValue\(parsedValue\)/)
@@ -378,8 +378,8 @@ test('expands report doughnut chart components into Chart.js doughnut initialize
   title="Journey mix"
   series="Cases"
   value-suffix=" cases"
-  labels="J0107,J0106,J0101"
-  values="52208,11119,8648"
+  labels="Journey A,Journey B,Journey C"
+  values="5200,1100,860"
 ></report-chart>
 `,
     {
@@ -440,8 +440,8 @@ test('expands report treemap chart components into D3 treemap initializers', asy
   type="treemap"
   title="Journey breakdown"
   value-suffix=" cases"
-  labels="J0107,J0106,J0101"
-  values="52208,11119,8648"
+  labels="Journey A,Journey B,Journey C"
+  values="5200,1100,860"
 ></report-chart>
 `,
     {
@@ -506,7 +506,7 @@ test('expands report sankey charts into D3 flow diagrams', async () => {
   title="Journey flow"
   series="Cases"
   value-suffix=" cases"
-  links="Opened>Started:44120,Started>Completed:37980,Started>Exception:3751,Exception>Recovered:2160"
+  links="Opened>Started:4400,Started>Completed:3800,Started>Exception:380,Exception>Recovered:220"
 ></report-chart>
 `,
     {
@@ -519,7 +519,7 @@ test('expands report sankey charts into D3 flow diagrams', async () => {
   assert.doesNotMatch(rendered.document, /<report-chart/i)
   assert.match(rendered.document, /class="report-chart report-chart-sankey"/)
   assert.match(rendered.document, /<div id="report-chart-1" class="report-chart-plot" role="img"/)
-  assert.match(rendered.document, /"source":"Opened","target":"Started","value":44120/)
+  assert.match(rendered.document, /"source":"Opened","target":"Started","value":4400/)
   assert.match(rendered.document, /class", "report-sankey-link"/)
   assert.match(rendered.document, /class", "report-sankey-node"/)
   assert.match(rendered.document, /const linkScale = innerHeight \/ maxColumnWeight/)
@@ -575,8 +575,8 @@ test('expands report stacked bar charts into Chart.js stacked bars', async () =>
   title="Weekly case composition"
   value-suffix=" cases"
   labels="Week 1,Week 2,Week 3"
-  series="J0107|J0106|Other"
-  values="12000|3200|2040;13000|3480|2510;14200|3770|2560"
+  series="Journey A|Journey B|Other"
+  values="1200|320|2040;1300|350|2510;1420|380|2560"
 ></report-chart>
 `,
     {
@@ -588,8 +588,8 @@ test('expands report stacked bar charts into Chart.js stacked bars', async () =>
 
   assert.doesNotMatch(rendered.document, /<report-chart/i)
   assert.match(rendered.document, /class="report-chart report-chart-stacked-bar"/)
-  assert.match(rendered.document, /"label":"J0107","data":\[12000,13000,14200\]/)
-  assert.match(rendered.document, /"label":"J0106","data":\[3200,3480,3770\]/)
+  assert.match(rendered.document, /"label":"Journey A","data":\[1200,1300,1420\]/)
+  assert.match(rendered.document, /"label":"Journey B","data":\[320,350,380\]/)
   assert.match(rendered.document, /stacked:\s*true/)
   assert.match(rendered.document, /const valueSuffix = " cases"/)
 })
@@ -604,7 +604,7 @@ test('expands report heatmap charts into D3 heatmap initializers', async () => {
   title="Journey weekday intensity"
   value-suffix=" cases"
   x-labels="Mon|Tue|Wed"
-  y-labels="J0107|J0106"
+  y-labels="Journey A|Journey B"
   values="120|180|210;40|55|70"
 ></report-chart>
 `,
@@ -887,7 +887,7 @@ This report uses generated dark report chrome.
 
 ## Volume Chart
 
-<report-chart title="Cases by journey" labels="J0107,J0106" values="52208,11119"></report-chart>
+<report-chart title="Cases by journey" labels="Journey A,Journey B" values="5200,1100"></report-chart>
 
 ## Next Steps
 
@@ -1142,8 +1142,8 @@ test('expands report figure components into embedded images with captions', asyn
 <report-figure
   src="images/journey-volume.svg"
   alt="Sample journey volume snapshot"
-  caption="Journey volume is concentrated in J0107."
-  source="Source: April journey export"
+  caption="Journey volume is concentrated in Journey A."
+  source="Source: synthetic sample export"
   size="wide"
 ></report-figure>
 `,
@@ -1158,8 +1158,8 @@ test('expands report figure components into embedded images with captions', asyn
   assert.match(rendered.document, /<figure class="report-figure report-figure-wide">/)
   assert.match(rendered.document, /<img src="data:image\/svg\+xml;base64,[^"]+" alt="Sample journey volume snapshot">/)
   assert.equal(rendered.document.includes(embeddedPayload(figureSource)), true)
-  assert.match(rendered.document, /<span class="report-figure-caption">Journey volume is concentrated in J0107\.<\/span>/)
-  assert.match(rendered.document, /<span class="report-figure-source">Source: April journey export<\/span>/)
+  assert.match(rendered.document, /<span class="report-figure-caption">Journey volume is concentrated in Journey A\.<\/span>/)
+  assert.match(rendered.document, /<span class="report-figure-source">Source: synthetic sample export<\/span>/)
   assert.doesNotMatch(rendered.document, /resource:images\/journey-volume\.svg/)
 })
 
@@ -1194,9 +1194,9 @@ test('expands report data tables into formatted table components', async () => {
   title="Journey breakdown"
   columns="Journey|Cases|Share|Status"
   types="text|number|percent|status"
-  rows="J0107|52,208|67.1|Active;J0116|3,751|4.8|Review;J0999|0|0|Draft"
-  caption="Registered and unregistered journey volume."
-  source="Source: April journey export"
+  rows="Journey A|5,200|67|Active;Journey D|380|5|Review;Journey Z|0|0|Draft"
+  caption="Registered and unmapped journey volume."
+  source="Source: synthetic sample export"
 ></report-data-table>
 `,
     {
@@ -1212,20 +1212,20 @@ test('expands report data tables into formatted table components', async () => {
   assert.match(rendered.document, /<th scope="col" class="report-data-table-heading report-data-table-align-left">Journey<\/th>/)
   assert.match(
     rendered.document,
-    /<td class="report-data-table-cell report-data-table-cell-number report-data-table-align-right">52,208<\/td>/,
+    /<td class="report-data-table-cell report-data-table-cell-number report-data-table-align-right">5,200<\/td>/,
   )
   assert.match(
     rendered.document,
-    /<td class="report-data-table-cell report-data-table-cell-percent report-data-table-align-right">67\.1%<\/td>/,
+    /<td class="report-data-table-cell report-data-table-cell-percent report-data-table-align-right">67%<\/td>/,
   )
   assert.match(rendered.document, /<span class="report-badge report-badge-green">Active<\/span>/)
   assert.match(rendered.document, /<span class="report-badge report-badge-orange">Review<\/span>/)
   assert.match(rendered.document, /<span class="report-badge report-badge-muted">Draft<\/span>/)
   assert.match(
     rendered.document,
-    /<span class="report-data-table-caption">Registered and unregistered journey volume\.<\/span>/,
+    /<span class="report-data-table-caption">Registered and unmapped journey volume\.<\/span>/,
   )
-  assert.match(rendered.document, /<span class="report-data-table-source">Source: April journey export<\/span>/)
+  assert.match(rendered.document, /<span class="report-data-table-source">Source: synthetic sample export<\/span>/)
 })
 
 test('expands report datasets into referenced tables and charts', async () => {
@@ -1236,7 +1236,7 @@ test('expands report datasets into referenced tables and charts', async () => {
 <report-dataset
   id="journey-volume"
   columns="Journey|Cases|Target"
-  rows="Digital|52208|55000;Assisted|11119|12000;Exceptions|3751|2500"
+  rows="Digital|5200|5500;Assisted|1100|1200;Exceptions|380|250"
 ></report-dataset>
 
 <report-data-table
@@ -1266,9 +1266,9 @@ test('expands report datasets into referenced tables and charts', async () => {
   assert.doesNotMatch(rendered.document, /<report-data-table/i)
   assert.doesNotMatch(rendered.document, /<report-chart/i)
   assert.match(rendered.document, /<th scope="col" class="report-data-table-heading report-data-table-align-left">Journey<\/th>/)
-  assert.match(rendered.document, /<td class="report-data-table-cell report-data-table-cell-number report-data-table-align-right">52,208<\/td>/)
+  assert.match(rendered.document, /<td class="report-data-table-cell report-data-table-cell-number report-data-table-align-right">5,200<\/td>/)
   assert.match(rendered.document, /labels: \["Digital","Assisted","Exceptions"\]/)
-  assert.match(rendered.document, /data: \[52208,11119,3751\]/)
+  assert.match(rendered.document, /data: \[5200,1100,380\]/)
 })
 
 test('expands report datasets into referenced grouped and stacked charts', async () => {
@@ -1279,7 +1279,7 @@ test('expands report datasets into referenced grouped and stacked charts', async
 <report-dataset
   id="journey-outcomes"
   columns="Journey|Opened|Completed|Exceptions|Status"
-  rows="Digital|44120|37980|1240|Active;Assisted|11850|9220|710|Watch"
+  rows="Digital|4400|3800|120|Active;Assisted|1180|920|710|Watch"
 ></report-dataset>
 
 <report-chart
@@ -1308,9 +1308,9 @@ test('expands report datasets into referenced grouped and stacked charts', async
   assert.match(rendered.document, /class="report-chart report-chart-grouped-bar"/)
   assert.match(rendered.document, /class="report-chart report-chart-stacked-bar"/)
   assert.match(rendered.document, /labels: \["Digital","Assisted"\]/)
-  assert.match(rendered.document, /"label":"Opened","data":\[44120,11850\]/)
-  assert.match(rendered.document, /"label":"Completed","data":\[37980,9220\]/)
-  assert.match(rendered.document, /"label":"Exceptions","data":\[1240,710\]/)
+  assert.match(rendered.document, /"label":"Opened","data":\[4400,1180\]/)
+  assert.match(rendered.document, /"label":"Completed","data":\[3800,920\]/)
+  assert.match(rendered.document, /"label":"Exceptions","data":\[120,710\]/)
   assert.doesNotMatch(rendered.document, /"label":"Status"/)
 })
 
@@ -1325,8 +1325,8 @@ test('expands enhanced report data table options', async () => {
   columns="Journey|Cases|Share|Status"
   types="text|number|percent|status"
   align="left|right|right|center"
-  rows="J0107|52208|67.1|Active;J0116|3751|4.8|Review"
-  totals="Total|55959|71.9|"
+  rows="Journey A|5200|67|Active;Journey D|380|5|Review"
+  totals="Total|5580|71.9|"
   highlights="2:orange;1.3:green"
 ></report-data-table>
 `,
@@ -1342,13 +1342,13 @@ test('expands enhanced report data table options', async () => {
   assert.match(rendered.document, /<tr class="report-data-table-row report-data-table-highlight-orange">/)
   assert.match(
     rendered.document,
-    /<td class="report-data-table-cell report-data-table-cell-percent report-data-table-align-right report-data-table-highlight-green">67\.1%<\/td>/,
+    /<td class="report-data-table-cell report-data-table-cell-percent report-data-table-align-right report-data-table-highlight-green">67%<\/td>/,
   )
   assert.match(rendered.document, /<tfoot>/)
   assert.match(rendered.document, /<tr class="report-data-table-row report-data-table-total-row">/)
   assert.match(
     rendered.document,
-    /<td class="report-data-table-cell report-data-table-cell-number report-data-table-align-right report-data-table-total-cell">55,959<\/td>/,
+    /<td class="report-data-table-cell report-data-table-cell-number report-data-table-align-right report-data-table-total-cell">5,580<\/td>/,
   )
   assert.doesNotMatch(rendered.document, /report-badge-muted"><\/span>/)
 })
@@ -1461,7 +1461,7 @@ test('expands report key values into definition-list summaries', async () => {
 <report-key-values
   title="Report context"
   columns="3"
-  items="Period: April 2026; Source: Journey export; Owner=Operations"
+  items="Period: synthetic sample; Source: Synthetic sample export; Owner=Operations"
 ></report-key-values>
 `,
     {
@@ -1475,7 +1475,7 @@ test('expands report key values into definition-list summaries', async () => {
   assert.match(rendered.document, /<section class="report-key-values report-key-values-3"/)
   assert.match(rendered.document, /<div class="report-key-values-title">Report context<\/div>/)
   assert.match(rendered.document, /<dt>Period<\/dt>/)
-  assert.match(rendered.document, /<dd>April 2026<\/dd>/)
+  assert.match(rendered.document, /<dd>synthetic sample<\/dd>/)
   assert.match(rendered.document, /<dt>Owner<\/dt>/)
   assert.match(rendered.document, /<dd>Operations<\/dd>/)
 })
@@ -1503,14 +1503,14 @@ test('report key values fail clearly when malformed', async () => {
   assert.throws(
     () =>
       renderReportHtml(
-        '<report-key-values items="Scope: TD (T011)|Platform: v2|Period: 1 Jan - 11 Jun 2026"></report-key-values>',
+        '<report-key-values items="Scope: Pilot (P001)|Platform: v2|Period: Demo period"></report-key-values>',
         options,
       ),
     /report-key-values items must separate items with semicolons, not pipes/,
   )
   assert.doesNotThrow(() =>
     renderReportHtml(
-      '<report-key-values items="Scope: TD (T011); Platform: v2; Period: 1 Jan - 11 Jun 2026"></report-key-values>',
+      '<report-key-values items="Scope: Pilot (P001); Platform: v2; Period: Demo period"></report-key-values>',
       options,
     ),
   )
@@ -1524,8 +1524,8 @@ test('expands report insights into structured narrative blocks', async () => {
 <report-insight
   variant="warning"
   title="Journey concentration"
-  finding="One journey dominates April volume."
-  evidence="J0107 accounts for 67.1% of cases."
+  finding="One journey dominates synthetic sample volume."
+  evidence="Journey A accounts for 67% of cases."
   impact="Monitoring thresholds should be calibrated around this journey."
   action="Tune operational alerts before the next monthly run."
 ></report-insight>
@@ -1541,7 +1541,7 @@ test('expands report insights into structured narrative blocks', async () => {
   assert.match(rendered.document, /<article class="report-insight report-insight-warning" role="note">/)
   assert.match(rendered.document, /<div class="report-insight-title">Journey concentration<\/div>/)
   assert.match(rendered.document, /<dt>Finding<\/dt>/)
-  assert.match(rendered.document, /<dd>One journey dominates April volume\.<\/dd>/)
+  assert.match(rendered.document, /<dd>One journey dominates synthetic sample volume\.<\/dd>/)
   assert.match(rendered.document, /<dt>Action<\/dt>/)
   assert.match(rendered.document, /Tune operational alerts before the next monthly run/)
 })
@@ -1570,12 +1570,12 @@ test('expands report recommendations into owner action blocks', async () => {
     `# Recommendation report
 
 <report-recommendation
-  title="Validate J0116"
+  title="Validate Journey D"
   owner="Operations"
   priority="High"
   due="Week 1"
   status="Needs bespoke status"
->Confirm whether J0116 is a new journey or a data quality issue.</report-recommendation>
+>Confirm whether Journey D is a new synthetic flow or a data quality issue.</report-recommendation>
 `,
     {
       resourcesDir: path.resolve('resources'),
@@ -1586,8 +1586,8 @@ test('expands report recommendations into owner action blocks', async () => {
 
   assert.doesNotMatch(rendered.document, /<report-recommendation/i)
   assert.match(rendered.document, /<article class="report-recommendation">/)
-  assert.match(rendered.document, /<div class="report-recommendation-title">Validate J0116<\/div>/)
-  assert.match(rendered.document, /<div class="report-recommendation-body">Confirm whether J0116 is a new journey or a data quality issue\.<\/div>/)
+  assert.match(rendered.document, /<div class="report-recommendation-title">Validate Journey D<\/div>/)
+  assert.match(rendered.document, /<div class="report-recommendation-body">Confirm whether Journey D is a new synthetic flow or a data quality issue\.<\/div>/)
   assert.match(rendered.document, /<span class="report-recommendation-meta-item">Owner: Operations<\/span>/)
   assert.match(rendered.document, /<span class="report-recommendation-priority report-recommendation-priority-high">High<\/span>/)
   assert.match(rendered.document, /<span class="report-recommendation-meta-item">Due: Week 1<\/span>/)
@@ -1619,8 +1619,8 @@ test('expands report source notes into renderer-owned asides', async () => {
 
 <report-source-note
   title="Methodology"
-  source="Journey export"
-  date="April 2026"
+  source="Synthetic sample export"
+  date="Synthetic sample"
 >Cases exclude test journeys and duplicate retries.</report-source-note>
 `,
     {
@@ -1637,8 +1637,8 @@ test('expands report source notes into renderer-owned asides', async () => {
     rendered.document,
     /<div class="report-source-note-body">Cases exclude test journeys and duplicate retries\.<\/div>/,
   )
-  assert.match(rendered.document, /<span>Source: Journey export<\/span>/)
-  assert.match(rendered.document, /<span>Date: April 2026<\/span>/)
+  assert.match(rendered.document, /<span>Source: Synthetic sample export<\/span>/)
+  assert.match(rendered.document, /<span>Date: Synthetic sample<\/span>/)
 })
 
 test('report source notes fail clearly when empty', async () => {
@@ -1660,10 +1660,10 @@ test('expands report source lists and inline cites', async () => {
   const rendered = renderReportHtml(
     `# Sources report
 
-Completion rates use the April extract <report-cite source="journey-export"></report-cite>.
+Completion rates use the synthetic extract <report-cite source="journey-export"></report-cite>.
 
 <report-source-list title="Sources">
-  <report-source id="journey-export" title="Journey export" publisher="Operations" date="April 2026" url="https://example.test/export">Completed journey records excluding test data.</report-source>
+  <report-source id="journey-export" title="Synthetic sample export" publisher="Operations" date="Synthetic sample" url="https://example.test/export">Completed journey records excluding test data.</report-source>
   <report-source id="quality-review" title="Quality review" publisher="Data team">Manual exception review.</report-source>
 </report-source-list>
 `,
@@ -1677,11 +1677,11 @@ Completion rates use the April extract <report-cite source="journey-export"></re
   assert.doesNotMatch(rendered.document, /<report-source-list/i)
   assert.doesNotMatch(rendered.document, /<report-source\b/i)
   assert.doesNotMatch(rendered.document, /<report-cite/i)
-  assert.match(rendered.document, /<a class="report-cite" href="#report-source-journey-export" aria-label="Source 1: Journey export">\[1\]<\/a>/)
+  assert.match(rendered.document, /<a class="report-cite" href="#report-source-journey-export" aria-label="Source 1: Synthetic sample export">\[1\]<\/a>/)
   assert.match(rendered.document, /<section class="report-source-list" aria-label="Sources">/)
   assert.match(rendered.document, /<li id="report-source-journey-export">/)
   assert.match(rendered.document, /<span class="report-source-list-number">\[1\]<\/span>/)
-  assert.match(rendered.document, /<span class="report-source-list-name">Journey export<\/span>/)
+  assert.match(rendered.document, /<span class="report-source-list-name">Synthetic sample export<\/span>/)
   assert.match(rendered.document, /<a href="https:\/\/example\.test\/export">https:\/\/example\.test\/export<\/a>/)
   assert.match(rendered.document, /<li id="report-source-quality-review">/)
 })
@@ -1692,7 +1692,7 @@ test('report source lists render metadata-only sources without escaped closing t
     `# Sources report
 
 <report-source-list title="Sources">
-  <report-source id="vdwh-case" title="VizWarehouse V_DWH_Case" date="2026-06-12"></report-source>
+  <report-source id="synthetic-cases" title="Synthetic Cases Export" date="Synthetic sample"></report-source>
 </report-source-list>
 `,
     {
@@ -1702,7 +1702,7 @@ test('report source lists render metadata-only sources without escaped closing t
     },
   )
 
-  assert.match(rendered.document, /<li id="report-source-vdwh-case">[\s\S]*<span>2026-06-12<\/span>[\s\S]*<\/li>/)
+  assert.match(rendered.document, /<li id="report-source-synthetic-cases">[\s\S]*<span>Synthetic sample<\/span>[\s\S]*<\/li>/)
   assert.doesNotMatch(rendered.document, /&lt;\/(?:div|li)&gt;/)
 })
 
@@ -1729,7 +1729,7 @@ test('report source lists and cites fail clearly when malformed', async () => {
   assert.throws(
     () =>
       renderReportHtml(
-        '<report-source-list><report-source id="vdwh-case" title="VizWarehouse V_DWH_Case" description="Primary case fact view." date="2026-06-12"></report-source></report-source-list>',
+        '<report-source-list><report-source id="synthetic-cases" title="Synthetic Cases Export" description="Synthetic case extract." date="Synthetic sample"></report-source></report-source-list>',
         options,
       ),
     /Unsupported <report-source> attribute "description". Use note="\.\.\." instead/,
@@ -1737,7 +1737,7 @@ test('report source lists and cites fail clearly when malformed', async () => {
   assert.throws(
     () =>
       renderReportHtml(
-        '<report-source-list><report-source id="vdwh-case" title="VizWarehouse V_DWH_Case" summary="Primary case fact view."></report-source></report-source-list>',
+        '<report-source-list><report-source id="synthetic-cases" title="Synthetic Cases Export" summary="Synthetic case extract."></report-source></report-source-list>',
         options,
       ),
     /Unsupported <report-source> attribute "summary"/,
@@ -1745,7 +1745,7 @@ test('report source lists and cites fail clearly when malformed', async () => {
   assert.throws(
     () =>
       renderReportHtml(
-        '<report-metric-grid><report-metric value="77,951" label="Total cases" context="YTD"></report-metric></report-metric-grid>',
+        '<report-metric-grid><report-metric value="7,800" label="Total cases" context="YTD"></report-metric></report-metric-grid>',
         options,
       ),
     /Unsupported <report-metric> attribute "context"/,
@@ -1771,7 +1771,7 @@ test('expands report card grids into accent card layouts', async () => {
 
 <report-card-grid title="Actions" columns="2">
   <report-card title="Monitor" accent="blue">Track the dominant journey daily.</report-card>
-  <report-card title="Review" accent="orange">Validate the unregistered journey.</report-card>
+  <report-card title="Review" accent="orange">Validate the unmapped journey.</report-card>
 </report-card-grid>
 `,
     {
@@ -1884,7 +1884,7 @@ test('expands report metric grid components into reusable metric cards', async (
     `# Metric report
 
 <report-metric-grid>
-  <report-metric value="77,951" label="Total cases" sub="+12% vs prior"></report-metric>
+  <report-metric value="7,800" label="Total cases" sub="+12% vs prior"></report-metric>
   <report-metric value="94.3%" label="Completion rate" sub="-1.1 pp" direction="down"></report-metric>
 </report-metric-grid>
 `,
@@ -1897,7 +1897,7 @@ test('expands report metric grid components into reusable metric cards', async (
 
   assert.doesNotMatch(rendered.document, /<report-metric/i)
   assert.match(rendered.document, /class="report-metric-grid"/)
-  assert.match(rendered.document, /<div class="report-metric-value">77,951<\/div>/)
+  assert.match(rendered.document, /<div class="report-metric-value">7,800<\/div>/)
   assert.match(rendered.document, /<div class="report-metric-label">Total cases<\/div>/)
   assert.match(rendered.document, /<div class="report-metric-sub">[+]12% vs prior<\/div>/)
   assert.match(rendered.document, /<div class="report-metric-sub down">-1\.1 pp<\/div>/)
@@ -1909,7 +1909,7 @@ test('expands self-closing report component tags before HTML parsing', async () 
     `# Self-closing report
 
 <report-metric-grid>
-  <report-metric value="77,951" label="Total cases" />
+  <report-metric value="7,800" label="Total cases" />
   <report-metric value="94.3%" label="Completion rate" />
 </report-metric-grid>
 
@@ -1933,7 +1933,7 @@ test('expands self-closing report component tags before HTML parsing', async () 
 
   assert.doesNotMatch(rendered.document, /<report-(metric|chart|data-table)/i)
   assert.equal((rendered.document.match(/class="report-metric(?:\s|")/g) || []).length, 2)
-  assert.match(rendered.document, /<div class="report-metric-value">77,951<\/div>/)
+  assert.match(rendered.document, /<div class="report-metric-value">7,800<\/div>/)
   assert.match(rendered.document, /<div class="report-metric-value">94\.3%<\/div>/)
   assert.match(rendered.document, /class="report-chart report-chart-bar"/)
   assert.match(
@@ -1968,8 +1968,8 @@ test('expands report rate bars with computed shares', async () => {
 
 <report-rate-bars
   title="Journey distribution"
-  labels="J0107,J0106,J0101"
-  values="52208,11119,8648"
+  labels="Journey A,Journey B,Journey C"
+  values="5200,1100,860"
 ></report-rate-bars>
 `,
     {
@@ -1982,10 +1982,10 @@ test('expands report rate bars with computed shares', async () => {
   assert.doesNotMatch(rendered.document, /<report-rate-bars/i)
   assert.match(rendered.document, /class="report-rate-bars"/)
   assert.match(rendered.document, /<div class="report-rate-bars-title">Journey distribution<\/div>/)
-  assert.match(rendered.document, /<span class="report-rate-label">J0107<\/span>/)
-  assert.match(rendered.document, /<div class="report-rate-fill" style="--report-rate-width:72\.5%;--report-rate-color:#0F82F5"><\/div>/)
-  assert.match(rendered.document, /<span class="report-rate-value">52,208<\/span>/)
-  assert.match(rendered.document, /<span class="report-rate-pct">72\.5%<\/span>/)
+  assert.match(rendered.document, /<span class="report-rate-label">Journey A<\/span>/)
+  assert.match(rendered.document, /<div class="report-rate-fill" style="--report-rate-width:72\.6%;--report-rate-color:#0F82F5"><\/div>/)
+  assert.match(rendered.document, /<span class="report-rate-value">5,200<\/span>/)
+  assert.match(rendered.document, /<span class="report-rate-pct">72\.6%<\/span>/)
 })
 
 test('report rate bars support explicit shares and clamp widths', async () => {
@@ -2048,7 +2048,7 @@ test('expands report callouts into reusable finding blocks', async () => {
     `# Callout report
 
 <report-callout variant="warning" title="Action & review">
-J0116 generated meaningful volume & needs review.
+Journey D generated meaningful volume & needs review.
 </report-callout>
 `,
     {
@@ -2061,7 +2061,7 @@ J0116 generated meaningful volume & needs review.
   assert.doesNotMatch(rendered.document, /<report-callout/i)
   assert.match(rendered.document, /class="report-callout report-callout-warning"/)
   assert.match(rendered.document, /<div class="report-callout-title">Action &amp; review<\/div>/)
-  assert.match(rendered.document, /<div class="report-callout-body">J0116 generated meaningful volume &amp; needs review\.<\/div>/)
+  assert.match(rendered.document, /<div class="report-callout-body">Journey D generated meaningful volume &amp; needs review\.<\/div>/)
 })
 
 test('report callouts fail clearly when malformed', async () => {
@@ -2132,8 +2132,8 @@ test('expands report badges inside markdown tables', async () => {
 
 | Journey | Status |
 | --- | --- |
-| J0107 | <report-badge variant="green">Active & live</report-badge> |
-| J0116 | <report-badge status="review" label="Review"></report-badge> |
+| Journey A | <report-badge variant="green">Active & live</report-badge> |
+| Journey D | <report-badge status="review" label="Review"></report-badge> |
 `,
     {
       resourcesDir: path.resolve('resources'),
@@ -2209,8 +2209,18 @@ test('report chart components fail clearly when data is invalid', async () => {
 
   assert.throws(
     () => renderReportHtml('<report-chart labels="A,B" values="10"></report-chart>', options),
-    /report-chart labels\/values length mismatch/,
+    /report-chart type="bar" labels\/values length mismatch: 2 label\(s\), 1 value\(s\)\./,
   )
+  for (const type of ['bar', 'line', 'doughnut', 'area', 'pareto', 'funnel', 'treemap', 'waterfall', 'bullet', 'histogram', 'scatter']) {
+    assert.throws(
+      () =>
+        renderReportHtml(
+          `<report-chart type="${type}" labels="A|B|C" values="10,20,30" targets="12,22,32"></report-chart>`,
+          options,
+        ),
+      new RegExp(`report-chart type="${type}" labels/values length mismatch: 1 label\\(s\\), 3 value\\(s\\)\\.`),
+    )
+  }
   assert.throws(
     () => renderReportHtml('<report-chart labels="A" values="not-a-number"></report-chart>', options),
     /report-chart values must all be numeric/,

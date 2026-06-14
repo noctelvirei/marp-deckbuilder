@@ -492,7 +492,7 @@ test('renders sankey deck charts in HTML and PPTX outputs', async () => {
   type="sankey"
   title="Journey flow"
   series="Cases"
-  links="Opened>Started:44120, Started>Completed:37980, Started>Exception:3751, Exception>Recovered:2160"
+  links="Opened>Started:4400, Started>Completed:3800, Started>Exception:380, Exception>Recovered:220"
 ></deck-chart>`)
   const rendered = renderDeckHtml(deck, { resourcesDir: 'resources', definitions })
 
@@ -820,8 +820,8 @@ test('renders deck-treemap in HTML and PPTX outputs', async () => {
 
 <deck-treemap
   title="Portfolio mix"
-  labels="J0107, J0106, J0101, J0116"
-  values="52208, 11119, 8648, 3751"
+  labels="Journey A, Journey B, Journey C, Journey D"
+  values="5200, 1100, 860, 380"
   unit=" cases"
   caption="Tile area is proportional to case volume."
 ></deck-treemap>`)
@@ -829,7 +829,7 @@ test('renders deck-treemap in HTML and PPTX outputs', async () => {
 
   assert.match(rendered.document, /class="deck-treemap/)
   assert.match(rendered.document, /class="deck-treemap-svg"/)
-  assert.match(rendered.document, />J0107<\/text>/)
+  assert.match(rendered.document, />Journey A<\/text>/)
   assert.doesNotMatch(rendered.document, /<deck-treemap/i)
 
   const out = path.join(tmpDir, 'treemap.pptx')
@@ -1693,7 +1693,7 @@ test('HTML branding owns company and customer logo chrome', async () => {
   }
   const deck = parseDeckMarkdown(`---
 customerLogo: resource:logos/customer.svg
-customerName: HSBC
+customerName: Customer A
 ---
 
 # Cover
@@ -1702,7 +1702,7 @@ customerName: HSBC
 
 # Content
 
-<deck-slide customer-logo="resource:logos/customer.svg" customer-name="HSBC" />
+<deck-slide customer-logo="resource:logos/customer.svg" customer-name="Customer A" />
 
 Body copy`)
   const rendered = renderDeckHtml(deck, {
@@ -1808,11 +1808,11 @@ test('HTML branding preserves customer logo colours while fitting the logo frame
   )
   await writeFile(
     path.join(tmpDir, 'resources', 'logos', 'customer.svg'),
-    '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 24"><rect width="40" height="24" fill="#DB0011"/><text x="45" y="18" fill="#000000">HSBC</text></svg>',
+    '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 24"><rect width="40" height="24" fill="#DB0011"/><text x="45" y="18" fill="#000000">Customer A</text></svg>',
   )
   await writeFile(
     path.join(tmpDir, 'resources', 'logos', 'customer.dark.svg'),
-    '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 24"><rect width="40" height="24" fill="#DB0011"/><text x="45" y="18" fill="#ffffff">HSBC</text></svg>',
+    '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 24"><rect width="40" height="24" fill="#DB0011"/><text x="45" y="18" fill="#ffffff">Customer A</text></svg>',
   )
 
   const baseDefinitions = await loadDefinitions(new URL('../resources/definitions', import.meta.url))

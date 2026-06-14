@@ -1,6 +1,6 @@
 ---
 title: Sample Usage Report
-subtitle: April 2026 journey volume
+subtitle: Synthetic journey volume
 reportDate: 2026-06-11
 preparedFor: Customer Operations
 preparedBy: Analytics
@@ -12,41 +12,41 @@ reportNav: true
 
 ## Executive Summary
 
-April volume is concentrated in one dominant journey. The top three journeys account for 92.4% of activity, while one unregistered journey requires follow-up <report-cite source="journey-export"></report-cite>.
+synthetic sample volume is concentrated in one dominant journey. The top three journeys account for 92% of activity, while one unmapped journey requires follow-up <report-cite source="journey-export"></report-cite>.
 
 <report-key-values
   title="Report context"
   columns="3"
-  items="Period: April 2026; Source: Journey export; Owner: Operations"
+  items="Period: synthetic sample; Source: Synthetic sample export; Owner: Operations"
 ></report-key-values>
 
 <report-metric-grid>
-  <report-metric value="77,951" label="Total cases" />
-  <report-metric value="67.1%" label="J0107 share" accent="blue" />
-  <report-metric value="92.4%" label="Top 3 journeys" accent="cyan" />
+  <report-metric value="7,800" label="Total cases" />
+  <report-metric value="67%" label="Journey A share" accent="blue" />
+  <report-metric value="92%" label="Top 3 journeys" accent="cyan" />
 </report-metric-grid>
 
 <report-insight
   variant="warning"
   title="Journey concentration"
-  finding="One journey dominates April activity."
-  evidence="J0107 accounts for 67.1% of observed volume."
+  finding="One journey dominates synthetic sample activity."
+  evidence="Journey A accounts for 67% of observed volume."
   impact="Operational monitoring should be tuned around the dominant journey before month-end review."
-  action="Validate whether J0116 is a real journey while calibrating J0107 thresholds."
+  action="Validate whether Journey D is a synthetic flow while calibrating Journey A thresholds."
 ></report-insight>
 
 <report-figure
   src="images/journey-volume.svg"
   alt="Sample journey volume snapshot"
   caption="Volume distribution snapshot for the top journeys."
-  source="Source: April journey export"
+  source="Source: synthetic sample export"
   size="wide"
 ></report-figure>
 
 <report-dataset
   id="journey-volume"
   columns="Journey|Cases|Share|Status"
-  rows="J0107|52208|67.1|Active;J0106|11119|14.3|Active;J0101|8648|11.1|Active;J0116|3751|4.8|Review"
+  rows="Journey A|5200|67|Active;Journey B|1100|14|Active;Journey C|860|11|Active;Journey D|380|5|Review"
 ></report-dataset>
 
 <report-dataset
@@ -57,7 +57,7 @@ April volume is concentrated in one dominant journey. The top three journeys acc
 
 <report-dataset
   id="weekly-composition"
-  columns="Week|J0107|J0106|J0101|J0116"
+  columns="Week|Journey A|Journey B|Journey C|Journey D"
   rows="Week 1|11420|2450|2020|620;Week 2|12680|2680|2240|720;Week 3|13750|2940|2330|760;Week 4|14358|3049|2058|810"
 ></report-dataset>
 
@@ -192,7 +192,7 @@ April volume is concentrated in one dominant journey. The top three journeys acc
   series="Cases"
   value-suffix=" cases"
   labels="Opened,Started,Completed,Exception"
-  values="52208,44120,37980,3751"
+  values="5200,4400,3800,380"
 ></report-chart>
 
 ## Journey Flow
@@ -202,7 +202,7 @@ April volume is concentrated in one dominant journey. The top three journeys acc
   title="Journey flow"
   series="Cases"
   value-suffix=" cases"
-  links="Opened>Started:44120,Started>Completed:37980,Started>Exception:3751,Exception>Recovered:2160"
+  links="Opened>Started:4400,Started>Completed:3800,Started>Exception:380,Exception>Recovered:220"
 ></report-chart>
 
 ## Journey Mix
@@ -211,8 +211,8 @@ April volume is concentrated in one dominant journey. The top three journeys acc
   type="doughnut"
   title="Journey mix"
   series="Cases"
-  labels="J0107,J0106,J0101,J0116"
-  values="52208,11119,8648,3751"
+  labels="Journey A,Journey B,Journey C,Journey D"
+  values="5200,1100,860,380"
 ></report-chart>
 
 ## Daily Volume
@@ -231,7 +231,7 @@ April volume is concentrated in one dominant journey. The top three journeys acc
   title="Journey weekday intensity"
   value-suffix=" cases"
   x-labels="Mon|Tue|Wed|Thu|Fri"
-  y-labels="J0107|J0106|J0101|J0116"
+  y-labels="Journey A|Journey B|Journey C|Journey D"
   values="11920|12380|11650|12710|13120;2480|2640|2710|2820|2469;2020|2140|1980|2230|2278;620|720|760|810|841"
 ></report-chart>
 
@@ -239,9 +239,9 @@ April volume is concentrated in one dominant journey. The top three journeys acc
 
 <report-rate-bars
   title="Share by journey"
-  labels="J0107,J0106,J0101,J0116"
-  values="52208,11119,8648,3751"
-  shares="67.1,14.3,11.1,4.8"
+  labels="Journey A,Journey B,Journey C,Journey D"
+  values="5200,1100,860,380"
+  shares="67,14,11,5"
 ></report-rate-bars>
 
 ## Journey Treemap
@@ -250,8 +250,8 @@ April volume is concentrated in one dominant journey. The top three journeys acc
   type="treemap"
   title="Volume by journey"
   series="Cases"
-  labels="J0107,J0106,J0101,J0116"
-  values="52208,11119,8648,3751"
+  labels="Journey A,Journey B,Journey C,Journey D"
+  values="5200,1100,860,380"
 ></report-chart>
 
 ## Breakdown
@@ -264,45 +264,45 @@ April volume is concentrated in one dominant journey. The top three journeys acc
   align="left|right|right|center"
   totals="Total|75726|97.3|"
   highlights="4:orange;1.3:green"
-  caption="Registered and unregistered journey volume."
-  source="Source: April journey export"
+  caption="Registered and unmapped journey volume."
+  source="Source: synthetic sample export"
 ></report-data-table>
 
-<report-source-note title="Methodology" source="Journey export" date="April 2026">
+<report-source-note title="Methodology" source="Synthetic sample export" date="Synthetic sample">
 Cases are counted from completed journey records and exclude test journeys and duplicate retries.
 </report-source-note>
 
 <report-source-list title="Sources">
-  <report-source id="journey-export" title="April journey export" publisher="Operations" date="April 2026">Completed journey records excluding test journeys and duplicate retries.</report-source>
-  <report-source id="profile-register" title="Registered journey profile" publisher="Journey governance" date="April 2026">Reference list used to identify unregistered journeys.</report-source>
+  <report-source id="journey-export" title="synthetic sample export" publisher="Operations" date="Synthetic sample">Completed journey records excluding test journeys and duplicate retries.</report-source>
+  <report-source id="profile-register" title="Synthetic journey profile" publisher="Journey governance" date="Synthetic sample">Reference list used to identify unmapped journeys.</report-source>
 </report-source-list>
 
 <report-callout variant="warning" title="Action">
-J0116 generated meaningful volume but is not in the registered journey profile.
+Journey D generated meaningful volume but is not in the synthetic journey profile.
 </report-callout>
 
 ## Next Steps
 
 <report-card-grid title="Action plan" columns="3">
-  <report-card title="Confirm" accent="orange">Determine whether J0116 is a new journey or a data quality issue.</report-card>
+  <report-card title="Confirm" accent="orange">Determine whether Journey D is a new synthetic flow or a data quality issue.</report-card>
   <report-card title="Track" accent="blue">Add month-over-month monitoring for the top three journeys.</report-card>
   <report-card title="Calibrate" accent="green">Tune operational monitoring around the dominant journey.</report-card>
 </report-card-grid>
 
 <report-timeline title="Delivery path">
-  <report-event date="Week 1" title="Confirm journey mapping" status="watch">Resolve whether J0116 is a new journey or a data quality issue.</report-event>
+  <report-event date="Week 1" title="Confirm journey mapping" status="watch">Resolve whether Journey D is a new synthetic flow or a data quality issue.</report-event>
   <report-event date="Week 2" title="Add monthly tracking" status="active">Add month-over-month monitoring for the top three journeys.</report-event>
   <report-event date="Week 3" title="Tune monitoring" status="pending">Calibrate operational monitoring around the dominant journey.</report-event>
 </report-timeline>
 
 <report-accent-card accent="green" title="Recommended focus">
-Prioritise monitoring for J0107 while validating whether J0116 is a real journey or a data quality issue.
+Prioritise monitoring for Journey A while validating whether Journey D is a synthetic flow or a data quality issue.
 </report-accent-card>
 
 <report-recommendation
-  title="Validate the unregistered journey"
+  title="Validate the unmapped journey"
   owner="Operations"
   priority="High"
   due="Week 1"
   status="Watch"
->Confirm whether J0116 is a new production journey or a data quality issue before the next monitoring cycle.</report-recommendation>
+>Confirm whether Journey D is a new synthetic journey or a data quality issue before the next monitoring cycle.</report-recommendation>

@@ -285,7 +285,7 @@ Editable PPTX generated from compact component Markdown.
   type="sankey"
   title="Journey flow"
   series="Cases"
-  links="Opened>Started:44120, Started>Completed:37980, Started>Exception:3751, Exception>Recovered:2160"
+  links="Opened>Started:4400, Started>Completed:3800, Started>Exception:380, Exception>Recovered:220"
 ></deck-chart>
 
 ---
@@ -354,8 +354,8 @@ Editable PPTX generated from compact component Markdown.
 
 <deck-treemap
   title="Case volume mix"
-  labels="J0107, J0106, J0101, J0116, Other"
-  values="52208, 11119, 8648, 3751, 2225"
+  labels="Journey A, Journey B, Journey C, Journey D, Other"
+  values="5200, 1100, 860, 380, 2225"
   unit=" cases"
   caption="Tile area is proportional to case volume."
 ></deck-treemap>

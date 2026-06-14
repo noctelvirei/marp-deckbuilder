@@ -55,7 +55,7 @@ Report prose goes here.
 
 ## Volume
 
-<report-chart title="Cases by journey" labels="J0107,J0106" values="52208,11119"></report-chart>
+<report-chart title="Cases by journey" labels="Journey A,Journey B" values="5200,1100"></report-chart>
 ```
 
 ## Report Theme
@@ -81,9 +81,9 @@ In dark reports, do not wrap technical field names, product names, journey IDs, 
 
 ## Separator Convention
 
-Use semicolons to separate repeated records or items, and pipes to separate fields inside one record. Examples: `items="Scope: TD; Platform: v2"`, `rows="A|1; B|2"`, and `values="10|20; 12|24"` for matrix-style chart values. Use commas only for simple one-dimensional chart series such as `labels="A,B"` or `values="10,20"`.
+Use semicolons to separate repeated records or items, and pipes to separate fields inside one record. Examples: `items="Scope: Pilot; Platform: v2"`, `rows="A|1; B|2"`, and `values="10|20; 12|24"` for matrix-style chart values. Use commas only for simple one-dimensional chart series such as `labels="A,B"` or `values="10,20"`.
 
-Do not use pipes to separate `report-key-values` items. The renderer rejects `items="Scope: TD|Platform: v2"` because pipes are reserved for table cells, dataset fields, and matrix fields.
+Do not use pipes to separate `report-key-values` items. The renderer rejects `items="Scope: Pilot|Platform: v2"` because pipes are reserved for table cells, dataset fields, and matrix fields.
 
 ## Available Renderer Components
 
@@ -144,7 +144,7 @@ Use `report-dataset` when a table and a supported Chart.js chart need the same r
 <report-dataset
   id="journey-volume"
   columns="Journey|Cases|Target|Status"
-  rows="J0107|52208|55000|Active;J0106|11119|12000|Active"
+  rows="Journey A|5200|5500|Active;Journey B|1100|1200|Active"
 ></report-dataset>
 
 <report-data-table
@@ -213,8 +213,8 @@ Use `report-chart` for standard Chart.js bar, line, doughnut, grouped bar, stack
   type="bar"
   title="Cases by journey"
   series="Cases"
-  labels="J0107,J0106,J0101,J0116"
-  values="52208,11119,8648,3751"
+  labels="Journey A,Journey B,Journey C,Journey D"
+  values="5200,1100,860,380"
 ></report-chart>
 ```
 
@@ -233,8 +233,8 @@ Use `report-chart` for standard Chart.js bar, line, doughnut, grouped bar, stack
   type="doughnut"
   title="Journey mix"
   series="Cases"
-  labels="J0107,J0106,J0101,J0116"
-  values="52208,11119,8648,3751"
+  labels="Journey A,Journey B,Journey C,Journey D"
+  values="5200,1100,860,380"
 ></report-chart>
 ```
 
@@ -253,7 +253,7 @@ Use `report-chart` for standard Chart.js bar, line, doughnut, grouped bar, stack
 <report-chart
   type="stacked-bar"
   title="Weekly case composition"
-  series="J0107|J0106|J0101|J0116"
+  series="Journey A|Journey B|Journey C|Journey D"
   value-suffix=" cases"
   labels="Week 1,Week 2,Week 3,Week 4"
   values="11420|2450|2020|620;12680|2680|2240|720;13750|2940|2330|760;14358|3049|2058|810"
@@ -355,8 +355,8 @@ Use `report-chart` for standard Chart.js bar, line, doughnut, grouped bar, stack
   type="treemap"
   title="Volume by journey"
   series="Cases"
-  labels="J0107,J0106,J0101,J0116"
-  values="52208,11119,8648,3751"
+  labels="Journey A,Journey B,Journey C,Journey D"
+  values="5200,1100,860,380"
 ></report-chart>
 ```
 
@@ -367,7 +367,7 @@ Use `report-chart` for standard Chart.js bar, line, doughnut, grouped bar, stack
   series="Cases"
   value-suffix=" cases"
   labels="Opened,Started,Completed,Exception"
-  values="52208,44120,37980,3751"
+  values="5200,4400,3800,380"
 ></report-chart>
 ```
 
@@ -377,7 +377,7 @@ Use `report-chart` for standard Chart.js bar, line, doughnut, grouped bar, stack
   title="Journey weekday intensity"
   value-suffix=" cases"
   x-labels="Mon|Tue|Wed|Thu|Fri"
-  y-labels="J0107|J0106|J0101|J0116"
+  y-labels="Journey A|Journey B|Journey C|Journey D"
   values="11920|12380|11650|12710|13120;2480|2640|2710|2820|2469;2020|2140|1980|2230|2278;620|720|760|810|841"
 ></report-chart>
 ```
@@ -388,7 +388,7 @@ Use `report-chart` for standard Chart.js bar, line, doughnut, grouped bar, stack
   title="Journey flow"
   series="Cases"
   value-suffix=" cases"
-  links="Opened>Started:44120,Started>Completed:37980,Started>Exception:3751,Exception>Recovered:2160"
+  links="Opened>Started:4400,Started>Completed:3800,Started>Exception:380,Exception>Recovered:220"
 ></report-chart>
 ```
 
@@ -428,7 +428,7 @@ Use `report-metric-grid` for KPI cards. Do not hand-author nested metric card `d
 
 ```md
 <report-metric-grid>
-  <report-metric value="77,951" label="Total cases" sub="+12% vs prior" />
+  <report-metric value="7,800" label="Total cases" sub="+12% vs prior" />
   <report-metric value="94.3%" label="Completion rate" sub="-1.1 pp" direction="down" />
 </report-metric-grid>
 ```
@@ -451,7 +451,7 @@ Use `report-key-values` for report context, parameters, ownership, and other com
 <report-key-values
   title="Report context"
   columns="3"
-  items="Period: April 2026; Source: Journey export; Owner: Operations"
+  items="Period: synthetic sample; Source: Synthetic sample export; Owner: Operations"
 ></report-key-values>
 ```
 
@@ -470,8 +470,8 @@ Use `report-rate-bars` for ranked distributions. Do not hand-author inline-width
 ```md
 <report-rate-bars
   title="Journey distribution"
-  labels="J0107,J0106,J0101,J0116"
-  values="52208,11119,8648,3751"
+  labels="Journey A,Journey B,Journey C,Journey D"
+  values="5200,1100,860,380"
 ></report-rate-bars>
 ```
 
@@ -496,11 +496,11 @@ Use `report-data-table` for compact formatted tables with renderer-owned number,
   columns="Journey|Cases|Share|Status"
   types="text|number|percent|status"
   align="left|right|right|center"
-  rows="J0107|52208|67.1|Active;J0116|3751|4.8|Review"
-  totals="Total|55959|71.9|"
+  rows="Journey A|5200|67|Active;Journey D|380|5|Review"
+  totals="Total|5580|71.9|"
   highlights="2:orange;1.3:green"
-  caption="Registered and unregistered journey volume."
-  source="Source: April journey export"
+  caption="Registered and unmapped journey volume."
+  source="Source: synthetic sample export"
 ></report-data-table>
 ```
 
@@ -514,7 +514,7 @@ Supported attributes:
 | `rows` | yes | Semicolon-separated rows with pipe-separated cells. Alias: `data`. |
 | `compact` | no | Use `true` for denser report tables. Alias: `dense`. |
 | `align` | no | Pipe-separated column alignment. Supports `left`, `center`, `right`. Defaults numeric and percent columns to right alignment. Alias: `alignment`. |
-| `totals` | no | Pipe-separated footer row with the same number of cells as `columns`, for example `totals="Total|55959|71.9|"`. Boolean values such as `totals="true"` are invalid. Aliases: `total`, `footer`. |
+| `totals` | no | Pipe-separated footer row with the same number of cells as `columns`, for example `totals="Total|5580|71.9|"`. Boolean values such as `totals="true"` are invalid. Aliases: `total`, `footer`. |
 | `highlights` | no | Semicolon-separated row or cell highlights. Use `2:orange` for row 2 or `1.3:green` for row 1, column 3. Supports `blue`, `green`, `orange`, `red`, `muted`. Alias: `highlight`. |
 | `caption` | no | Visible caption below the table. |
 | `source` | no | Source note under the caption. |
@@ -529,10 +529,10 @@ Use `report-insight` for finding, evidence, impact, and action narrative. Do not
 <report-insight
   variant="warning"
   title="Journey concentration"
-  finding="One journey dominates April activity."
-  evidence="J0107 accounts for 67.1% of observed volume."
+  finding="One journey dominates synthetic sample activity."
+  evidence="Journey A accounts for 67% of observed volume."
   impact="Monitoring should be tuned around this journey."
-  action="Validate J0116 while calibrating J0107 thresholds."
+  action="Validate Journey D while calibrating Journey A thresholds."
 ></report-insight>
 ```
 
@@ -555,12 +555,12 @@ Use `report-recommendation` for owned actions, decisions, and next steps. Do not
 
 ```md
 <report-recommendation
-  title="Validate the unregistered journey"
+  title="Validate the unmapped journey"
   owner="Operations"
   priority="High"
   due="Week 1"
   status="Watch"
->Confirm whether J0116 is a new journey or a data quality issue.</report-recommendation>
+>Confirm whether Journey D is a new synthetic flow or a data quality issue.</report-recommendation>
 ```
 
 Supported attributes:
@@ -581,7 +581,7 @@ The component must include title or body text.
 Use `report-source-note` for citations, methodology, assumptions, and data freshness notes. Do not hand-author aside blocks for standard source notes.
 
 ```md
-<report-source-note title="Methodology" source="Journey export" date="April 2026">
+<report-source-note title="Methodology" source="Synthetic sample export" date="Synthetic sample">
 Cases are counted from completed journey records and exclude test journeys.
 </report-source-note>
 ```
@@ -602,14 +602,14 @@ The note must include at least one of title, body text, source, or date.
 Use `report-source-list` for reusable numbered sources and `report-cite` for inline references. Do not hand-author citation links, numbered source lists, or footnote HTML.
 
 ```md
-Completion rates use the April extract <report-cite source="journey-export"></report-cite>.
+Completion rates use the synthetic extract <report-cite source="journey-export"></report-cite>.
 
 <report-source-list title="Sources">
   <report-source
     id="journey-export"
-    title="April journey export"
+    title="synthetic sample export"
     publisher="Operations"
-    date="April 2026"
+    date="Synthetic sample"
   >Completed journey records excluding test journeys.</report-source>
 </report-source-list>
 ```
@@ -648,7 +648,7 @@ Use `report-card-grid` for grouped insights, action plans, ownership summaries, 
 
 ```md
 <report-card-grid title="Action plan" columns="3">
-  <report-card title="Confirm" accent="orange">Determine whether J0116 is a new journey or a data quality issue.</report-card>
+  <report-card title="Confirm" accent="orange">Determine whether Journey D is a new synthetic flow or a data quality issue.</report-card>
   <report-card title="Track" accent="blue">Add month-over-month monitoring for the top three journeys.</report-card>
   <report-card title="Calibrate" accent="green">Tune operational monitoring around the dominant journey.</report-card>
 </report-card-grid>
@@ -677,7 +677,7 @@ Use `report-timeline` for ordered milestones, delivery paths, decision logs, and
 
 ```md
 <report-timeline title="Delivery path">
-  <report-event date="Week 1" title="Confirm journey mapping" status="watch">Resolve whether J0116 is a new journey or a data quality issue.</report-event>
+  <report-event date="Week 1" title="Confirm journey mapping" status="watch">Resolve whether Journey D is a new synthetic flow or a data quality issue.</report-event>
   <report-event date="Week 2" title="Add monthly tracking" status="active">Add month-over-month monitoring for the top three journeys.</report-event>
   <report-event date="Week 3" title="Tune monitoring" status="pending">Calibrate operational monitoring around the dominant journey.</report-event>
 </report-timeline>
@@ -706,7 +706,7 @@ Use `report-callout` for findings, risks, and next actions. Do not hand-author `
 
 ```md
 <report-callout variant="warning" title="Action">
-J0116 generated meaningful volume but is not in the registered journey profile.
+Journey D generated meaningful volume but is not in the synthetic journey profile.
 </report-callout>
 ```
 
@@ -724,7 +724,7 @@ Use `report-accent-card` for highlighted recommendations, risks, ownership notes
 
 ```md
 <report-accent-card accent="green" title="Recommended focus">
-Prioritise monitoring for J0107 while validating whether J0116 is a real journey.
+Prioritise monitoring for Journey A while validating whether Journey D is a synthetic flow.
 </report-accent-card>
 ```
 
@@ -761,8 +761,8 @@ Use `report-figure` for screenshots, diagrams, and other embedded report images.
 <report-figure
   src="images/journey-volume.svg"
   alt="Sample journey volume snapshot"
-  caption="Journey volume is concentrated in J0107."
-  source="Source: April journey export"
+  caption="Journey volume is concentrated in Journey A."
+  source="Source: synthetic sample export"
   size="wide"
 ></report-figure>
 ```

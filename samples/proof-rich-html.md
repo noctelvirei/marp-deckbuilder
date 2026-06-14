@@ -1,7 +1,7 @@
 ---
 title: Proof Demo - Renderer Components
 presenter:
-  name: Sam Taylor
+  name: Demo Presenter
   role: Solutions
 ---
 
@@ -87,4 +87,4 @@ This deck proves that compact Markdown can carry expressive slide intent while t
 
 ---
 
-<deck-close title="Built from one Markdown file" name="Sam Taylor" role="Solutions"></deck-close>
+<deck-close title="Built from one Markdown file" name="Demo Presenter" role="Solutions"></deck-close>

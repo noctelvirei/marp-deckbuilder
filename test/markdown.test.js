@@ -308,16 +308,16 @@ test('parses sankey deck charts as flow links', () => {
   type="sankey"
   title="Journey flow"
   series="Cases"
-  links="Opened>Started:44120, Started>Completed:37980, Started>Exception:3751, Exception>Recovered:2160"
+  links="Opened>Started:4400, Started>Completed:3800, Started>Exception:380, Exception>Recovered:220"
 ></deck-chart>`)
 
   assert.equal(deck.slides[0].layout, 'chart')
   assert.equal(deck.slides[0].chart.chartType, 'sankey')
   assert.deepEqual(deck.slides[0].chart.links, [
-    { source: 'Opened', target: 'Started', value: 44120 },
-    { source: 'Started', target: 'Completed', value: 37980 },
-    { source: 'Started', target: 'Exception', value: 3751 },
-    { source: 'Exception', target: 'Recovered', value: 2160 },
+    { source: 'Opened', target: 'Started', value: 4400 },
+    { source: 'Started', target: 'Completed', value: 3800 },
+    { source: 'Started', target: 'Exception', value: 380 },
+    { source: 'Exception', target: 'Recovered', value: 220 },
   ])
   assert.match(deck.slides[0].source, /deck-chart-sankey/)
   assert.match(deck.slides[0].source, /deck-chart-sankey-svg/)
@@ -332,7 +332,7 @@ test('parses deck-slide metadata as renderer-owned slide directives', () => {
   takeaway="Use a governed pilot."
   html-skip="true"
   customer-logo="resource:logos/customer.svg"
-  customer-name="HSBC"
+  customer-name="Customer A"
 />
 
 # Target journey
@@ -346,7 +346,7 @@ Body copy`)
   assert.equal(deck.slides[0].directives['html-skip'], 'true')
   assert.deepEqual(deck.slides[0].customerLogo, {
     src: 'resource:logos/customer.svg',
-    alt: 'HSBC',
+    alt: 'Customer A',
   })
   assert.doesNotMatch(deck.slides[0].source, /<deck-slide/)
 })
@@ -513,15 +513,15 @@ test('parses deck-treemap as a structured treemap component', () => {
 
 <deck-treemap
   title="Portfolio mix"
-  labels="J0107, J0106, J0101, J0116"
-  values="52208, 11119, 8648, 3751"
+  labels="Journey A, Journey B, Journey C, Journey D"
+  values="5200, 1100, 860, 380"
   unit=" cases"
 ></deck-treemap>`)
 
   assert.equal(deck.slides[0].layout, 'treemap')
   assert.equal(deck.slides[0].treemap.title, 'Portfolio mix')
-  assert.deepEqual(deck.slides[0].treemap.labels, ['J0107', 'J0106', 'J0101', 'J0116'])
-  assert.deepEqual(deck.slides[0].treemap.values, [52208, 11119, 8648, 3751])
+  assert.deepEqual(deck.slides[0].treemap.labels, ['Journey A', 'Journey B', 'Journey C', 'Journey D'])
+  assert.deepEqual(deck.slides[0].treemap.values, [5200, 1100, 860, 380])
   assert.match(deck.slides[0].source, /class="deck-treemap/)
   assert.doesNotMatch(deck.slides[0].source, /<deck-treemap/i)
 })
@@ -606,8 +606,8 @@ test('infers slide surfaces and customer logo chrome metadata', () => {
 companyLogo: resource:logos/lightico.svg
 companyName: Lightico
 customer:
-  name: HSBC
-  logo: resource:logos/hsbc.svg
+  name: Customer A
+  logo: resource:logos/customer-a.svg
 ---
 
 # Cover
@@ -625,8 +625,8 @@ Body copy`)
   assert.equal(deck.slides[0].surface, 'dark')
   assert.equal(deck.slides[0].companyLogo.src, 'resource:logos/lightico.svg')
   assert.equal(deck.slides[0].companyLogo.alt, 'Lightico')
-  assert.equal(deck.slides[0].customerLogo.src, 'resource:logos/hsbc.svg')
-  assert.equal(deck.slides[0].customerLogo.alt, 'HSBC')
+  assert.equal(deck.slides[0].customerLogo.src, 'resource:logos/customer-a.svg')
+  assert.equal(deck.slides[0].customerLogo.alt, 'Customer A')
   assert.equal(deck.slides[1].surface, 'light')
   assert.equal(deck.slides[1].companyLogo.src, 'resource:logos/lightico.svg')
   assert.equal(deck.slides[1].customerLogo.src, 'resource:logos/inline.svg')

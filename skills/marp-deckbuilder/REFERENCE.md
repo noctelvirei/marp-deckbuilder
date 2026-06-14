@@ -163,8 +163,8 @@ Customer logo frontmatter:
 ```yaml
 ---
 title: Partnership update
-customerLogo: resource:logos/hsbc.svg
-customerName: HSBC
+customerLogo: resource:logos/customer-a.svg
+customerName: Customer A
 ---
 ```
 
@@ -173,8 +173,8 @@ Nested customer metadata is also accepted:
 ```yaml
 ---
 customer:
-  name: HSBC
-  logo: resource:logos/hsbc.svg
+  name: Customer A
+  logo: resource:logos/customer-a.svg
 ---
 ```
 
@@ -183,7 +183,7 @@ logo, when present, is placed top right. These slots are applied to both HTML an
 PPTX output. For slide-specific logo overrides, use `deck-slide` metadata:
 
 ```md
-<deck-slide customer-logo="resource:logos/hsbc.svg" customer-name="HSBC" />
+<deck-slide customer-logo="resource:logos/customer-a.svg" customer-name="Customer A" />
 ```
 
 Do not place customer logos with raw `<img>` tags. Use frontmatter or
@@ -199,16 +199,16 @@ transparent PNGs.
 
 Authors should still reference one logical logo in deck frontmatter and
 `deck-logo-wall` items. If the frontmatter says
-`customerLogo: resource:logos/hsbc.png`, or a logo wall item uses that same
+`customerLogo: resource:logos/customer-a.png`, or a logo wall item uses that same
 resource, the renderer automatically prefers sibling surface variants when they
 exist:
 
-- dark slides: `hsbc.dark.png`, `hsbc-dark.png`, `hsbc.on-dark.png`, `hsbc-on-dark.png`
-- light slides: `hsbc.light.png`, `hsbc-light.png`, `hsbc.on-light.png`, `hsbc-on-light.png`
+- dark slides: `customer-a.dark.png`, `customer-a-dark.png`, `customer-a.on-dark.png`, `customer-a-on-dark.png`
+- light slides: `customer-a.light.png`, `customer-a-light.png`, `customer-a.on-light.png`, `customer-a-on-light.png`
 
 Surface variants may use a different image extension from the canonical
-reference. For example, `resource:logos/hsbc.svg` may resolve to
-`resource:logos/hsbc.dark.png` on a dark slide. If no surface variant exists, the
+reference. For example, `resource:logos/customer-a.svg` may resolve to
+`resource:logos/customer-a.dark.png` on a dark slide. If no surface variant exists, the
 renderer falls back to the referenced asset.
 
 Recommended brand asset contract:
@@ -661,7 +661,7 @@ itself, and the flow graph must not contain cycles.
   type="sankey"
   title="Journey flow"
   series="Cases"
-  links="Opened>Started:44120, Started>Completed:37980, Started>Exception:3751, Exception>Recovered:2160"
+  links="Opened>Started:4400, Started>Completed:3800, Started>Exception:380, Exception>Recovered:220"
 ></deck-chart>
 ```
 
@@ -780,8 +780,8 @@ the treemap layout in both HTML and PPTX.
 ```md
 <deck-treemap
   title="Portfolio mix"
-  labels="J0107, J0106, J0101, J0116"
-  values="52208, 11119, 8648, 3751"
+  labels="Journey A, Journey B, Journey C, Journey D"
+  values="5200, 1100, 860, 380"
   unit=" cases"
   caption="Tile area is proportional to case volume."
 ></deck-treemap>
@@ -866,7 +866,7 @@ Compact two-column syntax is also supported:
 <deck-proof
   customer="Example Bank"
   bridge="Prospect relevance: the same controls apply to high-volume onboarding journeys."
-  source="Source: sample operating metrics, May 2026"
+  source="Source: synthetic operating metrics"
 >
   <deck-stat value="55%" label="less manual handling"></deck-stat>
   <deck-stat value="2.4x" label="faster completion"></deck-stat>
@@ -1066,7 +1066,7 @@ small portfolio-mix stories, use `deck-signal-bars` instead of raw HTML/SVG:
   metric="97%"
   metric-label="from the top two clients"
   title="Client volume split"
-  labels="TD, HSBC-RBWM, Other active"
+  labels="Pilot, Customer A Region, Other active"
   values="65, 32, 3"
   unit="%"
 ></deck-signal-bars>
@@ -1154,8 +1154,8 @@ For portfolio/composition treemaps, use `deck-treemap` instead of raw D3:
 
 <deck-treemap
   title="Portfolio mix"
-  labels="J0107, J0106, J0101, J0116"
-  values="52208, 11119, 8648, 3751"
+  labels="Journey A, Journey B, Journey C, Journey D"
+  values="5200, 1100, 860, 380"
   unit=" cases"
 ></deck-treemap>
 ```
@@ -1213,8 +1213,8 @@ those capabilities.
 <deck-chart
   type="bar"
   title="Cases by journey"
-  labels="J0107, J0106, J0101, J0116"
-  values="52208, 11119, 8648, 3751"
+  labels="Journey A, Journey B, Journey C, Journey D"
+  values="5200, 1100, 860, 380"
 ></deck-chart>
 ```
 

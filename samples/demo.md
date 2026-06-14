@@ -119,7 +119,7 @@ The process is workable, but slow at precisely the moments customers expect spee
 <deck-proof
   customer="Example Bank"
   bridge="Prospect relevance: the same controls apply to high-volume onboarding journeys."
-  source="Source: sample operating metrics, May 2026"
+  source="Source: synthetic operating metrics"
 >
   <deck-stat value="55%" label="less manual handling"></deck-stat>
   <deck-stat value="2.4x" label="faster document completion"></deck-stat>

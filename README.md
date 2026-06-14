@@ -296,8 +296,8 @@ Important logo behaviour:
 - Customer logos should keep their original brand colours.
 - Customer logos should be supplied as transparent PNGs prepared for the chosen surface.
 - For dark executive decks, use customer logo PNG exports with light/white wordmark text and no white rectangle behind the logo.
-- Authors still reference one logical logo in Markdown. This applies to `customerLogo` frontmatter and `deck-logo-wall` images. If the reference is `resource:customers/hsbc.png`, the renderer automatically prefers `customers/hsbc.dark.png`, `customers/hsbc-dark.png`, `customers/hsbc.on-dark.png`, or `customers/hsbc-on-dark.png` on dark slides when present. On light slides it similarly prefers `.light`, `-light`, `.on-light`, or `-on-light` siblings. If no surface variant exists, it falls back to the original asset.
-- Surface variants may use a different image extension from the canonical reference, so `resource:customers/hsbc.svg` can resolve to `customers/hsbc.dark.png` when marketing supplies that file.
+- Authors still reference one logical logo in Markdown. This applies to `customerLogo` frontmatter and `deck-logo-wall` images. If the reference is `resource:customers/customer-a.png`, the renderer automatically prefers `customers/customer-a.dark.png`, `customers/customer-a-dark.png`, `customers/customer-a.on-dark.png`, or `customers/customer-a-on-dark.png` on dark slides when present. On light slides it similarly prefers `.light`, `-light`, `.on-light`, or `-on-light` siblings. If no surface variant exists, it falls back to the original asset.
+- Surface variants may use a different image extension from the canonical reference, so `resource:customers/customer-a.svg` can resolve to `customers/customer-a.dark.png` when marketing supplies that file.
 - Do not rely on CSS filter inversion.
 - Use `customerLogoBackplate: true` only as a legacy fallback when a customer asset cannot be prepared as a transparent PNG.
 
@@ -433,7 +433,7 @@ The report renderer injects vendored chart libraries into the generated HTML hea
 
 Legal boilerplate is part of the branded report chrome. Put approved wording in `resources/definitions/brand.json` or a branded fork's `tool/resources/definitions/brand.json` under `report.legal` or `report.legalNotice`; do not ask report authors to paste legal footer text into individual Markdown files.
 
-Report component attributes use one separator convention: semicolons separate repeated records or items, pipes separate fields inside one record, and commas separate simple one-dimensional chart series. For example, `report-key-values` uses `items="Scope: TD; Platform: v2"`, while table rows use `rows="A|1; B|2"`.
+Report component attributes use one separator convention: semicolons separate repeated records or items, pipes separate fields inside one record, and commas separate simple one-dimensional chart series. For example, `report-key-values` uses `items="Scope: Pilot; Platform: v2"`, while table rows use `rows="A|1; B|2"`.
 
 Use `skills/marp-report/SKILL.md` and `skills/marp-report/REFERENCE.md` for report-specific syntax. Keep report guidance out of the presentation skill unless it is a shared concept.
 

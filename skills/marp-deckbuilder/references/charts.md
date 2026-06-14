@@ -36,7 +36,7 @@ Separator rules:
 - Use commas for one-dimensional lists: `labels="A, B"` and `values="10, 20"`.
 - Use semicolons between matrix rows: `values="10,20; 12,24"`.
 - Use pipes inside observation rows or scatter rows: `points="2|8|Automate; 5|6|Consolidate"`.
-- Use commas between Sankey links: `links="Opened>Started:44120, Started>Completed:37980"`.
+- Use commas between Sankey links: `links="Opened>Started:4400, Started>Completed:3800"`.
 
 ## Chart Types
 
@@ -164,6 +164,6 @@ Separator rules:
   type="sankey"
   title="Journey flow"
   series="Cases"
-  links="Opened>Started:44120, Started>Completed:37980, Started>Exception:3751, Exception>Recovered:2160"
+  links="Opened>Started:4400, Started>Completed:3800, Started>Exception:380, Exception>Recovered:220"
 ></deck-chart>
 ```

@@ -45,6 +45,19 @@ import { isKnownBadgeVariant, parseDataTableNumber } from './report-components/u
 
 const dataRefChartTypes = ['bar', 'line', 'doughnut', 'waterfall', 'bullet', 'pareto', 'grouped-bar', 'stacked-bar']
 const dataRefChartTypeList = formatReportList(dataRefChartTypes)
+const singleSeriesLabelValueChartTypes = new Set([
+  'bar',
+  'line',
+  'doughnut',
+  'area',
+  'treemap',
+  'funnel',
+  'waterfall',
+  'bullet',
+  'scatter',
+  'histogram',
+  'pareto',
+])
 
 const knownReportTags = new Set([
   'report-accent-card',
@@ -585,6 +598,9 @@ function validateReportChart(chart, context) {
       context,
     )
   }
+  if (singleSeriesLabelValueChartTypes.has(chart.chartType)) {
+    validateReportChartLabelValueCount(chart, context)
+  }
   if (chart.chartType === 'area') {
     if (chart.points.length === 0) {
       fail('report-chart type="area" requires non-empty points or labels/values attributes.', context)
@@ -668,14 +684,18 @@ function validateReportChartLabelsAndValues(chart, context) {
   if (chart.labels.length === 0 || chart.values.length === 0) {
     fail('report-chart requires non-empty labels and values attributes.', context)
   }
-  if (chart.labels.length !== chart.values.length) {
-    fail(
-      `report-chart labels/values length mismatch: ${chart.labels.length} label(s), ${chart.values.length} value(s).`,
-      context,
-    )
-  }
+  validateReportChartLabelValueCount(chart, context)
   if (chart.values.some((value) => !Number.isFinite(value))) {
     fail('report-chart values must all be numeric.', context)
+  }
+}
+
+function validateReportChartLabelValueCount(chart, context) {
+  if (chart.labels.length > 0 && chart.values.length > 0 && chart.labels.length !== chart.values.length) {
+    fail(
+      `report-chart type="${chart.chartType}" labels/values length mismatch: ${chart.labels.length} label(s), ${chart.values.length} value(s).`,
+      context,
+    )
   }
 }
 
@@ -906,7 +926,7 @@ function validateReportDataTable(table, context) {
     fail('report-data-table requires at least one row in rows or data.', context)
   }
   if (isBooleanAttributeToken(table.rawTotals)) {
-    fail('report-data-table totals must be a pipe-separated footer row, not a boolean. Example: totals="Total|55959|71.9|".', context)
+    fail('report-data-table totals must be a pipe-separated footer row, not a boolean. Example: totals="Total|5580|71.9|".', context)
   }
   if (table.types.length !== table.columns.length) {
     fail(
@@ -983,7 +1003,7 @@ function validateReportKeyValues(keyValues, context) {
   }
   if (looksLikePipeDelimitedKeyValueItems(keyValues.rawItems)) {
     fail(
-      'report-key-values items must separate items with semicolons, not pipes. Use items="Scope: TD (T011); Platform: v2; Period: 1 Jan - 11 Jun 2026". Pipes are reserved for fields inside table rows, datasets, and matrix values.',
+      'report-key-values items must separate items with semicolons, not pipes. Use items="Scope: Pilot (P001); Platform: v2; Period: Demo period". Pipes are reserved for fields inside table rows, datasets, and matrix values.',
       context,
     )
   }

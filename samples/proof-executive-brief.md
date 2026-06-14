@@ -1,7 +1,7 @@
 ---
 title: Proof Demo - Executive Brief
 presenter:
-  name: Alex Morgan
+  name: Executive Presenter
   role: GTM Strategy
 ---
 
@@ -83,7 +83,7 @@ The current process is stable, but the handoffs slow down the moments where conf
   title="Median cycle time by month"
   series="Days"
   labels="Jan, Feb, Mar, Apr, May"
-  values="5.1, 4.8, 4.4, 4.2, 3.7"
+  values="5.1, 5, 4.4, 4.2, 3.7"
 ></deck-chart>
 
 ---
@@ -120,7 +120,7 @@ The current process is stable, but the handoffs slow down the moments where conf
 <deck-proof
   customer="Reference customer"
   bridge="Prospect relevance: the same operating controls apply to high-volume service journeys."
-  source="Source: sample operating benchmark, May 2026"
+  source="Source: synthetic benchmark"
 >
   <deck-stat value="44%" label="less manual follow-up"></deck-stat>
   <deck-stat value="2.1x" label="faster completion"></deck-stat>
@@ -143,4 +143,4 @@ The current process is stable, but the handoffs slow down the moments where conf
 
 ---
 
-<deck-close title="Thank you" name="Alex Morgan" role="GTM Strategy"></deck-close>
+<deck-close title="Thank you" name="Executive Presenter" role="GTM Strategy"></deck-close>

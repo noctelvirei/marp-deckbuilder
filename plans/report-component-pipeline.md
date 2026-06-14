@@ -50,8 +50,8 @@ Example authoring shape:
 <report-chart
   type="bar"
   title="Cases by journey"
-  labels="J0107,J0106,J0101,J0116"
-  values="52208,11119,8648,3751"
+  labels="Journey A,Journey B,Journey C,Journey D"
+  values="5200,1100,860,380"
 ></report-chart>
 ```
 
@@ -79,7 +79,7 @@ Example authoring shape:
 ```md
 ---
 title: Sample Usage Report
-subtitle: April 2026 journey volume
+subtitle: Synthetic journey volume
 reportTheme: dark
 reportNav: true
 ---

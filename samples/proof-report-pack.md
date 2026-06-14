@@ -1,7 +1,7 @@
 ---
 title: Proof Demo - Reporting Pack
 presenter:
-  name: Priya Shah
+  name: Report Presenter
   role: Operations Analytics
 ---
 
@@ -28,7 +28,7 @@ Markdown in, HTML and editable PPTX out.
 # The month closed ahead of target
 
 <deck-stat-grid>
-  <deck-stat value="12,840" label="journeys completed"></deck-stat>
+  <deck-stat value="12,800" label="journeys completed"></deck-stat>
   <deck-stat value="92%" label="completed within SLA"></deck-stat>
   <deck-stat value="8.7/10" label="customer effort score"></deck-stat>
 </deck-stat-grid>
@@ -119,4 +119,4 @@ Volume increased without creating a matching rise in ageing or exceptions.
 
 ---
 
-<deck-close title="Questions" name="Priya Shah" role="Operations Analytics"></deck-close>
+<deck-close title="Questions" name="Report Presenter" role="Operations Analytics"></deck-close>

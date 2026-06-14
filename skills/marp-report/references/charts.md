@@ -11,8 +11,8 @@ Report Markdown must still use renderer-owned components only. If the user asks 
   type="bar"
   title="Cases by journey"
   series="Cases"
-  labels="J0107,J0106,J0101,J0116"
-  values="52208,11119,8648,3751"
+  labels="Journey A,Journey B,Journey C,Journey D"
+  values="5200,1100,860,380"
 ></report-chart>
 ```
 
@@ -37,7 +37,7 @@ Separator rules:
 - Use commas for one-dimensional lists: `labels="A,B"` and `values="10,20"`.
 - Use semicolons between matrix rows: `values="10|20;12|24"`.
 - Use pipes inside matrix rows: `series="Opened|Completed"` and `values="10|8;12|9"`.
-- Use commas between Sankey links: `links="Opened>Started:44120,Started>Completed:37980"`.
+- Use commas between Sankey links: `links="Opened>Started:4400,Started>Completed:3800"`.
 
 ## Chart Types
 
@@ -71,7 +71,7 @@ Separator rules:
 <report-dataset
   id="journey-volume"
   columns="Journey|Cases|Target|Status"
-  rows="J0107|52208|55000|Active;J0106|11119|12000|Active"
+  rows="Journey A|5200|5500|Active;Journey B|1100|1200|Active"
 ></report-dataset>
 
 <report-chart
@@ -184,7 +184,7 @@ Dataset-specific attributes:
   title="Journey weekday intensity"
   value-suffix=" cases"
   x-labels="Mon|Tue|Wed|Thu|Fri"
-  y-labels="J0107|J0106|J0101|J0116"
+  y-labels="Journey A|Journey B|Journey C|Journey D"
   values="11920|12380|11650|12710|13120;2480|2640|2710|2820|2469;2020|2140|1980|2230|2278;620|720|760|810|841"
 ></report-chart>
 ```
@@ -197,6 +197,6 @@ Dataset-specific attributes:
   title="Journey flow"
   series="Cases"
   value-suffix=" cases"
-  links="Opened>Started:44120,Started>Completed:37980,Started>Exception:3751,Exception>Recovered:2160"
+  links="Opened>Started:4400,Started>Completed:3800,Started>Exception:380,Exception>Recovered:220"
 ></report-chart>
 ```

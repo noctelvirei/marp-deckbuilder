@@ -1,7 +1,7 @@
 ---
 title: Proof Demo - HTML Showcase
 presenter:
-  name: Jordan Lee
+  name: Strategy Presenter
   role: Customer Strategy
 ---
 
@@ -84,4 +84,4 @@ The PPTX handoff keeps the core message editable without trying to flatten every
 
 ---
 
-<deck-close title="HTML for impact. PPTX for handoff." name="Jordan Lee" role="Customer Strategy"></deck-close>
+<deck-close title="HTML for impact. PPTX for handoff." name="Strategy Presenter" role="Customer Strategy"></deck-close>
