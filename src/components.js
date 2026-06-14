@@ -1,5 +1,6 @@
 import * as cheerio from 'cheerio'
 
+import { animationAttributes } from './animations/registry.js'
 import { expandSelfClosingComponentTags } from './component-tags.js'
 import {
   parseChart,
@@ -146,6 +147,7 @@ const deckComponentAttributeAllowList = new Map([
     'customer-logo',
     'customer-name',
     'customer-alt',
+    ...animationAttributes,
   ]],
   ['deck-stat', ['value', 'label']],
   ['deck-stat-grid', []],

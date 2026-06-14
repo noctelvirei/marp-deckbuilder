@@ -32316,6 +32316,367 @@ var jsYaml = {
   safeDump
 };
 
+// src/animations/registry.js
+var animationAttributes = [
+  "animation",
+  "animation-trigger",
+  "animation-duration",
+  "animation-delay",
+  "animation-direction",
+  "animation-sequence"
+];
+var registry = /* @__PURE__ */ new Map([
+  ["enter-appear", {
+    name: "enter-appear",
+    kind: "entrance",
+    htmlClass: "deck-anim-enter-appear",
+    htmlKeyframes: "deck-presentation-enter-appear",
+    pptx: {
+      presetId: 1,
+      presetClass: "entr",
+      presetSubtype: 0,
+      behaviors: []
+    }
+  }],
+  ["enter-fade", {
+    name: "enter-fade",
+    kind: "entrance",
+    htmlClass: "deck-anim-enter-fade",
+    htmlKeyframes: "deck-presentation-enter-fade",
+    pptx: {
+      presetId: 10,
+      presetClass: "entr",
+      presetSubtype: 0,
+      behaviors: [
+        { type: "filter", transition: "in", filter: "fade" }
+      ]
+    }
+  }],
+  ["enter-fly", {
+    name: "enter-fly",
+    kind: "entrance",
+    htmlClass: "deck-anim-enter-fly",
+    htmlKeyframes: "deck-presentation-enter-fly",
+    pptx: {
+      presetId: 2,
+      presetClass: "entr",
+      presetSubtype: 4,
+      behaviors: [
+        {
+          type: "animate",
+          attribute: "ppt_x",
+          additive: "base",
+          fill: "hold",
+          values: [
+            { time: 0, value: "#ppt_x" },
+            { time: 1e5, value: "#ppt_x" }
+          ]
+        },
+        {
+          type: "animate",
+          attribute: "ppt_y",
+          additive: "base",
+          fill: "hold",
+          values: [
+            { time: 0, value: "1+#ppt_h/2" },
+            { time: 1e5, value: "#ppt_y" }
+          ]
+        }
+      ]
+    }
+  }],
+  ["enter-wipe", {
+    name: "enter-wipe",
+    kind: "entrance",
+    htmlClass: "deck-anim-enter-wipe",
+    htmlKeyframes: "deck-presentation-enter-wipe",
+    pptx: {
+      presetId: 22,
+      presetClass: "entr",
+      presetSubtype: 4,
+      behaviors: [
+        { type: "filter", transition: "in", filter: "wipe(down)" }
+      ]
+    }
+  }],
+  ["enter-zoom", {
+    name: "enter-zoom",
+    kind: "entrance",
+    htmlClass: "deck-anim-enter-zoom",
+    htmlKeyframes: "deck-presentation-enter-zoom",
+    pptx: {
+      presetId: 23,
+      presetClass: "entr",
+      presetSubtype: 16,
+      behaviors: [
+        {
+          type: "animate",
+          attribute: "ppt_w",
+          fill: "hold",
+          values: [
+            { time: 0, value: 0, valueType: "float" },
+            { time: 1e5, value: "#ppt_w" }
+          ]
+        },
+        {
+          type: "animate",
+          attribute: "ppt_h",
+          fill: "hold",
+          values: [
+            { time: 0, value: 0, valueType: "float" },
+            { time: 1e5, value: "#ppt_h" }
+          ]
+        }
+      ]
+    }
+  }],
+  ["enter-split", {
+    name: "enter-split",
+    kind: "entrance",
+    htmlClass: "deck-anim-enter-split",
+    htmlKeyframes: "deck-presentation-enter-split",
+    pptx: {
+      presetId: 16,
+      presetClass: "entr",
+      presetSubtype: 21,
+      behaviors: [
+        { type: "filter", transition: "in", filter: "barn(inVertical)" }
+      ]
+    }
+  }],
+  ["enter-wheel", {
+    name: "enter-wheel",
+    kind: "entrance",
+    htmlClass: "deck-anim-enter-wheel",
+    htmlKeyframes: "deck-presentation-enter-wheel",
+    pptx: {
+      presetId: 21,
+      presetClass: "entr",
+      presetSubtype: 1,
+      behaviors: [
+        { type: "filter", transition: "in", filter: "wheel(1)" }
+      ]
+    }
+  }],
+  ["enter-box", {
+    name: "enter-box",
+    kind: "entrance",
+    htmlClass: "deck-anim-enter-box",
+    htmlKeyframes: "deck-presentation-enter-box",
+    pptx: {
+      presetId: 4,
+      presetClass: "entr",
+      presetSubtype: 16,
+      behaviors: [
+        { type: "filter", transition: "in", filter: "box(in)" }
+      ]
+    }
+  }],
+  ["enter-diamond", {
+    name: "enter-diamond",
+    kind: "entrance",
+    htmlClass: "deck-anim-enter-diamond",
+    htmlKeyframes: "deck-presentation-enter-diamond",
+    pptx: {
+      presetId: 8,
+      presetClass: "entr",
+      presetSubtype: 16,
+      behaviors: [
+        { type: "filter", transition: "in", filter: "diamond(in)" }
+      ]
+    }
+  }],
+  ["enter-circle", {
+    name: "enter-circle",
+    kind: "entrance",
+    htmlClass: "deck-anim-enter-circle",
+    htmlKeyframes: "deck-presentation-enter-circle",
+    pptx: {
+      presetId: 6,
+      presetClass: "entr",
+      presetSubtype: 16,
+      behaviors: [
+        { type: "filter", transition: "in", filter: "circle(in)" }
+      ]
+    }
+  }],
+  ["enter-blinds", {
+    name: "enter-blinds",
+    kind: "entrance",
+    htmlClass: "deck-anim-enter-blinds",
+    htmlKeyframes: "deck-presentation-enter-blinds",
+    pptx: {
+      presetId: 3,
+      presetClass: "entr",
+      presetSubtype: 10,
+      behaviors: [
+        { type: "filter", transition: "in", filter: "blinds(horizontal)" }
+      ]
+    }
+  }],
+  ["enter-checkerboard", {
+    name: "enter-checkerboard",
+    kind: "entrance",
+    htmlClass: "deck-anim-enter-checkerboard",
+    htmlKeyframes: "deck-presentation-enter-checkerboard",
+    pptx: {
+      presetId: 5,
+      presetClass: "entr",
+      presetSubtype: 10,
+      behaviors: [
+        { type: "filter", transition: "in", filter: "checkerboard(across)" }
+      ]
+    }
+  }],
+  ["enter-random-bars", {
+    name: "enter-random-bars",
+    kind: "entrance",
+    htmlClass: "deck-anim-enter-random-bars",
+    htmlKeyframes: "deck-presentation-enter-random-bars",
+    pptx: {
+      presetId: 14,
+      presetClass: "entr",
+      presetSubtype: 10,
+      behaviors: [
+        { type: "filter", transition: "in", filter: "randombar(horizontal)" }
+      ]
+    }
+  }],
+  ["enter-dissolve", {
+    name: "enter-dissolve",
+    kind: "entrance",
+    htmlClass: "deck-anim-enter-dissolve",
+    htmlKeyframes: "deck-presentation-enter-dissolve",
+    pptx: {
+      presetId: 9,
+      presetClass: "entr",
+      presetSubtype: 0,
+      behaviors: [
+        { type: "filter", transition: "in", filter: "dissolve" }
+      ]
+    }
+  }],
+  ["enter-peek", {
+    name: "enter-peek",
+    kind: "entrance",
+    htmlClass: "deck-anim-enter-peek",
+    htmlKeyframes: "deck-presentation-enter-peek",
+    pptx: {
+      presetId: 12,
+      presetClass: "entr",
+      presetSubtype: 4,
+      behaviors: [
+        {
+          type: "animate",
+          attribute: "ppt_y",
+          additive: "base",
+          values: [
+            { time: 0, value: "#ppt_y+#ppt_h*1.125000" },
+            { time: 1e5, value: "#ppt_y" }
+          ]
+        },
+        { type: "filter", transition: "in", filter: "wipe(up)" }
+      ]
+    }
+  }],
+  ["enter-strips", {
+    name: "enter-strips",
+    kind: "entrance",
+    htmlClass: "deck-anim-enter-strips",
+    htmlKeyframes: "deck-presentation-enter-strips",
+    pptx: {
+      presetId: 18,
+      presetClass: "entr",
+      presetSubtype: 12,
+      behaviors: [
+        { type: "filter", transition: "in", filter: "strips(downLeft)" }
+      ]
+    }
+  }]
+]);
+function getAnimation(name) {
+  return registry.get(String(name || "").trim().toLowerCase()) || null;
+}
+function supportedAnimationNames() {
+  return [...registry.keys()];
+}
+function supportedAnimationList() {
+  return supportedAnimationNames().join(", ");
+}
+
+// src/animations/normalize.js
+var validTriggers = /* @__PURE__ */ new Set(["on-click", "with-previous", "after-previous"]);
+var validSequences = /* @__PURE__ */ new Set(["together", "stagger"]);
+function normalizeSlideAnimation(directives = {}) {
+  const rawName = clean(directives.animation);
+  if (!rawName || isDisabled(rawName)) return null;
+  const definition = getAnimation(rawName);
+  if (!definition) {
+    throw new Error(
+      `Unsupported deck-slide animation "${rawName}". Supported animations: ${supportedAnimationList()}.`
+    );
+  }
+  const direction = clean(directives["animation-direction"]);
+  if (direction) {
+    throw new Error(`deck-slide animation "${definition.name}" does not support animation-direction.`);
+  }
+  const trigger = normalizeEnum(
+    directives["animation-trigger"],
+    "animation-trigger",
+    validTriggers,
+    "after-previous"
+  );
+  const sequence = normalizeEnum(
+    directives["animation-sequence"],
+    "animation-sequence",
+    validSequences,
+    "together"
+  );
+  return {
+    name: definition.name,
+    trigger,
+    durationMs: normalizeDuration(directives["animation-duration"]),
+    delayMs: normalizeDelay(directives["animation-delay"]),
+    sequence,
+    htmlClass: definition.htmlClass,
+    htmlKeyframes: definition.htmlKeyframes,
+    pptx: definition.pptx
+  };
+}
+function normalizeEnum(value, attribute, validValues, fallback) {
+  const normalized = clean(value);
+  if (!normalized) return fallback;
+  if (validValues.has(normalized)) return normalized;
+  throw new Error(
+    `Unsupported deck-slide ${attribute} "${normalized}". Supported values: ${[...validValues].join(", ")}.`
+  );
+}
+function normalizeDuration(value) {
+  if (value === void 0 || value === null || String(value).trim() === "") return 500;
+  return normalizeMs(value, "animation-duration", { min: 1, max: 6e4 });
+}
+function normalizeDelay(value) {
+  if (value === void 0 || value === null || String(value).trim() === "") return 0;
+  return normalizeMs(value, "animation-delay", { min: 0, max: 6e5 });
+}
+function normalizeMs(value, attribute, { min, max }) {
+  const raw = String(value).trim();
+  if (!/^\d+$/.test(raw)) {
+    throw new Error(`deck-slide ${attribute} must be a whole number of milliseconds.`);
+  }
+  const ms = Number.parseInt(raw, 10);
+  if (ms < min || ms > max) {
+    throw new Error(`deck-slide ${attribute} must be between ${min} and ${max} milliseconds.`);
+  }
+  return ms;
+}
+function clean(value) {
+  return String(value || "").trim().toLowerCase();
+}
+function isDisabled(value) {
+  return ["none", "off", "false", "no", "0"].includes(value);
+}
+
 // node_modules/cheerio/dist/esm/options.js
 var defaultOpts = {
   _useHtmlParser2: false
@@ -46910,7 +47271,8 @@ function parseSlideMeta(slide) {
     "html-skip",
     "pptx-skip",
     "html-only",
-    "pptx-only"
+    "pptx-only",
+    ...animationAttributes
   ]) {
     const value = slide.attr(attr2);
     if (value !== void 0) directives[attr2] = value;
@@ -48066,7 +48428,8 @@ var deckComponentAttributeAllowList = /* @__PURE__ */ new Map([
     "company-alt",
     "customer-logo",
     "customer-name",
-    "customer-alt"
+    "customer-alt",
+    ...animationAttributes
   ]],
   ["deck-stat", ["value", "label"]],
   ["deck-stat-grid", []],
@@ -49270,6 +49633,7 @@ function parseSlide(source, index2, originalSource = source, components = [], fr
   const customerLogo = slideMeta?.customerLogo || extractCustomerLogo(source) || frontmatterCustomerLogo(frontmatter);
   const layoutComponent = firstComponent(components, layout);
   const surface = inferSurface(layout, directives, frontmatter, layoutComponent?.surface);
+  const animation = normalizeSlideAnimation(directives);
   return {
     index: index2,
     source,
@@ -49278,6 +49642,7 @@ function parseSlide(source, index2, originalSource = source, components = [], fr
     directives,
     layout,
     surface,
+    animation,
     title,
     subtitle,
     eyebrow: directives.eyebrow,
@@ -49524,6 +49889,7 @@ function decodeHtml(value) {
 }
 
 export {
+  getAnimation,
   decodeHTML,
   load2 as load,
   expandSelfClosingComponentTags,

@@ -1,5 +1,7 @@
 import pptxgen from 'pptxgenjs'
 
+import { applyPptxAnimations } from './pptx/animations.js'
+import { animationPlanForSlide } from './pptx/animation-targets.js'
 import {
   addCards,
   addChartSlide,
@@ -54,13 +56,20 @@ export async function writePptx({
     lang: 'en-GB',
   }
 
+  const animationPlans = []
+  let pptxSlideNumber = 0
+
   for (const slideModel of deck.slides) {
     if (shouldSkipPptx(slideModel)) continue
     const slide = pptx.addSlide()
+    pptxSlideNumber += 1
     addNativeSlide(pptx, slide, slideModel, deck.frontmatter, brand, resourcesDir)
+    const animationPlan = animationPlanForSlide(slideModel, slide, pptxSlideNumber)
+    if (animationPlan) animationPlans.push(animationPlan)
   }
 
   await pptx.writeFile({ fileName: outputPath })
+  await applyPptxAnimations(outputPath, animationPlans)
 }
 
 export function shouldSkipPptx(slideModel) {

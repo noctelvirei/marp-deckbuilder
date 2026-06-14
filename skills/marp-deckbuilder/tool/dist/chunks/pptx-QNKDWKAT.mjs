@@ -9726,9 +9726,9 @@ var require_load = __commonJS({
 var require_lib3 = __commonJS({
   "node_modules/jszip/lib/index.js"(exports, module) {
     "use strict";
-    function JSZip2() {
-      if (!(this instanceof JSZip2)) {
-        return new JSZip2();
+    function JSZip3() {
+      if (!(this instanceof JSZip3)) {
+        return new JSZip3();
       }
       if (arguments.length) {
         throw new Error("The constructor with parameters has been removed in JSZip 3.0, please check the upgrade guide.");
@@ -9737,7 +9737,7 @@ var require_lib3 = __commonJS({
       this.comment = null;
       this.root = "";
       this.clone = function() {
-        var newObj = new JSZip2();
+        var newObj = new JSZip3();
         for (var i in this) {
           if (typeof this[i] !== "function") {
             newObj[i] = this[i];
@@ -9746,16 +9746,16 @@ var require_lib3 = __commonJS({
         return newObj;
       };
     }
-    JSZip2.prototype = require_object();
-    JSZip2.prototype.loadAsync = require_load();
-    JSZip2.support = require_support();
-    JSZip2.defaults = require_defaults();
-    JSZip2.version = "3.10.1";
-    JSZip2.loadAsync = function(content, options) {
-      return new JSZip2().loadAsync(content, options);
+    JSZip3.prototype = require_object();
+    JSZip3.prototype.loadAsync = require_load();
+    JSZip3.support = require_support();
+    JSZip3.defaults = require_defaults();
+    JSZip3.version = "3.10.1";
+    JSZip3.loadAsync = function(content, options) {
+      return new JSZip3().loadAsync(content, options);
     };
-    JSZip2.external = require_external();
-    module.exports = JSZip2;
+    JSZip3.external = require_external();
+    module.exports = JSZip3;
   }
 });
 
@@ -14933,8 +14933,8 @@ var PptxGenJS = class {
       const data = yield this.exportPresentation({ compression, outputType });
       if (isNode) {
         const { promises: fs } = yield import("node:fs");
-        const { writeFile } = fs;
-        yield writeFile(fileName, data);
+        const { writeFile: writeFile2 } = fs;
+        yield writeFile2(fileName, data);
         return fileName;
       }
       yield this.writeFileToBrowser(fileName, data);
@@ -15078,6 +15078,146 @@ var PptxGenJS = class {
     genTableToSlides(this, eleId, options, (options === null || options === void 0 ? void 0 : options.masterSlideName) ? this.slideLayouts.filter((layout) => layout._name === options.masterSlideName)[0] : null);
   }
 };
+
+// src/pptx/animations.js
+var import_jszip2 = __toESM(require_lib3(), 1);
+import { readFile, writeFile } from "node:fs/promises";
+
+// src/pptx/animation-xml.js
+var staggerStepMs = 120;
+function buildSlideTimingXml({ animation, targetIds }) {
+  const ids = (targetIds || []).filter(Boolean);
+  if (!animation || !ids.length) return "";
+  const counter = { value: 5 };
+  const effects = ids.map((targetId, index) => buildEntranceEffectXml({
+    animation,
+    targetId,
+    nodeType: effectNodeType(animation, index),
+    delayMs: effectDelay(animation, index),
+    counter
+  })).join("");
+  const builds = ids.map((targetId) => `<p:bldP spid="${targetId}" grpId="0" animBg="1"/>`).join("");
+  return `<p:timing><p:tnLst><p:par><p:cTn id="1" dur="indefinite" restart="never" nodeType="tmRoot"><p:childTnLst><p:seq concurrent="1" nextAc="seek"><p:cTn id="2" dur="indefinite" nodeType="mainSeq"><p:childTnLst><p:par><p:cTn id="3" fill="hold"><p:stCondLst>${mainSequenceConditions(animation.trigger)}</p:stCondLst><p:childTnLst><p:par><p:cTn id="4" fill="hold"><p:stCondLst><p:cond delay="0"/></p:stCondLst><p:childTnLst>${effects}</p:childTnLst></p:cTn></p:par></p:childTnLst></p:cTn></p:par></p:childTnLst></p:cTn><p:prevCondLst><p:cond evt="onPrev" delay="0"><p:tgtEl><p:sldTgt/></p:tgtEl></p:cond></p:prevCondLst><p:nextCondLst><p:cond evt="onNext" delay="0"><p:tgtEl><p:sldTgt/></p:tgtEl></p:cond></p:nextCondLst></p:seq></p:childTnLst></p:cTn></p:par></p:tnLst><p:bldLst>${builds}</p:bldLst></p:timing>`;
+}
+function buildEntranceEffectXml({ animation, targetId, nodeType, delayMs, counter }) {
+  const effectId = nextId(counter);
+  const pptx = animation.pptx;
+  const behaviors = [
+    buildVisibilitySetXml({ targetId, counter }),
+    ...(pptx.behaviors || []).map((behavior) => buildBehaviorXml({
+      behavior,
+      animation,
+      targetId,
+      counter
+    }))
+  ].join("");
+  return `<p:par><p:cTn id="${effectId}" presetID="${pptx.presetId}" presetClass="${pptx.presetClass}" presetSubtype="${pptx.presetSubtype}" fill="hold" grpId="0" nodeType="${nodeType}"><p:stCondLst><p:cond delay="${delayMs}"/></p:stCondLst><p:childTnLst>${behaviors}</p:childTnLst></p:cTn></p:par>`;
+}
+function buildVisibilitySetXml({ targetId, counter }) {
+  const setId = nextId(counter);
+  return `<p:set><p:cBhvr><p:cTn id="${setId}" dur="1" fill="hold"><p:stCondLst><p:cond delay="0"/></p:stCondLst></p:cTn><p:tgtEl><p:spTgt spid="${targetId}"/></p:tgtEl><p:attrNameLst><p:attrName>style.visibility</p:attrName></p:attrNameLst></p:cBhvr><p:to><p:strVal val="visible"/></p:to></p:set>`;
+}
+function buildBehaviorXml({ behavior, animation, targetId, counter }) {
+  if (behavior.type === "filter") {
+    return buildFilterBehaviorXml({ behavior, animation, targetId, counter });
+  }
+  if (behavior.type === "animate") {
+    return buildAnimateBehaviorXml({ behavior, animation, targetId, counter });
+  }
+  throw new Error(`Unsupported PPTX animation behavior "${behavior.type}".`);
+}
+function buildFilterBehaviorXml({ behavior, animation, targetId, counter }) {
+  const animId = nextId(counter);
+  return `<p:animEffect transition="${behavior.transition}" filter="${behavior.filter}"><p:cBhvr><p:cTn id="${animId}" dur="${animation.durationMs}"/><p:tgtEl><p:spTgt spid="${targetId}"/></p:tgtEl></p:cBhvr></p:animEffect>`;
+}
+function buildAnimateBehaviorXml({ behavior, animation, targetId, counter }) {
+  const animId = nextId(counter);
+  const additive = behavior.additive ? ` additive="${behavior.additive}"` : "";
+  const fill = behavior.fill ? ` fill="${behavior.fill}"` : "";
+  const values = behavior.values.map((value) => `<p:tav tm="${value.time}"><p:val>${timingValueXml(value)}</p:val></p:tav>`).join("");
+  return `<p:anim calcmode="lin" valueType="num"><p:cBhvr${additive}><p:cTn id="${animId}" dur="${animation.durationMs}"${fill}/><p:tgtEl><p:spTgt spid="${targetId}"/></p:tgtEl><p:attrNameLst><p:attrName>${behavior.attribute}</p:attrName></p:attrNameLst></p:cBhvr><p:tavLst>${values}</p:tavLst></p:anim>`;
+}
+function timingValueXml(value) {
+  if (value.valueType === "float") return `<p:fltVal val="${value.value}"/>`;
+  return `<p:strVal val="${value.value}"/>`;
+}
+function mainSequenceConditions(trigger) {
+  if (trigger === "on-click") return '<p:cond delay="indefinite"/>';
+  return '<p:cond delay="indefinite"/><p:cond evt="onBegin" delay="0"><p:tn val="2"/></p:cond>';
+}
+function effectNodeType(animation, index) {
+  if (index > 0 && animation.sequence === "together") return "withEffect";
+  if (animation.trigger === "on-click") return "clickEffect";
+  if (animation.trigger === "with-previous") return "withEffect";
+  return "afterEffect";
+}
+function effectDelay(animation, index) {
+  if (animation.sequence !== "stagger") return animation.delayMs;
+  if (animation.trigger === "on-click") return animation.delayMs;
+  return animation.delayMs + index * staggerStepMs;
+}
+function nextId(counter) {
+  const id = counter.value;
+  counter.value += 1;
+  return id;
+}
+
+// src/pptx/animation-targets.js
+var contentStartKey = /* @__PURE__ */ Symbol.for("deckbuilder.animationContentStart");
+var contentEndKey = /* @__PURE__ */ Symbol.for("deckbuilder.animationContentEnd");
+function markPptxChromeComplete(slide) {
+  markPptxAnimationTargetsStart(slide);
+}
+function markPptxAnimationTargetsStart(slide) {
+  slide[contentStartKey] = slideObjectCount(slide);
+}
+function markPptxAnimationTargetsEnd(slide) {
+  slide[contentEndKey] = slideObjectCount(slide);
+}
+function animationPlanForSlide(slideModel, slide, slideNumber) {
+  if (!slideModel?.animation) return null;
+  return {
+    slideNumber,
+    animation: slideModel.animation,
+    contentStartIndex: slide[contentStartKey] ?? 0,
+    contentEndIndex: slide[contentEndKey]
+  };
+}
+function animationTargetIdsFromSlideXml(slideXml, contentStartIndex = 0, contentEndIndex = void 0) {
+  const objectIds = [...String(slideXml || "").matchAll(/<p:cNvPr\b[^>]*\bid="(\d+)"/g)].map((match) => Number.parseInt(match[1], 10)).filter((id) => Number.isFinite(id) && id > 1);
+  return objectIds.slice(Math.max(0, contentStartIndex), Number.isInteger(contentEndIndex) ? contentEndIndex : void 0).map((id) => String(id));
+}
+function slideObjectCount(slide) {
+  return Array.isArray(slide?._slideObjects) ? slide._slideObjects.length : 0;
+}
+
+// src/pptx/animations.js
+async function applyPptxAnimations(outputPath, plans = []) {
+  const activePlans = plans.filter((plan) => plan?.animation);
+  if (!activePlans.length) return;
+  const archive = await import_jszip2.default.loadAsync(await readFile(outputPath));
+  for (const plan of activePlans) {
+    const slidePath = `ppt/slides/slide${plan.slideNumber}.xml`;
+    const slideFile = archive.file(slidePath);
+    if (!slideFile) continue;
+    const slideXml = await slideFile.async("string");
+    const targetIds = animationTargetIdsFromSlideXml(
+      slideXml,
+      plan.contentStartIndex,
+      plan.contentEndIndex
+    );
+    const timingXml = buildSlideTimingXml({ animation: plan.animation, targetIds });
+    if (!timingXml) continue;
+    archive.file(slidePath, withTimingXml(slideXml, timingXml));
+  }
+  await writeFile(outputPath, await archive.generateAsync({ type: "nodebuffer" }));
+}
+function withTimingXml(slideXml, timingXml) {
+  if (/<p:timing\b/.test(slideXml)) {
+    return slideXml.replace(/<p:timing\b[\s\S]*<\/p:timing>/, timingXml);
+  }
+  return slideXml.replace("</p:sld>", `${timingXml}</p:sld>`);
+}
 
 // src/pptx/helpers.js
 import { Buffer as Buffer2 } from "node:buffer";
@@ -15296,6 +15436,10 @@ function addCover(slide, model, frontmatter, brand, resourcesDir) {
 }
 function addContent(slide, model, brand, resourcesDir) {
   const header = addBaseHeader(slide, model, brand, resourcesDir);
+  if (isClickStaggerAnimation(model)) {
+    addClickStaggerContent(slide, model, brand, header);
+    return;
+  }
   const body = contentBody(model);
   if (body) {
     const paragraphBox = boxAfterHeader(brand.layouts.body.paragraph, header.contentTop, 44);
@@ -15306,6 +15450,42 @@ function addContent(slide, model, brand, resourcesDir) {
   }
   addTakeaway(slide, model, brand);
 }
+function addClickStaggerContent(slide, model, brand, header) {
+  const entries = contentBodyEntries(model);
+  if (!entries.length) {
+    addTakeaway(slide, model, brand);
+    return;
+  }
+  const bodyBox = surfaceBox(
+    brand,
+    model,
+    boxAfterHeader(brand.layouts.body.paragraph, header.contentTop, 44),
+    "body"
+  );
+  const fontSize = bodyBox.size || 18;
+  const lineHeight = Math.ceil(fontSize * 1.35);
+  const bottom = bodyBox.y + bodyBox.h;
+  let y = bodyBox.y;
+  markPptxAnimationTargetsStart(slide);
+  for (const entry of entries) {
+    const lines = estimateWrappedLines(entry.text, { ...bodyBox, size: fontSize });
+    const h = Math.max(lineHeight, Math.min(bottom - y, lines * lineHeight));
+    if (h <= 0) break;
+    addTextBox(slide, brand, entry.text, {
+      ...bodyBox,
+      y,
+      h,
+      margin: 0,
+      fit: "shrink"
+    }, {
+      breakLine: entry.type !== "bullet"
+    });
+    y += h + (entry.type === "bullet" ? 7 : 12);
+    if (y >= bottom) break;
+  }
+  markPptxAnimationTargetsEnd(slide);
+  addTakeaway(slide, model, brand);
+}
 function contentBody(model) {
   const parts = [];
   if (model.subtitle) parts.push(model.subtitle);
@@ -15314,6 +15494,20 @@ function contentBody(model) {
     parts.push(model.bullets.map((bullet) => `\u2022 ${bullet}`).join("\n"));
   }
   return parts.filter(Boolean).join("\n\n");
+}
+function contentBodyEntries(model) {
+  const entries = [];
+  if (model.subtitle) entries.push({ type: "paragraph", text: model.subtitle });
+  for (const paragraph of model.paragraphs || []) {
+    entries.push({ type: "paragraph", text: paragraph });
+  }
+  for (const bullet of model.bullets || []) {
+    entries.push({ type: "bullet", text: `\u2022 ${bullet}` });
+  }
+  return entries.filter((entry) => entry.text);
+}
+function isClickStaggerAnimation(model) {
+  return model.animation?.trigger === "on-click" && model.animation.sequence === "stagger";
 }
 function addDivider(slide, model, brand, resourcesDir) {
   const layout = brand.layouts.divider;
@@ -17038,6 +17232,7 @@ function addSlideChrome(slide, brand, resourcesDir, kind, fallbackColor, model =
       { fit: "contain" }
     );
   }
+  markPptxChromeComplete(slide);
 }
 function avoidBoxOverlap(box, reservedBox, gap = 12) {
   if (!box || !reservedBox || !rectsOverlap(box, reservedBox)) return box;
@@ -17304,12 +17499,18 @@ async function writePptx({
     bodyFontFace: font(brand, "regular"),
     lang: "en-GB"
   };
+  const animationPlans = [];
+  let pptxSlideNumber = 0;
   for (const slideModel of deck.slides) {
     if (shouldSkipPptx(slideModel)) continue;
     const slide = pptx.addSlide();
+    pptxSlideNumber += 1;
     addNativeSlide(pptx, slide, slideModel, deck.frontmatter, brand, resourcesDir);
+    const animationPlan = animationPlanForSlide(slideModel, slide, pptxSlideNumber);
+    if (animationPlan) animationPlans.push(animationPlan);
   }
   await pptx.writeFile({ fileName: outputPath });
+  await applyPptxAnimations(outputPath, animationPlans);
 }
 function shouldSkipPptx(slideModel) {
   const directives = slideModel?.directives || {};

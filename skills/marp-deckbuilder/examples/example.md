@@ -23,7 +23,15 @@ Editable PPTX generated from compact component Markdown.
 
 ---
 
-<deck-slide surface="light" eyebrow="EXECUTIVE SNAPSHOT" takeaway="Native components keep the deck editable while preserving the brand system." />
+<deck-slide
+  surface="light"
+  eyebrow="EXECUTIVE SNAPSHOT"
+  takeaway="Native components keep the deck editable while preserving the brand system."
+  animation="enter-fade"
+  animation-trigger="after-previous"
+  animation-duration="1500"
+  animation-delay="250"
+/>
 
 # Three signals stand out
 
@@ -35,7 +43,13 @@ Editable PPTX generated from compact component Markdown.
 
 ---
 
-<deck-slide eyebrow="CARD MEDIA" takeaway="Cards can still include renderer-owned icons and images via attributes." />
+<deck-slide
+  eyebrow="CARD MEDIA"
+  takeaway="Cards can still include renderer-owned icons and images via attributes."
+  animation="enter-appear"
+  animation-trigger="after-previous"
+  animation-delay="250"
+/>
 
 # Card media stays structured
 

@@ -1,5 +1,6 @@
 import yaml from 'js-yaml'
 
+import { normalizeSlideAnimation } from './animations/normalize.js'
 import { compileDeckComponents } from './components.js'
 
 export function parseDeckMarkdown(source) {
@@ -81,6 +82,7 @@ export function parseSlide(source, index, originalSource = source, components = 
   const customerLogo = slideMeta?.customerLogo || extractCustomerLogo(source) || frontmatterCustomerLogo(frontmatter)
   const layoutComponent = firstComponent(components, layout)
   const surface = inferSurface(layout, directives, frontmatter, layoutComponent?.surface)
+  const animation = normalizeSlideAnimation(directives)
 
   return {
     index,
@@ -90,6 +92,7 @@ export function parseSlide(source, index, originalSource = source, components = 
     directives,
     layout,
     surface,
+    animation,
     title,
     subtitle,
     eyebrow: directives.eyebrow,

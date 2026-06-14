@@ -245,7 +245,7 @@ Use only these structured components when you need native PPTX output:
 
 | Component | Required shape | Optional fields | Output |
 | --- | --- | --- | --- |
-| `deck-slide` | zero or one metadata tag at top of a slide | `layout`, `title`, `subtitle`, `eyebrow`, `takeaway`, `footnote`, `surface="dark|light"`, `html-skip`, `pptx-skip`, `html-only`, `pptx-only`, `company-logo`, `company-name`, `customer-logo`, `customer-name` | Slide metadata consumed by renderer; no visible output |
+| `deck-slide` | zero or one metadata tag at top of a slide | `layout`, `title`, `subtitle`, `eyebrow`, `takeaway`, `footnote`, `surface="dark|light"`, `html-skip`, `pptx-skip`, `html-only`, `pptx-only`, `company-logo`, `company-name`, `customer-logo`, `customer-name`, `animation`, `animation-trigger`, `animation-duration`, `animation-delay`, `animation-sequence` | Slide metadata consumed by renderer; no visible output |
 | `deck-divider` | `title` attribute or `h1` child | `act`, `label`, `subtitle` | Full divider slide |
 | `deck-stat-grid` | one or more direct `deck-stat` children | each stat can use `value`/`label` attributes or text children | 3-up KPI row |
 | `deck-card-grid` | one or more direct `deck-card` children | `columns="3"` or `columns="4"` | 3/4 card layout |
@@ -364,6 +364,46 @@ Skip metadata also belongs in `deck-slide`:
 
 Legacy HTML comment directives are still parsed for compatibility, but new deck
 Markdown should use `deck-slide` so the renderer can validate the contract.
+
+## Controlled Slide Animations
+
+Use controlled slide animations only through `deck-slide` metadata. Supported
+today:
+
+```md
+<deck-slide
+  animation="enter-fade"
+  animation-trigger="after-previous"
+  animation-duration="500"
+  animation-delay="0"
+  animation-sequence="together"
+/>
+```
+
+Valid triggers are `on-click`, `with-previous`, and `after-previous`. Valid
+sequence modes are `together` and `stagger`.
+
+Use `animation-trigger="on-click"` with `animation-sequence="stagger"` for
+clicker-driven progressive reveals. Markdown list items reveal one per click in
+HTML, and content-slide bullets are split into separate PPTX click effects so
+PowerPoint follows the same pacing.
+
+Supported controlled entrance animations:
+
+`enter-appear`, `enter-fade`, `enter-fly`, `enter-wipe`, `enter-zoom`,
+`enter-split`, `enter-wheel`, `enter-box`, `enter-diamond`, `enter-circle`,
+`enter-blinds`, `enter-checkerboard`, `enter-random-bars`, `enter-dissolve`,
+`enter-peek`, and `enter-strips`.
+
+Unsupported animation names, directions, and invalid timing values fail
+validation.
+
+Do not add HTML-only presentation animation classes or custom keyframes for
+click-ins, fade-ins, entrances, exits, emphasis, or motion paths. Component-local
+HTML animations, such as chart draw-ins, impact radar fills, journey path
+drawing, and signal board fills, may remain intrinsic to those visual
+components. PPTX renders those intrinsic component animations as static final
+state visuals unless native PPTX behavior is added later.
 
 ## Component Syntax
 

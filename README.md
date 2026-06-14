@@ -215,6 +215,34 @@ Editable in PPTX:
 
 Known component tags and attributes are validated before output is written. Use `deck-slide` for slide metadata such as surface, layout, skip flags, and slide-specific logos. If a slide type, visual, or attribute is not available in `skills/marp-deckbuilder/REFERENCE.md`, add a renderer-backed component instead of relying on raw custom markup.
 
+### Controlled Slide Animations
+
+Presentation-style slide animations are opt-in through `deck-slide` metadata and must be supported in both HTML and PPTX before they are documented.
+
+Supported today:
+
+```md
+<deck-slide
+  animation="enter-fade"
+  animation-trigger="after-previous"
+  animation-duration="500"
+  animation-delay="0"
+  animation-sequence="together"
+/>
+```
+
+Valid triggers are `on-click`, `with-previous`, and `after-previous`. Valid sequence modes are `together` and `stagger`.
+
+Use `animation-trigger="on-click"` with `animation-sequence="stagger"` for clicker-driven progressive reveals. Markdown list items reveal one per click in HTML, and content-slide bullets are split into separate PPTX click effects so PowerPoint follows the same pacing.
+
+Supported controlled entrance animations:
+
+`enter-appear`, `enter-fade`, `enter-fly`, `enter-wipe`, `enter-zoom`, `enter-split`, `enter-wheel`, `enter-box`, `enter-diamond`, `enter-circle`, `enter-blinds`, `enter-checkerboard`, `enter-random-bars`, `enter-dissolve`, `enter-peek`, and `enter-strips`.
+
+Unsupported animation names, directions, and invalid timing values fail validation instead of falling back to HTML-only behavior.
+
+Component-local HTML animations, such as chart draw-ins, impact radar fills, journey path drawing, and signal board fills, are allowed to remain intrinsic HTML rendering behavior. They are not exposed as slide-level animation controls unless matching PPTX support is added.
+
 Not automatically editable in PPTX:
 
 - Arbitrary HTML/CSS.
