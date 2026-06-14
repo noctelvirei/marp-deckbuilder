@@ -105,6 +105,37 @@ function cssColorToHex(value, fallback = "090909") {
   if (rgb[4] !== void 0 && Number(rgb[4]) === 0) return fallback;
   return [rgb[1], rgb[2], rgb[3]].map((part) => Number(part).toString(16).padStart(2, "0")).join("").toUpperCase();
 }
+function slideBackgroundAsset(brand = {}, kind = "content", surface = "light") {
+  const backgrounds = brand.assets?.backgrounds || {};
+  const normalizedKind = normalizeSlideBackgroundKind(kind);
+  const normalizedSurface = surface === "dark" ? "dark" : "light";
+  const suffix = normalizedSurface === "dark" ? "Dark" : "Light";
+  const candidates = [
+    `${normalizedKind}${suffix}`
+  ];
+  if (normalizedSurface === "light") {
+    candidates.push(
+      normalizedKind === "content" ? "contentLight" : "",
+      "light",
+      "defaultLight"
+    );
+  } else {
+    candidates.push(
+      normalizedKind,
+      normalizedKind === "divider" || normalizedKind === "close" ? "coverDark" : "",
+      normalizedKind === "divider" || normalizedKind === "close" ? "cover" : "",
+      normalizedKind === "content" ? "contentDark" : "",
+      normalizedKind === "content" ? "content" : "",
+      "dark",
+      "defaultDark",
+      "default"
+    );
+  }
+  return firstBackgroundAsset(backgrounds, candidates);
+}
+function hasSlideBackgroundAsset(brand = {}, surface = "light", kind = "content") {
+  return Boolean(slideBackgroundAsset(brand, kind, surface));
+}
 function validateBrand(brand, brandPath) {
   const required = [
     ["themeName", brand.themeName],
@@ -120,6 +151,15 @@ function validateBrand(brand, brandPath) {
     throw new Error(`${brandPath} is missing required definition(s): ${missing.join(", ")}`);
   }
 }
+function normalizeSlideBackgroundKind(kind) {
+  return ["cover", "divider", "close", "content"].includes(kind) ? kind : "content";
+}
+function firstBackgroundAsset(backgrounds, candidates) {
+  for (const candidate of candidates) {
+    if (candidate && backgrounds[candidate]) return backgrounds[candidate];
+  }
+  return "";
+}
 
 export {
   loadDefinitions,
@@ -127,5 +167,7 @@ export {
   pxToIn,
   color,
   font,
-  cssColorToHex
+  cssColorToHex,
+  slideBackgroundAsset,
+  hasSlideBackgroundAsset
 };

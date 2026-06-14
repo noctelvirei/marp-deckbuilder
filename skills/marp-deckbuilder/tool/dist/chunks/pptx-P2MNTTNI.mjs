@@ -5,17 +5,29 @@ const require = __deckbuilderCreateRequire(import.meta.url);
 const __filename = __deckbuilderFileURLToPath(import.meta.url);
 const __dirname = __deckbuilderDirname(__filename);
 import {
-  color,
-  font,
-  ptToIn
-} from "./chunk-QTVTLJNA.mjs";
-import {
   require_node
 } from "./chunk-MGQWBMZO.mjs";
 import {
+  color,
+  font,
+  hasSlideBackgroundAsset,
+  ptToIn,
+  slideBackgroundAsset
+} from "./chunk-RQ4ZKSEQ.mjs";
+import {
+  renderBoxplotSvg,
+  renderBulletSvg,
+  renderFunnelSvg,
+  renderHistogramSvg,
+  renderImpactRadarSvg,
+  renderJourneyPathSvg,
+  renderParetoSvg,
+  renderSankeySvg,
+  renderWaterfallSvg,
   resolveResourceFile,
-  resolveSurfaceResourceFile
-} from "./chunk-MQE5FU5S.mjs";
+  resolveSurfaceResourceFile,
+  treemapRects
+} from "./chunk-HK76IMZ2.mjs";
 import {
   __commonJS,
   __require,
@@ -15100,16 +15112,23 @@ function addCell(slide, brand, text, x, y, w, h, fill, textStyle) {
   });
 }
 function addRect(slide, brand, x, y, w, h, fill, line, lineWidth) {
-  const fillColor = pptxColor(brand, fill);
+  const fillOptions = pptxFill(brand, fill);
+  const fillColor = fillOptions.color;
   const lineColor = pptxColor(brand, line);
   slide.addShape("rect", {
     x: ptToIn(x),
     y: ptToIn(y),
     w: ptToIn(w),
     h: ptToIn(h),
-    fill: { color: fillColor },
+    fill: fillOptions,
     line: lineColor ? { color: lineColor, width: lineWidth || 0.5 } : { color: fillColor, transparency: 100 }
   });
+}
+function pptxFill(brand, fill) {
+  if (fill && typeof fill === "object") {
+    return normalizePptxColors(brand, fill);
+  }
+  return { color: pptxColor(brand, fill) };
 }
 function normalizePptxColors(brand, value, key = "") {
   if (Array.isArray(value)) {
@@ -15214,9 +15233,6 @@ function intrinsicImageSize(imagePath) {
     return null;
   }
   return null;
-}
-function svgIntrinsicSize(svg) {
-  return svgSize(svg);
 }
 function svgSize(svg) {
   const viewBox = svg.match(/\bviewBox\s*=\s*["']\s*([+-]?\d*\.?\d+)\s+([+-]?\d*\.?\d+)\s+([+-]?\d*\.?\d+)\s+([+-]?\d*\.?\d+)\s*["']/i);
@@ -15412,8 +15428,46 @@ function addChartSlide(pptx, slide, model, brand, resourcesDir) {
   if (!model.chart) return addContent(slide, model, brand, resourcesDir);
   const layout = brand.layouts.chart;
   const chartBox = boxAfterHeader(layout, header.contentTop, 120);
-  const chartType = model.chart.chartType === "line" ? pptx.ChartType.line : pptx.ChartType.bar;
-  const chartData = [
+  const isGroupedBar = model.chart.chartType === "grouped-bar";
+  const isStackedBar = model.chart.chartType === "stacked-bar";
+  const isMultiSeriesBar = isGroupedBar || isStackedBar;
+  const isDoughnut = model.chart.chartType === "doughnut";
+  const isScatter = model.chart.chartType === "scatter";
+  const isBubble = model.chart.chartType === "bubble";
+  const isArea = model.chart.chartType === "area";
+  const isWaterfall = model.chart.chartType === "waterfall";
+  const isBullet = model.chart.chartType === "bullet";
+  const isHistogram = model.chart.chartType === "histogram";
+  const isBoxplot = model.chart.chartType === "boxplot";
+  const isPareto = model.chart.chartType === "pareto";
+  const isSankey = model.chart.chartType === "sankey";
+  if (isWaterfall || isBullet || isHistogram || isBoxplot || isPareto || isSankey) {
+    addSvgChartImage(slide, model, brand, layout, chartBox, model.chart.chartType);
+    addTakeaway(slide, model, brand);
+    return;
+  }
+  const chartType = model.chart.chartType === "line" ? pptx.ChartType.line : isArea ? pptx.ChartType.area : isDoughnut ? pptx.ChartType.doughnut : isBubble ? pptx.ChartType.bubble : isScatter ? pptx.ChartType.scatter : pptx.ChartType.bar;
+  const chartData = isMultiSeriesBar ? model.chart.seriesNames.map((series, index) => ({
+    name: series,
+    labels: model.chart.labels,
+    values: model.chart.matrix[index]
+  })) : isBubble ? [
+    {
+      name: model.chart.xAxisLabel || "X values",
+      values: model.chart.points.map((point) => point.x)
+    },
+    {
+      name: model.chart.series || model.chart.title || "Series 1",
+      values: model.chart.points.map((point) => point.y),
+      sizes: model.chart.points.map((point) => point.r)
+    }
+  ] : isScatter ? [
+    {
+      name: model.chart.series || model.chart.title || "Series 1",
+      labels: model.chart.points.map((point) => point.x),
+      values: model.chart.points.map((point) => point.y)
+    }
+  ] : [
     {
       name: model.chart.series || model.chart.title || "Series 1",
       labels: model.chart.labels,
@@ -15443,15 +15497,29 @@ function addChartSlide(pptx, slide, model, brand, resourcesDir) {
     dataLabelColor: surfaceTextColor(brand, model, layout.dataLabel?.color || layout.valueAxis.color, "body"),
     dataLabelFontFace: font(brand, layout.dataLabel?.font || layout.valueAxis.font),
     dataLabelFontSize: layout.dataLabel?.size || layout.valueAxis.size,
-    showLegend: false,
-    showValue: true,
-    showCategoryName: true,
+    showLegend: isMultiSeriesBar || isDoughnut,
+    showValue: !isMultiSeriesBar && !isDoughnut,
+    showPercent: isDoughnut,
+    showCategoryName: !isMultiSeriesBar && !isDoughnut,
+    lineDataSymbol: isScatter ? "circle" : void 0,
+    lineDataSymbolSize: isScatter ? 8 : void 0,
+    holeSize: isDoughnut ? 55 : void 0,
+    barGrouping: isStackedBar ? "stacked" : isGroupedBar ? "clustered" : void 0,
+    barOverlapPct: isMultiSeriesBar ? 0 : void 0,
     catAxisLabelFontFace: font(brand, layout.categoryAxis.font),
     catAxisLabelFontSize: layout.categoryAxis.size,
     catAxisLabelColor: surfaceTextColor(brand, model, layout.categoryAxis.color, "body"),
+    catAxisTitle: isScatter || isBubble ? model.chart.xAxisLabel || "X" : void 0,
+    catAxisTitleFontFace: font(brand, layout.categoryAxis.font),
+    catAxisTitleFontSize: layout.categoryAxis.size,
+    catAxisTitleColor: surfaceTextColor(brand, model, layout.categoryAxis.color, "body"),
     valAxisLabelFontFace: font(brand, layout.valueAxis.font),
     valAxisLabelFontSize: layout.valueAxis.size,
     valAxisLabelColor: surfaceTextColor(brand, model, layout.valueAxis.color, "muted"),
+    valAxisTitle: isScatter || isBubble ? model.chart.yAxisLabel || "Y" : void 0,
+    valAxisTitleFontFace: font(brand, layout.valueAxis.font),
+    valAxisTitleFontSize: layout.valueAxis.size,
+    valAxisTitleColor: surfaceTextColor(brand, model, layout.valueAxis.color, "body"),
     valGridLine: { color: surfaceLine(brand, model, layout.gridLineColor), transparency: 0 },
     catGridLine: { color: "FFFFFF", transparency: 100 },
     showCatName: true,
@@ -15459,48 +15527,922 @@ function addChartSlide(pptx, slide, model, brand, resourcesDir) {
     showCatAxis: true,
     showLeaderLines: false
   }));
+  if (isScatter || isBubble) {
+    addScatterAxisLabels(slide, model, brand, layout, chartBox);
+  }
   addTakeaway(slide, model, brand);
 }
-function addVisual(slide, model, brand, resourcesDir) {
-  const visual = model.visual;
-  if (!visual?.svg) return addContent(slide, model, brand, resourcesDir);
-  const header = addBaseHeader(slide, model, brand, resourcesDir);
-  const layout = brand.layouts.visual || {
-    x: 62,
-    y: 126,
-    w: 836,
-    h: 292,
-    caption: { x: 84, y: 418, w: 792, h: 20, font: "regular", size: 8, color: "muted" }
-  };
-  const visualBox = boxAfterHeader(layout, header.contentTop, 120);
-  const renderedBox = containSvgBox(visual.svg, visualBox);
-  try {
-    slide.addImage({
-      data: svgToDataUri(visual.svg),
-      x: ptToIn(renderedBox.x),
-      y: ptToIn(renderedBox.y),
-      w: ptToIn(renderedBox.w),
-      h: ptToIn(renderedBox.h),
-      altText: visual.alt || visual.title || model.title
+function addSvgChartImage(slide, model, brand, layout, chartBox, type) {
+  const fill = surfaceFill(brand, model, layout.chartAreaFill || "cardLight");
+  const line = surfaceLine(brand, model, layout.chartAreaBorder || "border");
+  addRect(slide, brand, chartBox.x, chartBox.y, chartBox.w, chartBox.h, fill, line, 0.5);
+  const titleH = model.chart.title ? 28 : 0;
+  if (model.chart.title) {
+    addTextBox(slide, brand, model.chart.title, {
+      x: chartBox.x + 22,
+      y: chartBox.y + 18,
+      w: chartBox.w - 44,
+      h: titleH,
+      font: layout.title.font,
+      size: layout.title.size,
+      color: layout.title.color,
+      margin: 0,
+      fit: "shrink"
     });
-  } catch {
-    if (visual.fallback) {
-      addTextBox(slide, brand, visual.fallback, surfaceBox(brand, model, brand.layouts.body.paragraph, "body"), { breakLine: true, fit: "shrink" });
-    }
   }
-  if (visual.caption) {
-    const captionBox = {
-      ...layout.caption,
-      y: Math.max(layout.caption.y, renderedBox.y + renderedBox.h + 8)
-    };
-    addTextBox(slide, brand, visual.caption, surfaceBox(brand, model, captionBox, "muted"), { fit: "shrink" });
+  const svgTop = chartBox.y + (model.chart.title ? 58 : 18);
+  const sharedOptions = {
+    cssVariables: false,
+    mode: isLightSurface(model) ? "light" : "dark",
+    gridColor: surfaceLine(brand, model, layout.gridLineColor || "border"),
+    axisColor: surfaceTextColor(brand, model, layout.valueAxis.color, "muted"),
+    textColor: surfaceTextColor(brand, model, layout.valueAxis.color, "muted")
+  };
+  const svg = renderSvgChartByType(type, model.chart, brand, model, layout, sharedOptions);
+  slide.addImage({
+    data: svgToDataUri(svg),
+    x: ptToIn(chartBox.x + 18),
+    y: ptToIn(svgTop),
+    w: ptToIn(chartBox.w - 36),
+    h: ptToIn(Math.max(150, chartBox.y + chartBox.h - svgTop - 18)),
+    altText: model.chart.title || model.title
+  });
+}
+function renderSvgChartByType(type, chart, brand, model, layout, sharedOptions) {
+  if (type === "waterfall") {
+    return renderWaterfallSvg(chart, {
+      ...sharedOptions,
+      connectorColor: surfaceTextColor(brand, model, layout.valueAxis.color, "muted"),
+      positiveColor: color(brand, "green"),
+      negativeColor: color(brand, "red")
+    });
+  }
+  if (type === "bullet") {
+    return renderBulletSvg(chart, {
+      ...sharedOptions,
+      barColor: color(brand, "blue"),
+      onBarColor: color(brand, "white"),
+      targetColor: color(brand, "orange"),
+      trackColor: surfaceFill(brand, model, layout.plotAreaFill || layout.chartAreaFill || "cardLight")
+    });
+  }
+  if (type === "histogram") {
+    return renderHistogramSvg(chart, {
+      ...sharedOptions,
+      barColor: color(brand, "purple"),
+      barBorderColor: color(brand, "blue")
+    });
+  }
+  if (type === "boxplot") {
+    return renderBoxplotSvg(chart, {
+      ...sharedOptions,
+      boxColor: color(brand, "blue"),
+      fillColor: surfaceFill(brand, model, layout.plotAreaFill || layout.chartAreaFill || "cardLight"),
+      medianColor: color(brand, "orange")
+    });
+  }
+  if (type === "pareto") {
+    return renderParetoSvg(chart, {
+      ...sharedOptions,
+      barColor: color(brand, "blue"),
+      barBorderColor: color(brand, "lightBlue"),
+      lineColor: color(brand, "orange"),
+      pointColor: color(brand, "orange")
+    });
+  }
+  if (type === "sankey") {
+    return renderSankeySvg(chart, {
+      ...sharedOptions,
+      mutedColor: surfaceTextColor(brand, model, layout.valueAxis.color, "muted"),
+      labelHaloColor: surfaceFill(brand, model, layout.chartAreaFill || "cardLight"),
+      palette: layout.colors.map((chartColor) => color(brand, chartColor)),
+      linkOpacity: "0.52"
+    });
+  }
+  throw new Error(`Unsupported SVG chart type: ${type}`);
+}
+function addScatterAxisLabels(slide, model, brand, layout, chartBox) {
+  const xAxisLabel = model.chart.xAxisLabel || "X";
+  const yAxisLabel = model.chart.yAxisLabel || "Y";
+  addTextBox(slide, brand, xAxisLabel, {
+    x: chartBox.x + chartBox.w * 0.35,
+    y: chartBox.y + chartBox.h - 14,
+    w: chartBox.w * 0.3,
+    h: 16,
+    font: layout.categoryAxis.font,
+    size: layout.categoryAxis.size,
+    color: layout.categoryAxis.color,
+    align: "center",
+    fit: "shrink"
+  });
+  addTextBox(slide, brand, yAxisLabel, {
+    x: chartBox.x + 4,
+    y: chartBox.y + 8,
+    w: chartBox.w * 0.24,
+    h: 16,
+    font: layout.valueAxis.font,
+    size: layout.valueAxis.size,
+    color: layout.valueAxis.color,
+    align: "left",
+    fit: "shrink"
+  });
+}
+function addSignalBars(slide, model, brand, resourcesDir) {
+  const header = addBaseHeader(slide, model, brand, resourcesDir);
+  const signalBars = model.signalBars;
+  if (!signalBars) return addContent(slide, model, brand, resourcesDir);
+  const layout = {
+    x: 56,
+    y: 138,
+    leftW: 318,
+    rightW: 530,
+    h: 266,
+    gap: 22,
+    pad: 22,
+    labelW: 96,
+    valueW: 58,
+    barH: 24,
+    rowGap: 28,
+    ...brand.layouts.signalBars || {}
+  };
+  const y = Math.max(layout.y, header.contentTop);
+  const panelFill = panelFillForSurface(brand, model, layout.panelFill || "0D1D36");
+  const panelBorder = color(brand, layout.panelBorder || "1E3A5F");
+  const trackFill = color(brand, layout.trackFill || "071228");
+  const accent = color(brand, signalBars.accent || layout.accent || "blue");
+  const bodyOnPanel = brand.colors?.bodyOnDark ? "bodyOnDark" : "C8D8F0";
+  const mutedOnPanel = brand.colors?.mutedOnDark ? "mutedOnDark" : "8A95A8";
+  addRect(slide, brand, layout.x, y, layout.leftW, layout.h, panelFill, panelBorder, 0.5);
+  addTextBox(slide, brand, signalBars.metric, {
+    x: layout.x + layout.pad,
+    y: y + 34,
+    w: layout.leftW - layout.pad * 2,
+    h: 62,
+    font: "medium",
+    size: 48,
+    color: signalBars.accent || "blue",
+    margin: 0,
+    fit: "shrink"
+  });
+  addTextBox(slide, brand, signalBars.metricLabel, {
+    x: layout.x + layout.pad,
+    y: y + 106,
+    w: layout.leftW - layout.pad * 2,
+    h: layout.h - 128,
+    font: "regular",
+    size: 15,
+    color: bodyOnPanel,
+    margin: 0,
+    breakLine: true,
+    fit: "shrink"
+  });
+  const rightX = layout.x + layout.leftW + layout.gap;
+  addRect(slide, brand, rightX, y, layout.rightW, layout.h, panelFill, panelBorder, 0.5);
+  if (signalBars.title) {
+    addTextBox(slide, brand, signalBars.title, {
+      x: rightX + layout.pad,
+      y: y + 30,
+      w: layout.rightW - layout.pad * 2,
+      h: 26,
+      font: "medium",
+      size: 18,
+      color: "white",
+      margin: 0,
+      fit: "shrink"
+    });
+  }
+  if (signalBars.subtitle) {
+    addTextBox(slide, brand, signalBars.subtitle, {
+      x: rightX + layout.pad,
+      y: y + 60,
+      w: layout.rightW - layout.pad * 2,
+      h: 30,
+      font: "regular",
+      size: 11,
+      color: mutedOnPanel,
+      margin: 0,
+      fit: "shrink"
+    });
+  }
+  const max = Math.max(...signalBars.values, 1);
+  const rows = signalBars.labels.slice(0, 5);
+  const rowStartY = y + (signalBars.title || signalBars.subtitle ? 108 : 54);
+  const availableRowH = Math.max(layout.barH, y + layout.h - rowStartY - 22);
+  const preferredRowStep = layout.barH + layout.rowGap;
+  const rowStep = rows.length > 1 ? Math.min(preferredRowStep, (availableRowH - layout.barH) / (rows.length - 1)) : preferredRowStep;
+  const barX = rightX + layout.pad + layout.labelW;
+  const barW = layout.rightW - layout.pad * 2 - layout.labelW - layout.valueW;
+  rows.forEach((label, index) => {
+    const rowY = rowStartY + index * rowStep;
+    const value = signalBars.values[index] || 0;
+    const fillW = Math.max(3, Math.round(value / max * barW));
+    addTextBox(slide, brand, label, {
+      x: rightX + layout.pad,
+      y: rowY + 1,
+      w: layout.labelW - 10,
+      h: layout.barH,
+      font: "regular",
+      size: 12,
+      color: bodyOnPanel,
+      margin: 0,
+      fit: "shrink"
+    });
+    addRect(slide, brand, barX, rowY, barW, layout.barH, trackFill, null);
+    addRect(slide, brand, barX, rowY, fillW, layout.barH, accent, null);
+    addTextBox(slide, brand, `${formatPptxNumber(value)}${signalBars.unit}`, {
+      x: barX + fillW + 8,
+      y: rowY + 2,
+      w: Math.max(32, layout.valueW - 8),
+      h: layout.barH - 2,
+      font: "medium",
+      size: 12,
+      color: "white",
+      margin: 0,
+      fit: "shrink"
+    });
+  });
+  addTakeaway(slide, model, brand);
+}
+function addSignalBoard(slide, model, brand, resourcesDir) {
+  const header = addBaseHeader(slide, model, brand, resourcesDir);
+  const signalBoard = model.signalBoard;
+  if (!signalBoard) return addContent(slide, model, brand, resourcesDir);
+  const layout = {
+    x: 56,
+    y: 138,
+    leftW: 380,
+    rightW: 468,
+    h: 266,
+    gap: 22,
+    pad: 22,
+    labelW: 96,
+    valueW: 58,
+    barH: 24,
+    rowGap: 28,
+    ...brand.layouts.signalBoard || {}
+  };
+  const y = Math.max(layout.y, header.contentTop);
+  const panelFill = panelFillForSurface(brand, model, layout.panelFill || "0D1D36");
+  const panelBorder = color(brand, layout.panelBorder || "1E3A5F");
+  const trackFill = color(brand, layout.trackFill || "071228");
+  const accent = color(brand, signalBoard.accent || layout.accent || "blue");
+  const headingOnPanel = brand.colors?.white ? "white" : "FFFFFF";
+  const bodyOnPanel = brand.colors?.bodyOnDark ? "bodyOnDark" : "C8D8F0";
+  const mutedOnPanel = brand.colors?.mutedOnDark ? "mutedOnDark" : "8A95A8";
+  addRect(slide, brand, layout.x, y, layout.leftW, layout.h, panelFill, panelBorder, 0.5);
+  addTextBox(slide, brand, signalBoard.title, {
+    x: layout.x + layout.pad,
+    y: y + 28,
+    w: layout.leftW - layout.pad * 2,
+    h: 42,
+    font: "medium",
+    size: 22,
+    color: signalBoard.accent || "blue",
+    margin: 0,
+    fit: "shrink"
+  });
+  addTextBox(slide, brand, signalBoard.body, {
+    x: layout.x + layout.pad,
+    y: y + 82,
+    w: layout.leftW - layout.pad * 2,
+    h: 92,
+    font: "regular",
+    size: 14,
+    color: bodyOnPanel,
+    margin: 0,
+    breakLine: true,
+    fit: "shrink"
+  });
+  const tags = signalBoard.tags.slice(0, 5);
+  const tagCols = tags.length > 2 ? 2 : 1;
+  const tagGap = 8;
+  const tagW = (layout.leftW - layout.pad * 2 - tagGap * (tagCols - 1)) / tagCols;
+  tags.forEach((tag, index) => {
+    const row = Math.floor(index / tagCols);
+    const col = index % tagCols;
+    const tagX = layout.x + layout.pad + col * (tagW + tagGap);
+    const tagY = y + 188 + row * 30;
+    addRect(slide, brand, tagX, tagY, tagW, 22, color(brand, "071228"), accent, 0.5);
+    addTextBox(slide, brand, tag, {
+      x: tagX + 8,
+      y: tagY + 4,
+      w: tagW - 16,
+      h: 14,
+      font: "medium",
+      size: 8,
+      color: headingOnPanel,
+      margin: 0,
+      fit: "shrink",
+      align: "center"
+    });
+  });
+  const rightX = layout.x + layout.leftW + layout.gap;
+  addRect(slide, brand, rightX, y, layout.rightW, layout.h, panelFill, panelBorder, 0.5);
+  addTextBox(slide, brand, signalBoard.chartTitle, {
+    x: rightX + layout.pad,
+    y: y + 30,
+    w: layout.rightW - layout.pad * 2,
+    h: 26,
+    font: "medium",
+    size: 18,
+    color: headingOnPanel,
+    margin: 0,
+    fit: "shrink"
+  });
+  const max = Math.max(...signalBoard.values, 1);
+  const rows = signalBoard.labels.slice(0, 5);
+  const rowStartY = y + 76;
+  const availableRowH = Math.max(layout.barH, y + layout.h - rowStartY - 22);
+  const preferredRowStep = layout.barH + layout.rowGap;
+  const rowStep = rows.length > 1 ? Math.min(preferredRowStep, (availableRowH - layout.barH) / (rows.length - 1)) : preferredRowStep;
+  const barX = rightX + layout.pad + layout.labelW;
+  const barW = layout.rightW - layout.pad * 2 - layout.labelW - layout.valueW;
+  rows.forEach((label, index) => {
+    const rowY = rowStartY + index * rowStep;
+    const value = signalBoard.values[index] || 0;
+    const fillW = Math.max(3, Math.round(value / max * barW));
+    addTextBox(slide, brand, label, {
+      x: rightX + layout.pad,
+      y: rowY + 1,
+      w: layout.labelW - 10,
+      h: layout.barH,
+      font: "regular",
+      size: 12,
+      color: bodyOnPanel,
+      margin: 0,
+      fit: "shrink"
+    });
+    addRect(slide, brand, barX, rowY, barW, layout.barH, trackFill, null);
+    addRect(slide, brand, barX, rowY, fillW, layout.barH, accent, null);
+    addTextBox(slide, brand, `${formatPptxNumber(value)}${signalBoard.unit}`, {
+      x: barX + barW + 8,
+      y: rowY + 2,
+      w: Math.max(32, layout.valueW - 8),
+      h: layout.barH - 2,
+      font: "medium",
+      size: 12,
+      color: headingOnPanel,
+      margin: 0,
+      fit: "shrink"
+    });
+  });
+  addTakeaway(slide, model, brand);
+}
+function addFunnel(slide, model, brand, resourcesDir) {
+  const header = addBaseHeader(slide, model, brand, resourcesDir);
+  const funnel = model.funnel;
+  if (!funnel) return addContent(slide, model, brand, resourcesDir);
+  const layout = {
+    x: 74,
+    y: 138,
+    w: 812,
+    h: 300,
+    pad: 24,
+    ...brand.layouts.funnel || {}
+  };
+  const y = Math.max(layout.y, header.contentTop);
+  const cardFill = surfaceCardFill(brand, model);
+  const border = surfaceBorder(brand, model);
+  const accent = color(brand, funnel.accent || "blue");
+  const lightSurface = isLightSurface(model);
+  addRect(slide, brand, layout.x, y, layout.w, layout.h, cardFill, border, 0.5);
+  const titleH = funnel.title ? 30 : 0;
+  if (funnel.title) {
+    addTextBox(slide, brand, funnel.title, {
+      ...surfaceBox(brand, model, {
+        x: layout.x + layout.pad,
+        y: y + 22,
+        w: layout.w - layout.pad * 2,
+        h: titleH,
+        font: "medium",
+        size: 16,
+        color: "dark",
+        margin: 0
+      }, "heading"),
+      fit: "shrink"
+    });
+  }
+  const svgY = y + layout.pad + titleH + (funnel.title ? 10 : 0);
+  const svgH = Math.max(150, y + layout.h - svgY - layout.pad);
+  const svg = renderFunnelSvg(funnel, {
+    cssVariables: false,
+    mode: lightSurface ? "light" : "dark",
+    accentColor: accent,
+    onAccentColor: isLightColor(accent) ? color(brand, "dark") : color(brand, "white")
+  });
+  slide.addImage({
+    data: svgToDataUri(svg),
+    x: ptToIn(layout.x + layout.pad),
+    y: ptToIn(svgY),
+    w: ptToIn(layout.w - layout.pad * 2),
+    h: ptToIn(svgH),
+    altText: funnel.title || model.title
+  });
+  addTakeaway(slide, model, brand);
+}
+function addMetricTrend(pptx, slide, model, brand, resourcesDir) {
+  const header = addBaseHeader(slide, model, brand, resourcesDir);
+  const metricTrend = model.metricTrend;
+  if (!metricTrend) return addContent(slide, model, brand, resourcesDir);
+  const layout = {
+    x: 56,
+    y: 138,
+    leftW: 318,
+    rightW: 530,
+    h: 266,
+    gap: 22,
+    pad: 22,
+    chartTop: 72,
+    chartBottomPad: 24,
+    ...brand.layouts.metricTrend || {}
+  };
+  const y = Math.max(layout.y, header.contentTop);
+  const panelFill = panelFillForSurface(brand, model, layout.panelFill || "0D1D36");
+  const panelBorder = color(brand, layout.panelBorder || "1E3A5F");
+  const accent = color(brand, metricTrend.accent || layout.accent || "blue");
+  const bodyOnPanel = brand.colors?.bodyOnDark ? "bodyOnDark" : "C8D8F0";
+  const mutedOnPanel = brand.colors?.mutedOnDark ? "mutedOnDark" : "8A95A8";
+  addRect(slide, brand, layout.x, y, layout.leftW, layout.h, panelFill, panelBorder, 0.5);
+  addTextBox(slide, brand, metricTrend.metric, {
+    x: layout.x + layout.pad,
+    y: y + 48,
+    w: layout.leftW - layout.pad * 2,
+    h: 68,
+    font: "medium",
+    size: 50,
+    color: metricTrend.accent || "blue",
+    margin: 0,
+    fit: "shrink"
+  });
+  addTextBox(slide, brand, metricTrend.metricLabel, {
+    x: layout.x + layout.pad,
+    y: y + 126,
+    w: layout.leftW - layout.pad * 2,
+    h: layout.h - 148,
+    font: "regular",
+    size: 15,
+    color: bodyOnPanel,
+    margin: 0,
+    breakLine: true,
+    fit: "shrink"
+  });
+  const rightX = layout.x + layout.leftW + layout.gap;
+  addRect(slide, brand, rightX, y, layout.rightW, layout.h, panelFill, panelBorder, 0.5);
+  addTextBox(slide, brand, metricTrend.title || "Trend", {
+    x: rightX + layout.pad,
+    y: y + 30,
+    w: layout.rightW - layout.pad * 2,
+    h: 26,
+    font: "medium",
+    size: 18,
+    color: "white",
+    margin: 0,
+    fit: "shrink"
+  });
+  slide.addChart(pptx.ChartType.line, [
+    {
+      name: metricTrend.title || metricTrend.metricLabel || "Trend",
+      labels: metricTrend.labels,
+      values: metricTrend.values
+    }
+  ], normalizePptxColors(brand, {
+    x: ptToIn(rightX + layout.pad),
+    y: ptToIn(y + layout.chartTop),
+    w: ptToIn(layout.rightW - layout.pad * 2),
+    h: ptToIn(layout.h - layout.chartTop - layout.chartBottomPad),
+    showTitle: false,
+    chartArea: {
+      fill: { color: "0D1D36", transparency: 100 },
+      border: { color: "0D1D36", transparency: 100 }
+    },
+    plotArea: {
+      fill: { color: "0D1D36", transparency: 100 },
+      border: { color: "1E3A5F", transparency: 55 }
+    },
+    chartColors: [accent],
+    showLegend: false,
+    showValue: false,
+    showCategoryName: true,
+    catAxisLabelFontFace: font(brand, "regular"),
+    catAxisLabelFontSize: 8,
+    catAxisLabelColor: color(brand, mutedOnPanel),
+    valAxisLabelFontFace: font(brand, "regular"),
+    valAxisLabelFontSize: 8,
+    valAxisLabelColor: color(brand, mutedOnPanel),
+    valGridLine: { color: "1E3A5F", transparency: 25 },
+    catGridLine: { color: "FFFFFF", transparency: 100 },
+    showCatAxis: true,
+    showValAxis: true,
+    showLeaderLines: false
+  }));
+  addTextBox(slide, brand, `${formatPptxNumber(metricTrend.values.at(-1) || 0)}${metricTrend.unit}`, {
+    x: rightX + layout.rightW - layout.pad - 82,
+    y: y + 34,
+    w: 82,
+    h: 22,
+    font: "medium",
+    size: 13,
+    color: metricTrend.accent || "blue",
+    margin: 0,
+    fit: "shrink",
+    align: "right"
+  });
+  addTakeaway(slide, model, brand);
+}
+function addHeatmap(slide, model, brand, resourcesDir) {
+  const header = addBaseHeader(slide, model, brand, resourcesDir);
+  const heatmap = model.heatmap;
+  if (!heatmap) return addContent(slide, model, brand, resourcesDir);
+  const layout = {
+    x: 68,
+    y: 136,
+    w: 824,
+    h: 284,
+    pad: 18,
+    labelW: 56,
+    columnLabelH: 18,
+    gap: 4,
+    titleH: 22,
+    ...brand.layouts.heatmap || {}
+  };
+  const y = Math.max(layout.y, header.contentTop);
+  const lightSurface = isLightSurface(model);
+  const panelFill = lightSurface ? surfaceCardFill(brand, model) : panelFillForSurface(brand, model, layout.panelFill || "0D1D36");
+  const panelBorder = lightSurface ? surfaceBorder(brand, model) : color(brand, layout.panelBorder || "1E3A5F");
+  const headingToken = lightSurface ? lightToken(brand, "headingLight", "090909") : "white";
+  const mutedToken = lightSurface ? lightToken(brand, "mutedLight", "666666") : brand.colors?.mutedOnDark ? "mutedOnDark" : "9FB5D9";
+  const cellTextToken = lightSurface ? lightToken(brand, "headingLight", "090909") : "white";
+  const accent = color(brand, heatmap.accent || "blue");
+  const values = heatmap.values.flat();
+  const min = Math.min(...values);
+  const max = Math.max(...values);
+  const range = max - min || 1;
+  const titleOffset = heatmap.title ? layout.titleH + 14 : 0;
+  const gridX = layout.x + layout.pad;
+  const gridY = y + layout.pad + titleOffset;
+  const gridW = layout.w - layout.pad * 2;
+  const gridH = layout.h - layout.pad * 2 - titleOffset - (heatmap.caption ? 24 : 0);
+  const columnCount = heatmap.xLabels.length;
+  const rowCount = heatmap.yLabels.length;
+  const cellW = (gridW - layout.labelW - layout.gap * columnCount) / columnCount;
+  const cellH = (gridH - layout.columnLabelH - layout.gap * rowCount) / rowCount;
+  addRect(slide, brand, layout.x, y, layout.w, layout.h, panelFill, panelBorder, 0.5);
+  if (heatmap.title) {
+    addTextBox(slide, brand, heatmap.title, {
+      x: layout.x + layout.pad,
+      y: y + layout.pad,
+      w: layout.w - layout.pad * 2,
+      h: layout.titleH,
+      font: "medium",
+      size: 14,
+      color: headingToken,
+      margin: 0,
+      fit: "shrink"
+    });
+  }
+  heatmap.xLabels.forEach((label, columnIndex) => {
+    const x = gridX + layout.labelW + layout.gap + columnIndex * (cellW + layout.gap);
+    addTextBox(slide, brand, label, {
+      x,
+      y: gridY,
+      w: cellW,
+      h: layout.columnLabelH,
+      font: "medium",
+      size: 7,
+      color: mutedToken,
+      margin: 0,
+      align: "center",
+      fit: "shrink"
+    });
+  });
+  heatmap.yLabels.forEach((label, rowIndex) => {
+    const rowY = gridY + layout.columnLabelH + layout.gap + rowIndex * (cellH + layout.gap);
+    addTextBox(slide, brand, label, {
+      x: gridX,
+      y: rowY + Math.max(0, (cellH - 12) / 2),
+      w: layout.labelW - 6,
+      h: 12,
+      font: "medium",
+      size: 7,
+      color: mutedToken,
+      margin: 0,
+      align: "right",
+      fit: "shrink"
+    });
+    heatmap.values[rowIndex].forEach((value, columnIndex) => {
+      const x = gridX + layout.labelW + layout.gap + columnIndex * (cellW + layout.gap);
+      addRect(
+        slide,
+        brand,
+        x,
+        rowY,
+        cellW,
+        cellH,
+        { color: accent, transparency: heatmapCellTransparency(value, min, range) },
+        lightSurface ? color(brand, lightToken(brand, "borderLight", "DEDEDE")) : "FFFFFF",
+        0.25
+      );
+      addTextBox(slide, brand, `${formatPptxNumber(value)}${heatmap.unit}`, {
+        x: x + 2,
+        y: rowY + Math.max(0, (cellH - 10) / 2),
+        w: cellW - 4,
+        h: 10,
+        font: "medium",
+        size: 6,
+        color: cellTextToken,
+        margin: 0,
+        align: "center",
+        fit: "shrink"
+      });
+    });
+  });
+  if (heatmap.caption) {
+    addTextBox(slide, brand, heatmap.caption, {
+      x: layout.x + layout.pad,
+      y: y + layout.h - layout.pad - 12,
+      w: layout.w - layout.pad * 2,
+      h: 12,
+      font: "regular",
+      size: 7,
+      color: mutedToken,
+      margin: 0,
+      fit: "shrink"
+    });
   }
   addTakeaway(slide, model, brand);
 }
-function containSvgBox(svg, box) {
-  const size = svgIntrinsicSize(svg);
-  if (!size?.width || !size?.height) return box;
-  return containBox(box, size.width, size.height);
+function addTreemap(slide, model, brand, resourcesDir) {
+  const header = addBaseHeader(slide, model, brand, resourcesDir);
+  const treemap = model.treemap;
+  if (!treemap) return addContent(slide, model, brand, resourcesDir);
+  const layout = {
+    x: 68,
+    y: 136,
+    w: 824,
+    h: 284,
+    pad: 18,
+    titleH: 22,
+    gap: 5,
+    ...brand.layouts.treemap || {}
+  };
+  const y = Math.max(layout.y, header.contentTop);
+  const lightSurface = isLightSurface(model);
+  const panelFill = lightSurface ? surfaceCardFill(brand, model) : panelFillForSurface(brand, model, layout.panelFill || "0D1D36");
+  const panelBorder = lightSurface ? surfaceBorder(brand, model) : color(brand, layout.panelBorder || "1E3A5F");
+  const headingToken = lightSurface ? lightToken(brand, "headingLight", "090909") : "white";
+  const mutedToken = lightSurface ? lightToken(brand, "mutedLight", "666666") : brand.colors?.mutedOnDark ? "mutedOnDark" : "9FB5D9";
+  const fills = treemapFillColors(brand);
+  const titleOffset = treemap.title ? layout.titleH + 14 : 0;
+  const mapBox = {
+    x: layout.x + layout.pad,
+    y: y + layout.pad + titleOffset,
+    w: layout.w - layout.pad * 2,
+    h: layout.h - layout.pad * 2 - titleOffset - (treemap.caption ? 24 : 0)
+  };
+  const rects = treemapRects(
+    treemap.labels.map((label, index) => ({ label, value: treemap.values[index] || 0 })),
+    mapBox,
+    layout.gap
+  );
+  addRect(slide, brand, layout.x, y, layout.w, layout.h, panelFill, panelBorder, 0.5);
+  if (treemap.title) {
+    addTextBox(slide, brand, treemap.title, {
+      x: layout.x + layout.pad,
+      y: y + layout.pad,
+      w: layout.w - layout.pad * 2,
+      h: layout.titleH,
+      font: "medium",
+      size: 14,
+      color: headingToken,
+      margin: 0,
+      fit: "shrink"
+    });
+  }
+  rects.forEach((rect, index) => {
+    const fill = fills[index % fills.length];
+    addRect(slide, brand, rect.x, rect.y, rect.w, rect.h, fill, "FFFFFF", 0.5);
+    if (rect.w < 54 || rect.h < 24) return;
+    addTextBox(slide, brand, rect.label, {
+      x: rect.x + 8,
+      y: rect.y + 8,
+      w: rect.w - 16,
+      h: Math.min(24, rect.h - 12),
+      font: "medium",
+      size: rect.w < 90 ? 8 : 10,
+      color: "white",
+      margin: 0,
+      fit: "shrink"
+    });
+    if (rect.w >= 92 && rect.h >= 44) {
+      addTextBox(slide, brand, `${formatPptxNumber(rect.value)}${treemap.unit}`, {
+        x: rect.x + 8,
+        y: rect.y + Math.min(rect.h - 18, 34),
+        w: rect.w - 16,
+        h: 14,
+        font: "regular",
+        size: rect.w < 90 ? 7 : 8,
+        color: "white",
+        margin: 0,
+        fit: "shrink"
+      });
+    }
+  });
+  if (treemap.caption) {
+    addTextBox(slide, brand, treemap.caption, {
+      x: layout.x + layout.pad,
+      y: y + layout.h - layout.pad - 12,
+      w: layout.w - layout.pad * 2,
+      h: 12,
+      font: "regular",
+      size: 7,
+      color: mutedToken,
+      margin: 0,
+      fit: "shrink"
+    });
+  }
+  addTakeaway(slide, model, brand);
+}
+function addImpactRadar(slide, model, brand, resourcesDir) {
+  const header = addBaseHeader(slide, model, brand, resourcesDir);
+  const impactRadar = model.impactRadar;
+  if (!impactRadar) return addContent(slide, model, brand, resourcesDir);
+  const layout = {
+    x: 68,
+    y: 132,
+    w: 824,
+    h: 322,
+    ...brand.layouts.impactRadar || {}
+  };
+  const y = Math.max(layout.y, header.contentTop);
+  const lightSurface = isLightSurface(model);
+  const svg = renderImpactRadarSvg(impactRadar, {
+    animate: false,
+    cssVariables: false,
+    mode: lightSurface ? "light" : "dark"
+  });
+  slide.addImage({
+    data: svgToDataUri(svg),
+    x: ptToIn(layout.x),
+    y: ptToIn(y),
+    w: ptToIn(layout.w),
+    h: ptToIn(layout.h),
+    altText: impactRadar.title || model.title
+  });
+  addTakeaway(slide, model, brand);
+}
+function addJourneyMap(slide, model, brand, resourcesDir) {
+  const header = addBaseHeader(slide, model, brand, resourcesDir);
+  const journeyMap = model.journeyMap;
+  if (!journeyMap) return addContent(slide, model, brand, resourcesDir);
+  const steps = journeyMap.steps.slice(0, 6);
+  const layout = {
+    x: 56,
+    y: 146,
+    w: 848,
+    h: 232,
+    gap: 12,
+    pad: 12,
+    topBarH: 4,
+    ...brand.layouts.journeyMap || {}
+  };
+  const y = Math.max(layout.y, header.contentTop);
+  const count = Math.max(steps.length, 1);
+  const cardW = (layout.w - layout.gap * (count - 1)) / count;
+  const lightSurface = isLightSurface(model);
+  const panelFill = lightSurface ? surfaceCardFill(brand, model) : panelFillForSurface(brand, model, layout.panelFill || "0D1D36");
+  const panelBorder = lightSurface ? surfaceBorder(brand, model) : color(brand, layout.panelBorder || "1E3A5F");
+  const headingOnSurface = lightSurface ? lightToken(brand, "headingLight", "090909") : "white";
+  const headingOnPanel = lightSurface ? lightToken(brand, "headingLight", "090909") : "white";
+  const bodyOnPanel = lightSurface ? lightToken(brand, "bodyLight", "444444") : brand.colors?.bodyOnDark ? "bodyOnDark" : "C8D8F0";
+  if (journeyMap.title) {
+    addTextBox(slide, brand, journeyMap.title, {
+      x: layout.x,
+      y: y - 28,
+      w: layout.w,
+      h: 20,
+      font: "medium",
+      size: 14,
+      color: headingOnSurface,
+      margin: 0,
+      fit: "shrink"
+    });
+  }
+  steps.forEach((step, index) => {
+    const x = layout.x + index * (cardW + layout.gap);
+    const accent = color(brand, step.accent || "blue");
+    addRect(slide, brand, x, y, cardW, layout.h, panelFill, panelBorder, 0.5);
+    addRect(slide, brand, x, y, cardW, layout.topBarH, accent, null);
+    addTextBox(slide, brand, step.label, {
+      x: x + layout.pad,
+      y: y + 18,
+      w: cardW - layout.pad * 2,
+      h: 16,
+      font: "medium",
+      size: 8,
+      color: step.accent || "blue",
+      margin: 0,
+      fit: "shrink"
+    });
+    addTextBox(slide, brand, step.title, {
+      x: x + layout.pad,
+      y: y + 46,
+      w: cardW - layout.pad * 2,
+      h: 42,
+      font: "medium",
+      size: count > 5 ? 10 : 11,
+      color: headingOnPanel,
+      margin: 0,
+      fit: "shrink",
+      breakLine: true
+    });
+    addTextBox(slide, brand, step.body, {
+      x: x + layout.pad,
+      y: y + 96,
+      w: cardW - layout.pad * 2,
+      h: layout.h - 112,
+      font: "regular",
+      size: count > 5 ? 8 : 9,
+      color: bodyOnPanel,
+      margin: 0,
+      breakLine: true,
+      fit: "shrink"
+    });
+  });
+  addTakeaway(slide, model, brand);
+}
+function addJourneyPath(slide, model, brand, resourcesDir) {
+  const header = addBaseHeader(slide, model, brand, resourcesDir);
+  const journeyPath = model.journeyPath;
+  if (!journeyPath) return addContent(slide, model, brand, resourcesDir);
+  const layout = {
+    x: 56,
+    y: 138,
+    leftW: 318,
+    rightW: 530,
+    h: 278,
+    gap: 22,
+    pad: 24,
+    ...brand.layouts.journeyPath || {}
+  };
+  const y = Math.max(layout.y, header.contentTop);
+  const lightSurface = isLightSurface(model);
+  const panelFill = lightSurface ? surfaceCardFill(brand, model) : panelFillForSurface(brand, model, layout.panelFill || "0D1D36");
+  const panelBorder = lightSurface ? surfaceBorder(brand, model) : color(brand, layout.panelBorder || "1E3A5F");
+  const headingToken = lightSurface ? lightToken(brand, "headingLight", "090909") : "white";
+  const bodyToken = lightSurface ? lightToken(brand, "bodyLight", "444444") : brand.colors?.bodyOnDark ? "bodyOnDark" : "C8D8F0";
+  addRect(slide, brand, layout.x, y, layout.leftW, layout.h, panelFill, panelBorder, 0.5);
+  addTextBox(slide, brand, journeyPath.metric, {
+    x: layout.x + layout.pad,
+    y: y + 48,
+    w: layout.leftW - layout.pad * 2,
+    h: 70,
+    font: "medium",
+    size: 50,
+    color: journeyPath.accent || "blue",
+    margin: 0,
+    fit: "shrink"
+  });
+  addTextBox(slide, brand, journeyPath.metricLabel, {
+    x: layout.x + layout.pad,
+    y: y + 126,
+    w: layout.leftW - layout.pad * 2,
+    h: layout.h - 150,
+    font: "regular",
+    size: 14,
+    color: bodyToken,
+    margin: 0,
+    breakLine: true,
+    fit: "shrink"
+  });
+  const svg = renderJourneyPathSvg(journeyPath, {
+    animate: false,
+    cssVariables: false,
+    mode: lightSurface ? "light" : "dark"
+  });
+  const rightX = layout.x + layout.leftW + layout.gap;
+  addRect(slide, brand, rightX, y, layout.rightW, layout.h, lightSurface ? color(brand, "white") : panelFill, panelBorder, 0.5);
+  slide.addImage({
+    data: svgToDataUri(svg),
+    x: ptToIn(rightX + 8),
+    y: ptToIn(y + 8),
+    w: ptToIn(layout.rightW - 16),
+    h: ptToIn(layout.h - 16),
+    altText: journeyPath.title || model.title
+  });
+  if (journeyPath.title) {
+    addTextBox(slide, brand, journeyPath.title, {
+      x: rightX + layout.pad,
+      y: y - 24,
+      w: layout.rightW,
+      h: 18,
+      font: "medium",
+      size: 11,
+      color: headingToken,
+      margin: 0,
+      fit: "shrink"
+    });
+  }
+  addTakeaway(slide, model, brand);
 }
 function addComparison(slide, model, brand, resourcesDir) {
   const header = addBaseHeader(slide, model, brand, resourcesDir);
@@ -15946,6 +16888,23 @@ function estimateWrappedLines(text, box) {
   const charsPerLine = Math.max(8, Math.floor((box.w || 760) / (size * 0.5)));
   return String(text || "").split(/\r?\n/).reduce((count, line) => count + Math.max(1, Math.ceil(line.trim().length / charsPerLine)), 0);
 }
+function formatPptxNumber(value) {
+  if (!Number.isFinite(value)) return "";
+  return Number.isInteger(value) ? value.toLocaleString("en-GB") : value.toLocaleString("en-GB", { maximumFractionDigits: 2 });
+}
+function heatmapCellTransparency(value, min, range) {
+  return Math.round(78 - (value - min) / range * 58);
+}
+function treemapFillColors(brand) {
+  return [
+    color(brand, "blue"),
+    color(brand, "lightBlue"),
+    color(brand, "purple"),
+    color(brand, "green"),
+    color(brand, "orange"),
+    color(brand, "yellow")
+  ];
+}
 function addBaseHeader(slide, model, brand, resourcesDir) {
   addSlideChrome(slide, brand, resourcesDir, "content", isLightSurface(model) ? "white" : "dark", model);
   const layout = brand.layouts.header;
@@ -16186,7 +17145,14 @@ function surfaceLine(brand, model, current) {
   return color(brand, lightToken(brand, "borderLight", "DEDEDE"));
 }
 function surfaceCardFill(brand, model) {
-  return color(brand, surfaceFillToken(brand, model, "cardLight", "cardFillLight", "FDFDFD"));
+  const fill = color(brand, surfaceFillToken(brand, model, "cardLight", "cardFillLight", "FDFDFD"));
+  const transparency = surfacePanelTransparency(brand, model);
+  return transparency ? { color: fill, transparency } : fill;
+}
+function panelFillForSurface(brand, model, fill) {
+  const resolved = color(brand, fill);
+  const transparency = surfacePanelTransparency(brand, model);
+  return transparency ? { color: resolved, transparency } : resolved;
 }
 function surfaceBorder(brand, model) {
   return surfaceLine(brand, model, "border");
@@ -16196,9 +17162,12 @@ function surfaceBackgroundColor(brand, surface, fallbackColor) {
   return color(brand, fallbackColor);
 }
 function backgroundForSurface(brand, kind, surface) {
-  const backgrounds = brand.assets?.backgrounds || {};
-  if (surface === "light") return backgrounds.light || backgrounds.contentLight || "";
-  return backgrounds[kind] || (kind === "divider" ? backgrounds.cover : "") || (kind === "close" ? backgrounds.cover : "") || backgrounds.default || "";
+  return slideBackgroundAsset(brand, kind, surface);
+}
+function surfacePanelTransparency(brand, model) {
+  const surface = isLightSurface(model) ? "light" : "dark";
+  if (!hasSlideBackgroundAsset(brand, surface)) return 0;
+  return surface === "light" ? 8 : 14;
 }
 function brandLogoForSurface(brand, kind, surface) {
   const logo = brand.assets?.logo;
@@ -16368,8 +17337,24 @@ function addNativeSlide(pptx, slide, model, frontmatter, brand, resourcesDir) {
       return addCards(slide, model, brand, resourcesDir);
     case "chart":
       return addChartSlide(pptx, slide, model, brand, resourcesDir);
-    case "visual":
-      return addVisual(slide, model, brand, resourcesDir);
+    case "signal-bars":
+      return addSignalBars(slide, model, brand, resourcesDir);
+    case "signal-board":
+      return addSignalBoard(slide, model, brand, resourcesDir);
+    case "funnel":
+      return addFunnel(slide, model, brand, resourcesDir);
+    case "metric-trend":
+      return addMetricTrend(pptx, slide, model, brand, resourcesDir);
+    case "heatmap":
+      return addHeatmap(slide, model, brand, resourcesDir);
+    case "impact-radar":
+      return addImpactRadar(slide, model, brand, resourcesDir);
+    case "treemap":
+      return addTreemap(slide, model, brand, resourcesDir);
+    case "journey-map":
+      return addJourneyMap(slide, model, brand, resourcesDir);
+    case "journey-path":
+      return addJourneyPath(slide, model, brand, resourcesDir);
     case "comparison":
       return addComparison(slide, model, brand, resourcesDir);
     case "swimlane":

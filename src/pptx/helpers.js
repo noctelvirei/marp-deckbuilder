@@ -36,16 +36,24 @@ export function addCell(slide, brand, text, x, y, w, h, fill, textStyle) {
 }
 
 export function addRect(slide, brand, x, y, w, h, fill, line, lineWidth) {
-  const fillColor = pptxColor(brand, fill)
+  const fillOptions = pptxFill(brand, fill)
+  const fillColor = fillOptions.color
   const lineColor = pptxColor(brand, line)
   slide.addShape('rect', {
     x: ptToIn(x),
     y: ptToIn(y),
     w: ptToIn(w),
     h: ptToIn(h),
-    fill: { color: fillColor },
+    fill: fillOptions,
     line: lineColor ? { color: lineColor, width: lineWidth || 0.5 } : { color: fillColor, transparency: 100 },
   })
+}
+
+function pptxFill(brand, fill) {
+  if (fill && typeof fill === 'object') {
+    return normalizePptxColors(brand, fill)
+  }
+  return { color: pptxColor(brand, fill) }
 }
 
 export function normalizePptxColors(brand, value, key = '') {

@@ -12,6 +12,8 @@ const entryPoint = resolve(repoRoot, 'src', 'cli.js')
 const outputDir = resolve(repoRoot, 'skills', 'marp-deckbuilder', 'tool', 'dist')
 const deckToolDir = resolve(repoRoot, 'skills', 'marp-deckbuilder', 'tool')
 const reportToolDir = resolve(repoRoot, 'skills', 'marp-report', 'tool')
+const sourceResourcesDir = resolve(repoRoot, 'resources')
+const deckResourcesDir = resolve(deckToolDir, 'resources')
 const playwrightCorePackage = require('playwright-core/package.json')
 const playwrightCoreRoot = dirname(require.resolve('playwright-core/package.json'))
 const chromiumBidiPathAliases = new Map([
@@ -54,6 +56,9 @@ await writeFile(
   'utf8',
 )
 await copyFile(resolve(playwrightCoreRoot, 'browsers.json'), resolve(outputDir, 'browsers.json'))
+
+await cp(sourceResourcesDir, deckResourcesDir, { recursive: true, force: true })
+console.log(`Synced skill resources: ${deckResourcesDir}`)
 
 await rm(reportToolDir, { recursive: true, force: true })
 await cp(deckToolDir, reportToolDir, {

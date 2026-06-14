@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 80 80" role="img" aria-label="Sample card icon">
+  <rect x="10" y="10" width="60" height="60" rx="14" fill="#0F82F5"/>
+  <path d="M25 43h30l-15-22z" fill="#FFFFFF"/>
+  <path d="M28 49h24v8H28z" fill="#FFFFFF"/>
+</svg>

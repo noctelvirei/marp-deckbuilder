@@ -5,8 +5,23 @@ const require = __deckbuilderCreateRequire(import.meta.url);
 const __filename = __deckbuilderFileURLToPath(import.meta.url);
 const __dirname = __deckbuilderDirname(__filename);
 import {
-  normalizeResourceReference
-} from "./chunk-MQE5FU5S.mjs";
+  cleanText,
+  escapeAttr,
+  escapeHtml,
+  formatNumber,
+  normalizeResourceReference,
+  renderBoxplotSvg,
+  renderBulletSvg,
+  renderFunnelSvg,
+  renderHistogramSvg,
+  renderImpactRadarSvg,
+  renderJourneyPathSvg,
+  renderParetoSvg,
+  renderSankeySvg,
+  renderWaterfallSvg,
+  splitCsv,
+  treemapRects
+} from "./chunk-HK76IMZ2.mjs";
 import {
   __commonJS,
   __export,
@@ -46756,62 +46771,40 @@ function expandSelfClosingComponentTags(source, knownTags, prefix) {
   });
 }
 
-// src/components/utils.js
-function splitCsv(value = "") {
-  return String(value).split(",").map((item) => item.trim()).filter(Boolean);
-}
-function firstMatch(source, pattern) {
-  const match = String(source || "").match(pattern);
-  return match?.[1] || "";
-}
-function cleanText(value) {
-  return String(value || "").replace(/\s+/g, " ").trim();
-}
-function escapeHtml(value) {
-  return String(value || "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
-}
-function escapeAttr(value) {
-  return escapeHtml(value).replace(/'/g, "&#39;");
-}
-function formatNumber(value) {
-  return Number.isInteger(value) ? String(value) : String(value);
-}
-function compactHtmlBlock(value) {
-  return String(value || "").split(/\r?\n/).filter((line) => line.trim().length > 0).join("\n");
-}
-
 // src/components/parsers.js
 function parseChart(chart) {
-  const labels = splitCsv(chart.attr("labels"));
-  const values = splitCsv(chart.attr("values")).map(Number);
   const title = chart.attr("title") || "";
-  const series = chart.attr("series") || title || "Series 1";
   const type2 = normalizeChartType(chart.attr("type") || "bar");
+  const seriesAttribute = chart.attr("series") || "";
+  const areaPoints = type2 === "area" ? parseAreaPointRows(chart.attr("points") || chart.attr("data")) : [];
+  const bubblePoints = type2 === "bubble" ? parseBubblePointRows(chart.attr("points") || chart.attr("data")) : [];
+  const links = parseChartLinks(chart.attr("links") || chart.attr("flows") || chart.attr("edges") || "");
+  const labels = splitCsv(chart.attr("labels"));
+  const valuesAttribute = splitCsv(chart.attr("values"));
+  const targets = splitCsv(chart.attr("targets") || chart.attr("target-values") || chart.attr("target")).map(Number);
+  const binCount = Number.parseInt(chart.attr("bins") || chart.attr("bucket-count") || chart.attr("buckets") || "10", 10);
+  const chartLabels = type2 === "area" && labels.length === 0 ? areaPoints.map((point) => point.x) : labels;
+  const points = type2 === "scatter" ? parsePointRows(chart.attr("points")) : type2 === "bubble" ? bubblePoints : areaPoints;
+  const isMultiSeriesBar = type2 === "grouped-bar" || type2 === "stacked-bar";
+  const seriesNames = isMultiSeriesBar ? splitCsv(seriesAttribute) : [];
+  const matrix = type2 === "boxplot" ? parseObservationMatrix(chart.attr("values") || chart.attr("matrix") || chart.attr("series-values")) : isMultiSeriesBar ? parseNumberMatrix(chart.attr("values")) : [];
+  const values = isMultiSeriesBar || type2 === "scatter" || type2 === "bubble" || type2 === "boxplot" ? [] : valuesAttribute.length ? valuesAttribute.map(Number) : areaPoints.map((point) => point.y);
+  const series = isMultiSeriesBar ? seriesAttribute : seriesAttribute || title || "Series 1";
   return {
     type: "chart",
     chartType: type2,
     title,
     series,
-    labels,
-    values
-  };
-}
-function parseVisual(visual) {
-  const html3 = visual.html() || "";
-  const svg = firstMatch(html3, /(<svg\b[\s\S]*?<\/svg>)/i);
-  const titleAttr = visual.attr("title") || "";
-  const title = titleAttr || cleanText(visual.find("h2,h3,figcaption").first().text());
-  const caption = visual.attr("caption") || "";
-  const fallback = visual.attr("fallback") || cleanText(visual.find("p").first().text() || visual.text());
-  return {
-    type: "visual",
-    title,
-    showTitle: Boolean(titleAttr),
-    caption,
-    alt: visual.attr("alt") || title || fallback,
-    svg,
-    html: html3.trim(),
-    fallback
+    seriesNames,
+    labels: chartLabels,
+    values,
+    targets,
+    binCount,
+    matrix,
+    points,
+    links,
+    xAxisLabel: chart.attr("x-axis") || chart.attr("x-label") || "",
+    yAxisLabel: chart.attr("y-axis") || chart.attr("y-label") || ""
   };
 }
 function parseComparison(root2, comparison) {
@@ -46899,6 +46892,159 @@ function parseLogoWall(root2, logoWall) {
     type: "logo-wall",
     title: logoWall.attr("title") || "",
     logos
+  };
+}
+function parseSlideMeta(slide) {
+  const directives = {};
+  for (const attr2 of [
+    "layout",
+    "title",
+    "subtitle",
+    "eyebrow",
+    "takeaway",
+    "footnote",
+    "surface",
+    "mode",
+    "html",
+    "pptx",
+    "html-skip",
+    "pptx-skip",
+    "html-only",
+    "pptx-only"
+  ]) {
+    const value = slide.attr(attr2);
+    if (value !== void 0) directives[attr2] = value;
+  }
+  return {
+    type: "slide",
+    directives,
+    companyLogo: logoFromAttrs(slide, "company"),
+    customerLogo: logoFromAttrs(slide, "customer")
+  };
+}
+function parseSignalBars(signalBars) {
+  return {
+    type: "signal-bars",
+    metric: signalBars.attr("metric") || "",
+    metricLabel: signalBars.attr("metric-label") || "",
+    title: signalBars.attr("title") || "",
+    subtitle: signalBars.attr("subtitle") || "",
+    labels: splitCsv(signalBars.attr("labels")),
+    values: splitCsv(signalBars.attr("values")).map(Number),
+    unit: signalBars.attr("unit") || "",
+    accent: normalizeAccent(signalBars.attr("accent") || "blue")
+  };
+}
+function parseSignalBoard(signalBoard) {
+  return {
+    type: "signal-board",
+    title: signalBoard.attr("title") || cleanText(signalBoard.find("h2,h3,h4").first().text()),
+    body: signalBoard.attr("body") || cleanText(signalBoard.find("p").first().text() || signalBoard.text()),
+    tags: splitCsv(signalBoard.attr("tags")),
+    chartTitle: signalBoard.attr("chart-title") || signalBoard.attr("chart") || "Signal strength",
+    labels: splitCsv(signalBoard.attr("labels")),
+    values: splitCsv(signalBoard.attr("values")).map(Number),
+    unit: signalBoard.attr("unit") || "",
+    accent: normalizeAccent(signalBoard.attr("accent") || "blue")
+  };
+}
+function parseFunnel(funnel) {
+  return {
+    type: "funnel",
+    title: funnel.attr("title") || "",
+    labels: splitCsv(funnel.attr("labels")),
+    values: splitCsv(funnel.attr("values")).map(Number),
+    unit: funnel.attr("unit") || "",
+    accent: normalizeAccent(funnel.attr("accent") || "blue")
+  };
+}
+function parseMetricTrend(metricTrend) {
+  return {
+    type: "metric-trend",
+    metric: metricTrend.attr("metric") || "",
+    metricLabel: metricTrend.attr("metric-label") || "",
+    title: metricTrend.attr("title") || "",
+    labels: splitCsv(metricTrend.attr("labels")),
+    values: splitCsv(metricTrend.attr("values")).map(Number),
+    unit: metricTrend.attr("unit") || "",
+    accent: normalizeAccent(metricTrend.attr("accent") || "blue")
+  };
+}
+function parseHeatmap(heatmap) {
+  return {
+    type: "heatmap",
+    title: heatmap.attr("title") || "",
+    xLabels: splitCsv(heatmap.attr("x-labels") || heatmap.attr("columns")),
+    yLabels: splitCsv(heatmap.attr("y-labels") || heatmap.attr("rows")),
+    values: parseNumberMatrix(heatmap.attr("values")),
+    unit: heatmap.attr("unit") || "",
+    caption: heatmap.attr("caption") || "",
+    accent: normalizeAccent(heatmap.attr("accent") || "blue")
+  };
+}
+function parseTreemap(treemap) {
+  const labels = splitCsv(treemap.attr("labels"));
+  const values = splitCsv(treemap.attr("values")).map(Number);
+  return {
+    type: "treemap",
+    title: treemap.attr("title") || "",
+    labels,
+    values,
+    unit: treemap.attr("unit") || "",
+    caption: treemap.attr("caption") || "",
+    accent: normalizeAccent(treemap.attr("accent") || "blue")
+  };
+}
+function parseJourneyMap(root2, journeyMap) {
+  const steps = [];
+  journeyMap.find("deck-journey-step").each((_, stepElement) => {
+    const step = root2(stepElement);
+    const title = step.attr("title") || cleanText(step.find("h3,h4").first().text());
+    const body = step.attr("body") || cleanText(step.find("p").first().text() || step.text());
+    if (title || body) {
+      steps.push({
+        label: step.attr("label") || String(steps.length + 1).padStart(2, "0"),
+        title,
+        body,
+        accent: normalizeAccent(step.attr("accent") || (steps.length === 0 ? "blue" : "blue"))
+      });
+    }
+  });
+  return {
+    type: "journey-map",
+    title: journeyMap.attr("title") || "",
+    steps
+  };
+}
+function parseJourneyPath(journeyPath) {
+  return {
+    type: "journey-path",
+    title: journeyPath.attr("title") || journeyPath.attr("chart-title") || "Journey path",
+    metric: journeyPath.attr("metric") || "",
+    metricLabel: journeyPath.attr("metric-label") || journeyPath.attr("metric-body") || "",
+    labels: splitCsv(journeyPath.attr("labels")),
+    notes: splitCsv(journeyPath.attr("notes")),
+    hotspots: splitCsv(journeyPath.attr("hotspots")),
+    calloutTitle: journeyPath.attr("callout-title") || "",
+    calloutBody: journeyPath.attr("callout-body") || "",
+    accent: normalizeAccent(journeyPath.attr("accent") || "blue")
+  };
+}
+function parseImpactRadar(impactRadar) {
+  const labels = splitCsv(impactRadar.attr("labels"));
+  const values = splitCsv(impactRadar.attr("values")).map(Number);
+  const radarValues = splitCsv(impactRadar.attr("radar-values") || impactRadar.attr("radar") || "");
+  return {
+    type: "impact-radar",
+    title: impactRadar.attr("title") || "",
+    barTitle: impactRadar.attr("bar-title") || impactRadar.attr("title") || "Workstream impact",
+    radarTitle: impactRadar.attr("radar-title") || "Operating balance",
+    labels,
+    values,
+    radarValues: radarValues.length ? radarValues.map(Number) : values,
+    unit: impactRadar.attr("unit") || "",
+    caption: impactRadar.attr("caption") || "",
+    accent: normalizeAccent(impactRadar.attr("accent") || "blue")
   };
 }
 function parseExecTitle(execTitle) {
@@ -47034,6 +47180,14 @@ function parseExecMetrics(root2, execMetrics) {
     takeawayAccent: normalizeAccent(execMetrics.attr("takeaway-accent") || "blue")
   };
 }
+function logoFromAttrs(element, prefix) {
+  const src = element.attr(`${prefix}-logo`) || "";
+  if (!src) return null;
+  return {
+    src,
+    alt: element.attr(`${prefix}-alt`) || element.attr(`${prefix}-name`) || `${prefix} logo`
+  };
+}
 function parseExecSideCallout(execRows) {
   const hasSide = execRows.attr("side-title") || execRows.attr("side-value") || execRows.attr("side-body");
   if (!hasSide) return null;
@@ -47043,6 +47197,53 @@ function parseExecSideCallout(execRows) {
     body: execRows.attr("side-body") || "",
     accent: normalizeAccent(execRows.attr("side-accent") || "yellow")
   };
+}
+function parseNumberMatrix(value = "") {
+  return String(value || "").split(";").map((row) => splitCsv(row).map(Number)).filter((row) => row.length > 0);
+}
+function parseObservationMatrix(value = "") {
+  return String(value || "").split(";").map((row) => row.trim()).filter(Boolean).map((row) => row.split("|").map((cell) => Number(cell.trim())));
+}
+function parsePointRows(value = "") {
+  return String(value || "").split(";").map((row) => row.trim()).filter(Boolean).map((row) => {
+    const [x = "", y = "", label = ""] = row.split("|").map(cleanText);
+    return { x: Number(x), y: Number(y), label };
+  });
+}
+function parseBubblePointRows(value = "") {
+  return String(value || "").split(/[;,]/).map((row) => row.trim()).filter(Boolean).map((row) => {
+    const separator = row.includes("|") ? "|" : ":";
+    const [x = "", y = "", r = "", label = ""] = row.split(separator).map(cleanText);
+    return { x: parseStrictNumber(x), y: parseStrictNumber(y), r: parseStrictNumber(r), label };
+  });
+}
+function parseChartLinks(value = "") {
+  return splitCsv(value).map((item) => {
+    const match = String(item || "").match(/^(.+?)(?:->|=>|>)(.+?)(?::|=)(.+)$/);
+    if (!match) {
+      return {
+        source: "",
+        target: "",
+        value: Number.NaN
+      };
+    }
+    return {
+      source: cleanText(match[1]),
+      target: cleanText(match[2]),
+      value: Number(String(match[3] || "").trim().replace(/,/g, ""))
+    };
+  });
+}
+function parseStrictNumber(value) {
+  const text3 = String(value ?? "").trim();
+  return text3 === "" ? Number.NaN : Number(text3);
+}
+function parseAreaPointRows(value = "") {
+  return String(value || "").split(/[;,]/).map((row) => row.trim()).filter(Boolean).map((row) => {
+    const separator = row.includes("|") ? "|" : row.includes("=") ? "=" : ":";
+    const [x = "", y = ""] = row.split(separator).map(cleanText);
+    return { x, y: Number(y) };
+  });
 }
 function normalizeAccent(value = "blue") {
   const token = String(value || "blue").trim();
@@ -47066,13 +47267,42 @@ function clampInt(value, min, max, fallback) {
   return Math.min(max, Math.max(min, numeric));
 }
 function normalizeChartType(value) {
-  if (value === "line") return "line";
-  if (value === "column") return "bar";
-  return "bar";
+  const token = String(value || "bar").trim().toLowerCase();
+  if (token === "line") return "line";
+  if (token === "area-chart" || token === "filled-line") return "area";
+  if (token === "waterfall" || token === "waterfall-chart") return "waterfall";
+  if (token === "bullet" || token === "bullet-chart") return "bullet";
+  if (token === "bubble" || token === "bubble-chart") return "bubble";
+  if (token === "histogram" || token === "distribution") return "histogram";
+  if (token === "boxplot" || token === "box-plot") return "boxplot";
+  if (token === "pareto" || token === "pareto-chart") return "pareto";
+  if (token === "sankey" || token === "sankey-flow") return "sankey";
+  if (token === "donut") return "doughnut";
+  if (token === "scatterplot" || token === "xy") return "scatter";
+  if (token === "column") return "bar";
+  if (token === "grouped" || token === "clustered" || token === "clustered-bar" || token === "clustered-column") {
+    return "grouped-bar";
+  }
+  if (token === "stacked" || token === "stacked-column") return "stacked-bar";
+  return token || "bar";
 }
 
 // src/components/renderers.js
+var chartPalette = ["#0f82f5", "#4cc9f0", "#5d4ee8", "#ff9f51", "#2fc27d", "#ff5c7a"];
 function renderChartHtml(chart) {
+  if (chart.chartType === "grouped-bar") return renderGroupedBarChartHtml(chart);
+  if (chart.chartType === "stacked-bar") return renderStackedBarChartHtml(chart);
+  if (chart.chartType === "doughnut") return renderDoughnutChartHtml(chart);
+  if (chart.chartType === "area") return renderAreaChartHtml(chart);
+  if (chart.chartType === "line") return renderLineChartHtml(chart);
+  if (chart.chartType === "scatter") return renderScatterChartHtml(chart);
+  if (chart.chartType === "bubble") return renderBubbleChartHtml(chart);
+  if (chart.chartType === "histogram") return renderHistogramChartHtml(chart);
+  if (chart.chartType === "boxplot") return renderBoxplotChartHtml(chart);
+  if (chart.chartType === "pareto") return renderParetoChartHtml(chart);
+  if (chart.chartType === "sankey") return renderSankeyChartHtml(chart);
+  if (chart.chartType === "waterfall") return renderWaterfallChartHtml(chart);
+  if (chart.chartType === "bullet") return renderBulletChartHtml(chart);
   const max = Math.max(...chart.values, 1);
   const rows = chart.labels.map((label, index2) => {
     const value = chart.values[index2] ?? 0;
@@ -47088,13 +47318,486 @@ function renderChartHtml(chart) {
   <div class="deck-chart-rows">${rows}</div>
 </figure>`;
 }
-function renderVisualHtml(visual) {
-  const body = visual.html ? compactHtmlBlock(visual.html) : visual.fallback ? `<p>${escapeHtml(visual.fallback)}</p>` : "";
-  return `<figure class="deck-visual">
-  ${visual.showTitle ? `<figcaption>${escapeHtml(visual.title)}</figcaption>` : ""}
-  <div class="deck-visual-stage">${body}</div>
-  ${visual.caption ? `<p class="deck-visual-caption">${escapeHtml(visual.caption)}</p>` : ""}
+function renderWaterfallChartHtml(chart) {
+  return `<figure class="deck-chart deck-chart-waterfall">
+  ${chart.title ? `<figcaption>${escapeHtml(chart.title)}</figcaption>` : ""}
+  ${renderWaterfallSvg(chart, { cssVariables: true })}
 </figure>`;
+}
+function renderBulletChartHtml(chart) {
+  return `<figure class="deck-chart deck-chart-bullet">
+  ${chart.title ? `<figcaption>${escapeHtml(chart.title)}</figcaption>` : ""}
+  ${renderBulletSvg(chart, { cssVariables: true })}
+</figure>`;
+}
+function renderHistogramChartHtml(chart) {
+  return `<figure class="deck-chart deck-chart-histogram">
+  ${chart.title ? `<figcaption>${escapeHtml(chart.title)}</figcaption>` : ""}
+  ${renderHistogramSvg(chart, { cssVariables: true })}
+</figure>`;
+}
+function renderBoxplotChartHtml(chart) {
+  return `<figure class="deck-chart deck-chart-boxplot">
+  ${chart.title ? `<figcaption>${escapeHtml(chart.title)}</figcaption>` : ""}
+  ${renderBoxplotSvg(chart, { cssVariables: true })}
+</figure>`;
+}
+function renderParetoChartHtml(chart) {
+  return `<figure class="deck-chart deck-chart-pareto">
+  ${chart.title ? `<figcaption>${escapeHtml(chart.title)}</figcaption>` : ""}
+  ${renderParetoSvg(chart, { cssVariables: true })}
+</figure>`;
+}
+function renderSankeyChartHtml(chart) {
+  return `<figure class="deck-chart deck-chart-sankey">
+  ${chart.title ? `<figcaption>${escapeHtml(chart.title)}</figcaption>` : ""}
+  ${renderSankeySvg(chart, { cssVariables: true })}
+</figure>`;
+}
+function renderLineChartHtml(chart) {
+  const geometry = categoricalSeriesGeometry(chart);
+  const markers = geometry.points.map((point) => `<g transform="translate(${point.x.toFixed(2)} ${point.y.toFixed(2)})">
+  <circle class="deck-chart-line-point" r="6"><title>${escapeHtml(point.label)}: ${escapeHtml(formatNumber(point.value))}</title></circle>
+  <text class="deck-chart-line-point-value" x="0" y="-13" text-anchor="middle">${escapeHtml(formatNumber(point.value))}</text>
+</g>`).join("\n");
+  return `<figure class="deck-chart deck-chart-line">
+  ${chart.title ? `<figcaption>${escapeHtml(chart.title)}</figcaption>` : ""}
+  <svg class="deck-chart-line-svg" viewBox="0 0 ${geometry.width} ${geometry.height}" role="img" aria-label="${escapeAttr(chart.title || "Line chart")}">
+    ${renderSeriesGrid(geometry, "line")}
+    ${renderSeriesAxes(geometry, "line")}
+    <path class="deck-chart-line-path" d="${linePath(geometry.points)}"></path>
+    ${markers}
+    ${renderSeriesXLabels(geometry, "line")}
+  </svg>
+</figure>`;
+}
+function renderAreaChartHtml(chart) {
+  const geometry = categoricalSeriesGeometry(chart, { includeZero: true });
+  const baseline = geometry.yFor(0);
+  const areaPath = [
+    `M ${geometry.points[0].x.toFixed(2)} ${baseline.toFixed(2)}`,
+    ...geometry.points.map((point) => `L ${point.x.toFixed(2)} ${point.y.toFixed(2)}`),
+    `L ${geometry.points.at(-1).x.toFixed(2)} ${baseline.toFixed(2)}`,
+    "Z"
+  ].join(" ");
+  const markers = geometry.points.map((point) => `<g transform="translate(${point.x.toFixed(2)} ${point.y.toFixed(2)})">
+  <circle class="deck-chart-area-point" r="5"><title>${escapeHtml(point.label)}: ${escapeHtml(formatNumber(point.value))}</title></circle>
+  <text class="deck-chart-area-point-value" x="0" y="-12" text-anchor="middle">${escapeHtml(formatNumber(point.value))}</text>
+</g>`).join("\n");
+  return `<figure class="deck-chart deck-chart-area">
+  ${chart.title ? `<figcaption>${escapeHtml(chart.title)}</figcaption>` : ""}
+  <svg class="deck-chart-area-svg" viewBox="0 0 ${geometry.width} ${geometry.height}" role="img" aria-label="${escapeAttr(chart.title || "Area chart")}">
+    ${renderSeriesGrid(geometry, "area")}
+    ${renderSeriesAxes(geometry, "area")}
+    <path class="deck-chart-area-fill" d="${areaPath}"></path>
+    <path class="deck-chart-area-path" d="${linePath(geometry.points)}"></path>
+    ${markers}
+    ${renderSeriesXLabels(geometry, "area")}
+  </svg>
+</figure>`;
+}
+function categoricalSeriesGeometry(chart, options = {}) {
+  const width = 760;
+  const height = 342;
+  const margin = { top: 30, right: 28, bottom: 54, left: 64 };
+  const values = chart.values;
+  const minValue = Math.min(...values);
+  const maxValue = Math.max(...values);
+  let [minY, maxY] = expandExtent(
+    options.includeZero ? Math.min(0, minValue) : minValue,
+    options.includeZero ? Math.max(0, maxValue) : maxValue
+  );
+  if (options.includeZero && minValue >= 0) minY = 0;
+  if (options.includeZero && maxValue <= 0) maxY = 0;
+  if (minY === maxY) maxY = minY + 1;
+  const plotWidth = width - margin.left - margin.right;
+  const plotHeight = height - margin.top - margin.bottom;
+  const xFor = (index2) => values.length > 1 ? margin.left + index2 / (values.length - 1) * plotWidth : margin.left + plotWidth / 2;
+  const yFor = (value) => margin.top + plotHeight - (value - minY) / (maxY - minY) * plotHeight;
+  const points = values.map((value, index2) => ({
+    x: xFor(index2),
+    y: yFor(value),
+    value,
+    label: chart.labels[index2] || ""
+  }));
+  return { width, height, margin, plotWidth, plotHeight, minY, maxY, yFor, points };
+}
+function renderSeriesGrid(geometry, prefix) {
+  return tickValues(geometry.minY, geometry.maxY).map((tick) => {
+    const y = geometry.yFor(tick);
+    return `<line class="deck-chart-${prefix}-grid" x1="${geometry.margin.left}" y1="${y.toFixed(2)}" x2="${geometry.margin.left + geometry.plotWidth}" y2="${y.toFixed(2)}"></line>
+<text class="deck-chart-${prefix}-tick" x="${geometry.margin.left - 14}" y="${(y + 5).toFixed(2)}" text-anchor="end">${escapeHtml(formatNumber(tick))}</text>`;
+  }).join("\n");
+}
+function renderSeriesAxes(geometry, prefix) {
+  return `<line class="deck-chart-${prefix}-axis" x1="${geometry.margin.left}" y1="${geometry.margin.top + geometry.plotHeight}" x2="${geometry.margin.left + geometry.plotWidth}" y2="${geometry.margin.top + geometry.plotHeight}"></line>
+    <line class="deck-chart-${prefix}-axis" x1="${geometry.margin.left}" y1="${geometry.margin.top}" x2="${geometry.margin.left}" y2="${geometry.margin.top + geometry.plotHeight}"></line>`;
+}
+function renderSeriesXLabels(geometry, prefix) {
+  return geometry.points.map((point) => `<text class="deck-chart-${prefix}-tick" x="${point.x.toFixed(2)}" y="${geometry.height - 24}" text-anchor="middle">${escapeHtml(point.label)}</text>`).join("\n");
+}
+function linePath(points) {
+  return points.map((point, index2) => `${index2 === 0 ? "M" : "L"} ${point.x.toFixed(2)} ${point.y.toFixed(2)}`).join(" ");
+}
+function renderSignalBarsHtml(signalBars) {
+  const max = Math.max(...signalBars.values, 1);
+  const rows = signalBars.labels.map((label, index2) => {
+    const value = signalBars.values[index2] ?? 0;
+    const width = Math.max(2, Math.round(value / max * 100));
+    const displayValue = `${formatNumber(value)}${signalBars.unit}`;
+    return `<div class="deck-signal-row">
+  <span class="deck-signal-label">${escapeHtml(label)}</span>
+  <span class="deck-signal-track"><span class="deck-signal-fill" style="width:${width}%"></span></span>
+  <strong>${escapeHtml(displayValue)}</strong>
+</div>`;
+  }).join("\n");
+  return `<div class="deck-signal-bars deck-signal-accent-${escapeAttr(signalBars.accent)}">
+  <article class="deck-signal-summary">
+    <strong>${escapeHtml(signalBars.metric)}</strong>
+    <p>${escapeHtml(signalBars.metricLabel)}</p>
+  </article>
+  <figure class="deck-signal-chart">
+    ${signalBars.title || signalBars.subtitle ? `<figcaption>${signalBars.title ? `<strong>${escapeHtml(signalBars.title)}</strong>` : ""}${signalBars.subtitle ? `<span>${escapeHtml(signalBars.subtitle)}</span>` : ""}</figcaption>` : ""}
+    <div class="deck-signal-rows">${rows}</div>
+  </figure>
+</div>`;
+}
+function renderSignalBoardHtml(signalBoard) {
+  const max = Math.max(...signalBoard.values, 1);
+  const tags = signalBoard.tags.map((tag) => `<span class="deck-signal-board-tag">${escapeHtml(tag)}</span>`).join("\n");
+  const rows = signalBoard.labels.map((label, index2) => {
+    const value = signalBoard.values[index2] ?? 0;
+    const width = Math.max(2, Math.round(value / max * 100));
+    const displayValue = `${formatNumber(value)}${signalBoard.unit}`;
+    return `<div class="deck-signal-row">
+  <span class="deck-signal-label">${escapeHtml(label)}</span>
+  <span class="deck-signal-track"><span class="deck-signal-fill" style="width:${width}%"></span></span>
+  <strong>${escapeHtml(displayValue)}</strong>
+</div>`;
+  }).join("\n");
+  return `<div class="deck-signal-board deck-signal-accent-${escapeAttr(signalBoard.accent)}">
+  <article class="deck-signal-board-panel">
+    <h2>${escapeHtml(signalBoard.title)}</h2>
+    <p>${escapeHtml(signalBoard.body)}</p>
+    ${tags ? `<div class="deck-signal-board-tags">${tags}</div>` : ""}
+  </article>
+  <figure class="deck-signal-board-chart">
+    <figcaption>${escapeHtml(signalBoard.chartTitle)}</figcaption>
+    <div class="deck-signal-rows">${rows}</div>
+  </figure>
+</div>`;
+}
+function renderFunnelHtml(funnel) {
+  return `<figure class="deck-funnel deck-funnel-accent-${escapeAttr(funnel.accent)}">
+  ${funnel.title ? `<figcaption>${escapeHtml(funnel.title)}</figcaption>` : ""}
+  ${renderFunnelSvg(funnel, { cssVariables: true })}
+</figure>`;
+}
+function renderScatterChartHtml(chart) {
+  return renderPointChartHtml(chart, { type: "scatter" });
+}
+function renderBubbleChartHtml(chart) {
+  return renderPointChartHtml(chart, { type: "bubble" });
+}
+function renderPointChartHtml(chart, options = {}) {
+  const isBubble = options.type === "bubble";
+  const width = 760;
+  const height = 350;
+  const margin = { top: 28, right: 28, bottom: 58, left: 64 };
+  const xs = chart.points.map((point) => point.x);
+  const ys = chart.points.map((point) => point.y);
+  const [minX, maxX] = expandExtent(Math.min(...xs), Math.max(...xs));
+  const [minY, maxY] = expandExtent(Math.min(...ys), Math.max(...ys));
+  const plotWidth = width - margin.left - margin.right;
+  const plotHeight = height - margin.top - margin.bottom;
+  const xFor = (value) => margin.left + (value - minX) / (maxX - minX) * plotWidth;
+  const yFor = (value) => margin.top + plotHeight - (value - minY) / (maxY - minY) * plotHeight;
+  const xTicks = tickValues(minX, maxX);
+  const yTicks = tickValues(minY, maxY);
+  const maxRadius = Math.max(...chart.points.map((point) => point.r || 0), 1);
+  const grid = [
+    ...xTicks.map((tick) => {
+      const x = xFor(tick);
+      return `<line class="deck-chart-scatter-grid" x1="${x.toFixed(2)}" y1="${margin.top}" x2="${x.toFixed(2)}" y2="${margin.top + plotHeight}"></line>
+<text class="deck-chart-scatter-tick" x="${x.toFixed(2)}" y="${height - 28}" text-anchor="middle">${escapeHtml(formatNumber(tick))}</text>`;
+    }),
+    ...yTicks.map((tick) => {
+      const y = yFor(tick);
+      return `<line class="deck-chart-scatter-grid" x1="${margin.left}" y1="${y.toFixed(2)}" x2="${margin.left + plotWidth}" y2="${y.toFixed(2)}"></line>
+<text class="deck-chart-scatter-tick" x="${margin.left - 14}" y="${(y + 5).toFixed(2)}" text-anchor="end">${escapeHtml(formatNumber(tick))}</text>`;
+    })
+  ].join("\n");
+  const points = chart.points.map((point, index2) => {
+    const x = xFor(point.x);
+    const y = yFor(point.y);
+    const label = point.label || `${formatNumber(point.x)}, ${formatNumber(point.y)}`;
+    const radius = isBubble ? Math.max(6, Math.min(25, 6 + (point.r || 0) / maxRadius * 19)) : 8;
+    const pointClass = isBubble ? "deck-chart-bubble-point" : "deck-chart-scatter-point";
+    const title = isBubble ? `${label}: ${formatNumber(point.x)}, ${formatNumber(point.y)}, size ${formatNumber(point.r)}` : `${label}: ${formatNumber(point.x)}, ${formatNumber(point.y)}`;
+    return `<g class="${pointClass} deck-chart-series-${index2 % 6}" transform="translate(${x.toFixed(2)} ${y.toFixed(2)})">
+  <circle r="${radius.toFixed(2)}"><title>${escapeHtml(title)}</title></circle>
+  ${point.label ? `<text x="12" y="-10">${escapeHtml(point.label)}</text>` : ""}
+</g>`;
+  }).join("\n");
+  const xAxisLabel = chart.xAxisLabel || "X";
+  const yAxisLabel = chart.yAxisLabel || "Y";
+  const chartClass = isBubble ? "deck-chart-bubble" : "deck-chart-scatter";
+  const svgClass = isBubble ? "deck-chart-bubble-svg" : "deck-chart-scatter-svg";
+  const ariaLabel = isBubble ? "Bubble chart" : "Scatter chart";
+  return `<figure class="deck-chart ${chartClass}">
+  ${chart.title ? `<figcaption>${escapeHtml(chart.title)}</figcaption>` : ""}
+  <svg class="${svgClass}" viewBox="0 0 ${width} ${height}" role="img" aria-label="${escapeAttr(chart.title || ariaLabel)}">
+    ${grid}
+    <line class="deck-chart-scatter-axis" x1="${margin.left}" y1="${margin.top + plotHeight}" x2="${margin.left + plotWidth}" y2="${margin.top + plotHeight}"></line>
+    <line class="deck-chart-scatter-axis" x1="${margin.left}" y1="${margin.top}" x2="${margin.left}" y2="${margin.top + plotHeight}"></line>
+    ${points}
+    <text class="deck-chart-scatter-axis-label" x="${margin.left + plotWidth / 2}" y="${height - 4}" text-anchor="middle">${escapeHtml(xAxisLabel)}</text>
+    <text class="deck-chart-scatter-axis-label" transform="translate(18 ${margin.top + plotHeight / 2}) rotate(-90)" text-anchor="middle">${escapeHtml(yAxisLabel)}</text>
+  </svg>
+</figure>`;
+}
+function expandExtent(min, max) {
+  if (min === max) return [min - 1, max + 1];
+  const padding = (max - min) * 0.12;
+  return [min - padding, max + padding];
+}
+function tickValues(min, max) {
+  const ticks = [];
+  const count = 4;
+  for (let index2 = 0; index2 <= count; index2 += 1) {
+    ticks.push(min + (max - min) / count * index2);
+  }
+  return ticks;
+}
+function renderDoughnutChartHtml(chart) {
+  const total = chart.values.reduce((sum, value) => sum + value, 0);
+  let cursor = 0;
+  const stops = chart.values.map((value, index2) => {
+    const start = cursor;
+    cursor += value / total * 100;
+    return `${chartPalette[index2 % chartPalette.length]} ${start.toFixed(3)}% ${cursor.toFixed(3)}%`;
+  });
+  const rows = chart.labels.map((label, index2) => {
+    const value = chart.values[index2] ?? 0;
+    const percent = total > 0 ? value / total * 100 : 0;
+    return `<div class="deck-chart-doughnut-row deck-chart-series-${index2 % 6}">
+  <span class="deck-chart-legend-swatch"></span>
+  <span class="deck-chart-label">${escapeHtml(label)}</span>
+  <strong>${escapeHtml(formatNumber(value))}</strong>
+  <span class="deck-chart-doughnut-percent">${escapeHtml(`${Math.round(percent)}%`)}</span>
+</div>`;
+  }).join("\n");
+  return `<figure class="deck-chart deck-chart-doughnut">
+  ${chart.title ? `<figcaption>${escapeHtml(chart.title)}</figcaption>` : ""}
+  <div class="deck-chart-doughnut-layout">
+    <div class="deck-chart-doughnut-ring" style="background: conic-gradient(${stops.join(", ")})">
+      <span>Total<strong>${escapeHtml(formatNumber(total))}</strong></span>
+    </div>
+    <div class="deck-chart-doughnut-legend">${rows}</div>
+  </div>
+</figure>`;
+}
+function renderGroupedBarChartHtml(chart) {
+  const values = chart.matrix.flat();
+  const max = Math.max(...values, 1);
+  const legend = chart.seriesNames.map(
+    (series, index2) => `<span class="deck-chart-legend-item deck-chart-series-${index2 % 6}">
+  <span class="deck-chart-legend-swatch"></span>${escapeHtml(series)}
+</span>`
+  ).join("\n");
+  const rows = chart.labels.map((label, labelIndex) => {
+    const bars = chart.seriesNames.map((series, seriesIndex) => {
+      const value = chart.matrix[seriesIndex][labelIndex] ?? 0;
+      const width = Math.max(3, Math.round(value / max * 100));
+      return `<div class="deck-chart-grouped-bar-row deck-chart-series-${seriesIndex % 6}">
+  <span class="deck-chart-series-label">${escapeHtml(series)}</span>
+  <span class="deck-chart-track"><span class="deck-chart-fill" style="width:${width}%"></span></span>
+  <strong>${escapeHtml(formatNumber(value))}</strong>
+</div>`;
+    }).join("\n");
+    return `<div class="deck-chart-grouped-row">
+  <span class="deck-chart-label">${escapeHtml(label)}</span>
+  <div class="deck-chart-grouped-bars">${bars}</div>
+</div>`;
+  }).join("\n");
+  return `<figure class="deck-chart deck-chart-grouped-bar">
+  ${chart.title ? `<figcaption>${escapeHtml(chart.title)}</figcaption>` : ""}
+  <div class="deck-chart-legend">${legend}</div>
+  <div class="deck-chart-grouped-rows">${rows}</div>
+</figure>`;
+}
+function renderStackedBarChartHtml(chart) {
+  const totals = chart.labels.map(
+    (_, labelIndex) => chart.matrix.reduce((sum, row) => sum + (row[labelIndex] ?? 0), 0)
+  );
+  const max = Math.max(...totals, 1);
+  const legend = chart.seriesNames.map(
+    (series, index2) => `<span class="deck-chart-legend-item deck-chart-series-${index2 % 6}">
+  <span class="deck-chart-legend-swatch"></span>${escapeHtml(series)}
+</span>`
+  ).join("\n");
+  const rows = chart.labels.map((label, labelIndex) => {
+    const total = totals[labelIndex];
+    const stackWidth = Math.max(3, Math.round(total / max * 100));
+    const segments = chart.seriesNames.map((_, seriesIndex) => {
+      const value = chart.matrix[seriesIndex][labelIndex] ?? 0;
+      const width = total > 0 ? Math.max(0, value / total * 100) : 0;
+      return `<span class="deck-chart-stacked-segment deck-chart-series-${seriesIndex % 6}" style="width:${width}%"></span>`;
+    }).join("");
+    return `<div class="deck-chart-stacked-row">
+  <span class="deck-chart-label">${escapeHtml(label)}</span>
+  <span class="deck-chart-stacked-track">
+    <span class="deck-chart-stacked-fill" style="width:${stackWidth}%">${segments}</span>
+  </span>
+  <strong>${escapeHtml(formatNumber(total))}</strong>
+</div>`;
+  }).join("\n");
+  return `<figure class="deck-chart deck-chart-stacked-bar">
+  ${chart.title ? `<figcaption>${escapeHtml(chart.title)}</figcaption>` : ""}
+  <div class="deck-chart-legend">${legend}</div>
+  <div class="deck-chart-stacked-rows">${rows}</div>
+</figure>`;
+}
+function renderMetricTrendHtml(metricTrend) {
+  const svg = renderMetricTrendSvg(metricTrend);
+  const title = metricTrend.title || "Trend";
+  return `<div class="deck-metric-trend deck-metric-trend-accent-${escapeAttr(metricTrend.accent)}">
+  <article class="deck-metric-trend-summary">
+    <strong>${escapeHtml(metricTrend.metric)}</strong>
+    <span>${escapeHtml(metricTrend.metricLabel)}</span>
+  </article>
+  <figure class="deck-metric-trend-chart">
+    <figcaption>${escapeHtml(title)}</figcaption>
+    ${svg}
+  </figure>
+</div>`;
+}
+function renderHeatmapHtml(heatmap) {
+  const values = heatmap.values.flat();
+  const min = Math.min(...values);
+  const max = Math.max(...values);
+  const range = max - min || 1;
+  const xLabels = heatmap.xLabels.map((label) => `<span class="deck-heatmap-x-label">${escapeHtml(label)}</span>`).join("\n");
+  const rows = heatmap.yLabels.map((label, rowIndex) => {
+    const cells = heatmap.values[rowIndex].map((value, columnIndex) => {
+      const alpha = heatmapCellAlpha(value, min, range);
+      const displayValue = `${formatNumber(value)}${heatmap.unit}`;
+      const title = `${label} ${heatmap.xLabels[columnIndex]}: ${displayValue}`;
+      return `<span class="deck-heatmap-cell" style="--deck-heatmap-alpha:${alpha}" title="${escapeAttr(title)}"><span>${escapeHtml(displayValue)}</span></span>`;
+    }).join("\n");
+    return `<span class="deck-heatmap-y-label">${escapeHtml(label)}</span>
+${cells}`;
+  }).join("\n");
+  return `<figure class="deck-heatmap deck-heatmap-accent-${escapeAttr(heatmap.accent)}" style="--deck-heatmap-columns:${heatmap.xLabels.length}">
+  ${heatmap.title ? `<figcaption>${escapeHtml(heatmap.title)}</figcaption>` : ""}
+  <div class="deck-heatmap-grid">
+    <span class="deck-heatmap-corner"></span>
+    ${xLabels}
+    ${rows}
+  </div>
+  ${heatmap.caption ? `<p class="deck-heatmap-caption">${escapeHtml(heatmap.caption)}</p>` : ""}
+</figure>`;
+}
+function renderTreemapHtml(treemap) {
+  const width = 760;
+  const height = 292;
+  const items = treemap.labels.map((label, index2) => ({
+    label,
+    value: treemap.values[index2] ?? 0
+  }));
+  const rects = treemapRects(items, { x: 0, y: 0, w: width, h: height }, 6);
+  const id = `deck-treemap-${hashString(`${treemap.labels.join("|")}|${treemap.values.join("|")}`)}`;
+  const clips = rects.map((rect, index2) => `<clipPath id="${id}-${index2}"><rect x="${rect.x}" y="${rect.y}" width="${rect.w}" height="${rect.h}" rx="6"></rect></clipPath>`).join("\n");
+  const cells = rects.map((rect, index2) => {
+    const value = `${formatNumber(rect.value)}${treemap.unit}`;
+    const labelY = rect.y + 26;
+    const valueY = rect.y + Math.min(rect.h - 14, 50);
+    const compact = rect.w < 92 || rect.h < 54;
+    const valueText = compact ? "" : `<text class="deck-treemap-value" x="${rect.x + 12}" y="${valueY}">${escapeHtml(value)}</text>`;
+    return `<g class="deck-treemap-cell deck-treemap-fill-${index2 % 6}" clip-path="url(#${id}-${index2})">
+  <rect x="${rect.x}" y="${rect.y}" width="${rect.w}" height="${rect.h}" rx="6"></rect>
+  <text class="deck-treemap-label${compact ? " deck-treemap-label-compact" : ""}" x="${rect.x + 12}" y="${labelY}">${escapeHtml(rect.label)}</text>
+  ${valueText}
+</g>`;
+  }).join("\n");
+  return `<figure class="deck-treemap deck-treemap-accent-${escapeAttr(treemap.accent)}">
+  ${treemap.title ? `<figcaption>${escapeHtml(treemap.title)}</figcaption>` : ""}
+  <svg class="deck-treemap-svg" viewBox="0 0 ${width} ${height}" role="img" aria-label="${escapeAttr(treemap.title || "Treemap")}">
+    <defs>${clips}</defs>
+    ${cells}
+  </svg>
+  ${treemap.caption ? `<p class="deck-treemap-caption">${escapeHtml(treemap.caption)}</p>` : ""}
+</figure>`;
+}
+function renderJourneyMapHtml(journeyMap) {
+  const count = Math.min(Math.max(journeyMap.steps.length, 1), 6);
+  const steps = journeyMap.steps.map((step) => `<article class="deck-journey-step deck-journey-step-accent-${escapeAttr(step.accent)}">
+  <small>${escapeHtml(step.label)}</small>
+  <h2>${escapeHtml(step.title)}</h2>
+  ${step.body ? `<p>${escapeHtml(step.body)}</p>` : ""}
+</article>`).join("\n");
+  return `<div class="deck-journey-map deck-journey-map-${count}">
+  ${journeyMap.title ? `<h2>${escapeHtml(journeyMap.title)}</h2>` : ""}
+  <div class="deck-journey-steps">${steps}</div>
+</div>`;
+}
+function renderJourneyPathHtml(journeyPath) {
+  return `<div class="deck-journey-path deck-journey-path-accent-${escapeAttr(journeyPath.accent)}">
+  <article class="deck-journey-path-summary">
+    <strong>${escapeHtml(journeyPath.metric)}</strong>
+    <span>${escapeHtml(journeyPath.metricLabel)}</span>
+  </article>
+  <figure class="deck-journey-path-map">
+    ${renderJourneyPathSvg(journeyPath, { animate: true, cssVariables: true })}
+  </figure>
+</div>`;
+}
+function renderImpactRadarHtml(impactRadar) {
+  return `<figure class="deck-impact-radar deck-impact-radar-accent-${escapeAttr(impactRadar.accent)}">
+  ${renderImpactRadarSvg(impactRadar, { animate: true, cssVariables: true })}
+  ${impactRadar.caption ? `<p class="deck-impact-radar-caption">${escapeHtml(impactRadar.caption)}</p>` : ""}
+</figure>`;
+}
+function heatmapCellAlpha(value, min, range) {
+  return (0.16 + (value - min) / range * 0.7).toFixed(2);
+}
+function hashString(value) {
+  let hash = 0;
+  for (let index2 = 0; index2 < value.length; index2 += 1) {
+    hash = (hash << 5) - hash + value.charCodeAt(index2) | 0;
+  }
+  return Math.abs(hash).toString(36);
+}
+function renderMetricTrendSvg(metricTrend) {
+  const width = 520;
+  const height = 220;
+  const pad = { left: 28, right: 28, top: 22, bottom: 42 };
+  const points = metricTrendPoints(metricTrend.values, width, height, pad);
+  const pathPoints = points.map((point) => `${point.x},${point.y}`).join(" ");
+  const labels = points.map((point, index2) => `<text x="${point.x}" y="204">${escapeHtml(metricTrend.labels[index2])}</text>`).join("");
+  const dots = points.map((point) => `<circle class="deck-metric-trend-dot" cx="${point.x}" cy="${point.y}" r="5"></circle>`).join("");
+  const last2 = points.at(-1);
+  const lastValue = metricTrend.values.at(-1) ?? 0;
+  const valueTag = last2 ? `<text class="deck-metric-trend-final" x="${Math.min(width - 72, last2.x + 12)}" y="${Math.max(26, last2.y - 10)}">${escapeHtml(`${formatNumber(lastValue)}${metricTrend.unit}`)}</text>` : "";
+  return `<svg class="deck-metric-trend-svg" viewBox="0 0 ${width} ${height}" role="img" aria-label="${escapeAttr(metricTrend.title || metricTrend.metricLabel)}">
+      <line class="deck-metric-trend-axis" x1="${pad.left}" y1="${height - pad.bottom}" x2="${width - pad.right}" y2="${height - pad.bottom}"></line>
+      <polyline class="deck-metric-trend-line" points="${pathPoints}"></polyline>
+      ${dots}
+      <g class="deck-metric-trend-labels">${labels}</g>
+      ${valueTag}
+    </svg>`;
+}
+function metricTrendPoints(values, width, height, pad) {
+  const min = Math.min(...values);
+  const max = Math.max(...values);
+  const range = max - min || 1;
+  const plotW = width - pad.left - pad.right;
+  const plotH = height - pad.top - pad.bottom;
+  const step = values.length > 1 ? plotW / (values.length - 1) : 0;
+  return values.map((value, index2) => ({
+    x: Number((pad.left + step * index2).toFixed(1)),
+    y: Number((pad.top + (1 - (value - min) / range) * plotH).toFixed(1))
+  }));
 }
 function renderComparisonHtml(comparison) {
   const rows = comparison.rows.map(
@@ -47112,7 +47815,7 @@ function renderComparisonHtml(comparison) {
 function renderSwimlaneHtml(swimlane) {
   const laneCount = Math.max(swimlane.lanes.length, 1);
   return `<div class="deck-swimlane deck-swimlane-${laneCount}">${swimlane.lanes.map(
-    (lane) => `<section class="deck-lane deck-lane-${escapeAttr(lane.color)}">
+    (lane) => `<div class="deck-lane deck-lane-${escapeAttr(lane.color)}">
   <h2>${escapeHtml(lane.title)}</h2>
   <div class="deck-lane-steps deck-lane-steps-${Math.max(lane.steps.length, 1)}">${lane.steps.map(
       (step) => `<article>
@@ -47120,7 +47823,7 @@ function renderSwimlaneHtml(swimlane) {
     ${step.body ? `<p>${escapeHtml(step.body)}</p>` : ""}
   </article>`
     ).join('<span class="deck-arrow">&gt;</span>')}</div>
-</section>`
+</div>`
   ).join("\n")}</div>`;
 }
 function renderProofHtml(proof) {
@@ -47168,11 +47871,11 @@ function renderCloseHtml(close) {
 </div>`;
 }
 function renderExecTitleHtml(execTitle) {
-  return `<section class="deck-exec deck-exec-title ${surfaceClass(execTitle)} deck-exec-accent-${escapeAttr(execTitle.accent)}">
+  return `<div class="deck-exec deck-exec-title ${surfaceClass(execTitle)} deck-exec-accent-${escapeAttr(execTitle.accent)}">
   ${execTitle.eyebrow ? `<p class="deck-exec-eyebrow">${escapeHtml(execTitle.eyebrow)}</p>` : ""}
   <h1>${escapeHtml(execTitle.title)}</h1>
   ${execTitle.subtitle ? `<p class="deck-exec-subtitle">${escapeHtml(execTitle.subtitle)}</p>` : ""}
-</section>`;
+</div>`;
 }
 function renderExecRowsHtml(execRows) {
   const side = execRows.side ? `<aside class="deck-exec-side deck-exec-accent-${escapeAttr(execRows.side.accent)}">
@@ -47287,18 +47990,91 @@ var knownDeckTags = /* @__PURE__ */ new Set([
   "deck-exec-rows",
   "deck-exec-timeline",
   "deck-exec-title",
+  "deck-funnel",
+  "deck-heatmap",
+  "deck-impact-radar",
+  "deck-journey-map",
+  "deck-journey-path",
+  "deck-journey-step",
   "deck-lane",
   "deck-logo",
   "deck-logo-wall",
+  "deck-metric-trend",
   "deck-next-steps",
   "deck-proof",
   "deck-row",
+  "deck-signal-bars",
+  "deck-signal-board",
+  "deck-slide",
   "deck-stat",
   "deck-stat-grid",
   "deck-step",
   "deck-swimlane",
   "deck-takeaway",
+  "deck-treemap",
   "deck-visual"
+]);
+var deckComponentAttributeAllowList = /* @__PURE__ */ new Map([
+  ["deck-card", ["title", "header", "icon", "icon-alt", "image", "src", "image-alt", "alt"]],
+  ["deck-card-grid", ["columns"]],
+  ["deck-chart", ["labels", "values", "targets", "target-values", "target", "title", "series", "type", "points", "data", "links", "flows", "edges", "matrix", "series-values", "bins", "buckets", "bucket-count", "x-axis", "x-label", "y-axis", "y-label"]],
+  ["deck-close", ["title", "name", "role"]],
+  ["deck-comparison", ["columns", "left-title", "left", "right-title", "right", "rows"]],
+  ["deck-divider", ["act", "label", "title", "subtitle"]],
+  ["deck-exec-card", ["label", "title", "metric", "value", "subtitle", "label-text", "body", "accent"]],
+  ["deck-exec-cards", ["surface", "columns", "variant", "intro", "loop-caption", "target", "target-accent", "takeaway", "takeaway-accent"]],
+  ["deck-exec-metric", ["value", "label", "accent"]],
+  ["deck-exec-metrics", ["surface", "section-title", "takeaway", "takeaway-accent"]],
+  ["deck-exec-milestone", ["year", "label", "title", "body", "accent"]],
+  ["deck-exec-panel", ["value", "metric", "title", "body", "note", "accent"]],
+  ["deck-exec-row", ["label", "kicker", "eyebrow", "title", "body", "note", "accent"]],
+  ["deck-exec-rows", ["surface", "side-title", "side-value", "side-body", "side-accent", "takeaway", "takeaway-accent"]],
+  ["deck-exec-timeline", ["surface", "takeaway", "takeaway-accent"]],
+  ["deck-exec-title", ["surface", "eyebrow", "kicker", "title", "subtitle", "accent"]],
+  ["deck-funnel", ["title", "labels", "values", "unit", "accent"]],
+  ["deck-heatmap", ["title", "x-labels", "columns", "y-labels", "rows", "values", "unit", "caption", "accent"]],
+  ["deck-impact-radar", ["title", "bar-title", "radar-title", "labels", "values", "radar-values", "radar", "unit", "caption", "accent"]],
+  ["deck-journey-map", ["title"]],
+  ["deck-journey-path", ["title", "metric", "metric-label", "metric-body", "labels", "notes", "hotspots", "callout-title", "callout-body", "accent"]],
+  ["deck-journey-step", ["label", "title", "body", "accent"]],
+  ["deck-lane", ["title", "label", "color"]],
+  ["deck-logo", ["name", "image", "src"]],
+  ["deck-logo-wall", ["title"]],
+  ["deck-metric-trend", ["metric", "metric-label", "title", "labels", "values", "unit", "accent"]],
+  ["deck-next-steps", []],
+  ["deck-proof", ["bridge", "source", "logo", "logo-name", "customer"]],
+  ["deck-row", ["label", "title", "left", "right"]],
+  ["deck-signal-bars", ["metric", "metric-label", "title", "subtitle", "labels", "values", "unit", "accent"]],
+  ["deck-signal-board", ["title", "body", "tags", "chart-title", "chart", "labels", "values", "unit", "accent"]],
+  ["deck-slide", [
+    "layout",
+    "title",
+    "subtitle",
+    "eyebrow",
+    "takeaway",
+    "footnote",
+    "surface",
+    "mode",
+    "html",
+    "pptx",
+    "html-skip",
+    "pptx-skip",
+    "html-only",
+    "pptx-only",
+    "company-logo",
+    "company-name",
+    "company-alt",
+    "customer-logo",
+    "customer-name",
+    "customer-alt"
+  ]],
+  ["deck-stat", ["value", "label"]],
+  ["deck-stat-grid", []],
+  ["deck-step", ["title"]],
+  ["deck-swimlane", []],
+  ["deck-takeaway", ["text"]],
+  ["deck-treemap", ["title", "labels", "values", "unit", "caption", "accent"]],
+  ["deck-visual", ["title", "caption", "fallback", "alt"]]
 ]);
 function compileDeckComponents(source, options = {}) {
   const context = componentContext(options);
@@ -47309,7 +48085,11 @@ function compileDeckComponents(source, options = {}) {
     lowerCaseAttributeNames: true
   });
   validateDeckComponentTree(root2, context);
+  validateDeckComponentAttributes(root2, context);
+  validateRetiredDeckComponents(root2, context);
+  validateRawAuthorHtml(root2, context);
   const components = [];
+  root2("deck-slide").each((_, element) => compileSlideMeta(root2, element, components, context));
   root2("deck-stat-grid").each((_, element) => compileStatGrid(root2, element, components, context));
   root2("deck-card-grid").each((_, element) => compileCardGrid(root2, element, components, context));
   root2("deck-chart").each((_, element) => {
@@ -47319,11 +48099,68 @@ function compileDeckComponents(source, options = {}) {
     components.push(model);
     chart.replaceWith(renderChartHtml(model));
   });
-  root2("deck-visual").each((_, element) => {
-    const visual = root2(element);
-    const model = parseVisual(visual);
+  root2("deck-signal-bars").each((_, element) => {
+    const signalBars = root2(element);
+    const model = parseSignalBars(signalBars);
+    validateSignalBars(model, context);
     components.push(model);
-    visual.replaceWith(renderVisualHtml(model));
+    signalBars.replaceWith(renderSignalBarsHtml(model));
+  });
+  root2("deck-signal-board").each((_, element) => {
+    const signalBoard = root2(element);
+    const model = parseSignalBoard(signalBoard);
+    validateSignalBoard(model, context);
+    components.push(model);
+    signalBoard.replaceWith(renderSignalBoardHtml(model));
+  });
+  root2("deck-funnel").each((_, element) => {
+    const funnel = root2(element);
+    const model = parseFunnel(funnel);
+    validateFunnel(model, context);
+    components.push(model);
+    funnel.replaceWith(renderFunnelHtml(model));
+  });
+  root2("deck-metric-trend").each((_, element) => {
+    const metricTrend = root2(element);
+    const model = parseMetricTrend(metricTrend);
+    validateMetricTrend(model, context);
+    components.push(model);
+    metricTrend.replaceWith(renderMetricTrendHtml(model));
+  });
+  root2("deck-heatmap").each((_, element) => {
+    const heatmap = root2(element);
+    const model = parseHeatmap(heatmap);
+    validateHeatmap(model, context);
+    components.push(model);
+    heatmap.replaceWith(renderHeatmapHtml(model));
+  });
+  root2("deck-impact-radar").each((_, element) => {
+    const impactRadar = root2(element);
+    const model = parseImpactRadar(impactRadar);
+    validateImpactRadar(model, context);
+    components.push(model);
+    impactRadar.replaceWith(renderImpactRadarHtml(model));
+  });
+  root2("deck-treemap").each((_, element) => {
+    const treemap = root2(element);
+    const model = parseTreemap(treemap);
+    validateTreemap(model, context);
+    components.push(model);
+    treemap.replaceWith(renderTreemapHtml(model));
+  });
+  root2("deck-journey-map").each((_, element) => {
+    const journeyMap = root2(element);
+    const model = parseJourneyMap(root2, journeyMap);
+    validateJourneyMap(model, context);
+    components.push(model);
+    journeyMap.replaceWith(renderJourneyMapHtml(model));
+  });
+  root2("deck-journey-path").each((_, element) => {
+    const journeyPath = root2(element);
+    const model = parseJourneyPath(journeyPath);
+    validateJourneyPath(model, context);
+    components.push(model);
+    journeyPath.replaceWith(renderJourneyPathHtml(model));
   });
   root2("deck-comparison").each((_, element) => {
     const comparison = root2(element);
@@ -47415,6 +48252,13 @@ function compileDeckComponents(source, options = {}) {
     components
   };
 }
+function compileSlideMeta(root2, element, components, context) {
+  if (root2("deck-slide").length > 1) fail("Only one deck-slide metadata component is allowed per slide.", context);
+  const slide = root2(element);
+  const model = parseSlideMeta(slide);
+  components.push(model);
+  slide.replaceWith("");
+}
 function compileStatGrid(root2, element, components, context) {
   const grid = root2(element);
   const stats = [];
@@ -47439,7 +48283,7 @@ function compileCardGrid(root2, element, components, context) {
     const media = parseCardMedia(root2, card);
     const body = cleanText(card.find("p").first().text() || card.text());
     if (!header && !body && !media) {
-      fail("deck-card must include title/header, body text, icon, image, src, or an img child.", context);
+      fail("deck-card must include title/header, body text, icon, image, or src.", context);
     }
     cards.push({ header, body, media });
   });
@@ -47512,14 +48356,7 @@ function parseCardMedia(root2, card) {
       alt: card.attr("image-alt") || card.attr("alt") || card.attr("title") || ""
     };
   }
-  const img = card.find("img").first();
-  const imgSrc = img.attr("src");
-  if (!imgSrc) return null;
-  return {
-    kind: img.attr("data-kind") || "image",
-    src: normalizeResourceReference(imgSrc),
-    alt: img.attr("alt") || card.attr("title") || ""
-  };
+  return null;
 }
 function renderCardMediaHtml(card) {
   if (!card.media?.src) return "";
@@ -47533,7 +48370,13 @@ function validateDeckComponentSyntax(source, context) {
     const raw = match[0];
     const tag = match[1].toLowerCase();
     const line = lineNumberAt(source, match.index);
-    if (!knownDeckTags.has(tag)) fail(`Unknown deck component <${tag}>.`, context, line);
+    if (!knownDeckTags.has(tag)) {
+      fail(
+        `Deck component <${tag}> is not available. Use a supported deck-* component or ask the skill maker to add it.`,
+        context,
+        line
+      );
+    }
     const isClosing = /^<\s*\//.test(raw);
     const isSelfClosing = /\/\s*>$/.test(raw);
     if (isClosing) {
@@ -47565,7 +48408,8 @@ function validateDeckComponentTree(root2, context) {
     ["deck-exec-card", "deck-exec-cards"],
     ["deck-exec-milestone", "deck-exec-timeline"],
     ["deck-exec-metric", "deck-exec-metrics"],
-    ["deck-exec-panel", "deck-exec-metrics"]
+    ["deck-exec-panel", "deck-exec-metrics"],
+    ["deck-journey-step", "deck-journey-map"]
   ];
   for (const [childTag, parentTag] of parentRules) {
     root2(childTag).each((_, element) => {
@@ -47587,8 +48431,90 @@ function validateDeckComponentTree(root2, context) {
     }
   });
 }
+function validateDeckComponentAttributes(root2, context) {
+  for (const [tag, supportedAttributes] of deckComponentAttributeAllowList.entries()) {
+    const supported = new Set(supportedAttributes);
+    root2(tag).each((_, element) => {
+      const attributes2 = root2(element).attr() || {};
+      const unsupported = Object.keys(attributes2).find((attribute) => !supported.has(attribute));
+      if (unsupported) {
+        fail(unsupportedDeckAttributeMessage(tag, unsupported, supportedAttributes), context);
+      }
+    });
+  }
+}
+function validateRetiredDeckComponents(root2, context) {
+  root2("deck-visual").each(() => {
+    fail(
+      "<deck-visual> is no longer supported because it allowed raw SVG authoring. Use a documented renderer-backed deck-* component, or ask the skill maker to add the missing slide type.",
+      context
+    );
+  });
+}
+function validateRawAuthorHtml(root2, context) {
+  const blockedTags = ["script", "style", "canvas", "iframe", "object", "embed", "img"];
+  for (const tag of blockedTags) {
+    root2(tag).each(() => {
+      fail(rawHtmlMessage(tag), context);
+    });
+  }
+  const blockedLayoutTags = ["div", "section", "article", "figure", "table", "form", "button", "video", "audio"];
+  for (const tag of blockedLayoutTags) {
+    root2(tag).each(() => {
+      fail(rawHtmlMessage(tag), context);
+    });
+  }
+  root2("svg").each(() => {
+    fail(rawHtmlMessage("svg"), context);
+  });
+}
+function rawHtmlMessage(tag) {
+  return `Raw <${tag}> is not supported in deck Markdown. Use a supported deck-* component, or ask the skill maker to add the missing renderer-backed slide type.`;
+}
+function unsupportedDeckAttributeMessage(tag, attribute, supportedAttributes = []) {
+  const supported = supportedAttributes.length ? supportedAttributes.join(", ") : "none";
+  return `Unsupported <${tag}> attribute "${attribute}". Use only documented attributes or ask the skill maker to add support. Supported attributes: ${supported}.`;
+}
 function validateChart(chart, context) {
-  if (chart.labels.length === 0 || chart.values.length === 0) {
+  const supportedTypes = ["bar", "line", "area", "waterfall", "bullet", "grouped-bar", "stacked-bar", "doughnut", "scatter", "bubble", "histogram", "boxplot", "pareto", "sankey"];
+  if (!supportedTypes.includes(chart.chartType)) {
+    fail(
+      `deck-chart type "${chart.chartType}" is not available. Supported types: ${supportedTypes.join(", ")}. Ask the skill maker to add the missing chart type.`,
+      context
+    );
+  }
+  if (chart.chartType === "scatter") {
+    validateScatterChart(chart, context);
+    return;
+  }
+  if (chart.chartType === "bubble") {
+    validateBubbleChart(chart, context);
+    return;
+  }
+  if (chart.chartType === "histogram") {
+    validateHistogramChart(chart, context);
+    return;
+  }
+  if (chart.chartType === "boxplot") {
+    validateBoxplotChart(chart, context);
+    return;
+  }
+  if (chart.chartType === "pareto") {
+    validateParetoChart(chart, context);
+    return;
+  }
+  if (chart.chartType === "sankey") {
+    validateSankeyChart(chart, context);
+    return;
+  }
+  if (chart.labels.length === 0) {
+    fail("deck-chart requires a non-empty labels attribute.", context);
+  }
+  if (chart.chartType === "grouped-bar" || chart.chartType === "stacked-bar") {
+    validateMultiSeriesBarChart(chart, context);
+    return;
+  }
+  if (chart.values.length === 0) {
     fail("deck-chart requires non-empty labels and values attributes.", context);
   }
   if (chart.labels.length !== chart.values.length) {
@@ -47600,6 +48526,481 @@ function validateChart(chart, context) {
   if (chart.values.some((value) => !Number.isFinite(value))) {
     fail("deck-chart values must all be numeric.", context);
   }
+  if (chart.chartType === "area" && chart.labels.length < 2) {
+    fail('deck-chart type="area" requires at least two labels/values or points entries.', context);
+  }
+  if (chart.chartType === "bullet") {
+    validateBulletChart(chart, context);
+  }
+  if (chart.chartType === "doughnut") {
+    if (chart.values.some((value) => value < 0)) {
+      fail("deck-chart doughnut values must be zero or positive.", context);
+    }
+    if (chart.values.reduce((sum, value) => sum + value, 0) <= 0) {
+      fail("deck-chart doughnut values must sum to more than zero.", context);
+    }
+  }
+}
+function validateBulletChart(chart, context) {
+  if (chart.targets.length === 0) {
+    fail('deck-chart type="bullet" requires targets or target-values.', context);
+  }
+  if (chart.targets.length !== chart.labels.length) {
+    fail(
+      `deck-chart type="bullet" labels/targets length mismatch: ${chart.labels.length} label(s), ${chart.targets.length} target(s).`,
+      context
+    );
+  }
+  if (chart.targets.some((value) => !Number.isFinite(value))) {
+    fail('deck-chart type="bullet" targets must all be numeric.', context);
+  }
+  if (chart.values.some((value) => value < 0) || chart.targets.some((value) => value < 0)) {
+    fail('deck-chart type="bullet" values and targets must be zero or positive.', context);
+  }
+  if ([...chart.values, ...chart.targets].every((value) => value === 0)) {
+    fail('deck-chart type="bullet" values and targets must include at least one value above zero.', context);
+  }
+}
+function validateBubbleChart(chart, context) {
+  if (chart.points.length === 0) {
+    fail('deck-chart type="bubble" requires points="x:y:r,..." with at least one point.', context);
+  }
+  chart.points.forEach((point, index2) => {
+    if (!Number.isFinite(point.x) || !Number.isFinite(point.y) || !Number.isFinite(point.r)) {
+      fail(`deck-chart bubble point ${index2 + 1} must use numeric x, y, and r values.`, context);
+    }
+    if (point.r <= 0) {
+      fail(`deck-chart bubble point ${index2 + 1} radius must be greater than zero.`, context);
+    }
+  });
+  if (chart.points.length > 16) {
+    fail('deck-chart type="bubble" supports up to 16 points. Split larger plots across slides.', context);
+  }
+}
+function validateHistogramChart(chart, context) {
+  if (chart.values.length === 0) {
+    fail('deck-chart type="histogram" requires non-empty numeric values.', context);
+  }
+  if (chart.values.some((value) => !Number.isFinite(value))) {
+    fail('deck-chart type="histogram" values must all be numeric.', context);
+  }
+  if (!Number.isInteger(chart.binCount) || chart.binCount < 2 || chart.binCount > 30) {
+    fail('deck-chart type="histogram" bins must be an integer between 2 and 30.', context);
+  }
+}
+function validateBoxplotChart(chart, context) {
+  if (chart.labels.length === 0) {
+    fail('deck-chart type="boxplot" requires non-empty labels.', context);
+  }
+  if (chart.matrix.length === 0) {
+    fail('deck-chart type="boxplot" requires matrix values in values, matrix, or series-values.', context);
+  }
+  if (chart.matrix.length !== chart.labels.length) {
+    fail(
+      `deck-chart type="boxplot" labels/rows length mismatch: ${chart.labels.length} label(s), ${chart.matrix.length} row(s).`,
+      context
+    );
+  }
+  chart.matrix.forEach((row, rowIndex) => {
+    if (row.length < 5) {
+      fail(`deck-chart type="boxplot" row ${rowIndex + 1} must include at least 5 numeric observations.`, context);
+    }
+    if (row.some((value) => !Number.isFinite(value))) {
+      fail(`deck-chart type="boxplot" row ${rowIndex + 1} values must all be numeric.`, context);
+    }
+  });
+}
+function validateParetoChart(chart, context) {
+  if (chart.labels.length === 0 || chart.values.length === 0) {
+    fail('deck-chart type="pareto" requires non-empty labels and values.', context);
+  }
+  if (chart.labels.length !== chart.values.length) {
+    fail(
+      `deck-chart type="pareto" labels/values length mismatch: ${chart.labels.length} label(s), ${chart.values.length} value(s).`,
+      context
+    );
+  }
+  if (chart.values.some((value) => !Number.isFinite(value))) {
+    fail('deck-chart type="pareto" values must all be numeric.', context);
+  }
+  if (chart.values.some((value) => value < 0)) {
+    fail("deck-chart pareto values must be zero or positive.", context);
+  }
+  if (chart.values.reduce((sum, value) => sum + value, 0) <= 0) {
+    fail("deck-chart pareto values must sum to more than zero.", context);
+  }
+}
+function validateSankeyChart(chart, context) {
+  if (chart.links.length === 0) {
+    fail('deck-chart type="sankey" requires non-empty links.', context);
+  }
+  chart.links.forEach((link, index2) => {
+    if (!link.source || !link.target) {
+      fail(`deck-chart type="sankey" link ${index2 + 1} must use source>target:value syntax.`, context);
+    }
+    if (!Number.isFinite(link.value)) {
+      fail(`deck-chart type="sankey" link ${index2 + 1} value must be numeric.`, context);
+    }
+    if (link.value <= 0) {
+      fail(`deck-chart type="sankey" link ${index2 + 1} value must be greater than zero.`, context);
+    }
+    if (link.source === link.target) {
+      fail(`deck-chart type="sankey" link ${index2 + 1} cannot connect a node to itself.`, context);
+    }
+  });
+  validateSankeyAcyclic(chart, context);
+}
+function validateSankeyAcyclic(chart, context) {
+  const graph = /* @__PURE__ */ new Map();
+  chart.links.forEach((link) => {
+    if (!graph.has(link.source)) graph.set(link.source, []);
+    graph.get(link.source).push(link.target);
+    if (!graph.has(link.target)) graph.set(link.target, []);
+  });
+  const visiting = /* @__PURE__ */ new Set();
+  const visited = /* @__PURE__ */ new Set();
+  const visit = (node) => {
+    if (visiting.has(node)) return false;
+    if (visited.has(node)) return true;
+    visiting.add(node);
+    for (const next2 of graph.get(node) || []) {
+      if (!visit(next2)) return false;
+    }
+    visiting.delete(node);
+    visited.add(node);
+    return true;
+  };
+  for (const node of graph.keys()) {
+    if (!visit(node)) {
+      fail('deck-chart type="sankey" links must not contain cycles.', context);
+    }
+  }
+}
+function validateScatterChart(chart, context) {
+  if (chart.points.length === 0) {
+    fail('deck-chart type="scatter" requires points="x|y|Label;..." with at least one point.', context);
+  }
+  chart.points.forEach((point, index2) => {
+    if (!Number.isFinite(point.x) || !Number.isFinite(point.y)) {
+      fail(`deck-chart scatter point ${index2 + 1} must use numeric x and y values.`, context);
+    }
+  });
+  if (chart.points.length > 12) {
+    fail('deck-chart type="scatter" supports up to 12 points. Split larger plots across slides.', context);
+  }
+}
+function validateMultiSeriesBarChart(chart, context) {
+  if (chart.seriesNames.length < 2) {
+    fail(`deck-chart type="${chart.chartType}" requires at least two series names in series="...".`, context);
+  }
+  if (chart.matrix.length === 0) {
+    fail(`deck-chart type="${chart.chartType}" requires values with one semicolon-separated row per series.`, context);
+  }
+  if (chart.matrix.length !== chart.seriesNames.length) {
+    fail(
+      `deck-chart ${chart.chartType} series/values row mismatch: ${chart.seriesNames.length} series name(s), ${chart.matrix.length} value row(s).`,
+      context
+    );
+  }
+  chart.matrix.forEach((row, index2) => {
+    if (row.length !== chart.labels.length) {
+      fail(
+        `deck-chart ${chart.chartType} row ${index2 + 1} length mismatch: ${chart.labels.length} label(s), ${row.length} value(s).`,
+        context
+      );
+    }
+  });
+  if (chart.matrix.flat().some((value) => !Number.isFinite(value))) {
+    fail(`deck-chart ${chart.chartType} values must all be numeric.`, context);
+  }
+  if (chart.matrix.flat().some((value) => value < 0)) {
+    fail(`deck-chart ${chart.chartType} values must be zero or positive.`, context);
+  }
+  if (chart.chartType === "stacked-bar") {
+    chart.labels.forEach((label, labelIndex) => {
+      const total = chart.matrix.reduce((sum, row) => sum + row[labelIndex], 0);
+      if (total <= 0) {
+        fail(`deck-chart stacked-bar column "${label}" must sum to more than zero.`, context);
+      }
+    });
+  }
+}
+function validateSignalBars(signalBars, context) {
+  if (!signalBars.metric) fail("deck-signal-bars requires a metric attribute.", context);
+  if (!signalBars.metricLabel) fail("deck-signal-bars requires a metric-label attribute.", context);
+  if (signalBars.labels.length === 0 || signalBars.values.length === 0) {
+    fail("deck-signal-bars requires non-empty labels and values attributes.", context);
+  }
+  if (signalBars.labels.length !== signalBars.values.length) {
+    fail(
+      `deck-signal-bars labels/values length mismatch: ${signalBars.labels.length} label(s), ${signalBars.values.length} value(s).`,
+      context
+    );
+  }
+  if (signalBars.values.some((value) => !Number.isFinite(value))) {
+    fail("deck-signal-bars values must all be numeric.", context);
+  }
+  if (signalBars.values.some((value) => value < 0)) {
+    fail("deck-signal-bars values must be zero or positive.", context);
+  }
+  if (signalBars.values.reduce((sum, value) => sum + value, 0) <= 0) {
+    fail("deck-signal-bars values must sum to more than zero.", context);
+  }
+  if (signalBars.labels.length > 5) {
+    fail("deck-signal-bars supports up to 5 rows. Split larger datasets across slides.", context);
+  }
+  if (signalBars.metric.length > 18) {
+    fail("deck-signal-bars metric must be 18 characters or fewer.", context);
+  }
+  if (signalBars.metricLabel.length > 180) {
+    fail("deck-signal-bars metric-label must be 180 characters or fewer.", context);
+  }
+}
+function validateSignalBoard(signalBoard, context) {
+  if (!signalBoard.title) fail("deck-signal-board requires a title attribute.", context);
+  if (!signalBoard.body) fail("deck-signal-board requires a body attribute or short paragraph body.", context);
+  if (signalBoard.labels.length === 0 || signalBoard.values.length === 0) {
+    fail("deck-signal-board requires non-empty labels and values attributes.", context);
+  }
+  if (signalBoard.labels.length !== signalBoard.values.length) {
+    fail(
+      `deck-signal-board labels/values length mismatch: ${signalBoard.labels.length} label(s), ${signalBoard.values.length} value(s).`,
+      context
+    );
+  }
+  if (signalBoard.values.some((value) => !Number.isFinite(value))) {
+    fail("deck-signal-board values must all be numeric.", context);
+  }
+  if (signalBoard.values.some((value) => value < 0)) {
+    fail("deck-signal-board values must be zero or positive.", context);
+  }
+  if (signalBoard.values.reduce((sum, value) => sum + value, 0) <= 0) {
+    fail("deck-signal-board values must sum to more than zero.", context);
+  }
+  if (signalBoard.labels.length > 5) {
+    fail("deck-signal-board supports up to 5 rows. Split larger signal boards across slides.", context);
+  }
+  if (signalBoard.tags.length > 5) {
+    fail("deck-signal-board supports up to 5 tags. Keep tags selective.", context);
+  }
+  if (signalBoard.title.length > 64) {
+    fail("deck-signal-board title must be 64 characters or fewer.", context);
+  }
+  if (signalBoard.body.length > 220) {
+    fail("deck-signal-board body must be 220 characters or fewer.", context);
+  }
+  if (signalBoard.chartTitle.length > 64) {
+    fail("deck-signal-board chart-title must be 64 characters or fewer.", context);
+  }
+  for (const [index2, tag] of signalBoard.tags.entries()) {
+    if (tag.length > 28) {
+      fail(`deck-signal-board tag ${index2 + 1} must be 28 characters or fewer.`, context);
+    }
+  }
+}
+function validateFunnel(funnel, context) {
+  if (funnel.labels.length === 0 || funnel.values.length === 0) {
+    fail("deck-funnel requires non-empty labels and values attributes.", context);
+  }
+  if (funnel.labels.length !== funnel.values.length) {
+    fail(
+      `deck-funnel labels/values length mismatch: ${funnel.labels.length} label(s), ${funnel.values.length} value(s).`,
+      context
+    );
+  }
+  if (funnel.values.some((value) => !Number.isFinite(value))) {
+    fail("deck-funnel values must all be numeric.", context);
+  }
+  if (funnel.values.some((value) => value < 0)) {
+    fail("deck-funnel values must be zero or positive.", context);
+  }
+  if (funnel.values.reduce((sum, value) => sum + value, 0) <= 0) {
+    fail("deck-funnel values must sum to more than zero.", context);
+  }
+  if (funnel.labels.length > 6) {
+    fail("deck-funnel supports up to 6 stages. Split larger funnels across slides.", context);
+  }
+}
+function validateMetricTrend(metricTrend, context) {
+  if (!metricTrend.metric) fail("deck-metric-trend requires a metric attribute.", context);
+  if (!metricTrend.metricLabel) fail("deck-metric-trend requires a metric-label attribute.", context);
+  if (metricTrend.labels.length === 0 || metricTrend.values.length === 0) {
+    fail("deck-metric-trend requires non-empty labels and values attributes.", context);
+  }
+  if (metricTrend.labels.length !== metricTrend.values.length) {
+    fail(
+      `deck-metric-trend labels/values length mismatch: ${metricTrend.labels.length} label(s), ${metricTrend.values.length} value(s).`,
+      context
+    );
+  }
+  if (metricTrend.values.some((value) => !Number.isFinite(value))) {
+    fail("deck-metric-trend values must all be numeric.", context);
+  }
+  if (metricTrend.labels.length > 8) {
+    fail("deck-metric-trend supports up to 8 points. Split longer trends across slides.", context);
+  }
+  if (metricTrend.metric.length > 18) {
+    fail("deck-metric-trend metric must be 18 characters or fewer.", context);
+  }
+  if (metricTrend.metricLabel.length > 180) {
+    fail("deck-metric-trend metric-label must be 180 characters or fewer.", context);
+  }
+}
+function validateHeatmap(heatmap, context) {
+  if (heatmap.xLabels.length === 0) {
+    fail('deck-heatmap requires x-labels="..." with at least one column label.', context);
+  }
+  if (heatmap.yLabels.length === 0) {
+    fail('deck-heatmap requires y-labels="..." with at least one row label.', context);
+  }
+  if (heatmap.values.length === 0) {
+    fail(
+      'deck-heatmap requires values="..." as semicolon-separated rows with comma-separated numeric cells.',
+      context
+    );
+  }
+  if (heatmap.values.length !== heatmap.yLabels.length) {
+    fail(
+      `deck-heatmap values/y-labels mismatch: ${heatmap.values.length} value row(s), ${heatmap.yLabels.length} y-label(s).`,
+      context
+    );
+  }
+  for (const [index2, row] of heatmap.values.entries()) {
+    if (row.length !== heatmap.xLabels.length) {
+      fail(
+        `deck-heatmap row ${index2 + 1} has ${row.length} value(s), but x-labels has ${heatmap.xLabels.length}.`,
+        context
+      );
+    }
+    if (row.some((value) => !Number.isFinite(value))) {
+      fail(`deck-heatmap row ${index2 + 1} contains a non-numeric value.`, context);
+    }
+  }
+  if (heatmap.xLabels.length > 12) {
+    fail("deck-heatmap supports up to 12 x-labels. Split denser heatmaps across slides.", context);
+  }
+  if (heatmap.yLabels.length > 8) {
+    fail("deck-heatmap supports up to 8 y-labels. Split denser heatmaps across slides.", context);
+  }
+  if (heatmap.xLabels.length * heatmap.yLabels.length > 80) {
+    fail("deck-heatmap supports up to 80 cells. Split denser heatmaps across slides.", context);
+  }
+  if (heatmap.title.length > 70) {
+    fail("deck-heatmap title must be 70 characters or fewer.", context);
+  }
+}
+function validateImpactRadar(impactRadar, context) {
+  if (impactRadar.labels.length === 0 || impactRadar.values.length === 0) {
+    fail("deck-impact-radar requires non-empty labels and values attributes.", context);
+  }
+  if (impactRadar.labels.length < 3) {
+    fail("deck-impact-radar requires at least 3 labels for the radar shape.", context);
+  }
+  if (impactRadar.labels.length > 6) {
+    fail("deck-impact-radar supports up to 6 labels. Split denser profiles across slides.", context);
+  }
+  if (impactRadar.labels.length !== impactRadar.values.length) {
+    fail(
+      `deck-impact-radar labels/values length mismatch: ${impactRadar.labels.length} label(s), ${impactRadar.values.length} value(s).`,
+      context
+    );
+  }
+  if (impactRadar.radarValues.length !== impactRadar.labels.length) {
+    fail(
+      `deck-impact-radar radar-values/labels length mismatch: ${impactRadar.radarValues.length} radar value(s), ${impactRadar.labels.length} label(s).`,
+      context
+    );
+  }
+  if (impactRadar.values.some((value) => !Number.isFinite(value)) || impactRadar.radarValues.some((value) => !Number.isFinite(value))) {
+    fail("deck-impact-radar values and radar-values must all be numeric.", context);
+  }
+  if ([...impactRadar.values, ...impactRadar.radarValues].some((value) => value < 0 || value > 100)) {
+    fail("deck-impact-radar values and radar-values must be between 0 and 100.", context);
+  }
+  for (const [index2, label] of impactRadar.labels.entries()) {
+    if (label.length > 18) fail(`deck-impact-radar label ${index2 + 1} must be 18 characters or fewer.`, context);
+  }
+  if (impactRadar.barTitle.length > 40) fail("deck-impact-radar bar-title must be 40 characters or fewer.", context);
+  if (impactRadar.radarTitle.length > 40) fail("deck-impact-radar radar-title must be 40 characters or fewer.", context);
+  if (impactRadar.caption.length > 130) fail("deck-impact-radar caption must be 130 characters or fewer.", context);
+}
+function validateTreemap(treemap, context) {
+  if (treemap.labels.length === 0 || treemap.values.length === 0) {
+    fail("deck-treemap requires non-empty labels and values attributes.", context);
+  }
+  if (treemap.labels.length !== treemap.values.length) {
+    fail(
+      `deck-treemap labels/values length mismatch: ${treemap.labels.length} label(s), ${treemap.values.length} value(s).`,
+      context
+    );
+  }
+  if (treemap.values.some((value) => !Number.isFinite(value))) {
+    fail("deck-treemap values must all be numeric.", context);
+  }
+  if (treemap.values.reduce((sum, value) => sum + Math.max(0, value), 0) <= 0) {
+    fail("deck-treemap values must sum to more than zero.", context);
+  }
+  if (treemap.labels.length > 10) {
+    fail("deck-treemap supports up to 10 items. Split larger treemaps across slides.", context);
+  }
+  for (const [index2, label] of treemap.labels.entries()) {
+    if (label.length > 32) {
+      fail(`deck-treemap label ${index2 + 1} must be 32 characters or fewer.`, context);
+    }
+  }
+  if (treemap.title.length > 70) {
+    fail("deck-treemap title must be 70 characters or fewer.", context);
+  }
+}
+function validateJourneyMap(journeyMap, context) {
+  if (journeyMap.steps.length === 0) {
+    fail("deck-journey-map must include at least one deck-journey-step child.", context);
+  }
+  if (journeyMap.steps.length > 6) {
+    fail("deck-journey-map supports up to 6 steps. Split longer journeys across slides.", context);
+  }
+  for (const [index2, step] of journeyMap.steps.entries()) {
+    if (!step.title) fail(`deck-journey-step ${index2 + 1} requires a title.`, context);
+    if (step.title.length > 42) fail(`deck-journey-step ${index2 + 1} title must be 42 characters or fewer.`, context);
+    if (step.body.length > 150) fail(`deck-journey-step ${index2 + 1} body must be 150 characters or fewer.`, context);
+  }
+}
+function validateJourneyPath(journeyPath, context) {
+  if (!journeyPath.metric) fail("deck-journey-path requires a metric attribute.", context);
+  if (!journeyPath.metricLabel) fail("deck-journey-path requires a metric-label attribute.", context);
+  if (journeyPath.labels.length < 2) {
+    fail('deck-journey-path requires labels="..." with 2 to 5 journey stages.', context);
+  }
+  if (journeyPath.labels.length > 5) {
+    fail("deck-journey-path supports up to 5 journey stages. Split longer paths across slides.", context);
+  }
+  if (journeyPath.notes.length && journeyPath.notes.length !== journeyPath.labels.length) {
+    fail(
+      `deck-journey-path notes/labels length mismatch: ${journeyPath.notes.length} note(s), ${journeyPath.labels.length} label(s).`,
+      context
+    );
+  }
+  if (journeyPath.hotspots.length > journeyPath.labels.length) {
+    fail("deck-journey-path hotspots cannot outnumber labels.", context);
+  }
+  if (journeyPath.metric.length > 18) {
+    fail("deck-journey-path metric must be 18 characters or fewer.", context);
+  }
+  if (journeyPath.metricLabel.length > 170) {
+    fail("deck-journey-path metric-label must be 170 characters or fewer.", context);
+  }
+  if (journeyPath.calloutTitle.length > 48) {
+    fail("deck-journey-path callout-title must be 48 characters or fewer.", context);
+  }
+  if (journeyPath.calloutBody.length > 74) {
+    fail("deck-journey-path callout-body must be 74 characters or fewer.", context);
+  }
+  journeyPath.labels.forEach((label, index2) => {
+    if (label.length > 24) fail(`deck-journey-path label ${index2 + 1} must be 24 characters or fewer.`, context);
+  });
+  journeyPath.notes.forEach((note, index2) => {
+    if (note.length > 34) fail(`deck-journey-path note ${index2 + 1} must be 34 characters or fewer.`, context);
+  });
 }
 function validateExecTitleCopy(model, context) {
   assertCopyFits({
@@ -47854,15 +49255,19 @@ function splitSlides(body) {
   return slides.filter((slide) => slide.length > 0);
 }
 function parseSlide(source, index2, originalSource = source, components = [], frontmatter = {}) {
-  const directives = extractDirectives(source);
+  const slideMeta = firstComponent(components, "slide");
+  const directives = {
+    ...extractDirectives(source),
+    ...slideMeta?.directives || {}
+  };
   const titleComponent = firstComponent(components, "divider") || firstComponent(components, "close") || firstComponent(components, "exec-title");
   const title = directives.title || titleComponent?.title || extractTitle(source) || `Slide ${index2 + 1}`;
   const subtitle = directives.subtitle || titleComponent?.subtitle || extractSubtitle(source, title);
   const layout = directives.layout || inferComponentLayout(components) || inferLayout(source, index2);
   const componentTakeaway = components.find((component) => component.type === "takeaway");
   const proof = firstComponent(components, "proof");
-  const companyLogo = extractCompanyLogo(source) || frontmatterCompanyLogo(frontmatter);
-  const customerLogo = extractCustomerLogo(source) || frontmatterCustomerLogo(frontmatter);
+  const companyLogo = slideMeta?.companyLogo || extractCompanyLogo(source) || frontmatterCompanyLogo(frontmatter);
+  const customerLogo = slideMeta?.customerLogo || extractCustomerLogo(source) || frontmatterCustomerLogo(frontmatter);
   const layoutComponent = firstComponent(components, layout);
   const surface = inferSurface(layout, directives, frontmatter, layoutComponent?.surface);
   return {
@@ -47881,7 +49286,15 @@ function parseSlide(source, index2, originalSource = source, components = [], fr
     stats: firstComponent(components, "stat-grid")?.stats || extractStats(source),
     cards: firstComponent(components, "card-grid")?.cards || extractCards(source),
     chart: firstComponent(components, "chart"),
-    visual: firstComponent(components, "visual"),
+    signalBars: firstComponent(components, "signal-bars"),
+    signalBoard: firstComponent(components, "signal-board"),
+    funnel: firstComponent(components, "funnel"),
+    metricTrend: firstComponent(components, "metric-trend"),
+    heatmap: firstComponent(components, "heatmap"),
+    impactRadar: firstComponent(components, "impact-radar"),
+    treemap: firstComponent(components, "treemap"),
+    journeyMap: firstComponent(components, "journey-map"),
+    journeyPath: firstComponent(components, "journey-path"),
     comparison: firstComponent(components, "comparison"),
     swimlane: firstComponent(components, "swimlane"),
     proof,
@@ -47913,13 +49326,21 @@ function inferLayout(source, index2) {
   if (/<div[^>]+class=["'][^"']*stat-grid/i.test(source)) return "three-stat";
   if (/<div[^>]+class=["'][^"']*card-grid/i.test(source)) return "cards";
   if (/<figure[^>]+class=["'][^"']*deck-chart/i.test(source)) return "chart";
-  if (/<figure[^>]+class=["'][^"']*deck-visual/i.test(source)) return "visual";
+  if (/<div[^>]+class=["'][^"']*deck-signal-bars/i.test(source)) return "signal-bars";
+  if (/<div[^>]+class=["'][^"']*deck-signal-board/i.test(source)) return "signal-board";
+  if (/<figure[^>]+class=["'][^"']*deck-funnel/i.test(source)) return "funnel";
+  if (/<div[^>]+class=["'][^"']*deck-metric-trend/i.test(source)) return "metric-trend";
+  if (/<figure[^>]+class=["'][^"']*deck-heatmap/i.test(source)) return "heatmap";
+  if (/<figure[^>]+class=["'][^"']*deck-impact-radar/i.test(source)) return "impact-radar";
+  if (/<figure[^>]+class=["'][^"']*deck-treemap/i.test(source)) return "treemap";
+  if (/<div[^>]+class=["'][^"']*deck-journey-map/i.test(source)) return "journey-map";
+  if (/<div[^>]+class=["'][^"']*deck-journey-path/i.test(source)) return "journey-path";
   if (/<table[^>]+class=["'][^"']*deck-comparison/i.test(source)) return "comparison";
   if (/<div[^>]+class=["'][^"']*deck-swimlane/i.test(source)) return "swimlane";
   if (/<div[^>]+class=["'][^"']*deck-proof/i.test(source)) return "proof";
   if (/<ol[^>]+class=["'][^"']*deck-next-steps/i.test(source)) return "next-steps";
   if (/<div[^>]+class=["'][^"']*deck-logo-wall/i.test(source)) return "logo-wall";
-  if (/<section[^>]+class=["'][^"']*deck-exec-title/i.test(source)) return "exec-title";
+  if (/<div[^>]+class=["'][^"']*deck-exec-title/i.test(source)) return "exec-title";
   if (/<div[^>]+class=["'][^"']*deck-exec-rows/i.test(source)) return "exec-rows";
   if (/<div[^>]+class=["'][^"']*deck-exec-cards/i.test(source)) return "exec-cards";
   if (/<div[^>]+class=["'][^"']*deck-exec-timeline/i.test(source)) return "exec-timeline";
@@ -47942,7 +49363,15 @@ function inferComponentLayout(components) {
     ["exec-metrics", "exec-metrics"],
     ["divider", "divider"],
     ["close", "close"],
-    ["visual", "visual"],
+    ["signal-board", "signal-board"],
+    ["signal-bars", "signal-bars"],
+    ["funnel", "funnel"],
+    ["metric-trend", "metric-trend"],
+    ["heatmap", "heatmap"],
+    ["impact-radar", "impact-radar"],
+    ["treemap", "treemap"],
+    ["journey-map", "journey-map"],
+    ["journey-path", "journey-path"],
     ["chart", "chart"],
     ["card-grid", "cards"],
     ["stat-grid", "three-stat"]
@@ -47992,8 +49421,8 @@ function extractStats(source) {
   const pattern = /<div[^>]*class=["'][^"']*stat-card[^"']*["'][^>]*>([\s\S]*?)<\/div>/gi;
   for (const match of source.matchAll(pattern)) {
     const html3 = match[1];
-    const value = cleanText2(firstMatch2(html3, /<strong[^>]*>([\s\S]*?)<\/strong>/i));
-    const label = cleanText2(firstMatch2(html3, /<span[^>]*>([\s\S]*?)<\/span>/i));
+    const value = cleanText2(firstMatch(html3, /<strong[^>]*>([\s\S]*?)<\/strong>/i));
+    const label = cleanText2(firstMatch(html3, /<span[^>]*>([\s\S]*?)<\/span>/i));
     if (value || label) stats.push({ value, label });
   }
   return stats;
@@ -48003,8 +49432,8 @@ function extractCards(source) {
   const pattern = /<article[^>]*>([\s\S]*?)<\/article>/gi;
   for (const match of source.matchAll(pattern)) {
     const html3 = match[1];
-    const header = cleanText2(firstMatch2(html3, /<h[2-4][^>]*>([\s\S]*?)<\/h[2-4]>/i));
-    const body = cleanText2(firstMatch2(html3, /<p[^>]*>([\s\S]*?)<\/p>/i));
+    const header = cleanText2(firstMatch(html3, /<h[2-4][^>]*>([\s\S]*?)<\/h[2-4]>/i));
+    const body = cleanText2(firstMatch(html3, /<p[^>]*>([\s\S]*?)<\/p>/i));
     const media = extractCardMedia(html3);
     if (header || body || media) cards.push({ header, body, media });
   }
@@ -48014,22 +49443,22 @@ function extractCustomerLogo(source) {
   const img = String(source || "").match(/<img\b([^>]*\bclass=["'][^"']*\bdeck-customer-logo\b[^"']*["'][^>]*)>/i);
   if (!img) return null;
   const attrs = img[1];
-  const src = firstMatch2(attrs, /\bsrc=["']([^"']+)["']/i);
+  const src = firstMatch(attrs, /\bsrc=["']([^"']+)["']/i);
   if (!src) return null;
   return {
     src,
-    alt: firstMatch2(attrs, /\balt=["']([^"']*)["']/i) || "Customer logo"
+    alt: firstMatch(attrs, /\balt=["']([^"']*)["']/i) || "Customer logo"
   };
 }
 function extractCompanyLogo(source) {
   const img = String(source || "").match(/<img\b([^>]*\bclass=["'][^"']*\bdeck-(?:brand|company)-logo\b[^"']*["'][^>]*)>/i);
   if (!img) return null;
   const attrs = img[1];
-  const src = firstMatch2(attrs, /\bsrc=["']([^"']+)["']/i);
+  const src = firstMatch(attrs, /\bsrc=["']([^"']+)["']/i);
   if (!src) return null;
   return {
     src,
-    alt: firstMatch2(attrs, /\balt=["']([^"']*)["']/i) || "Company logo"
+    alt: firstMatch(attrs, /\balt=["']([^"']*)["']/i) || "Company logo"
   };
 }
 function frontmatterCompanyLogo(frontmatter = {}) {
@@ -48063,7 +49492,7 @@ function extractBullets(source) {
 function isMarkdownListBlock(block) {
   return block.split(/\r?\n/).some((line) => /^\s*[-*]\s+/.test(line));
 }
-function firstMatch2(source, pattern) {
+function firstMatch(source, pattern) {
   const match = source.match(pattern);
   return match?.[1] || "";
 }
@@ -48071,13 +49500,13 @@ function extractCardMedia(html3) {
   const img = String(html3 || "").match(/<img\b([^>]*)>/i);
   if (!img) return null;
   const attrs = img[1];
-  const src = firstMatch2(attrs, /\bsrc=["']([^"']+)["']/i);
+  const src = firstMatch(attrs, /\bsrc=["']([^"']+)["']/i);
   if (!src) return null;
-  const className = firstMatch2(attrs, /\bclass=["']([^"']+)["']/i);
+  const className = firstMatch(attrs, /\bclass=["']([^"']+)["']/i);
   return {
     kind: /\bdeck-card-icon\b/.test(className) ? "icon" : "image",
     src,
-    alt: firstMatch2(attrs, /\balt=["']([^"']*)["']/i)
+    alt: firstMatch(attrs, /\balt=["']([^"']*)["']/i)
   };
 }
 function stripInline(value) {

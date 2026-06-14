@@ -121,6 +121,41 @@ export function cssColorToHex(value, fallback = '090909') {
     .toUpperCase()
 }
 
+export function slideBackgroundAsset(brand = {}, kind = 'content', surface = 'light') {
+  const backgrounds = brand.assets?.backgrounds || {}
+  const normalizedKind = normalizeSlideBackgroundKind(kind)
+  const normalizedSurface = surface === 'dark' ? 'dark' : 'light'
+  const suffix = normalizedSurface === 'dark' ? 'Dark' : 'Light'
+  const candidates = [
+    `${normalizedKind}${suffix}`,
+  ]
+
+  if (normalizedSurface === 'light') {
+    candidates.push(
+      normalizedKind === 'content' ? 'contentLight' : '',
+      'light',
+      'defaultLight',
+    )
+  } else {
+    candidates.push(
+      normalizedKind,
+      normalizedKind === 'divider' || normalizedKind === 'close' ? 'coverDark' : '',
+      normalizedKind === 'divider' || normalizedKind === 'close' ? 'cover' : '',
+      normalizedKind === 'content' ? 'contentDark' : '',
+      normalizedKind === 'content' ? 'content' : '',
+      'dark',
+      'defaultDark',
+      'default',
+    )
+  }
+
+  return firstBackgroundAsset(backgrounds, candidates)
+}
+
+export function hasSlideBackgroundAsset(brand = {}, surface = 'light', kind = 'content') {
+  return Boolean(slideBackgroundAsset(brand, kind, surface))
+}
+
 function validateBrand(brand, brandPath) {
   const required = [
     ['themeName', brand.themeName],
@@ -138,4 +173,15 @@ function validateBrand(brand, brandPath) {
   if (missing.length) {
     throw new Error(`${brandPath} is missing required definition(s): ${missing.join(', ')}`)
   }
+}
+
+function normalizeSlideBackgroundKind(kind) {
+  return ['cover', 'divider', 'close', 'content'].includes(kind) ? kind : 'content'
+}
+
+function firstBackgroundAsset(backgrounds, candidates) {
+  for (const candidate of candidates) {
+    if (candidate && backgrounds[candidate]) return backgrounds[candidate]
+  }
+  return ''
 }

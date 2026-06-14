@@ -27,8 +27,8 @@ async function buildCommand(argv) {
     );
   }
   const [{ loadDefinitions }, { parseDeckMarkdown }] = await Promise.all([
-    import("./chunks/brand-GA7UDTGD.mjs"),
-    import("./chunks/markdown-ZSUPA2MK.mjs")
+    import("./chunks/brand-CMLFAISO.mjs"),
+    import("./chunks/markdown-WK4YNYXL.mjs")
   ]);
   const inputPath = path.resolve(argv.input);
   const projectRoot = process.cwd();
@@ -46,7 +46,7 @@ async function buildCommand(argv) {
   const htmlAssets = argv.htmlAssets || "inline";
   let rendered;
   if (wantsHtml) {
-    const { renderDeckHtml } = await import("./chunks/render-B2VDGKNJ.mjs");
+    const { renderDeckHtml } = await import("./chunks/render-BGQUOX6L.mjs");
     rendered = renderDeckHtml(deck, {
       resourcesDir,
       definitions,
@@ -65,7 +65,7 @@ async function buildCommand(argv) {
     }
   }
   if (argv.pptx) {
-    const { writePptx } = await import("./chunks/pptx-UXUP5HVT.mjs");
+    const { writePptx } = await import("./chunks/pptx-P2MNTTNI.mjs");
     const pptxPath = path.resolve(argv.pptx);
     await mkdir(path.dirname(pptxPath), { recursive: true });
     await writePptx({
@@ -86,8 +86,8 @@ async function reportCommand(argv) {
     throw new Error("Report mode writes long-form HTML only. Use build mode for slide PPTX output.");
   }
   const [{ loadDefinitions }, { renderReportHtml }, { injectReportVendorScripts }] = await Promise.all([
-    import("./chunks/brand-GA7UDTGD.mjs"),
-    import("./chunks/report-QLO7X2ZA.mjs"),
+    import("./chunks/brand-CMLFAISO.mjs"),
+    import("./chunks/report-DG7ZF5J3.mjs"),
     import("./chunks/report-vendors-54ZQO4TB.mjs")
   ]);
   const inputPath = path.resolve(argv.input);

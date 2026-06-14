@@ -1,5 +1,7 @@
 # Marp Deckbuilder Reference
 
+For chart-only questions, use `references/charts.md` first. This file is the full component reference and should be loaded when the task needs non-chart components, branding/output behavior, or premium slide patterns.
+
 ## Build Commands
 
 From the skill folder:
@@ -31,6 +33,12 @@ Desktop chats and artifact previews. Authors should still reference assets with
 If `tool/resources/definitions/brand.json` declares `assets.backgrounds`, those
 background images are applied to HTML automatically and embedded into the HTML
 as `data:` URLs. The same declarations drive PPTX slide backgrounds.
+Prefer `assets.backgrounds.dark` and `assets.backgrounds.light` for normal
+slide surfaces. Legacy aliases such as `content`, `contentDark`,
+`contentLight`, `default`, `cover`, `divider`, and `close` are still supported
+by the renderer for branded forks.
+Structured component panels become brand-aware translucent surfaces when those
+background images are present, so branded art remains visible behind cards.
 If it declares `assets.logo`, the renderer positions the company logo from
 `layouts.companyLogo` (or legacy `layouts.logo`) and embeds it into HTML/PPTX.
 Customer logos come from deck frontmatter and are positioned from
@@ -63,6 +71,7 @@ deck should fail with an error the agent can fix.
 Builds fail for:
 
 - unknown `deck-*` tags, such as `<deck-cardd>`;
+- unsupported attributes on known `deck-*` tags;
 - mismatched or unclosed `deck-*` tags;
 - child components in the wrong parent;
 - empty structured components, such as `deck-card-grid` without `deck-card`;
@@ -71,8 +80,10 @@ Builds fail for:
 - any referenced image/resource that cannot be found under `tool/resources/`;
 - any referenced image/resource that tries to resolve outside `tool/resources/`.
 
-The error includes the slide number for component syntax errors. Resource errors
-include the missing reference and the candidate file paths the renderer checked.
+The error includes the slide number for component syntax errors. Unsupported
+attribute errors list the valid attributes for that component so the agent can
+correct the Markdown. Resource errors include the missing reference and the
+candidate file paths the renderer checked.
 
 ## Resource And Image Resolution
 
@@ -108,17 +119,18 @@ For card icons, this shorthand is preferred:
 looks for `face-scan.svg`, `face-scan.png`, `face-scan.jpg`, and the other
 supported extensions in `tool/resources/icons/`.
 
-For non-card images, use an explicit resource path:
+For non-card branded assets, use a supported component attribute:
 
 ```md
-<img src="resource:screenshots/workflow.png" alt="Workflow screenshot">
 <deck-logo name="Example Bank" image="resource:logos/example-bank.svg"></deck-logo>
 <deck-proof logo="resource:logos/example-bank.svg" customer="Example Bank"></deck-proof>
 ```
 
-Raw HTML `<img>` tags with local paths are normalized into resources before
-rendering. For example, `<img src="screenshots/demo.png">` resolves against
-`tool/resources/screenshots/demo.png`. Remote HTTP images and arbitrary local
+Raw HTML `<img>` tags are not supported in deck Markdown. Use `deck-card`
+`icon`/`image`/`src`, `deck-logo`, `deck-logo-wall`, `deck-proof`, frontmatter
+customer logo metadata, or `deck-slide` logo metadata. If a generic screenshot
+or image slide is required and no documented component fits, ask the skill maker
+to add a renderer-backed image slide type. Remote HTTP images and arbitrary local
 file URLs are not supported because the generated HTML/PPTX should be portable
 and self-contained.
 
@@ -137,7 +149,7 @@ Surface is independent of layout. Choose it deliberately:
 - cover, divider, and close slides are dark;
 - content/component slides are light by default for backward compatibility;
 - `defaultSurface: dark` or `defaultSurface: light` in frontmatter sets the deck-wide default for non-cover slides;
-- `<!-- surface: dark -->` and `<!-- surface: light -->` override one slide;
+- `<deck-slide surface="dark" />` and `<deck-slide surface="light" />` override one slide;
 - `surface="dark"` or `surface="light"` on an executive component controls that slide.
 
 Do not encode a rule such as "dark headers, white content." The executive style
@@ -168,9 +180,14 @@ customer:
 
 The company logo is always the brand logo and is placed top left. The customer
 logo, when present, is placed top right. These slots are applied to both HTML and
-PPTX output. For compatibility, the parser can extract
-`<img class="deck-customer-logo" ...>` from a slide, but new decks should prefer
-frontmatter metadata so the logo is not repeated on every slide.
+PPTX output. For slide-specific logo overrides, use `deck-slide` metadata:
+
+```md
+<deck-slide customer-logo="resource:logos/hsbc.svg" customer-name="HSBC" />
+```
+
+Do not place customer logos with raw `<img>` tags. Use frontmatter or
+`deck-slide` metadata so logo placement stays renderer-owned.
 
 Customer logos should be supplied as transparent PNG assets prepared for the
 chosen surface. For dark executive decks, use logo exports with light/white
@@ -228,13 +245,23 @@ Use only these structured components when you need native PPTX output:
 
 | Component | Required shape | Optional fields | Output |
 | --- | --- | --- | --- |
+| `deck-slide` | zero or one metadata tag at top of a slide | `layout`, `title`, `subtitle`, `eyebrow`, `takeaway`, `footnote`, `surface="dark|light"`, `html-skip`, `pptx-skip`, `html-only`, `pptx-only`, `company-logo`, `company-name`, `customer-logo`, `customer-name` | Slide metadata consumed by renderer; no visible output |
 | `deck-divider` | `title` attribute or `h1` child | `act`, `label`, `subtitle` | Full divider slide |
 | `deck-stat-grid` | one or more direct `deck-stat` children | each stat can use `value`/`label` attributes or text children | 3-up KPI row |
 | `deck-card-grid` | one or more direct `deck-card` children | `columns="3"` or `columns="4"` | 3/4 card layout |
 | `deck-card` | title/body/media | `title`, `header`, `icon`, `icon-alt`, `image`, `src`, `image-alt`, `alt` | Card in grid |
-| `deck-chart` | matching `labels` and `values` attributes | `title`, `series`, `type="bar"` or `type="line"` | Editable PPTX chart and HTML chart |
-| `deck-visual` | inline SVG or fallback text | `title`, `caption`, `alt`, `fallback` | Inline SVG in HTML, embedded SVG image in PPTX |
-| `deck-comparison` | `rows="left|right;..."` or direct `deck-row` children | `columns`, `left-title`, `right-title`, `left`, `right`, `title` | Comparison table |
+| `deck-chart` | matching `labels`/`values` attributes, `points` for area/scatter/bubble, raw numeric `values` for histogram, observation rows for boxplot, ranked values for pareto, or flow `links` for sankey | `title`, `series`, `targets`, `target-values`, `links`, `flows`, `edges`, `matrix`, `series-values`, `bins`, `buckets`, `bucket-count`, `type="bar"`, `type="line"`, `type="area"`, `type="waterfall"`, `type="bullet"`, `type="grouped-bar"`, `type="stacked-bar"`, `type="doughnut"`, `type="scatter"`, `type="bubble"`, `type="histogram"`, `type="boxplot"`, `type="pareto"`, `type="sankey"`, `x-axis`, `y-axis` | Editable PPTX chart where native support exists; renderer-owned SVG for waterfall/bullet/histogram/boxplot/pareto/sankey |
+| `deck-signal-bars` | `metric`, `metric-label`, matching `labels` and `values` attributes | `title`, `subtitle`, `unit`, `accent` | Headline metric plus contribution bars |
+| `deck-signal-board` | `title`, `body`, matching `labels` and `values` attributes | `tags`, `chart-title`, `unit`, `accent` | Two-panel narrative signal board with tag pills and bars |
+| `deck-funnel` | matching `labels` and `values` attributes | `title`, `unit`, `accent` | Conversion/completion funnel |
+| `deck-metric-trend` | `metric`, `metric-label`, matching `labels` and `values` attributes | `title`, `unit`, `accent` | Headline KPI plus short trend line |
+| `deck-heatmap` | `x-labels`, `y-labels`, and semicolon-separated numeric `values` rows | `title`, `unit`, `caption`, `accent` | Activity/intensity heatmap grid |
+| `deck-impact-radar` | matching 3-6 `labels` and `values` attributes | `title`, `bar-title`, `radar-title`, `radar-values`, `unit`, `caption`, `accent` | Combined impact bars plus radar/balance profile |
+| `deck-treemap` | matching `labels` and `values` attributes | `title`, `unit`, `caption`, `accent` | Portfolio/composition area treemap |
+| `deck-journey-map` | one to six direct `deck-journey-step` children | `title` | Ordered customer/process journey cards |
+| `deck-journey-step` | inside `deck-journey-map` | `label`, `title`, `body`, `accent` | Journey stage card |
+| `deck-journey-path` | `metric`, `metric-label`, 2-5 `labels` | `notes`, `hotspots`, `callout-title`, `callout-body`, `accent` | Metric-led animated journey path dashboard |
+| `deck-comparison` | `rows="left|right;..."` or direct `deck-row` children | `columns`, `left-title`, `right-title`, `left`, `right`, `rows` | Comparison table |
 | `deck-row` | inside `deck-comparison` | `label`, `left`, `right` | Comparison row |
 | `deck-swimlane` | one or more direct `deck-lane` children | | Swimlane slide |
 | `deck-lane` | inside `deck-swimlane`, one or more direct `deck-step` children | `title`, `label`, `color="blue|cyan|purple|green|red|orange"` | Swimlane lane |
@@ -262,6 +289,15 @@ usable:
 - `deck-stat-grid`: first 3 stats.
 - `deck-card-grid`: first 4 cards; `columns="3"` and `columns="4"` are the supported layouts.
 - `deck-comparison`: first 6 rows.
+- `deck-signal-bars`: up to 5 rows; use it for concentration/contribution stories, not long datasets.
+- `deck-signal-board`: up to 5 rows and 5 tags; use it for a short narrative signal plus small contribution bars.
+- `deck-funnel`: up to 6 stages.
+- `deck-metric-trend`: up to 8 points.
+- `deck-heatmap`: up to 12 x-labels, 8 y-labels, and 80 cells.
+- `deck-impact-radar`: 3 to 6 labels; `values` and `radar-values` must be 0-100 scores.
+- `deck-treemap`: up to 10 items.
+- `deck-journey-map`: 1 to 6 steps.
+- `deck-journey-path`: 2 to 5 journey stages; `notes` must match `labels` when provided.
 - `deck-swimlane`: first lanes that fit the brand layout (usually 2, or 3 when `layouts.swimlane.laneY` has 3 entries), first 5 steps per lane; lane colors are `blue`, `cyan`, `purple`, `green`, `red`, and `orange`.
 - `deck-proof`: first 3 stats.
 - `deck-next-steps`: first 3 steps.
@@ -287,41 +323,47 @@ Parent/child rules are strict:
 - `deck-exec-milestone` must be directly inside `deck-exec-timeline`.
 - `deck-exec-metric` and `deck-exec-panel` must be directly inside `deck-exec-metrics`.
 
-## Slide Directives
+## Slide Metadata
 
-Supported HTML/PPTX split directives:
-
-```md
-<!-- pptx: skip -->
-<!-- pptx-skip: true -->
-<!-- html-only: true -->
-
-<!-- html: skip -->
-<!-- html-skip: true -->
-<!-- pptx-only: true -->
-```
-
-Use the first group for browser-only slides, usually JavaScript, complex HTML, or
-interactive demos. Use the second group for simple editable PPTX fallback slides
-that should not appear in the HTML presentation.
-
-Other supported directives:
+Use `deck-slide` for HTML/PPTX split metadata:
 
 ```md
-<!-- _class: cover -->
-<!-- _class: light -->
-<!-- _class: dark -->
-<!-- surface: light -->
-<!-- surface: dark -->
-<!-- title: Override title -->
-<!-- subtitle: Override subtitle -->
-<!-- eyebrow: Section label -->
-<!-- takeaway: Bottom bar text -->
-<!-- footnote: Footnote text -->
+<deck-slide pptx-skip="true" />
+<deck-slide html-only="true" />
+
+<deck-slide html-skip="true" />
+<deck-slide pptx-only="true" />
 ```
 
-Prefer component attributes over directives when a component has an explicit
-field for the same thing.
+Use skip metadata only to choose between supported structured alternatives. Do
+not use skip metadata to hide raw HTML, CSS, JavaScript, canvas charts, or other
+custom code in one output.
+
+Use `deck-slide` at the top of a slide for slide metadata:
+
+```md
+<deck-slide
+  layout="content"
+  surface="dark"
+  title="Override title"
+  subtitle="Override subtitle"
+  eyebrow="Section label"
+  takeaway="Bottom bar text"
+  footnote="Footnote text"
+/>
+```
+
+Skip metadata also belongs in `deck-slide`:
+
+```md
+<deck-slide pptx-skip="true" />
+<deck-slide html-skip="true" />
+<deck-slide html-only="true" />
+<deck-slide pptx-only="true" />
+```
+
+Legacy HTML comment directives are still parsed for compatibility, but new deck
+Markdown should use `deck-slide` so the renderer can validate the contract.
 
 ## Component Syntax
 
@@ -384,9 +426,8 @@ Supported card media combinations:
   Replace attachment loops.
 </deck-card>
 
-<!-- Raw img child is accepted, but attributes are preferred -->
-<deck-card title="Signed pack">
-  <img src="resource:icons/signed-pack.svg" alt="Signed pack">
+<!-- Explicit resource URL, useful when the path contains a folder -->
+<deck-card title="Signed pack" src="resource:icons/signed-pack.svg" alt="Signed pack">
   Complete the pack in-session.
 </deck-card>
 ```
@@ -403,23 +444,348 @@ Supported card media combinations:
 ></deck-chart>
 ```
 
-Supported chart types: `bar`, `line`.
-
-### Visual SVG
-
-Use `deck-visual` for rich charts, diagrams, maps, and dashboard panels that should stay visually identical between HTML and PPTX without asking the agent to build hundreds of PowerPoint shapes. The HTML output keeps the SVG inline. The PPTX output embeds the SVG as a crisp visual image, so it is not shape-editable in PowerPoint; edit the source Markdown/SVG and rebuild. Put essential fills, strokes, fonts, labels, and dimensions inside the SVG because PPTX receives only the SVG content.
+For line charts, provide the same one-series labels and values shape.
 
 ```md
-<deck-visual title="Scenario operating model" caption="Embedded as SVG in PPTX.">
-  <svg viewBox="0 0 920 360" role="img" aria-label="Scenario operating model">
-    <rect x="18" y="18" width="884" height="324" fill="#fdfdfd" stroke="#dedede"/>
-    <text x="50" y="64" font-family="Poppins, Aptos, sans-serif" font-size="24" font-weight="500">Workstream impact</text>
-    <rect x="178" y="104" width="250" height="18" fill="#eef6fe"/>
-    <rect x="178" y="104" width="210" height="18" fill="#0f82f5"/>
-    <text x="446" y="120" font-family="Poppins, Aptos, sans-serif" font-size="15" font-weight="500">84</text>
-  </svg>
-</deck-visual>
+<deck-chart
+  type="line"
+  title="Weekly completion rate"
+  series="Completion"
+  labels="W1, W2, W3, W4, W5, W6"
+  values="68, 72, 74, 79, 83, 88"
+></deck-chart>
 ```
+
+For area charts, provide the same one-series labels and values shape, or use
+comma/semicolon-separated `label:value` point rows.
+
+```md
+<deck-chart
+  type="area"
+  title="Monthly adoption"
+  series="Users"
+  points="Jan:18, Feb:24, Mar:31, Apr:44"
+></deck-chart>
+```
+
+For waterfall charts, provide one label per movement and one numeric delta per
+label. The renderer computes the running total and draws positive/negative
+movement bars. Waterfall charts render as SVG in HTML and as embedded SVG in
+PPTX because the current PPTX engine does not expose a native waterfall chart.
+
+```md
+<deck-chart
+  type="waterfall"
+  title="Monthly movement"
+  series="Cases"
+  labels="Opening, New cases, Exceptions, Recoveries"
+  values="52000, 6400, -1200, 3750"
+></deck-chart>
+```
+
+For bullet charts, provide one actual value and one target value per label.
+Bullet charts render as SVG in HTML and as embedded SVG in PPTX because the
+current PPTX engine does not expose a native bullet chart.
+
+```md
+<deck-chart
+  type="bullet"
+  title="SLA attainment"
+  series="Actual"
+  labels="Digital, Assisted, Exceptions"
+  values="92, 84, 63"
+  targets="95, 90, 75"
+></deck-chart>
+```
+
+For grouped bars, provide two or more series names and one semicolon-separated
+values row per series. Each row must have the same number of values as `labels`.
+
+```md
+<deck-chart
+  type="grouped-bar"
+  title="Quarterly conversion"
+  series="Current, Target"
+  labels="Q1, Q2, Q3, Q4"
+  values="42, 58, 63, 71; 50, 60, 70, 78"
+></deck-chart>
+```
+
+For stacked bars, use the same multi-series shape. Values must be zero or
+positive, and each labelled stack must sum to more than zero.
+
+```md
+<deck-chart
+  type="stacked-bar"
+  title="Quarterly volume mix"
+  series="New, Returning, Expansion"
+  labels="Q1, Q2, Q3, Q4"
+  values="20, 24, 30, 34; 12, 15, 18, 22; 4, 6, 9, 11"
+></deck-chart>
+```
+
+For doughnut charts, provide one non-negative value per label. Values must sum
+to more than zero.
+
+```md
+<deck-chart
+  type="doughnut"
+  title="Portfolio mix"
+  series="Cases"
+  labels="Digital, Branch, Contact centre"
+  values="52, 31, 17"
+></deck-chart>
+```
+
+For scatter charts, provide semicolon-separated point rows. Each point row uses
+pipe-separated `x|y|Label` fields. The label is optional, but x and y must be
+numeric.
+
+```md
+<deck-chart
+  type="scatter"
+  title="Impact versus effort"
+  series="Initiatives"
+  x-axis="Effort"
+  y-axis="Impact"
+  points="2|8|Automate; 5|6|Consolidate; 8|3|Defer"
+></deck-chart>
+```
+
+For bubble charts, provide comma-separated or semicolon-separated point rows.
+Each point row uses `x:y:r` fields, where r is the bubble radius/magnitude.
+Pipe-separated `x|y|r` rows are also accepted. x, y, and r must be numeric, and
+r must be greater than zero.
+
+```md
+<deck-chart
+  type="bubble"
+  title="Impact by effort"
+  series="Journeys"
+  x-axis="Touches"
+  y-axis="Completion"
+  points="2:93:10, 4:88:14, 7:72:18, 9:61:9"
+></deck-chart>
+```
+
+For histogram charts, provide raw numeric observations in `values`. The renderer
+computes the bins; do not pre-bin the values into labels. Use optional `bins`,
+`buckets`, or `bucket-count` between 2 and 30.
+
+```md
+<deck-chart
+  type="histogram"
+  title="Response time distribution"
+  series="Cases"
+  values="1.2, 1.8, 2.1, 2.4, 2.8, 3.3, 3.7, 4.1"
+  bins="6"
+></deck-chart>
+```
+
+For boxplot charts, provide one label per group and semicolon-separated
+observation rows in `values`, `matrix`, or `series-values`. Each row uses
+pipe-separated numeric observations and needs at least five values.
+
+```md
+<deck-chart
+  type="boxplot"
+  title="Cycle time spread"
+  series="Days"
+  y-axis="Days"
+  labels="Digital, Assisted, Exceptions"
+  values="5|6|7|7|8|10|12;8|10|11|12|14|15|18;14|16|18|21|23|24|28"
+></deck-chart>
+```
+
+For Pareto charts, provide one label per driver and one zero-or-positive numeric
+value per label. The renderer sorts drivers by value and draws the cumulative
+percentage line.
+
+```md
+<deck-chart
+  type="pareto"
+  title="Exception drivers"
+  series="Cases"
+  labels="Identity, Address, Income, Consent"
+  values="42, 18, 27, 13"
+></deck-chart>
+```
+
+For Sankey charts, provide comma-separated flow links. Each link uses
+`source>target:value`, `source->target:value`, or `source=>target:value`.
+Values must be numeric and greater than zero. Links cannot connect a node to
+itself, and the flow graph must not contain cycles.
+
+```md
+<deck-chart
+  type="sankey"
+  title="Journey flow"
+  series="Cases"
+  links="Opened>Started:44120, Started>Completed:37980, Started>Exception:3751, Exception>Recovered:2160"
+></deck-chart>
+```
+
+Supported chart types: `bar`, `line`, `area`, `waterfall`, `bullet`,
+`grouped-bar`, `stacked-bar`, `doughnut`, `scatter`, `bubble`, `histogram`,
+`boxplot`, `pareto`, `sankey`. If a chart type is not
+listed here, ask the skill maker to add it as a renderer-backed `deck-*`
+capability.
+
+### Signal Bars
+
+Use `deck-signal-bars` when the slide needs one headline metric plus a small
+set of contribution or concentration bars. This replaces hand-authored HTML/SVG
+for common "97% of volume comes from these segments" slides.
+
+```md
+<deck-signal-bars
+  metric="97%"
+  metric-label="of volume is concentrated in the two largest segments."
+  title="Volume split"
+  subtitle="Renderer-owned panels and bars work in HTML and PPTX."
+  labels="Segment A, Segment B, Long tail"
+  values="65, 32, 3"
+  unit="%"
+></deck-signal-bars>
+```
+
+### Signal Board
+
+Use `deck-signal-board` when the slide needs a short narrative panel, tag pills,
+and a compact signal bar chart. HTML may receive renderer-owned visual polish;
+PPTX output is static editable shapes.
+
+```md
+<deck-signal-board
+  title="Executive signal"
+  body="The renderer output can carry dashboard, callout, and narrative reporting patterns."
+  tags="Revenue protection, Journey speed, Audit confidence"
+  chart-title="Signal strength"
+  labels="Speed, Control, Effort"
+  values="82, 74, 63"
+></deck-signal-board>
+```
+
+### Funnel
+
+Use `deck-funnel` for conversion, completion, stage-dropoff, or simple process
+funnel stories. It renders a renderer-owned tapered funnel from the same compact
+data in HTML and PPTX.
+
+```md
+<deck-funnel
+  title="Completion funnel"
+  labels="Invited, Started, Completed"
+  values="8420, 6568, 5136"
+></deck-funnel>
+```
+
+### Metric Trend
+
+Use `deck-metric-trend` for a headline KPI paired with a short weekly/monthly
+trend. The renderer owns the SVG line chart in HTML and a native editable line
+chart in PPTX.
+
+```md
+<deck-metric-trend
+  metric="92%"
+  metric-label="completed within SLA"
+  title="Weekly trend"
+  labels="W1, W2, W3, W4, W5"
+  values="70, 78, 76, 86, 92"
+  unit="%"
+></deck-metric-trend>
+```
+
+### Heatmap
+
+Use `deck-heatmap` for activity/intensity grids across two categorical axes.
+Values are semicolon-separated rows; each row contains comma-separated numeric
+cells matching `x-labels`.
+
+```md
+<deck-heatmap
+  title="Activity by hour"
+  x-labels="08, 09, 10, 11"
+  y-labels="Mon, Tue, Wed"
+  values="42, 58, 76, 64; 35, 61, 88, 72; 50, 66, 94, 81"
+  unit=" cases"
+  caption="Darker cells represent higher activity."
+></deck-heatmap>
+```
+
+### Impact Radar
+
+Use `deck-impact-radar` for combined workstream impact bars and radar/balance
+profiles. Values are 0-100 scores. If `radar-values` is omitted, the radar
+uses the same values as the bars.
+
+```md
+<deck-impact-radar
+  title="Scenario operating model"
+  bar-title="Workstream impact"
+  radar-title="Operating balance"
+  labels="Speed, Control, Effort, Visibility"
+  values="84, 76, 68, 91"
+  radar-values="84, 76, 68, 91"
+  caption="Renderer-owned SVG in HTML and static SVG in PPTX."
+></deck-impact-radar>
+```
+
+### Treemap
+
+Use `deck-treemap` for portfolio or composition area charts. The renderer owns
+the treemap layout in both HTML and PPTX.
+
+```md
+<deck-treemap
+  title="Portfolio mix"
+  labels="J0107, J0106, J0101, J0116"
+  values="52208, 11119, 8648, 3751"
+  unit=" cases"
+  caption="Tile area is proportional to case volume."
+></deck-treemap>
+```
+
+### Journey Map
+
+Use `deck-journey-map` for ordered customer journeys, process stages, or
+handoff maps. Each stage is a direct `deck-journey-step` child.
+
+```md
+<deck-journey-map>
+  <deck-journey-step label="01" title="Invite" body="Start the secure journey."></deck-journey-step>
+  <deck-journey-step label="02" title="Capture" body="Collect evidence and consent."></deck-journey-step>
+  <deck-journey-step label="03" title="Review" body="Check completeness."></deck-journey-step>
+</deck-journey-map>
+```
+
+### Journey Path
+
+Use `deck-journey-path` for a metric-led journey dashboard with stage labels,
+hotspots, and one intervention callout. HTML can animate the generated path;
+PPTX embeds a static generated SVG and keeps the metric panel editable.
+
+```md
+<deck-journey-path
+  metric="42%"
+  metric-label="of avoidable delay sits in two handoffs."
+  labels="Invite, Evidence, Approval, Complete"
+  notes="fast start, largest rework loop, decision queue, customer notified"
+  hotspots="Evidence, Approval"
+  callout-title="Recommended intervention"
+  callout-body="Automated reminders plus controlled evidence checks"
+></deck-journey-path>
+```
+
+### Retired Visual SVG
+
+`deck-visual` is retired. It used to allow inline SVG, which gave agents a raw
+authoring escape hatch. Do not use it. For rich charts, diagrams, maps,
+dashboard panels, or annotated visuals, choose an existing renderer-backed
+component such as `deck-impact-radar`, `deck-journey-path`, `deck-heatmap`,
+`deck-treemap`, or `deck-chart`. If none fits, ask the skill maker to add the
+missing `deck-*` component.
 
 ### Comparison
 
@@ -488,7 +854,7 @@ Use for CEO-style chapter openers with oversized type. Set the surface
 deliberately; dark and light use the same geometry.
 
 ```md
-<!-- surface: dark -->
+<deck-slide surface="dark" />
 
 <deck-exec-title
   eyebrow="What's next"
@@ -587,8 +953,16 @@ The component compiler emits these stable CSS classes for theme authors:
 | --- | --- |
 | `deck-stat-grid` | `stat-grid`, `stat-card` |
 | `deck-card-grid` | `card-grid`, `three`, `four`, `deck-card-media`, `deck-card-icon`, `deck-card-image` |
-| `deck-chart` | `deck-chart`, `deck-chart-bar`, `deck-chart-line`, `deck-chart-row`, `deck-chart-label`, `deck-chart-track`, `deck-chart-fill` |
-| `deck-visual` | `deck-visual`, `deck-visual-stage`, `deck-visual-caption` |
+| `deck-chart` | `deck-chart`, `deck-chart-bar`, `deck-chart-line`, `deck-chart-line-svg`, `deck-chart-line-path`, `deck-chart-line-point`, `deck-chart-line-point-value`, `deck-chart-line-grid`, `deck-chart-line-axis`, `deck-chart-line-tick`, `deck-chart-area`, `deck-chart-area-svg`, `deck-chart-area-fill`, `deck-chart-area-path`, `deck-chart-area-point`, `deck-chart-area-point-value`, `deck-chart-area-grid`, `deck-chart-area-axis`, `deck-chart-area-tick`, `deck-chart-waterfall`, `deck-chart-waterfall-svg`, `deck-waterfall-step`, `deck-waterfall-bar`, `deck-waterfall-bar-positive`, `deck-waterfall-bar-negative`, `deck-waterfall-connector`, `deck-waterfall-label`, `deck-waterfall-value`, `deck-waterfall-tick`, `deck-waterfall-grid`, `deck-waterfall-axis`, `deck-chart-bullet`, `deck-chart-bullet-svg`, `deck-bullet-row`, `deck-bullet-track`, `deck-bullet-bar`, `deck-bullet-target`, `deck-bullet-label`, `deck-bullet-value`, `deck-bullet-tick`, `deck-bullet-grid`, `deck-bullet-axis`, `deck-chart-histogram`, `deck-chart-histogram-svg`, `deck-histogram-bin`, `deck-histogram-bar`, `deck-histogram-label`, `deck-histogram-count`, `deck-histogram-grid`, `deck-histogram-axis`, `deck-histogram-tick`, `deck-histogram-axis-label`, `deck-chart-boxplot`, `deck-chart-boxplot-svg`, `deck-boxplot-item`, `deck-boxplot-whisker`, `deck-boxplot-box`, `deck-boxplot-median`, `deck-boxplot-label`, `deck-boxplot-grid`, `deck-boxplot-axis`, `deck-boxplot-tick`, `deck-boxplot-axis-label`, `deck-chart-pareto`, `deck-chart-pareto-svg`, `deck-pareto-item`, `deck-pareto-bar`, `deck-pareto-line`, `deck-pareto-point`, `deck-pareto-label`, `deck-pareto-value`, `deck-pareto-grid`, `deck-pareto-axis`, `deck-pareto-tick`, `deck-pareto-percent-tick`, `deck-pareto-axis-label`, `deck-chart-sankey`, `deck-chart-sankey-svg`, `deck-sankey-links`, `deck-sankey-link`, `deck-sankey-nodes`, `deck-sankey-node`, `deck-sankey-node-rect`, `deck-sankey-label`, `deck-sankey-caption`, `deck-chart-grouped-bar`, `deck-chart-stacked-bar`, `deck-chart-doughnut`, `deck-chart-scatter`, `deck-chart-bubble`, `deck-chart-row`, `deck-chart-grouped-row`, `deck-chart-grouped-bar-row`, `deck-chart-stacked-row`, `deck-chart-stacked-track`, `deck-chart-stacked-segment`, `deck-chart-doughnut-ring`, `deck-chart-doughnut-row`, `deck-chart-scatter-svg`, `deck-chart-scatter-point`, `deck-chart-bubble-svg`, `deck-chart-bubble-point`, `deck-chart-legend`, `deck-chart-label`, `deck-chart-track`, `deck-chart-fill` |
+| `deck-signal-bars` | `deck-signal-bars`, `deck-signal-summary`, `deck-signal-chart`, `deck-signal-row`, `deck-signal-track`, `deck-signal-fill` |
+| `deck-signal-board` | `deck-signal-board`, `deck-signal-board-panel`, `deck-signal-board-tags`, `deck-signal-board-tag`, `deck-signal-board-chart`, `deck-signal-row`, `deck-signal-track`, `deck-signal-fill` |
+| `deck-funnel` | `deck-funnel`, `deck-funnel-svg`, `deck-funnel-stage`, `deck-funnel-segment`, `deck-funnel-stage-label`, `deck-funnel-stage-value`, `deck-funnel-stage-rate` |
+| `deck-metric-trend` | `deck-metric-trend`, `deck-metric-trend-summary`, `deck-metric-trend-chart`, `deck-metric-trend-line`, `deck-metric-trend-dot` |
+| `deck-heatmap` | `deck-heatmap`, `deck-heatmap-grid`, `deck-heatmap-cell`, `deck-heatmap-x-label`, `deck-heatmap-y-label`, `deck-heatmap-accent-<accent>` |
+| `deck-impact-radar` | `deck-impact-radar`, `deck-impact-radar-svg`, `deck-impact-radar-caption`, `deck-impact-radar-accent-<accent>` |
+| `deck-treemap` | `deck-treemap`, `deck-treemap-svg`, `deck-treemap-cell`, `deck-treemap-fill-<index>`, `deck-treemap-label`, `deck-treemap-value` |
+| `deck-journey-map` | `deck-journey-map`, `deck-journey-steps`, `deck-journey-step`, `deck-journey-step-accent-<accent>` |
+| `deck-journey-path` | `deck-journey-path`, `deck-journey-path-summary`, `deck-journey-path-map`, `deck-journey-path-svg`, `deck-journey-path-accent-<accent>` |
 | `deck-comparison` | `deck-comparison`, `negative`, `positive` |
 | `deck-swimlane` | `deck-swimlane`, `deck-lane`, `deck-lane-<color>`, `deck-lane-steps`, `deck-arrow` |
 | `deck-proof` | `deck-proof`, `deck-proof-logo`, `deck-proof-context`, `deck-proof-bridge`, `deck-proof-source` |
@@ -623,123 +997,176 @@ HTML-only slide.
 <deck-close title="Thank you" name="Jane Smith" role="VP Solutions"></deck-close>
 ```
 
-## HTML Premium Slides
+## Structured Premium Slides
 
-HTML is the high-fidelity presentation format. Use raw HTML, inline SVG, and scoped CSS for slides that should feel more like a polished data story than a standard PowerPoint page. Keep the source compact enough that the user can ask Claude to change the data, labels, or emphasis.
+HTML is the high-fidelity presentation format, but authors still use the same
+strict Markdown contract: prose, Markdown lists/tables, and supported `deck-*`
+components only. The renderer owns HTML, CSS, JavaScript, presenter chrome,
+chart runtime, branding, and PPTX geometry.
 
-Use `deck-visual` when a rich SVG should also land in PPTX as a faithful visual. Use `deck-chart`, `deck-stat-grid`, `deck-card-grid`, or the other structured components when PowerPoint editability matters more than exact visual fidelity.
+Use `deck-signal-bars` for headline metric plus contribution-bar slides. Use
+`deck-signal-board` for narrative dashboards with tag pills and bars. Use
+`deck-impact-radar`, `deck-journey-path`, `deck-heatmap`, `deck-treemap`, or
+`deck-chart` for richer visuals. Use `deck-stat-grid`, `deck-card-grid`, or the
+other structured components when PowerPoint editability matters more than exact
+visual fidelity.
 
-For analytics, research, customer, and executive decks, do not default to a lowest-common-denominator slide. Make the HTML version the premium presentation: at least one main insight should use a richer HTML/SVG/JS treatment than the editable PPTX fallback.
+For analytics, research, customer, and executive decks, do not default to a
+lowest-common-denominator slide. Make the HTML version premium by choosing the
+right renderer-backed component. If the required slide type does not exist,
+tell the user to ask the skill maker to add it.
 
-The build wrapper injects Chart.js, Observable Plot, and D3 into the generated HTML head from local vendor files. Do not include CDN `<script src>` tags and do not paste minified library source into Markdown.
+Use structured components when they exist. For concentration, contribution, or
+small portfolio-mix stories, use `deck-signal-bars` instead of raw HTML/SVG:
 
-| Library | Use for |
-| --- | --- |
-| Chart.js | Bar, stacked bar, line, doughnut, and dashboard-style canvas charts |
-| Observable Plot | Dot plots, area charts, heatmaps, distributions, and small multiples |
-| D3 | Treemaps, custom arcs, force layouts, bespoke SVG charts |
+```md
+# Portfolio concentration
+
+<deck-signal-bars
+  metric="97%"
+  metric-label="from the top two clients"
+  title="Client volume split"
+  labels="TD, HSBC-RBWM, Other active"
+  values="65, 32, 3"
+  unit="%"
+></deck-signal-bars>
+```
+
+For short narrative dashboards with pill tags and signal bars, use
+`deck-signal-board` instead of raw layout HTML:
+
+```md
+# Executive signal
+
+<deck-signal-board
+  title="Executive signal"
+  body="The renderer output can carry dashboard, callout, and narrative reporting patterns."
+  tags="Revenue protection, Journey speed, Audit confidence"
+  chart-title="Signal strength"
+  labels="Speed, Control, Effort"
+  values="82, 74, 63"
+></deck-signal-board>
+```
+
+For conversion or completion funnels, use `deck-funnel` instead of raw HTML/SVG:
+
+```md
+# Conversion funnel
+
+<deck-funnel
+  title="Completion funnel"
+  labels="Invited, Started, Completed"
+  values="8420, 6568, 5136"
+></deck-funnel>
+```
+
+For a headline KPI plus short trend line, use `deck-metric-trend` instead of raw
+HTML/SVG metric dashboards:
+
+```md
+# Operating signal
+
+<deck-metric-trend
+  metric="92%"
+  metric-label="completed within SLA"
+  title="Weekly trend"
+  labels="W1, W2, W3, W4, W5"
+  values="70, 78, 76, 86, 92"
+  unit="%"
+></deck-metric-trend>
+```
+
+For activity/intensity heatmaps, use `deck-heatmap` instead of raw Observable
+Plot JavaScript. Use comma-separated labels; use semicolons between value rows
+and commas between cells within each row:
+
+```md
+# Activity heatmap
+
+<deck-heatmap
+  title="Activity by hour"
+  x-labels="08, 09, 10, 11"
+  y-labels="Mon, Tue, Wed"
+  values="42, 58, 76, 64; 35, 61, 88, 72; 50, 66, 94, 81"
+  unit=" cases"
+  caption="Darker cells represent higher activity."
+></deck-heatmap>
+```
+
+For combined impact bars and radar/balance profiles, use `deck-impact-radar`
+instead of raw SVG dashboards:
+
+```md
+# Operating balance
+
+<deck-impact-radar
+  bar-title="Workstream impact"
+  radar-title="Operating balance"
+  labels="Speed, Control, Effort, Visibility"
+  values="84, 76, 68, 91"
+></deck-impact-radar>
+```
+
+For portfolio/composition treemaps, use `deck-treemap` instead of raw D3:
+
+```md
+# Portfolio treemap
+
+<deck-treemap
+  title="Portfolio mix"
+  labels="J0107, J0106, J0101, J0116"
+  values="52208, 11119, 8648, 3751"
+  unit=" cases"
+></deck-treemap>
+```
+
+For ordered customer journeys, process stages, or handoff maps, use
+`deck-journey-map` instead of raw HTML/CSS card grids:
+
+```md
+# Customer journey
+
+<deck-journey-map>
+  <deck-journey-step label="01" title="Invite" body="Start the secure journey."></deck-journey-step>
+  <deck-journey-step label="02" title="Capture" body="Collect evidence and consent."></deck-journey-step>
+  <deck-journey-step label="03" title="Review" body="Check completeness."></deck-journey-step>
+</deck-journey-map>
+```
+
+For metric-led path diagrams with hotspots and a single recommendation callout,
+use `deck-journey-path` instead of raw HTML/SVG dashboards:
+
+```md
+# Journey delay
+
+<deck-journey-path
+  metric="42%"
+  metric-label="of avoidable delay sits in two handoffs."
+  labels="Invite, Evidence, Approval, Complete"
+  notes="fast start, largest rework loop, decision queue, customer notified"
+  hotspots="Evidence, Approval"
+  callout-title="Recommended intervention"
+  callout-body="Automated reminders plus controlled evidence checks"
+></deck-journey-path>
+```
 
 ### Split HTML/PPTX Slides
 
-Use paired slides when the HTML version should be richer than PowerPoint can sensibly edit:
+Use paired slides only when HTML and PPTX need different supported structured
+representations:
 
-- `<!-- pptx: skip -->` keeps a premium HTML/browser slide out of the PPTX.
-- `<!-- html: skip -->`, `<!-- html-skip: true -->`, or `<!-- pptx-only: true -->` keeps the editable fallback out of the HTML deck.
+- `<deck-slide pptx-skip="true" />` keeps a supported HTML-focused slide out of the PPTX.
+- `<deck-slide html-skip="true" />` or `<deck-slide pptx-only="true" />` keeps the editable fallback out of the HTML deck.
 
-```md
-<!-- pptx: skip -->
-
-# Portfolio concentration
-
-<style scoped>
-.signal { display:grid; grid-template-columns:1fr 1.2fr; gap:28px; align-items:center; }
-.callout { padding:24px; border:1px solid #1e3a5f; background:#0d1d36; }
-.callout strong { display:block; color:#0f82f5; font-size:58px; line-height:1; }
-</style>
-
-<div class="signal">
-  <div class="callout"><strong>97%</strong><span>from the top two clients</span></div>
-  <svg viewBox="0 0 560 280" role="img" aria-label="Annotated concentration chart">
-    <rect x="18" y="42" width="470" height="44" fill="#071228"/>
-    <rect x="18" y="42" width="305" height="44" fill="#0f82f5"/>
-    <text x="18" y="32" fill="#c8d8f0" font-size="18">TD</text>
-    <text x="338" y="71" fill="#ffffff" font-size="18">65%</text>
-    <rect x="18" y="124" width="470" height="44" fill="#071228"/>
-    <rect x="18" y="124" width="150" height="44" fill="#5143d5"/>
-    <text x="18" y="114" fill="#c8d8f0" font-size="18">HSBC-RBWM</text>
-    <text x="184" y="153" fill="#ffffff" font-size="18">32%</text>
-  </svg>
-</div>
-
----
-
-<!-- html: skip -->
-
-# Portfolio concentration
-
-<deck-chart
-  type="bar"
-  title="Client volume split"
-  labels="TD, HSBC-RBWM, Other active"
-  values="77951, 38749, 3181"
-></deck-chart>
-```
-
-### Browser-Only JavaScript
-
-Use `<!-- pptx: skip -->` for slides that rely on browser JavaScript, animation loops, DOM updates, embedded demos, or other behavior PowerPoint cannot run. The HTML output keeps the slide and script. The PPTX output omits the slide instead of attempting a low-quality static reconstruction.
-
-`<!-- html-only: true -->` and `<!-- pptx-skip: true -->` are accepted aliases for skipping PPTX output.
+Do not use paired raw HTML slides for concentration, contribution-bar, funnel,
+signal-board, metric-trend, heatmap, impact-radar, treemap, journey-map, or journey-path
+stories; `deck-signal-bars`, `deck-signal-board`, `deck-funnel`,
+`deck-metric-trend`, `deck-heatmap`, `deck-impact-radar`, `deck-treemap`,
+`deck-journey-map`, and `deck-journey-path` are the supported components for
+those capabilities.
 
 ```md
-<!-- pptx: skip -->
-
-# Journey volume
-
-<style scoped>
-.chart-layout { display:grid; grid-template-columns:1fr 2fr; gap:32px; align-items:center; }
-.stat-callout { padding:24px; border:1px solid #1e3a5f; background:#0d1d36; border-radius:6px; }
-.stat-callout strong { display:block; font-size:58px; font-weight:300; color:#0f82f5; line-height:1; }
-.stat-callout span { color:#8b9ab5; font-size:13px; }
-</style>
-
-<div class="chart-layout">
-  <div class="stat-callout"><strong>77,951</strong><span>Total cases</span></div>
-  <div style="position:relative;height:320px">
-    <canvas id="journeyVol" role="img" aria-label="Cases by journey"></canvas>
-  </div>
-</div>
-
-<script>
-document.addEventListener('DOMContentLoaded', function() {
-  new Chart(document.getElementById('journeyVol'), {
-    type: 'bar',
-    data: {
-      labels: ['J0107', 'J0106', 'J0101', 'J0116'],
-      datasets: [{
-        data: [52208, 11119, 8648, 3751],
-        backgroundColor: ['#0f82f5', '#59d6fd', '#5143d5', '#f99358'],
-        borderRadius: 4
-      }]
-    },
-    options: {
-      responsive: true,
-      maintainAspectRatio: false,
-      plugins: { legend: { display: false } },
-      scales: {
-        x: { ticks: { color: '#8b9ab5' }, grid: { color: 'rgba(30,58,95,.5)' } },
-        y: { ticks: { color: '#8b9ab5', callback: v => v.toLocaleString() }, grid: { color: 'rgba(30,58,95,.5)' } }
-      }
-    }
-  });
-});
-</script>
-```
-
-If the PowerPoint audience still needs context, add a normal editable summary slide immediately after the browser-only slide.
-
-```md
-<!-- html: skip -->
+<deck-slide pptx-skip="true" />
 
 # Journey volume
 
@@ -751,155 +1178,51 @@ If the PowerPoint audience still needs context, add a normal editable summary sl
 ></deck-chart>
 ```
 
+### Unsupported Custom HTML/JavaScript
+
+The renderer rejects raw `<script>`, `<style>`, `<canvas>`, `<iframe>`,
+`<object>`, `<embed>`, `<div>`, `<section>`, `<article>`, `<figure>`,
+`<table>`, `<form>`, `<button>`, media tags, raw `<svg>`, and `deck-visual`.
+If the requested interaction, chart, animation, visual, or layout is not
+available as documented syntax, ask the skill maker to add it as a
+renderer-backed `deck-*` component.
+
 ### SVG Metric Dashboard
 
-```md
-<!-- pptx: skip -->
-
-<style scoped>
-.metric-board { display:grid; grid-template-columns:1fr 1fr; gap:28px; }
-.metric-card { padding:26px; border:1px solid #1e3a5f; background:#0d1d36; border-radius:6px; }
-.metric-card strong { display:block; color:#0f82f5; font-size:52px; line-height:1; }
-.metric-card span { color:#c8d8f0; font-size:16px; }
-</style>
-
-# Operating signal
-
-<div class="metric-board">
-  <div class="metric-card"><strong>92%</strong><span>completed within SLA</span></div>
-  <svg viewBox="0 0 520 220" role="img" aria-label="Weekly trend">
-    <polyline fill="none" stroke="#0f82f5" stroke-width="8" points="24,170 130,142 236,151 342,96 496,54"/>
-    <g fill="#c8d8f0">
-      <text x="24" y="204">W1</text><text x="130" y="204">W2</text><text x="236" y="204">W3</text><text x="342" y="204">W4</text><text x="472" y="204">W5</text>
-    </g>
-  </svg>
-</div>
-```
+Use `deck-metric-trend`; raw SVG metric dashboards are no longer needed for
+this capability.
 
 ### Annotated Funnel
 
-```md
-<!-- pptx: skip -->
-
-<style scoped>
-.funnel { display:grid; gap:12px; margin-top:24px; }
-.stage { display:grid; grid-template-columns:180px 1fr 90px; align-items:center; gap:16px; }
-.bar { height:34px; background:rgba(30,58,95,.65); border-radius:4px; overflow:hidden; }
-.bar span { display:block; height:100%; background:#0f82f5; }
-.stage strong, .stage b { color:#c8d8f0; }
-</style>
-
-# Conversion funnel
-
-<div class="funnel">
-  <div class="stage"><strong>Invited</strong><div class="bar"><span style="width:100%"></span></div><b>8,420</b></div>
-  <div class="stage"><strong>Started</strong><div class="bar"><span style="width:78%"></span></div><b>6,568</b></div>
-  <div class="stage"><strong>Completed</strong><div class="bar"><span style="width:61%"></span></div><b>5,136</b></div>
-</div>
-```
+Use `deck-funnel`; raw HTML/CSS funnel bars are no longer needed for this
+capability.
 
 ### Journey Map
 
-```md
-<!-- pptx: skip -->
-
-<style scoped>
-.journey { display:grid; grid-template-columns:repeat(5, 1fr); gap:14px; margin-top:34px; }
-.journey article { min-height:160px; padding:18px; border:1px solid #1e3a5f; border-top:5px solid #0f82f5; background:#0d1d36; border-radius:6px; }
-.journey small { color:#0f82f5; font-weight:500; }
-.journey h2 { color:#ffffff; }
-.journey p { color:#c8d8f0; }
-</style>
-
-# Customer journey
-
-<div class="journey">
-  <article><small>01</small><h2>Invite</h2><p>Start the secure journey.</p></article>
-  <article><small>02</small><h2>Capture</h2><p>Collect evidence and consent.</p></article>
-  <article><small>03</small><h2>Review</h2><p>Check completeness.</p></article>
-  <article><small>04</small><h2>Resolve</h2><p>Fix exceptions.</p></article>
-  <article><small>05</small><h2>Approve</h2><p>Close the case.</p></article>
-</div>
-```
+Use `deck-journey-map`; raw HTML/CSS journey card grids are no longer needed
+for this capability.
 
 ### Observable Plot Heatmap
 
-```md
-<!-- pptx: skip -->
+Use `deck-heatmap`; raw Observable Plot heatmap JavaScript is no longer needed
+for this capability.
 
-# Activity heatmap
+### Impact/Radar Dashboard
 
-<div id="activityHeatmap"></div>
-
-<script>
-document.addEventListener('DOMContentLoaded', function() {
-  const data = [];
-  const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'];
-  for (const day of days) {
-    for (let hour = 8; hour <= 18; hour += 1) {
-      data.push({ day, hour, volume: Math.round(40 + Math.random() * 120) });
-    }
-  }
-  const chart = Plot.plot({
-    width: 760,
-    height: 280,
-    style: { background: 'transparent', color: '#c8d8f0', fontFamily: 'Poppins,sans-serif' },
-    x: { label: 'Hour' },
-    y: { label: null, domain: days },
-    color: { scheme: 'blues' },
-    marks: [Plot.cell(data, { x: 'hour', y: 'day', fill: 'volume', inset: 1 })]
-  });
-  document.getElementById('activityHeatmap').append(chart);
-});
-</script>
-```
+Use `deck-impact-radar`; raw SVG impact bars, radar charts, and operating
+balance diagrams are no longer needed for this capability.
 
 ### D3 Treemap
 
-```md
-<!-- pptx: skip -->
-
-# Portfolio treemap
-
-<div id="portfolioTreemap"></div>
-
-<script>
-document.addEventListener('DOMContentLoaded', function() {
-  const raw = [
-    { name: 'J0107', value: 52208 },
-    { name: 'J0106', value: 11119 },
-    { name: 'J0101', value: 8648 },
-    { name: 'J0116', value: 3751 }
-  ];
-  const colours = ['#0f82f5', '#59d6fd', '#5143d5', '#f99358'];
-  const width = 760;
-  const height = 320;
-  const root = d3.hierarchy({ children: raw }).sum(d => d.value);
-  d3.treemap().size([width, height]).padding(3)(root);
-  const svg = d3.select('#portfolioTreemap').append('svg').attr('width', width).attr('height', height);
-  const cell = svg.selectAll('g').data(root.leaves()).join('g')
-    .attr('transform', d => `translate(${d.x0},${d.y0})`);
-  cell.append('rect')
-    .attr('width', d => d.x1 - d.x0)
-    .attr('height', d => d.y1 - d.y0)
-    .attr('fill', (_, i) => colours[i % colours.length])
-    .attr('rx', 4);
-  cell.append('text')
-    .attr('x', 8)
-    .attr('y', 22)
-    .attr('fill', '#ffffff')
-    .attr('font-size', 14)
-    .attr('font-family', 'Poppins,sans-serif')
-    .text(d => d.data.name);
-});
-</script>
-```
+Use `deck-treemap`; raw D3 treemap JavaScript is no longer needed for this
+capability.
 
 ### Premium Slide Safety
 
-- Do not use CDN `<script src>` tags. The build wrapper injects bundled libraries.
-- Do not paste minified JS libraries into Markdown.
-- Do not use em dashes or double-hyphen separators in JavaScript comments.
+- Do not use CDN `<script src>` tags.
+- Do not paste minified JS libraries, raw chart containers, or initializer scripts into Markdown.
+- Do not write raw CSS or raw HTML layout containers.
+- Do not use raw SVG or `deck-visual`; request a renderer-backed component.
 - Keep dark slides dark: avoid light SVG backgrounds and near-black chart text.
 - Keep a PPTX fallback when the point needs to survive outside the HTML deck.
 

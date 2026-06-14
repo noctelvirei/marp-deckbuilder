@@ -1,5 +1,7 @@
 # Marp Report Reference
 
+For chart-only questions, use `references/charts.md` first. This file is the full report component reference and should be loaded when the task needs non-chart components, report structure, branding, print/PDF behavior, or unsupported-capability guidance.
+
 ## Build Command
 
 From the `skills/marp-report` folder:

@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 360 88" role="img" aria-label="SampleBank">
+  <rect width="360" height="88" fill="none"/>
+  <circle cx="42" cy="44" r="28" fill="#59D6FD"/>
+  <path d="M27 47h30l-15-20z" fill="#08111F"/>
+  <path d="M30 53h24v6H30z" fill="#08111F"/>
+  <text x="86" y="55" fill="#FFFFFF" font-family="Arial, sans-serif" font-size="34" font-weight="700">SampleBank</text>
+</svg>

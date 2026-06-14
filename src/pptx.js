@@ -13,12 +13,20 @@ import {
   addExecRows,
   addExecTimeline,
   addExecTitle,
+  addFunnel,
+  addHeatmap,
+  addImpactRadar,
+  addJourneyMap,
+  addJourneyPath,
   addLogoWall,
+  addMetricTrend,
   addNextSteps,
   addProof,
+  addSignalBars,
+  addSignalBoard,
   addSwimlane,
   addThreeStat,
-  addVisual,
+  addTreemap,
 } from './pptx/renderers.js'
 import { font } from './brand.js'
 
@@ -84,8 +92,24 @@ function addNativeSlide(pptx, slide, model, frontmatter, brand, resourcesDir) {
       return addCards(slide, model, brand, resourcesDir)
     case 'chart':
       return addChartSlide(pptx, slide, model, brand, resourcesDir)
-    case 'visual':
-      return addVisual(slide, model, brand, resourcesDir)
+    case 'signal-bars':
+      return addSignalBars(slide, model, brand, resourcesDir)
+    case 'signal-board':
+      return addSignalBoard(slide, model, brand, resourcesDir)
+    case 'funnel':
+      return addFunnel(slide, model, brand, resourcesDir)
+    case 'metric-trend':
+      return addMetricTrend(pptx, slide, model, brand, resourcesDir)
+    case 'heatmap':
+      return addHeatmap(slide, model, brand, resourcesDir)
+    case 'impact-radar':
+      return addImpactRadar(slide, model, brand, resourcesDir)
+    case 'treemap':
+      return addTreemap(slide, model, brand, resourcesDir)
+    case 'journey-map':
+      return addJourneyMap(slide, model, brand, resourcesDir)
+    case 'journey-path':
+      return addJourneyPath(slide, model, brand, resourcesDir)
     case 'comparison':
       return addComparison(slide, model, brand, resourcesDir)
     case 'swimlane':

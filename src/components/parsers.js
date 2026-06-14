@@ -1,39 +1,51 @@
-import { cleanText, firstMatch, splitCsv } from './utils.js'
+import { cleanText, splitCsv } from './utils.js'
 
 export function parseChart(chart) {
-  const labels = splitCsv(chart.attr('labels'))
-  const values = splitCsv(chart.attr('values')).map(Number)
   const title = chart.attr('title') || ''
-  const series = chart.attr('series') || title || 'Series 1'
   const type = normalizeChartType(chart.attr('type') || 'bar')
+  const seriesAttribute = chart.attr('series') || ''
+  const areaPoints = type === 'area' ? parseAreaPointRows(chart.attr('points') || chart.attr('data')) : []
+  const bubblePoints = type === 'bubble' ? parseBubblePointRows(chart.attr('points') || chart.attr('data')) : []
+  const links = parseChartLinks(chart.attr('links') || chart.attr('flows') || chart.attr('edges') || '')
+  const labels = splitCsv(chart.attr('labels'))
+  const valuesAttribute = splitCsv(chart.attr('values'))
+  const targets = splitCsv(chart.attr('targets') || chart.attr('target-values') || chart.attr('target')).map(Number)
+  const binCount = Number.parseInt(chart.attr('bins') || chart.attr('bucket-count') || chart.attr('buckets') || '10', 10)
+  const chartLabels = type === 'area' && labels.length === 0 ? areaPoints.map((point) => point.x) : labels
+  const points = type === 'scatter'
+    ? parsePointRows(chart.attr('points'))
+    : type === 'bubble'
+      ? bubblePoints
+      : areaPoints
+  const isMultiSeriesBar = type === 'grouped-bar' || type === 'stacked-bar'
+  const seriesNames = isMultiSeriesBar ? splitCsv(seriesAttribute) : []
+  const matrix = type === 'boxplot'
+    ? parseObservationMatrix(chart.attr('values') || chart.attr('matrix') || chart.attr('series-values'))
+    : isMultiSeriesBar
+      ? parseNumberMatrix(chart.attr('values'))
+      : []
+  const values = isMultiSeriesBar || type === 'scatter' || type === 'bubble' || type === 'boxplot'
+    ? []
+    : valuesAttribute.length
+      ? valuesAttribute.map(Number)
+      : areaPoints.map((point) => point.y)
+  const series = isMultiSeriesBar ? seriesAttribute : seriesAttribute || title || 'Series 1'
 
   return {
     type: 'chart',
     chartType: type,
     title,
     series,
-    labels,
+    seriesNames,
+    labels: chartLabels,
     values,
-  }
-}
-
-export function parseVisual(visual) {
-  const html = visual.html() || ''
-  const svg = firstMatch(html, /(<svg\b[\s\S]*?<\/svg>)/i)
-  const titleAttr = visual.attr('title') || ''
-  const title = titleAttr || cleanText(visual.find('h2,h3,figcaption').first().text())
-  const caption = visual.attr('caption') || ''
-  const fallback = visual.attr('fallback') || cleanText(visual.find('p').first().text() || visual.text())
-
-  return {
-    type: 'visual',
-    title,
-    showTitle: Boolean(titleAttr),
-    caption,
-    alt: visual.attr('alt') || title || fallback,
-    svg,
-    html: html.trim(),
-    fallback,
+    targets,
+    binCount,
+    matrix,
+    points,
+    links,
+    xAxisLabel: chart.attr('x-axis') || chart.attr('x-label') || '',
+    yAxisLabel: chart.attr('y-axis') || chart.attr('y-label') || '',
   }
 }
 
@@ -140,6 +152,172 @@ export function parseLogoWall(root, logoWall) {
     type: 'logo-wall',
     title: logoWall.attr('title') || '',
     logos,
+  }
+}
+
+export function parseSlideMeta(slide) {
+  const directives = {}
+  for (const attr of [
+    'layout',
+    'title',
+    'subtitle',
+    'eyebrow',
+    'takeaway',
+    'footnote',
+    'surface',
+    'mode',
+    'html',
+    'pptx',
+    'html-skip',
+    'pptx-skip',
+    'html-only',
+    'pptx-only',
+  ]) {
+    const value = slide.attr(attr)
+    if (value !== undefined) directives[attr] = value
+  }
+
+  return {
+    type: 'slide',
+    directives,
+    companyLogo: logoFromAttrs(slide, 'company'),
+    customerLogo: logoFromAttrs(slide, 'customer'),
+  }
+}
+
+export function parseSignalBars(signalBars) {
+  return {
+    type: 'signal-bars',
+    metric: signalBars.attr('metric') || '',
+    metricLabel: signalBars.attr('metric-label') || '',
+    title: signalBars.attr('title') || '',
+    subtitle: signalBars.attr('subtitle') || '',
+    labels: splitCsv(signalBars.attr('labels')),
+    values: splitCsv(signalBars.attr('values')).map(Number),
+    unit: signalBars.attr('unit') || '',
+    accent: normalizeAccent(signalBars.attr('accent') || 'blue'),
+  }
+}
+
+export function parseSignalBoard(signalBoard) {
+  return {
+    type: 'signal-board',
+    title: signalBoard.attr('title') || cleanText(signalBoard.find('h2,h3,h4').first().text()),
+    body: signalBoard.attr('body') || cleanText(signalBoard.find('p').first().text() || signalBoard.text()),
+    tags: splitCsv(signalBoard.attr('tags')),
+    chartTitle: signalBoard.attr('chart-title') || signalBoard.attr('chart') || 'Signal strength',
+    labels: splitCsv(signalBoard.attr('labels')),
+    values: splitCsv(signalBoard.attr('values')).map(Number),
+    unit: signalBoard.attr('unit') || '',
+    accent: normalizeAccent(signalBoard.attr('accent') || 'blue'),
+  }
+}
+
+export function parseFunnel(funnel) {
+  return {
+    type: 'funnel',
+    title: funnel.attr('title') || '',
+    labels: splitCsv(funnel.attr('labels')),
+    values: splitCsv(funnel.attr('values')).map(Number),
+    unit: funnel.attr('unit') || '',
+    accent: normalizeAccent(funnel.attr('accent') || 'blue'),
+  }
+}
+
+export function parseMetricTrend(metricTrend) {
+  return {
+    type: 'metric-trend',
+    metric: metricTrend.attr('metric') || '',
+    metricLabel: metricTrend.attr('metric-label') || '',
+    title: metricTrend.attr('title') || '',
+    labels: splitCsv(metricTrend.attr('labels')),
+    values: splitCsv(metricTrend.attr('values')).map(Number),
+    unit: metricTrend.attr('unit') || '',
+    accent: normalizeAccent(metricTrend.attr('accent') || 'blue'),
+  }
+}
+
+export function parseHeatmap(heatmap) {
+  return {
+    type: 'heatmap',
+    title: heatmap.attr('title') || '',
+    xLabels: splitCsv(heatmap.attr('x-labels') || heatmap.attr('columns')),
+    yLabels: splitCsv(heatmap.attr('y-labels') || heatmap.attr('rows')),
+    values: parseNumberMatrix(heatmap.attr('values')),
+    unit: heatmap.attr('unit') || '',
+    caption: heatmap.attr('caption') || '',
+    accent: normalizeAccent(heatmap.attr('accent') || 'blue'),
+  }
+}
+
+export function parseTreemap(treemap) {
+  const labels = splitCsv(treemap.attr('labels'))
+  const values = splitCsv(treemap.attr('values')).map(Number)
+  return {
+    type: 'treemap',
+    title: treemap.attr('title') || '',
+    labels,
+    values,
+    unit: treemap.attr('unit') || '',
+    caption: treemap.attr('caption') || '',
+    accent: normalizeAccent(treemap.attr('accent') || 'blue'),
+  }
+}
+
+export function parseJourneyMap(root, journeyMap) {
+  const steps = []
+  journeyMap.find('deck-journey-step').each((_, stepElement) => {
+    const step = root(stepElement)
+    const title = step.attr('title') || cleanText(step.find('h3,h4').first().text())
+    const body = step.attr('body') || cleanText(step.find('p').first().text() || step.text())
+    if (title || body) {
+      steps.push({
+        label: step.attr('label') || String(steps.length + 1).padStart(2, '0'),
+        title,
+        body,
+        accent: normalizeAccent(step.attr('accent') || (steps.length === 0 ? 'blue' : 'blue')),
+      })
+    }
+  })
+
+  return {
+    type: 'journey-map',
+    title: journeyMap.attr('title') || '',
+    steps,
+  }
+}
+
+export function parseJourneyPath(journeyPath) {
+  return {
+    type: 'journey-path',
+    title: journeyPath.attr('title') || journeyPath.attr('chart-title') || 'Journey path',
+    metric: journeyPath.attr('metric') || '',
+    metricLabel: journeyPath.attr('metric-label') || journeyPath.attr('metric-body') || '',
+    labels: splitCsv(journeyPath.attr('labels')),
+    notes: splitCsv(journeyPath.attr('notes')),
+    hotspots: splitCsv(journeyPath.attr('hotspots')),
+    calloutTitle: journeyPath.attr('callout-title') || '',
+    calloutBody: journeyPath.attr('callout-body') || '',
+    accent: normalizeAccent(journeyPath.attr('accent') || 'blue'),
+  }
+}
+
+export function parseImpactRadar(impactRadar) {
+  const labels = splitCsv(impactRadar.attr('labels'))
+  const values = splitCsv(impactRadar.attr('values')).map(Number)
+  const radarValues = splitCsv(impactRadar.attr('radar-values') || impactRadar.attr('radar') || '')
+
+  return {
+    type: 'impact-radar',
+    title: impactRadar.attr('title') || '',
+    barTitle: impactRadar.attr('bar-title') || impactRadar.attr('title') || 'Workstream impact',
+    radarTitle: impactRadar.attr('radar-title') || 'Operating balance',
+    labels,
+    values,
+    radarValues: radarValues.length ? radarValues.map(Number) : values,
+    unit: impactRadar.attr('unit') || '',
+    caption: impactRadar.attr('caption') || '',
+    accent: normalizeAccent(impactRadar.attr('accent') || 'blue'),
   }
 }
 
@@ -287,6 +465,15 @@ export function parseExecMetrics(root, execMetrics) {
   }
 }
 
+function logoFromAttrs(element, prefix) {
+  const src = element.attr(`${prefix}-logo`) || ''
+  if (!src) return null
+  return {
+    src,
+    alt: element.attr(`${prefix}-alt`) || element.attr(`${prefix}-name`) || `${prefix} logo`,
+  }
+}
+
 function parseExecSideCallout(execRows) {
   const hasSide =
     execRows.attr('side-title') ||
@@ -299,6 +486,79 @@ function parseExecSideCallout(execRows) {
     body: execRows.attr('side-body') || '',
     accent: normalizeAccent(execRows.attr('side-accent') || 'yellow'),
   }
+}
+
+function parseNumberMatrix(value = '') {
+  return String(value || '')
+    .split(';')
+    .map((row) => splitCsv(row).map(Number))
+    .filter((row) => row.length > 0)
+}
+
+function parseObservationMatrix(value = '') {
+  return String(value || '')
+    .split(';')
+    .map((row) => row.trim())
+    .filter(Boolean)
+    .map((row) => row.split('|').map((cell) => Number(cell.trim())))
+}
+
+function parsePointRows(value = '') {
+  return String(value || '')
+    .split(';')
+    .map((row) => row.trim())
+    .filter(Boolean)
+    .map((row) => {
+      const [x = '', y = '', label = ''] = row.split('|').map(cleanText)
+      return { x: Number(x), y: Number(y), label }
+    })
+}
+
+function parseBubblePointRows(value = '') {
+  return String(value || '')
+    .split(/[;,]/)
+    .map((row) => row.trim())
+    .filter(Boolean)
+    .map((row) => {
+      const separator = row.includes('|') ? '|' : ':'
+      const [x = '', y = '', r = '', label = ''] = row.split(separator).map(cleanText)
+      return { x: parseStrictNumber(x), y: parseStrictNumber(y), r: parseStrictNumber(r), label }
+    })
+}
+
+function parseChartLinks(value = '') {
+  return splitCsv(value).map((item) => {
+    const match = String(item || '').match(/^(.+?)(?:->|=>|>)(.+?)(?::|=)(.+)$/)
+    if (!match) {
+      return {
+        source: '',
+        target: '',
+        value: Number.NaN,
+      }
+    }
+    return {
+      source: cleanText(match[1]),
+      target: cleanText(match[2]),
+      value: Number(String(match[3] || '').trim().replace(/,/g, '')),
+    }
+  })
+}
+
+function parseStrictNumber(value) {
+  const text = String(value ?? '').trim()
+  return text === '' ? Number.NaN : Number(text)
+}
+
+function parseAreaPointRows(value = '') {
+  return String(value || '')
+    .split(/[;,]/)
+    .map((row) => row.trim())
+    .filter(Boolean)
+    .map((row) => {
+      const separator = row.includes('|') ? '|' : row.includes('=') ? '=' : ':'
+      const [x = '', y = ''] = row.split(separator).map(cleanText)
+      return { x, y: Number(y) }
+    })
 }
 
 function normalizeAccent(value = 'blue') {
@@ -326,7 +586,22 @@ function clampInt(value, min, max, fallback) {
 }
 
 function normalizeChartType(value) {
-  if (value === 'line') return 'line'
-  if (value === 'column') return 'bar'
-  return 'bar'
+  const token = String(value || 'bar').trim().toLowerCase()
+  if (token === 'line') return 'line'
+  if (token === 'area-chart' || token === 'filled-line') return 'area'
+  if (token === 'waterfall' || token === 'waterfall-chart') return 'waterfall'
+  if (token === 'bullet' || token === 'bullet-chart') return 'bullet'
+  if (token === 'bubble' || token === 'bubble-chart') return 'bubble'
+  if (token === 'histogram' || token === 'distribution') return 'histogram'
+  if (token === 'boxplot' || token === 'box-plot') return 'boxplot'
+  if (token === 'pareto' || token === 'pareto-chart') return 'pareto'
+  if (token === 'sankey' || token === 'sankey-flow') return 'sankey'
+  if (token === 'donut') return 'doughnut'
+  if (token === 'scatterplot' || token === 'xy') return 'scatter'
+  if (token === 'column') return 'bar'
+  if (token === 'grouped' || token === 'clustered' || token === 'clustered-bar' || token === 'clustered-column') {
+    return 'grouped-bar'
+  }
+  if (token === 'stacked' || token === 'stacked-column') return 'stacked-bar'
+  return token || 'bar'
 }

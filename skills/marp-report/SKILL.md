@@ -93,21 +93,7 @@ Generate `report.md` in this order:
 - Follow the report separator convention: semicolons separate repeated records or items, pipes separate fields inside one record, and commas separate simple one-dimensional chart series. Use `items="Scope: TD; Platform: v2"` for `report-key-values`, never `items="Scope: TD|Platform: v2"`.
 - Use self-closing syntax for attribute-only components when it keeps Markdown compact, for example `<report-chart ... />`, `<report-data-table ... />`, `<report-dataset ... />`, `<report-figure ... />`, and `<report-metric ... />` inside a metric grid.
 - Do not self-close components that need body text or nested children, such as `<report-metric-grid>...</report-metric-grid>`, `<report-source-list>...</report-source-list>`, `<report-insight>...</report-insight>`, or `<report-recommendation>...</report-recommendation>`.
-- Use `<report-chart type="bar">`, `<report-chart type="line">`, or `<report-chart type="doughnut">` for standard Chart.js charts with renderer-owned hover tooltips.
-- Use `<report-chart type="grouped-bar">` for Chart.js grouped comparisons. Prefer `data-ref` plus `series-columns` when the data is already in a reusable dataset; use matrix `values` like `10|20;12|24` only for inline-only data.
-- Use `<report-chart type="stacked-bar">` for Chart.js cumulative comparisons. Prefer `data-ref` plus `series-columns`; if `series-columns` is omitted, the renderer uses all non-label dataset columns that are numeric.
-- Use `<report-chart type="waterfall">` for sequential positive/negative movement; each `values` entry is a delta.
-- Use `<report-chart type="bullet">` for actual-vs-target comparisons; `values` are actuals and `targets` are target markers.
-- Use `<report-chart type="scatter">` for numeric relationship plots; provide `points` as `x:y` pairs and optional `x-label`/`y-label`.
-- Use `<report-chart type="bubble">` for numeric relationship plots where bubble radius carries magnitude; provide `points` as `x:y:r` triples.
-- Use `<report-chart type="histogram">` for distributions; provide raw numeric `values` and optional `bins` between 2 and 30.
-- Use `<report-chart type="boxplot">` for spread and outlier context; provide `labels` and semicolon-separated observation rows in `values`.
-- Use `<report-chart type="pareto">` for ranked driver analysis; provide `labels` and non-negative `values`. The renderer sorts bars descending and adds the cumulative percentage line.
-- Use `<report-chart type="area">` for Observable Plot time-series area charts with renderer-owned hover tips.
-- Use `<report-chart type="treemap">` for D3 treemaps with renderer-owned sizing, brand colors, and hover tips.
-- Use `<report-chart type="funnel">` for D3 stage funnels with renderer-owned hover tips.
-- Use `<report-chart type="heatmap">` for D3 matrix intensity displays with renderer-owned hover tips.
-- Use `<report-chart type="sankey">` for D3 flow diagrams; provide comma-separated `links` such as `Opened>Started:44120,Started>Completed:37980`.
+- Use `<report-chart>` for supported chart types: `bar`, `line`, `doughnut`, `grouped-bar`, `stacked-bar`, `waterfall`, `bullet`, `scatter`, `bubble`, `histogram`, `boxplot`, `pareto`, `area`, `treemap`, `funnel`, `heatmap`, and `sankey`. For exact chart syntax, dataset support, validation rules, and examples, read `references/charts.md` instead of loading the full reference.
 - Use `<report-metric-grid>` for KPI summaries.
 - Use `<report-key-values>` for metadata, report context, parameters, and compact label/value summaries. Separate each `Label: Value` item with semicolons.
 - Use `<report-rate-bars>` for ranked distribution bars.
@@ -159,4 +145,4 @@ Report Markdown is a compact data-and-copy layer. The renderer owns all HTML str
 
 The skill intentionally does not bundle a browser engine. PDF export uses a locally installed Chrome, Edge, or Chromium executable; set `MARP_REPORT_BROWSER_PATH` if auto-discovery cannot find it.
 
-See [REFERENCE.md](REFERENCE.md) for the full report component library and working examples.
+See [REFERENCE.md](REFERENCE.md) for the full report component library and working examples. For chart-only questions, read [references/charts.md](references/charts.md) first to keep context small.

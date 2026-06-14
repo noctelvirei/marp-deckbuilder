@@ -63,7 +63,11 @@ export function splitSlides(body) {
 }
 
 export function parseSlide(source, index, originalSource = source, components = [], frontmatter = {}) {
-  const directives = extractDirectives(source)
+  const slideMeta = firstComponent(components, 'slide')
+  const directives = {
+    ...extractDirectives(source),
+    ...(slideMeta?.directives || {}),
+  }
   const titleComponent =
     firstComponent(components, 'divider') ||
     firstComponent(components, 'close') ||
@@ -73,8 +77,8 @@ export function parseSlide(source, index, originalSource = source, components = 
   const layout = directives.layout || inferComponentLayout(components) || inferLayout(source, index)
   const componentTakeaway = components.find((component) => component.type === 'takeaway')
   const proof = firstComponent(components, 'proof')
-  const companyLogo = extractCompanyLogo(source) || frontmatterCompanyLogo(frontmatter)
-  const customerLogo = extractCustomerLogo(source) || frontmatterCustomerLogo(frontmatter)
+  const companyLogo = slideMeta?.companyLogo || extractCompanyLogo(source) || frontmatterCompanyLogo(frontmatter)
+  const customerLogo = slideMeta?.customerLogo || extractCustomerLogo(source) || frontmatterCustomerLogo(frontmatter)
   const layoutComponent = firstComponent(components, layout)
   const surface = inferSurface(layout, directives, frontmatter, layoutComponent?.surface)
 
@@ -94,7 +98,15 @@ export function parseSlide(source, index, originalSource = source, components = 
     stats: firstComponent(components, 'stat-grid')?.stats || extractStats(source),
     cards: firstComponent(components, 'card-grid')?.cards || extractCards(source),
     chart: firstComponent(components, 'chart'),
-    visual: firstComponent(components, 'visual'),
+    signalBars: firstComponent(components, 'signal-bars'),
+    signalBoard: firstComponent(components, 'signal-board'),
+    funnel: firstComponent(components, 'funnel'),
+    metricTrend: firstComponent(components, 'metric-trend'),
+    heatmap: firstComponent(components, 'heatmap'),
+    impactRadar: firstComponent(components, 'impact-radar'),
+    treemap: firstComponent(components, 'treemap'),
+    journeyMap: firstComponent(components, 'journey-map'),
+    journeyPath: firstComponent(components, 'journey-path'),
     comparison: firstComponent(components, 'comparison'),
     swimlane: firstComponent(components, 'swimlane'),
     proof,
@@ -128,13 +140,21 @@ function inferLayout(source, index) {
   if (/<div[^>]+class=["'][^"']*stat-grid/i.test(source)) return 'three-stat'
   if (/<div[^>]+class=["'][^"']*card-grid/i.test(source)) return 'cards'
   if (/<figure[^>]+class=["'][^"']*deck-chart/i.test(source)) return 'chart'
-  if (/<figure[^>]+class=["'][^"']*deck-visual/i.test(source)) return 'visual'
+  if (/<div[^>]+class=["'][^"']*deck-signal-bars/i.test(source)) return 'signal-bars'
+  if (/<div[^>]+class=["'][^"']*deck-signal-board/i.test(source)) return 'signal-board'
+  if (/<figure[^>]+class=["'][^"']*deck-funnel/i.test(source)) return 'funnel'
+  if (/<div[^>]+class=["'][^"']*deck-metric-trend/i.test(source)) return 'metric-trend'
+  if (/<figure[^>]+class=["'][^"']*deck-heatmap/i.test(source)) return 'heatmap'
+  if (/<figure[^>]+class=["'][^"']*deck-impact-radar/i.test(source)) return 'impact-radar'
+  if (/<figure[^>]+class=["'][^"']*deck-treemap/i.test(source)) return 'treemap'
+  if (/<div[^>]+class=["'][^"']*deck-journey-map/i.test(source)) return 'journey-map'
+  if (/<div[^>]+class=["'][^"']*deck-journey-path/i.test(source)) return 'journey-path'
   if (/<table[^>]+class=["'][^"']*deck-comparison/i.test(source)) return 'comparison'
   if (/<div[^>]+class=["'][^"']*deck-swimlane/i.test(source)) return 'swimlane'
   if (/<div[^>]+class=["'][^"']*deck-proof/i.test(source)) return 'proof'
   if (/<ol[^>]+class=["'][^"']*deck-next-steps/i.test(source)) return 'next-steps'
   if (/<div[^>]+class=["'][^"']*deck-logo-wall/i.test(source)) return 'logo-wall'
-  if (/<section[^>]+class=["'][^"']*deck-exec-title/i.test(source)) return 'exec-title'
+  if (/<div[^>]+class=["'][^"']*deck-exec-title/i.test(source)) return 'exec-title'
   if (/<div[^>]+class=["'][^"']*deck-exec-rows/i.test(source)) return 'exec-rows'
   if (/<div[^>]+class=["'][^"']*deck-exec-cards/i.test(source)) return 'exec-cards'
   if (/<div[^>]+class=["'][^"']*deck-exec-timeline/i.test(source)) return 'exec-timeline'
@@ -158,7 +178,15 @@ function inferComponentLayout(components) {
     ['exec-metrics', 'exec-metrics'],
     ['divider', 'divider'],
     ['close', 'close'],
-    ['visual', 'visual'],
+    ['signal-board', 'signal-board'],
+    ['signal-bars', 'signal-bars'],
+    ['funnel', 'funnel'],
+    ['metric-trend', 'metric-trend'],
+    ['heatmap', 'heatmap'],
+    ['impact-radar', 'impact-radar'],
+    ['treemap', 'treemap'],
+    ['journey-map', 'journey-map'],
+    ['journey-path', 'journey-path'],
     ['chart', 'chart'],
     ['card-grid', 'cards'],
     ['stat-grid', 'three-stat'],

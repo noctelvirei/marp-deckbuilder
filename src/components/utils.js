@@ -5,11 +5,6 @@ export function splitCsv(value = '') {
     .filter(Boolean)
 }
 
-export function firstMatch(source, pattern) {
-  const match = String(source || '').match(pattern)
-  return match?.[1] || ''
-}
-
 export function cleanText(value) {
   return String(value || '').replace(/\s+/g, ' ').trim()
 }
@@ -27,12 +22,8 @@ export function escapeAttr(value) {
 }
 
 export function formatNumber(value) {
-  return Number.isInteger(value) ? String(value) : String(value)
-}
-
-export function compactHtmlBlock(value) {
-  return String(value || '')
-    .split(/\r?\n/)
-    .filter((line) => line.trim().length > 0)
-    .join('\n')
+  if (!Number.isFinite(value)) return ''
+  return Number.isInteger(value)
+    ? value.toLocaleString('en-GB')
+    : value.toLocaleString('en-GB', { maximumFractionDigits: 2 })
 }

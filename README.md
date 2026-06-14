@@ -153,7 +153,7 @@ customer:
   logo: resource:customers/example-bank.svg
 ---
 
-<!-- surface: dark -->
+<deck-slide surface="dark" />
 
 <deck-exec-title
   eyebrow="Investor Update"
@@ -164,7 +164,7 @@ customer:
 
 ---
 
-<!-- surface: light -->
+<deck-slide surface="light" />
 
 # Operating signals
 
@@ -176,11 +176,20 @@ customer:
 
 Use known components for native editable PPTX:
 
+- `deck-slide`
 - `deck-divider`
 - `deck-stat-grid` and `deck-stat`
 - `deck-card-grid` and `deck-card`
 - `deck-chart`
-- `deck-visual`
+- `deck-signal-bars`
+- `deck-signal-board`
+- `deck-funnel`
+- `deck-metric-trend`
+- `deck-heatmap`
+- `deck-impact-radar`
+- `deck-treemap`
+- `deck-journey-map`
+- `deck-journey-path`
 - `deck-comparison` and `deck-row`
 - `deck-swimlane`, `deck-lane`, and `deck-step`
 - `deck-proof`
@@ -200,16 +209,19 @@ Editable in PPTX:
 
 - Markdown headings and paragraphs.
 - Known `deck-*` components.
-- Native `deck-chart` charts.
+- Native `deck-chart` bar, line, area, grouped-bar, stacked-bar, doughnut, scatter, and bubble charts.
+- Renderer-owned `deck-chart type="waterfall"`, `deck-chart type="bullet"`, `deck-chart type="histogram"`, `deck-chart type="boxplot"`, `deck-chart type="pareto"`, and `deck-chart type="sankey"` SVG charts embedded into HTML and PPTX.
 - Shapes, cards, rows, timelines, logo walls, and text created by the PPTX renderer.
+
+Known component tags and attributes are validated before output is written. Use `deck-slide` for slide metadata such as surface, layout, skip flags, and slide-specific logos. If a slide type, visual, or attribute is not available in `skills/marp-deckbuilder/REFERENCE.md`, add a renderer-backed component instead of relying on raw custom markup.
 
 Not automatically editable in PPTX:
 
 - Arbitrary HTML/CSS.
-- Browser-only JavaScript.
-- Complex custom SVG unless embedded through `deck-visual`.
+- Raw browser JavaScript.
+- Complex custom SVG or raw visual markup.
 
-If a visual must stay editable in PowerPoint, add or extend a structured component. If a visual only needs to look good, use HTML/SVG and pair it with a PPTX-friendly fallback where needed.
+If a visual must stay editable in PowerPoint, add or extend a structured component. If a visual only needs to look good, add a renderer-backed component and pair it with a supported PPTX-friendly fallback where needed.
 
 ## Slide Surfaces And CEO-Style Layouts
 
@@ -218,7 +230,7 @@ Do not hard-code "dark header pages and white content pages" as a design law. Th
 Surface is a design choice independent of layout:
 
 - Use `defaultSurface: dark` or `defaultSurface: light` in frontmatter for the deck-wide default.
-- Use `<!-- surface: dark -->` or `<!-- surface: light -->` for a single slide.
+- Use `<deck-slide surface="dark" />` or `<deck-slide surface="light" />` for a single slide.
 - Use `surface="dark"` or `surface="light"` on executive components.
 
 Good agent rule:
@@ -459,7 +471,7 @@ Avoid these:
 Good defaults:
 
 - Use structured components for PPTX.
-- Use `deck-visual` for SVG visuals that can be rasterized into PPTX media.
+- Use renderer-backed SVG components such as `deck-impact-radar` or `deck-journey-path` when visual fidelity matters.
 - Use executive components for CEO-style decks with large typography and generous spacing.
 - Use reports when the output wants high-fidelity browser charts.
 - Keep all colours surface-aware.
@@ -485,7 +497,8 @@ Customer logo missing or unreadable:
 Wrong background:
 
 - Check slide surface.
-- Check `assets.backgrounds`.
+- Check `assets.backgrounds.dark` and `assets.backgrounds.light` for normal slide surfaces.
+- Check legacy/layout-specific keys such as `content`, `contentDark`, `contentLight`, `cover`, `divider`, and `close`.
 - Check whether the layout is cover, divider, close, content, dark, or light.
 - Confirm the asset exists under the skill's `tool/resources/`.
 
@@ -505,7 +518,7 @@ Chart is low fidelity in PPTX:
 
 - Native PPTX charts are editable but less visually rich.
 - Browser/report charts can be higher resolution.
-- Use a report or an HTML/SVG `deck-visual` when fidelity matters more than editability.
+- Use a report or add a renderer-backed deck component when fidelity matters more than editability.
 
 Skill wrapper fails but source CLI works:
 

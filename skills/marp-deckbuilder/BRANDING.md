@@ -88,7 +88,8 @@ the original file is used.
       "cover": "resource:brand-title-bg.png",
       "divider": "resource:brand-title-bg.png",
       "close": "resource:brand-title-bg.png",
-      "content": "resource:brand-content-bg.png"
+      "dark": "resource:brand-content-dark-bg.png",
+      "light": "resource:brand-content-light-bg.png"
     },
     "logo": {
       "dark": "resource:brand-logo-light.svg",
@@ -104,6 +105,12 @@ the original file is used.
 
 Asset paths resolve relative to `tool/resources/`. If an asset is missing, the
 renderer falls back to the configured solid colours.
+Prefer `dark` and `light` for the normal slide surfaces. `content`,
+`contentDark`, `contentLight`, `default`, and layout-specific keys such as
+`cover`, `divider`, and `close` remain supported for existing branded forks.
+When slide background images are configured, structured component panels use
+brand-aware translucent fills in HTML and PPTX so the background remains part of
+the slide design instead of being covered by default component cards.
 
 ## Slide Surface Contract
 
@@ -112,9 +119,9 @@ provide readable dark and light variants for the main deck styles, especially
 executive layouts. Cover, divider, and close slides may default dark for
 compatibility, but content/component slides can be dark or light depending on
 the story and audience. Authors may use `defaultSurface: dark|light`,
-`<!-- surface: dark|light -->`, `<!-- _class: dark|light -->`, or component
-attributes such as `surface="dark"` to choose a surface. Ordinary deck Markdown
-should not set global theme names or hand-position logos.
+`<deck-slide surface="dark|light" />`, or component attributes such as
+`surface="dark"` to choose a surface. Ordinary deck Markdown should not set
+global theme names or hand-position logos.
 
 Avoid theme CSS rules that invert `.deck-customer-logo`; customer logos should
 keep their original brand colours. Prefer transparent PNG customer logo exports

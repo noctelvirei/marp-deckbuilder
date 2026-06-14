@@ -2,6 +2,7 @@ import { Marp } from '@marp-team/marp-core'
 import { Element } from '@marp-team/marpit'
 import { pathToFileURL } from 'node:url'
 
+import { hasSlideBackgroundAsset, slideBackgroundAsset } from './brand.js'
 import { buildMarpMarkdown } from './markdown.js'
 import {
   normalizeResourceReference,
@@ -77,18 +78,17 @@ export function renderDeckHtml(deck, options = {}) {
 }
 
 export function brandBackgroundCss(brand = {}) {
-  const backgrounds = brand.assets?.backgrounds || {}
   const rules = [
-    backgroundRule('section', backgrounds.content || backgrounds.default),
-    lightBackgroundRule(backgrounds.light || backgrounds.contentLight),
-    backgroundRule('section.cover', backgrounds.cover),
+    backgroundRule('section', slideBackgroundAsset(brand, 'content', 'dark')),
+    lightBackgroundRule(slideBackgroundAsset(brand, 'content', 'light')),
+    backgroundRule('section.cover', slideBackgroundAsset(brand, 'cover', 'dark')),
     backgroundRule(
-      'section.deck-divider-slide, section:has(.deck-divider), .deck-divider',
-      backgrounds.divider || backgrounds.cover,
+      'section.deck-divider-slide, section:has(.deck-divider)',
+      slideBackgroundAsset(brand, 'divider', 'dark'),
     ),
     backgroundRule(
-      'section.deck-close-slide, section:has(.deck-close), .deck-close',
-      backgrounds.close || backgrounds.cover,
+      'section.deck-close-slide, section:has(.deck-close)',
+      slideBackgroundAsset(brand, 'close', 'dark'),
     ),
   ].filter(Boolean)
 
@@ -152,11 +152,25 @@ export function brandSurfaceCss(brand = {}) {
   const darkHeading = readableDarkCssColor(brand, 'white', 'FFFFFF')
   const darkCard = cssColor(brand, 'cardDark', cssColor(brand, 'cardLight', '0D1D36'))
   const darkBorder = cssColor(brand, 'border', '1E3A5F')
+  const darkAccent = cssColor(brand, 'blue', '0F82F5')
+  const darkLightBlue = cssColor(brand, 'lightBlue', '59D6FD')
+  const darkGreen = cssColor(brand, 'green', '2FC27D')
+  const darkRed = cssColor(brand, 'red', 'FF5C7A')
+  const darkOrange = cssColor(brand, 'orange', 'FF9F51')
+  const darkPurple = cssColor(brand, 'purple', '5D4EE8')
   const lightHeading = cssColor(brand, 'headingLight', '090909')
   const lightText = cssColor(brand, 'bodyLight', '444444')
   const lightMuted = cssColor(brand, 'mutedLight', '666666')
   const lightCard = cssColor(brand, 'cardFillLight', 'FDFDFD')
   const lightBorder = cssColor(brand, 'borderLight', 'DEDEDE')
+  const lightAccent = cssColor(brand, 'blue', '0F82F5')
+  const lightBlue = cssColor(brand, 'lightBlue', '59D6FD')
+  const lightGreen = cssColor(brand, 'green', '2FC27D')
+  const lightRed = cssColor(brand, 'red', 'FF5C7A')
+  const lightOrange = cssColor(brand, 'orange', 'FF9F51')
+  const lightPurple = cssColor(brand, 'purple', '5D4EE8')
+  const darkPanel = panelBackgroundCss(darkCard, hasSlideBackgroundAsset(brand, 'dark'), 0.86)
+  const lightPanel = panelBackgroundCss(lightCard, hasSlideBackgroundAsset(brand, 'light'), 0.92)
 
   return `section.dark {
   background-color: ${darkBackground};
@@ -173,7 +187,11 @@ section.dark h3,
 section.dark .card-grid h2,
 section.dark .deck-lane h2,
 section.dark .deck-lane-steps h3,
-section.dark .deck-chart figcaption {
+section.dark .deck-chart figcaption,
+section.dark .deck-funnel figcaption,
+section.dark .deck-heatmap figcaption,
+section.dark .deck-treemap figcaption,
+section.dark .deck-journey-step h2 {
   color: ${darkHeading};
 }
 
@@ -182,23 +200,146 @@ section.dark li,
 section.dark .card-grid p,
 section.dark .deck-lane-steps p,
 section.dark .deck-chart-label,
-section.dark .deck-chart-value {
+section.dark .deck-chart-legend-item,
+section.dark .deck-chart-series-label,
+section.dark .deck-chart-value,
+section.dark .deck-chart-grouped-bar-row strong,
+section.dark .deck-chart-stacked-row strong,
+section.dark .deck-chart-doughnut-row strong,
+section.dark .deck-chart-doughnut-ring strong,
+section.dark .deck-journey-step p {
   color: ${darkText};
 }
 
-section.dark .deck-visual-caption,
-section.dark .deck-arrow {
+section.dark .deck-chart-track,
+section.dark .deck-chart-stacked-track {
+  background: ${panelBackgroundCss(darkBorder, hasSlideBackgroundAsset(brand, 'dark'), 0.72)};
+}
+
+section.dark .deck-chart-doughnut-ring::after {
+  background: ${darkPanel};
+}
+
+section.dark .deck-chart-doughnut-ring > span,
+section.dark .deck-chart-doughnut-percent {
+  color: ${darkMuted};
+}
+
+section.dark .deck-chart-line-tick,
+section.dark .deck-chart-line-point-value,
+section.dark .deck-chart-area-tick,
+section.dark .deck-chart-area-point-value,
+section.dark .deck-chart-scatter-tick,
+section.dark .deck-chart-scatter-axis-label {
+  fill: ${darkMuted};
+}
+
+section.dark .deck-chart-line-grid,
+section.dark .deck-chart-area-grid,
+section.dark .deck-chart-scatter-grid {
+  stroke: ${darkBorder};
+}
+
+section.dark .deck-chart-line-axis,
+section.dark .deck-chart-area-axis,
+section.dark .deck-chart-scatter-axis {
+  stroke: ${darkMuted};
+}
+
+section.dark .deck-chart-waterfall {
+  --deck-waterfall-grid: ${darkBorder};
+  --deck-waterfall-axis: ${darkMuted};
+  --deck-waterfall-text: ${darkMuted};
+  --deck-waterfall-positive: ${darkGreen};
+  --deck-waterfall-negative: ${darkRed};
+  --deck-waterfall-connector: ${darkMuted};
+}
+
+section.dark .deck-chart-bullet {
+  --deck-bullet-grid: ${darkBorder};
+  --deck-bullet-axis: ${darkMuted};
+  --deck-bullet-text: ${darkMuted};
+  --deck-bullet-bar: ${darkAccent};
+  --deck-bullet-on-bar: ${darkHeading};
+  --deck-bullet-target: ${darkOrange};
+  --deck-bullet-track: ${darkCard};
+}
+
+section.dark .deck-chart-histogram {
+  --deck-histogram-grid: ${darkBorder};
+  --deck-histogram-axis: ${darkMuted};
+  --deck-histogram-text: ${darkMuted};
+  --deck-histogram-bar: ${darkPurple};
+  --deck-histogram-barBorder: ${darkAccent};
+}
+
+section.dark .deck-chart-boxplot {
+  --deck-boxplot-grid: ${darkBorder};
+  --deck-boxplot-axis: ${darkMuted};
+  --deck-boxplot-text: ${darkMuted};
+  --deck-boxplot-box: ${darkAccent};
+  --deck-boxplot-fill: ${darkCard};
+  --deck-boxplot-median: ${darkOrange};
+}
+
+section.dark .deck-chart-pareto {
+  --deck-pareto-grid: ${darkBorder};
+  --deck-pareto-axis: ${darkMuted};
+  --deck-pareto-text: ${darkMuted};
+  --deck-pareto-bar: ${darkAccent};
+  --deck-pareto-bar-border: ${darkLightBlue};
+  --deck-pareto-line: ${darkOrange};
+  --deck-pareto-point: ${darkOrange};
+}
+
+section.dark .deck-chart-sankey {
+  --deck-sankey-grid: ${darkBorder};
+  --deck-sankey-text: ${darkHeading};
+  --deck-sankey-muted: ${darkMuted};
+  --deck-sankey-label-halo: ${darkPanel};
+  --deck-sankey-linkOpacity: 0.5;
+  --deck-sankey-node-0: ${darkLightBlue};
+  --deck-sankey-node-1: ${darkAccent};
+  --deck-sankey-node-2: ${darkPurple};
+  --deck-sankey-node-3: ${darkOrange};
+  --deck-sankey-node-4: ${darkGreen};
+  --deck-sankey-node-5: ${darkRed};
+}
+
+section.dark .deck-chart-scatter-point text,
+section.dark .deck-chart-bubble-point text {
+  fill: ${darkText};
+}
+
+section.dark .deck-arrow,
+section.dark .deck-heatmap-x-label,
+section.dark .deck-heatmap-y-label,
+section.dark .deck-heatmap-caption,
+section.dark .deck-impact-radar-caption,
+section.dark .deck-treemap-caption {
   color: ${darkMuted};
 }
 
 section.dark .card-grid article,
 section.dark .deck-chart,
+section.dark .deck-funnel,
+section.dark .deck-heatmap,
+section.dark .deck-treemap,
 section.dark .deck-lane,
 section.dark .deck-lane-steps article,
+section.dark .deck-journey-step,
+section.dark .deck-journey-path-summary,
 section.dark .deck-proof,
 section.dark .deck-logo-tile {
-  background: ${darkCard};
+  background: ${darkPanel};
   border-color: ${darkBorder};
+}
+
+section.dark .deck-funnel {
+  --deck-funnel-surface: ${darkPanel};
+  --deck-funnel-border: ${darkBorder};
+  --deck-funnel-heading: ${darkHeading};
+  --deck-funnel-muted: ${darkMuted};
 }
 
 section.light h1,
@@ -207,7 +348,11 @@ section.light h3,
 section.light .card-grid h2,
 section.light .deck-lane h2,
 section.light .deck-lane-steps h3,
-section.light .deck-chart figcaption {
+section.light .deck-chart figcaption,
+section.light .deck-funnel figcaption,
+section.light .deck-heatmap figcaption,
+section.light .deck-treemap figcaption,
+section.light .deck-journey-step h2 {
   color: ${lightHeading};
 }
 
@@ -216,23 +361,146 @@ section.light li,
 section.light .card-grid p,
 section.light .deck-lane-steps p,
 section.light .deck-chart-label,
-section.light .deck-chart-value {
+section.light .deck-chart-legend-item,
+section.light .deck-chart-series-label,
+section.light .deck-chart-value,
+section.light .deck-chart-grouped-bar-row strong,
+section.light .deck-chart-stacked-row strong,
+section.light .deck-chart-doughnut-row strong,
+section.light .deck-chart-doughnut-ring strong,
+section.light .deck-journey-step p {
   color: ${lightText};
 }
 
-section.light .deck-visual-caption,
-section.light .deck-arrow {
+section.light .deck-chart-track,
+section.light .deck-chart-stacked-track {
+  background: #eef6fe;
+}
+
+section.light .deck-chart-doughnut-ring::after {
+  background: ${lightPanel};
+}
+
+section.light .deck-chart-doughnut-ring > span,
+section.light .deck-chart-doughnut-percent {
+  color: ${lightMuted};
+}
+
+section.light .deck-chart-line-tick,
+section.light .deck-chart-line-point-value,
+section.light .deck-chart-area-tick,
+section.light .deck-chart-area-point-value,
+section.light .deck-chart-scatter-tick,
+section.light .deck-chart-scatter-axis-label {
+  fill: ${lightMuted};
+}
+
+section.light .deck-chart-line-grid,
+section.light .deck-chart-area-grid,
+section.light .deck-chart-scatter-grid {
+  stroke: #e8eef7;
+}
+
+section.light .deck-chart-line-axis,
+section.light .deck-chart-area-axis,
+section.light .deck-chart-scatter-axis {
+  stroke: #9aa8bd;
+}
+
+section.light .deck-chart-waterfall {
+  --deck-waterfall-grid: #e8eef7;
+  --deck-waterfall-axis: #9aa8bd;
+  --deck-waterfall-text: ${lightMuted};
+  --deck-waterfall-positive: ${lightGreen};
+  --deck-waterfall-negative: ${lightRed};
+  --deck-waterfall-connector: #9aa8bd;
+}
+
+section.light .deck-chart-bullet {
+  --deck-bullet-grid: #e8eef7;
+  --deck-bullet-axis: #9aa8bd;
+  --deck-bullet-text: ${lightMuted};
+  --deck-bullet-bar: ${lightAccent};
+  --deck-bullet-on-bar: #ffffff;
+  --deck-bullet-target: ${lightOrange};
+  --deck-bullet-track: #eef6fe;
+}
+
+section.light .deck-chart-histogram {
+  --deck-histogram-grid: #e8eef7;
+  --deck-histogram-axis: #9aa8bd;
+  --deck-histogram-text: ${lightMuted};
+  --deck-histogram-bar: ${lightPurple};
+  --deck-histogram-barBorder: ${lightAccent};
+}
+
+section.light .deck-chart-boxplot {
+  --deck-boxplot-grid: #e8eef7;
+  --deck-boxplot-axis: #9aa8bd;
+  --deck-boxplot-text: ${lightMuted};
+  --deck-boxplot-box: ${lightAccent};
+  --deck-boxplot-fill: #bfe0ff;
+  --deck-boxplot-median: ${lightOrange};
+}
+
+section.light .deck-chart-pareto {
+  --deck-pareto-grid: #e8eef7;
+  --deck-pareto-axis: #9aa8bd;
+  --deck-pareto-text: ${lightMuted};
+  --deck-pareto-bar: ${lightAccent};
+  --deck-pareto-bar-border: ${lightBlue};
+  --deck-pareto-line: ${lightOrange};
+  --deck-pareto-point: ${lightOrange};
+}
+
+section.light .deck-chart-sankey {
+  --deck-sankey-grid: #d8e2f0;
+  --deck-sankey-text: ${lightText};
+  --deck-sankey-muted: ${lightMuted};
+  --deck-sankey-label-halo: ${lightPanel};
+  --deck-sankey-linkOpacity: 0.36;
+  --deck-sankey-node-0: ${lightAccent};
+  --deck-sankey-node-1: ${lightBlue};
+  --deck-sankey-node-2: ${lightPurple};
+  --deck-sankey-node-3: ${lightOrange};
+  --deck-sankey-node-4: ${lightGreen};
+  --deck-sankey-node-5: ${lightRed};
+}
+
+section.light .deck-chart-scatter-point text,
+section.light .deck-chart-bubble-point text {
+  fill: ${lightText};
+}
+
+section.light .deck-arrow,
+section.light .deck-heatmap-x-label,
+section.light .deck-heatmap-y-label,
+section.light .deck-heatmap-caption,
+section.light .deck-impact-radar-caption,
+section.light .deck-treemap-caption {
   color: ${lightMuted};
 }
 
 section.light .card-grid article,
 section.light .deck-chart,
+section.light .deck-funnel,
+section.light .deck-heatmap,
+section.light .deck-treemap,
 section.light .deck-lane,
 section.light .deck-lane-steps article,
+section.light .deck-journey-step,
+section.light .deck-journey-path-summary,
 section.light .deck-proof,
 section.light .deck-logo-tile {
-  background: ${lightCard};
+  background: ${lightPanel};
   border-color: ${lightBorder};
+}
+
+section.light .deck-funnel {
+  --deck-funnel-surface: ${lightPanel};
+  --deck-funnel-border: ${lightBorder};
+  --deck-funnel-heading: ${lightHeading};
+  --deck-funnel-muted: ${lightMuted};
 }
 
 section.dark .deck-lane-blue .deck-lane-steps article,
@@ -243,7 +511,7 @@ section.dark .deck-lane-green .deck-lane-steps article,
 section.dark .deck-lane-orange .deck-lane-steps article,
 section.dark .deck-lane-red .deck-lane-steps article,
 section.dark .deck-lane-yellow .deck-lane-steps article {
-  background: ${darkCard};
+  background: ${darkPanel};
 }
 
 section.dark .deck-lane-blue .deck-lane-steps article { border-left-color: ${cssColor(brand, 'blue', '0F82F5')}; }
@@ -289,6 +557,285 @@ section.light .deck-lane-red .deck-lane-steps article {
 section.light .deck-lane-yellow .deck-lane-steps article {
   background: #fff8df;
   border-left-color: ${cssColor(brand, 'yellow', 'FBC546')};
+}
+
+section.light .deck-heatmap-cell {
+  color: ${lightHeading};
+  border-color: rgba(15, 130, 245, .22);
+}
+
+section.dark .deck-heatmap-cell {
+  color: ${darkHeading};
+  border-color: rgba(255, 255, 255, .16);
+}
+
+section.light .deck-heatmap,
+section.dark .deck-heatmap {
+  --deck-heatmap-accent: ${cssColor(brand, 'blue', '0F82F5')};
+}
+
+section.light .deck-treemap,
+section.dark .deck-treemap {
+  --deck-treemap-fill-0: ${cssColor(brand, 'blue', '0F82F5')};
+  --deck-treemap-fill-1: ${cssColor(brand, 'lightBlue', '59D6FD')};
+  --deck-treemap-fill-2: ${cssColor(brand, 'purple', '5143D5')};
+  --deck-treemap-fill-3: ${cssColor(brand, 'green', '66CC8E')};
+  --deck-treemap-fill-4: ${cssColor(brand, 'orange', 'F9935B')};
+  --deck-treemap-fill-5: ${cssColor(brand, 'yellow', 'FBC546')};
+}
+
+section.light .deck-impact-radar {
+  --deck-impact-radar-surface: ${lightBackground};
+  --deck-impact-radar-panel: ${lightPanel};
+  --deck-impact-radar-border: ${lightBorder};
+  --deck-impact-radar-heading: ${lightHeading};
+  --deck-impact-radar-body: ${lightText};
+  --deck-impact-radar-muted: ${lightMuted};
+  --deck-impact-radar-track: #eef6fe;
+  --deck-impact-radar-radarGrid: ${lightBorder};
+  --deck-impact-radar-radarFill: rgba(15, 130, 245, .20);
+  --deck-impact-radar-radarStroke: ${cssColor(brand, 'blue', '0F82F5')};
+}
+
+section.dark .deck-impact-radar {
+  --deck-impact-radar-surface: ${darkBackground};
+  --deck-impact-radar-panel: ${darkPanel};
+  --deck-impact-radar-border: ${darkBorder};
+  --deck-impact-radar-heading: ${darkHeading};
+  --deck-impact-radar-body: ${darkText};
+  --deck-impact-radar-muted: ${darkMuted};
+  --deck-impact-radar-track: #071228;
+  --deck-impact-radar-radarGrid: ${darkBorder};
+  --deck-impact-radar-radarFill: rgba(89, 214, 253, .22);
+  --deck-impact-radar-radarStroke: ${cssColor(brand, 'lightBlue', '59D6FD')};
+}
+
+section.light .deck-impact-radar,
+section.dark .deck-impact-radar {
+  --deck-impact-radar-fill-0: ${cssColor(brand, 'blue', '0F82F5')};
+  --deck-impact-radar-fill-1: ${cssColor(brand, 'purple', '5143D5')};
+  --deck-impact-radar-fill-2: ${cssColor(brand, 'green', '66CC8E')};
+  --deck-impact-radar-fill-3: ${cssColor(brand, 'lightBlue', '59D6FD')};
+  --deck-impact-radar-fill-4: ${cssColor(brand, 'orange', 'F9935B')};
+  --deck-impact-radar-fill-5: ${cssColor(brand, 'yellow', 'FBC546')};
+}
+
+section.light .deck-journey-path {
+  --deck-journey-path-accent: ${cssColor(brand, 'blue', '0F82F5')};
+  --deck-journey-path-body: ${lightText};
+  --deck-journey-path-callout: #eef6fe;
+  --deck-journey-path-heading: ${lightHeading};
+  --deck-journey-path-hotspot: ${cssColor(brand, 'red', 'FC5161')};
+  --deck-journey-path-surface: ${lightBackground};
+}
+
+section.dark .deck-journey-path {
+  --deck-journey-path-accent: ${cssColor(brand, 'blue', '0F82F5')};
+  --deck-journey-path-body: ${darkText};
+  --deck-journey-path-callout: #102642;
+  --deck-journey-path-heading: ${darkHeading};
+  --deck-journey-path-hotspot: ${cssColor(brand, 'red', 'FC5161')};
+  --deck-journey-path-surface: #071228;
+}
+
+section.light .deck-heatmap-accent-lightBlue,
+section.dark .deck-heatmap-accent-lightBlue,
+section.light .deck-heatmap-accent-cyan,
+section.dark .deck-heatmap-accent-cyan {
+  --deck-heatmap-accent: ${cssColor(brand, 'lightBlue', '59D6FD')};
+}
+
+section.light .deck-journey-path-accent-lightBlue,
+section.dark .deck-journey-path-accent-lightBlue,
+section.light .deck-journey-path-accent-cyan,
+section.dark .deck-journey-path-accent-cyan {
+  --deck-journey-path-accent: ${cssColor(brand, 'lightBlue', '59D6FD')};
+}
+
+section.light .deck-heatmap-accent-purple,
+section.dark .deck-heatmap-accent-purple {
+  --deck-heatmap-accent: ${cssColor(brand, 'purple', '5143D5')};
+}
+
+section.light .deck-journey-path-accent-purple,
+section.dark .deck-journey-path-accent-purple {
+  --deck-journey-path-accent: ${cssColor(brand, 'purple', '5143D5')};
+}
+
+section.light .deck-heatmap-accent-green,
+section.dark .deck-heatmap-accent-green {
+  --deck-heatmap-accent: ${cssColor(brand, 'green', '66CC8E')};
+}
+
+section.light .deck-journey-path-accent-green,
+section.dark .deck-journey-path-accent-green {
+  --deck-journey-path-accent: ${cssColor(brand, 'green', '66CC8E')};
+}
+
+section.light .deck-heatmap-accent-orange,
+section.dark .deck-heatmap-accent-orange {
+  --deck-heatmap-accent: ${cssColor(brand, 'orange', 'F9935B')};
+}
+
+section.light .deck-journey-path-accent-orange,
+section.dark .deck-journey-path-accent-orange {
+  --deck-journey-path-accent: ${cssColor(brand, 'orange', 'F9935B')};
+}
+
+section.light .deck-heatmap-accent-red,
+section.dark .deck-heatmap-accent-red {
+  --deck-heatmap-accent: ${cssColor(brand, 'red', 'FC5161')};
+}
+
+section.light .deck-journey-path-accent-red,
+section.dark .deck-journey-path-accent-red {
+  --deck-journey-path-accent: ${cssColor(brand, 'red', 'FC5161')};
+}
+
+section.light .deck-heatmap-accent-yellow,
+section.dark .deck-heatmap-accent-yellow {
+  --deck-heatmap-accent: ${cssColor(brand, 'yellow', 'FBC546')};
+}
+
+section.light .deck-journey-path-accent-yellow,
+section.dark .deck-journey-path-accent-yellow {
+  --deck-journey-path-accent: ${cssColor(brand, 'yellow', 'FBC546')};
+}
+
+section.light .deck-signal-board-panel h2,
+section.dark .deck-signal-board-panel h2 {
+  color: ${cssColor(brand, 'blue', '0F82F5')};
+}
+
+section.light .deck-signal-board.deck-signal-accent-lightBlue .deck-signal-board-panel h2,
+section.dark .deck-signal-board.deck-signal-accent-lightBlue .deck-signal-board-panel h2,
+section.light .deck-signal-board.deck-signal-accent-lightBlue .deck-signal-board-tag,
+section.dark .deck-signal-board.deck-signal-accent-lightBlue .deck-signal-board-tag {
+  color: ${cssColor(brand, 'lightBlue', '59D6FD')};
+}
+
+section.light .deck-signal-board.deck-signal-accent-purple .deck-signal-board-panel h2,
+section.dark .deck-signal-board.deck-signal-accent-purple .deck-signal-board-panel h2,
+section.light .deck-signal-board.deck-signal-accent-purple .deck-signal-board-tag,
+section.dark .deck-signal-board.deck-signal-accent-purple .deck-signal-board-tag {
+  color: ${cssColor(brand, 'purple', '5143D5')};
+}
+
+section.light .deck-signal-board.deck-signal-accent-green .deck-signal-board-panel h2,
+section.dark .deck-signal-board.deck-signal-accent-green .deck-signal-board-panel h2,
+section.light .deck-signal-board.deck-signal-accent-green .deck-signal-board-tag,
+section.dark .deck-signal-board.deck-signal-accent-green .deck-signal-board-tag {
+  color: ${cssColor(brand, 'green', '66CC8E')};
+}
+
+section.light .deck-signal-board.deck-signal-accent-orange .deck-signal-board-panel h2,
+section.dark .deck-signal-board.deck-signal-accent-orange .deck-signal-board-panel h2,
+section.light .deck-signal-board.deck-signal-accent-orange .deck-signal-board-tag,
+section.dark .deck-signal-board.deck-signal-accent-orange .deck-signal-board-tag {
+  color: ${cssColor(brand, 'orange', 'F9935B')};
+}
+
+section.light .deck-signal-board.deck-signal-accent-red .deck-signal-board-panel h2,
+section.dark .deck-signal-board.deck-signal-accent-red .deck-signal-board-panel h2,
+section.light .deck-signal-board.deck-signal-accent-red .deck-signal-board-tag,
+section.dark .deck-signal-board.deck-signal-accent-red .deck-signal-board-tag {
+  color: ${cssColor(brand, 'red', 'FC5161')};
+}
+
+section.light .deck-signal-board.deck-signal-accent-yellow .deck-signal-board-panel h2,
+section.dark .deck-signal-board.deck-signal-accent-yellow .deck-signal-board-panel h2,
+section.light .deck-signal-board.deck-signal-accent-yellow .deck-signal-board-tag,
+section.dark .deck-signal-board.deck-signal-accent-yellow .deck-signal-board-tag {
+  color: ${cssColor(brand, 'yellow', 'FBC546')};
+}
+
+section.light .deck-signal-summary p,
+section.dark .deck-signal-summary p,
+section.light .deck-signal-board-panel p,
+section.dark .deck-signal-board-panel p,
+section.light .deck-metric-trend-summary span,
+section.dark .deck-metric-trend-summary span,
+section.light .deck-signal-label,
+section.dark .deck-signal-label {
+  color: #c8d8f0;
+}
+
+section.light .deck-signal-chart figcaption span,
+section.dark .deck-signal-chart figcaption span,
+section.light .deck-metric-trend-labels,
+section.dark .deck-metric-trend-labels {
+  color: #9fb5d9;
+  fill: #9fb5d9;
+}
+
+section.light .deck-signal-chart figcaption strong,
+section.dark .deck-signal-chart figcaption strong,
+section.light .deck-signal-board-chart figcaption,
+section.dark .deck-signal-board-chart figcaption,
+section.light .deck-metric-trend-chart figcaption,
+section.dark .deck-metric-trend-chart figcaption,
+section.light .deck-metric-trend-final,
+section.dark .deck-metric-trend-final,
+section.light .deck-signal-row strong,
+section.dark .deck-signal-row strong {
+  color: #ffffff;
+  fill: #ffffff;
+}
+
+section.dark .deck-signal-summary,
+section.dark .deck-signal-chart,
+section.light .deck-signal-summary,
+section.light .deck-signal-chart,
+section.dark .deck-metric-trend-summary,
+section.dark .deck-metric-trend-chart,
+section.light .deck-metric-trend-summary,
+section.light .deck-metric-trend-chart {
+  background: ${darkPanel};
+  border-color: ${darkBorder};
+}
+
+section.dark .deck-signal-board-panel,
+section.dark .deck-signal-board-chart {
+  background: ${darkPanel};
+  border-color: ${darkBorder};
+  color: ${darkText};
+}
+
+section.light .deck-signal-board-panel,
+section.light .deck-signal-board-chart {
+  background: ${lightPanel};
+  border-color: ${lightBorder};
+  color: ${lightText};
+}
+
+section.dark .deck-signal-board-panel p,
+section.dark .deck-signal-board .deck-signal-label {
+  color: ${darkText};
+}
+
+section.light .deck-signal-board-panel p,
+section.light .deck-signal-board .deck-signal-label {
+  color: ${lightText};
+}
+
+section.dark .deck-signal-board-chart figcaption,
+section.dark .deck-signal-board .deck-signal-row strong {
+  color: ${darkHeading};
+  fill: ${darkHeading};
+}
+
+section.light .deck-signal-board-chart figcaption,
+section.light .deck-signal-board .deck-signal-row strong {
+  color: ${lightHeading};
+  fill: ${lightHeading};
+}
+
+section.light .deck-signal-board .deck-signal-track {
+  background: #e8eef8;
+}
+
+section.dark .deck-signal-board .deck-signal-track {
+  background: #071228;
 }`
 }
 
@@ -546,6 +1093,17 @@ function cssColor(brand, keyOrHex, fallback = '') {
   const value = /^#?[0-9a-f]{6}$/i.test(String(raw)) ? raw : fallback
   if (!value) return ''
   return /^#/.test(String(value)) ? String(value) : `#${value}`
+}
+
+function panelBackgroundCss(colorValue, hasBackgroundImage, alpha) {
+  if (!hasBackgroundImage) return colorValue
+  return cssRgba(colorValue, alpha)
+}
+
+function cssRgba(colorValue, alpha) {
+  const rgb = hexRgb(colorValue)
+  if (!rgb) return colorValue
+  return `rgba(${rgb.join(', ')}, ${alpha})`
 }
 
 function readableDarkCssColor(brand, token, fallback) {

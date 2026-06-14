@@ -57,7 +57,7 @@ test('writes editable fallback PPTX', async () => {
   assert.ok(info.size > 1000)
 })
 
-test('writes SVG visual components as embedded PPTX media', async () => {
+test('writes renderer-owned SVG components as embedded PPTX media', async () => {
   await rm(tmpDir, { recursive: true, force: true })
   await mkdir(tmpDir, { recursive: true })
 
@@ -65,17 +65,18 @@ test('writes SVG visual components as embedded PPTX media', async () => {
 
 ---
 
-# Visual report
+# Operating model
 
-<deck-visual title="Operating model">
-  <svg viewBox="0 0 200 100" role="img" aria-label="Simple metric">
-    <rect x="10" y="10" width="180" height="80" fill="#eef6fe"/>
-    <text x="30" y="60">84%</text>
-  </svg>
-</deck-visual>`
+<deck-impact-radar
+  title="Scenario operating model"
+  bar-title="Workstream impact"
+  radar-title="Operating balance"
+  labels="Speed, Control, Effort, Visibility"
+  values="84, 76, 68, 91"
+></deck-impact-radar>`
   const definitions = await loadDefinitions(new URL('../resources/definitions', import.meta.url))
   const deck = parseDeckMarkdown(source)
-  const out = path.join(tmpDir, 'visual.pptx')
+  const out = path.join(tmpDir, 'impact-radar-media.pptx')
 
   await writePptx({ deck, outputPath: out, brand: definitions.brand, mode: 'editable' })
 
@@ -83,11 +84,10 @@ test('writes SVG visual components as embedded PPTX media', async () => {
   const mediaNames = Object.keys(archive.files).filter((name) => name.startsWith('ppt/media/'))
   assert.ok(mediaNames.some((name) => name.endsWith('.svg')))
   const slideXml = await archive.file('ppt/slides/slide2.xml').async('string')
-  const visualXml = pictureXmlContaining(slideXml, 'Operating model')
+  const visualXml = pictureXmlContaining(slideXml, 'Scenario operating model')
   const extent = pictureExtent(visualXml)
-  assert.ok(Math.abs(extent.cx / extent.cy - 2) < 0.01)
-  assert.ok(extent.cx < 836 * 12700)
-  assert.ok(extent.cy <= 292 * 12700)
+  assert.ok(extent.cx > 700 * 12700)
+  assert.ok(extent.cy > 250 * 12700)
 })
 
 test('writes configured brand backgrounds and logos into PPTX media', async () => {
@@ -111,7 +111,7 @@ test('writes configured brand backgrounds and logos into PPTX media', async () =
     assets: {
       backgrounds: {
         cover: 'resource:title-bg.png',
-        content: 'resource:content-bg.png',
+        dark: 'resource:content-bg.png',
       },
       logo: {
         default: 'resource:logo.svg',
@@ -125,6 +125,8 @@ test('writes configured brand backgrounds and logos into PPTX media', async () =
   const deck = parseDeckMarkdown(`# Cover
 
 ---
+
+<deck-slide surface="dark" />
 
 # Content
 
@@ -142,6 +144,8 @@ Body copy`)
   const mediaNames = Object.keys(archive.files).filter((name) => name.startsWith('ppt/media/'))
   assert.ok(mediaNames.length >= 3)
   assert.ok(mediaNames.some((name) => name.endsWith('.svg')))
+  const slide2Xml = await archive.file('ppt/slides/slide2.xml').async('string')
+  assert.ok((slide2Xml.match(/<p:pic>/g) || []).length >= 2)
 })
 
 test('writes branded chart area fills into PPTX charts', async () => {
@@ -186,6 +190,711 @@ test('writes branded chart area fills into PPTX charts', async () => {
   const chartXml = await archive.file(chartNames[0]).async('string')
   assert.match(chartXml, /0D1D36/)
   assert.match(chartXml, /C8D8F0/)
+})
+
+test('renders grouped bar deck charts in HTML and PPTX outputs', async () => {
+  await rm(tmpDir, { recursive: true, force: true })
+  await mkdir(tmpDir, { recursive: true })
+
+  const definitions = await loadDefinitions(new URL('../resources/definitions', import.meta.url))
+  const deck = parseDeckMarkdown(`# Quarterly comparison
+
+<deck-chart
+  type="grouped-bar"
+  title="Quarterly conversion"
+  series="Current, Target"
+  labels="Q1, Q2, Q3"
+  values="42, 58, 63; 50, 60, 70"
+></deck-chart>`)
+  const rendered = renderDeckHtml(deck, { resourcesDir: 'resources', definitions })
+
+  assert.match(rendered.document, /class="deck-chart deck-chart-grouped-bar"/)
+  assert.match(rendered.document, /class="deck-chart-legend"/)
+  assert.match(rendered.document, /deck-chart-grouped-bar-row/)
+  assert.doesNotMatch(rendered.document, /<deck-chart/i)
+  assert.match(rendered.css, /section\.dark \.deck-chart-track/)
+
+  const out = path.join(tmpDir, 'grouped-chart.pptx')
+  await writePptx({ deck, outputPath: out, brand: definitions.brand, mode: 'editable' })
+  const archive = await JSZip.loadAsync(await readFile(out))
+  const chartNames = Object.keys(archive.files).filter((name) => name.startsWith('ppt/charts/chart'))
+  assert.ok(chartNames.length >= 1)
+  const chartXml = await archive.file(chartNames[0]).async('string')
+  assert.match(chartXml, /Current/)
+  assert.match(chartXml, /Target/)
+  assert.match(chartXml, /Q1/)
+  assert.match(chartXml, /Q3/)
+})
+
+test('renders line deck charts in HTML and PPTX outputs', async () => {
+  await rm(tmpDir, { recursive: true, force: true })
+  await mkdir(tmpDir, { recursive: true })
+
+  const definitions = await loadDefinitions(new URL('../resources/definitions', import.meta.url))
+  const deck = parseDeckMarkdown(`# Completion rate trend
+
+<deck-chart
+  type="line"
+  title="Weekly completion rate"
+  series="Completion"
+  labels="W1, W2, W3, W4"
+  values="68, 72, 74, 79"
+></deck-chart>`)
+  const rendered = renderDeckHtml(deck, { resourcesDir: 'resources', definitions })
+
+  assert.match(rendered.document, /class="deck-chart deck-chart-line"/)
+  assert.match(rendered.document, /class="deck-chart-line-svg"/)
+  assert.match(rendered.document, /class="deck-chart-line-path"/)
+  assert.doesNotMatch(rendered.document, /<deck-chart/i)
+  assert.match(rendered.css, /section\.dark \.deck-chart-line-grid/)
+
+  const out = path.join(tmpDir, 'line-chart.pptx')
+  await writePptx({ deck, outputPath: out, brand: definitions.brand, mode: 'editable' })
+  const archive = await JSZip.loadAsync(await readFile(out))
+  const chartNames = Object.keys(archive.files).filter((name) => name.startsWith('ppt/charts/chart'))
+  assert.ok(chartNames.length >= 1)
+  const chartXml = await archive.file(chartNames[0]).async('string')
+  assert.match(chartXml, /lineChart/)
+  assert.match(chartXml, /Completion/)
+  assert.match(chartXml, /W4/)
+})
+
+test('renders area deck charts in HTML and PPTX outputs', async () => {
+  await rm(tmpDir, { recursive: true, force: true })
+  await mkdir(tmpDir, { recursive: true })
+
+  const definitions = await loadDefinitions(new URL('../resources/definitions', import.meta.url))
+  const deck = parseDeckMarkdown(`# Adoption trend
+
+<deck-chart
+  type="area"
+  title="Monthly adoption"
+  series="Users"
+  points="Jan:18, Feb:24, Mar:31, Apr:44"
+></deck-chart>`)
+  const rendered = renderDeckHtml(deck, { resourcesDir: 'resources', definitions })
+
+  assert.match(rendered.document, /class="deck-chart deck-chart-area"/)
+  assert.match(rendered.document, /class="deck-chart-area-svg"/)
+  assert.match(rendered.document, /class="deck-chart-area-fill"/)
+  assert.match(rendered.document, /class="deck-chart-area-path"/)
+  assert.doesNotMatch(rendered.document, /<deck-chart/i)
+  assert.match(rendered.css, /section\.dark \.deck-chart-area-grid/)
+
+  const out = path.join(tmpDir, 'area-chart.pptx')
+  await writePptx({ deck, outputPath: out, brand: definitions.brand, mode: 'editable' })
+  const archive = await JSZip.loadAsync(await readFile(out))
+  const chartNames = Object.keys(archive.files).filter((name) => name.startsWith('ppt/charts/chart'))
+  assert.ok(chartNames.length >= 1)
+  const chartXml = await archive.file(chartNames[0]).async('string')
+  assert.match(chartXml, /areaChart/)
+  assert.match(chartXml, /Users/)
+  assert.match(chartXml, /Apr/)
+})
+
+test('renders waterfall deck charts in HTML and PPTX outputs', async () => {
+  await rm(tmpDir, { recursive: true, force: true })
+  await mkdir(tmpDir, { recursive: true })
+
+  const definitions = await loadDefinitions(new URL('../resources/definitions', import.meta.url))
+  const deck = parseDeckMarkdown(`# Monthly movement
+
+<deck-chart
+  type="waterfall"
+  title="Monthly movement"
+  series="Cases"
+  labels="Opening, New cases, Exceptions, Recoveries"
+  values="52000, 6400, -1200, 3750"
+></deck-chart>`)
+  const rendered = renderDeckHtml(deck, { resourcesDir: 'resources', definitions })
+
+  assert.match(rendered.document, /class="deck-chart deck-chart-waterfall"/)
+  assert.match(rendered.document, /class="deck-chart-waterfall-svg"/)
+  assert.match(rendered.document, /deck-waterfall-bar-positive/)
+  assert.match(rendered.document, /deck-waterfall-bar-negative/)
+  assert.doesNotMatch(rendered.document, /<deck-chart/i)
+  assert.match(rendered.css, /section\.dark \.deck-chart-waterfall/)
+
+  const out = path.join(tmpDir, 'waterfall-chart.pptx')
+  await writePptx({ deck, outputPath: out, brand: definitions.brand, mode: 'editable' })
+  const archive = await JSZip.loadAsync(await readFile(out))
+  const mediaNames = Object.keys(archive.files).filter((name) => name.startsWith('ppt/media/'))
+  assert.ok(mediaNames.some((name) => name.endsWith('.svg')))
+  const svgNames = mediaNames.filter((name) => name.endsWith('.svg'))
+  const svgTexts = await Promise.all(svgNames.map((name) => archive.file(name).async('string')))
+  assert.ok(svgTexts.some((svgText) => /deck-chart-waterfall-svg/.test(svgText)))
+})
+
+test('renders bullet deck charts in HTML and PPTX outputs', async () => {
+  await rm(tmpDir, { recursive: true, force: true })
+  await mkdir(tmpDir, { recursive: true })
+
+  const definitions = await loadDefinitions(new URL('../resources/definitions', import.meta.url))
+  const deck = parseDeckMarkdown(`# SLA attainment
+
+<deck-chart
+  type="bullet"
+  title="SLA attainment"
+  series="Actual"
+  labels="Digital, Assisted, Exceptions"
+  values="92, 84, 63"
+  targets="95, 90, 75"
+></deck-chart>`)
+  const rendered = renderDeckHtml(deck, { resourcesDir: 'resources', definitions })
+
+  assert.match(rendered.document, /class="deck-chart deck-chart-bullet"/)
+  assert.match(rendered.document, /class="deck-chart-bullet-svg"/)
+  assert.match(rendered.document, /deck-bullet-bar/)
+  assert.match(rendered.document, /deck-bullet-target/)
+  assert.doesNotMatch(rendered.document, /<deck-chart/i)
+  assert.match(rendered.css, /section\.dark \.deck-chart-bullet/)
+
+  const out = path.join(tmpDir, 'bullet-chart.pptx')
+  await writePptx({ deck, outputPath: out, brand: definitions.brand, mode: 'editable' })
+  const archive = await JSZip.loadAsync(await readFile(out))
+  const mediaNames = Object.keys(archive.files).filter((name) => name.startsWith('ppt/media/') && name.endsWith('.svg'))
+  const svgTexts = await Promise.all(mediaNames.map((name) => archive.file(name).async('string')))
+  assert.ok(svgTexts.some((svgText) => /deck-chart-bullet-svg/.test(svgText)))
+})
+
+test('renders bubble deck charts in HTML and PPTX outputs', async () => {
+  await rm(tmpDir, { recursive: true, force: true })
+  await mkdir(tmpDir, { recursive: true })
+
+  const definitions = await loadDefinitions(new URL('../resources/definitions', import.meta.url))
+  const deck = parseDeckMarkdown(`# Impact by effort
+
+<deck-chart
+  type="bubble"
+  title="Impact by effort"
+  series="Journeys"
+  x-axis="Touches"
+  y-axis="Completion"
+  points="2:93:10,4:88:14,7:72:18,9:61:9"
+></deck-chart>`)
+  const rendered = renderDeckHtml(deck, { resourcesDir: 'resources', definitions })
+
+  assert.match(rendered.document, /class="deck-chart deck-chart-bubble"/)
+  assert.match(rendered.document, /class="deck-chart-bubble-svg"/)
+  assert.match(rendered.document, /deck-chart-bubble-point/)
+  assert.doesNotMatch(rendered.document, /<deck-chart/i)
+  assert.match(rendered.css, /section\.dark \.deck-chart-bubble-point text/)
+
+  const out = path.join(tmpDir, 'bubble-chart.pptx')
+  await writePptx({ deck, outputPath: out, brand: definitions.brand, mode: 'editable' })
+  const archive = await JSZip.loadAsync(await readFile(out))
+  const chartNames = Object.keys(archive.files).filter((name) => name.startsWith('ppt/charts/chart'))
+  assert.ok(chartNames.length >= 1)
+  const chartXml = await archive.file(chartNames[0]).async('string')
+  assert.match(chartXml, /bubbleChart/)
+  assert.match(chartXml, /Journeys/)
+})
+
+test('renders histogram deck charts in HTML and PPTX outputs', async () => {
+  await rm(tmpDir, { recursive: true, force: true })
+  await mkdir(tmpDir, { recursive: true })
+
+  const definitions = await loadDefinitions(new URL('../resources/definitions', import.meta.url))
+  const deck = parseDeckMarkdown(`# Response time distribution
+
+<deck-chart
+  type="histogram"
+  title="Response time distribution"
+  series="Cases"
+  values="1.2,1.8,2.1,2.4,2.8,3.3,3.7,4.1,4.6,5.2,5.8,6.3"
+  bins="6"
+></deck-chart>`)
+  const rendered = renderDeckHtml(deck, { resourcesDir: 'resources', definitions })
+
+  assert.match(rendered.document, /class="deck-chart deck-chart-histogram"/)
+  assert.match(rendered.document, /class="deck-chart-histogram-svg"/)
+  assert.match(rendered.document, /deck-histogram-bar/)
+  assert.doesNotMatch(rendered.document, /<deck-chart/i)
+  assert.match(rendered.css, /section\.dark \.deck-chart-histogram/)
+
+  const out = path.join(tmpDir, 'histogram-chart.pptx')
+  await writePptx({ deck, outputPath: out, brand: definitions.brand, mode: 'editable' })
+  const archive = await JSZip.loadAsync(await readFile(out))
+  const mediaNames = Object.keys(archive.files).filter((name) => name.startsWith('ppt/media/') && name.endsWith('.svg'))
+  const svgTexts = await Promise.all(mediaNames.map((name) => archive.file(name).async('string')))
+  assert.ok(svgTexts.some((svgText) => /deck-chart-histogram-svg/.test(svgText)))
+})
+
+test('renders boxplot deck charts in HTML and PPTX outputs', async () => {
+  await rm(tmpDir, { recursive: true, force: true })
+  await mkdir(tmpDir, { recursive: true })
+
+  const definitions = await loadDefinitions(new URL('../resources/definitions', import.meta.url))
+  const deck = parseDeckMarkdown(`# Cycle time spread
+
+<deck-chart
+  type="boxplot"
+  title="Cycle time spread"
+  series="Days"
+  y-axis="Days"
+  labels="Digital, Assisted, Exceptions"
+  values="5|6|7|7|8|10|12;8|10|11|12|14|15|18;14|16|18|21|23|24|28"
+></deck-chart>`)
+  const rendered = renderDeckHtml(deck, { resourcesDir: 'resources', definitions })
+
+  assert.match(rendered.document, /class="deck-chart deck-chart-boxplot"/)
+  assert.match(rendered.document, /class="deck-chart-boxplot-svg"/)
+  assert.match(rendered.document, /deck-boxplot-median/)
+  assert.doesNotMatch(rendered.document, /<deck-chart/i)
+  assert.match(rendered.css, /section\.dark \.deck-chart-boxplot/)
+
+  const out = path.join(tmpDir, 'boxplot-chart.pptx')
+  await writePptx({ deck, outputPath: out, brand: definitions.brand, mode: 'editable' })
+  const archive = await JSZip.loadAsync(await readFile(out))
+  const mediaNames = Object.keys(archive.files).filter((name) => name.startsWith('ppt/media/') && name.endsWith('.svg'))
+  const svgTexts = await Promise.all(mediaNames.map((name) => archive.file(name).async('string')))
+  assert.ok(svgTexts.some((svgText) => /deck-chart-boxplot-svg/.test(svgText)))
+})
+
+test('renders pareto deck charts in HTML and PPTX outputs', async () => {
+  await rm(tmpDir, { recursive: true, force: true })
+  await mkdir(tmpDir, { recursive: true })
+
+  const definitions = await loadDefinitions(new URL('../resources/definitions', import.meta.url))
+  const deck = parseDeckMarkdown(`# Exception drivers
+
+<deck-chart
+  type="pareto"
+  title="Exception drivers"
+  series="Cases"
+  labels="Identity, Address, Income, Consent"
+  values="42, 18, 27, 13"
+></deck-chart>`)
+  const rendered = renderDeckHtml(deck, { resourcesDir: 'resources', definitions })
+
+  assert.match(rendered.document, /class="deck-chart deck-chart-pareto"/)
+  assert.match(rendered.document, /class="deck-chart-pareto-svg"/)
+  assert.match(rendered.document, /deck-pareto-line/)
+  assert.doesNotMatch(rendered.document, /<deck-chart/i)
+  assert.match(rendered.css, /section\.dark \.deck-chart-pareto/)
+
+  const out = path.join(tmpDir, 'pareto-chart.pptx')
+  await writePptx({ deck, outputPath: out, brand: definitions.brand, mode: 'editable' })
+  const archive = await JSZip.loadAsync(await readFile(out))
+  const mediaNames = Object.keys(archive.files).filter((name) => name.startsWith('ppt/media/') && name.endsWith('.svg'))
+  const svgTexts = await Promise.all(mediaNames.map((name) => archive.file(name).async('string')))
+  assert.ok(svgTexts.some((svgText) => /deck-chart-pareto-svg/.test(svgText)))
+})
+
+test('renders sankey deck charts in HTML and PPTX outputs', async () => {
+  await rm(tmpDir, { recursive: true, force: true })
+  await mkdir(tmpDir, { recursive: true })
+
+  const definitions = await loadDefinitions(new URL('../resources/definitions', import.meta.url))
+  const deck = parseDeckMarkdown(`# Journey flow
+
+<deck-chart
+  type="sankey"
+  title="Journey flow"
+  series="Cases"
+  links="Opened>Started:44120, Started>Completed:37980, Started>Exception:3751, Exception>Recovered:2160"
+></deck-chart>`)
+  const rendered = renderDeckHtml(deck, { resourcesDir: 'resources', definitions })
+
+  assert.match(rendered.document, /class="deck-chart deck-chart-sankey"/)
+  assert.match(rendered.document, /class="deck-chart-sankey-svg"/)
+  assert.match(rendered.document, /deck-sankey-link/)
+  assert.match(rendered.document, /deck-sankey-node/)
+  assert.doesNotMatch(rendered.document, /<deck-chart/i)
+  assert.match(rendered.css, /section\.dark \.deck-chart-sankey/)
+
+  const out = path.join(tmpDir, 'sankey-chart.pptx')
+  await writePptx({ deck, outputPath: out, brand: definitions.brand, mode: 'editable' })
+  const archive = await JSZip.loadAsync(await readFile(out))
+  const mediaNames = Object.keys(archive.files).filter((name) => name.startsWith('ppt/media/') && name.endsWith('.svg'))
+  const svgTexts = await Promise.all(mediaNames.map((name) => archive.file(name).async('string')))
+  assert.ok(svgTexts.some((svgText) => /deck-chart-sankey-svg/.test(svgText)))
+})
+
+test('renders stacked bar deck charts in HTML and PPTX outputs', async () => {
+  await rm(tmpDir, { recursive: true, force: true })
+  await mkdir(tmpDir, { recursive: true })
+
+  const definitions = await loadDefinitions(new URL('../resources/definitions', import.meta.url))
+  const deck = parseDeckMarkdown(`# Quarterly mix
+
+<deck-chart
+  type="stacked-bar"
+  title="Quarterly volume mix"
+  series="New, Returning, Expansion"
+  labels="Q1, Q2, Q3"
+  values="20, 24, 30; 12, 15, 18; 4, 6, 9"
+></deck-chart>`)
+  const rendered = renderDeckHtml(deck, { resourcesDir: 'resources', definitions })
+
+  assert.match(rendered.document, /class="deck-chart deck-chart-stacked-bar"/)
+  assert.match(rendered.document, /class="deck-chart-stacked-row"/)
+  assert.match(rendered.document, /deck-chart-stacked-segment/)
+  assert.doesNotMatch(rendered.document, /<deck-chart/i)
+  assert.match(rendered.css, /section\.dark \.deck-chart-stacked-track/)
+
+  const out = path.join(tmpDir, 'stacked-chart.pptx')
+  await writePptx({ deck, outputPath: out, brand: definitions.brand, mode: 'editable' })
+  const archive = await JSZip.loadAsync(await readFile(out))
+  const chartNames = Object.keys(archive.files).filter((name) => name.startsWith('ppt/charts/chart'))
+  assert.ok(chartNames.length >= 1)
+  const chartXml = await archive.file(chartNames[0]).async('string')
+  assert.match(chartXml, /New/)
+  assert.match(chartXml, /Returning/)
+  assert.match(chartXml, /Expansion/)
+  assert.match(chartXml, /Q3/)
+})
+
+test('renders doughnut deck charts in HTML and PPTX outputs', async () => {
+  await rm(tmpDir, { recursive: true, force: true })
+  await mkdir(tmpDir, { recursive: true })
+
+  const definitions = await loadDefinitions(new URL('../resources/definitions', import.meta.url))
+  const deck = parseDeckMarkdown(`# Portfolio mix
+
+<deck-chart
+  type="doughnut"
+  title="Portfolio mix"
+  series="Cases"
+  labels="Digital, Branch, Contact centre"
+  values="52, 31, 17"
+></deck-chart>`)
+  const rendered = renderDeckHtml(deck, { resourcesDir: 'resources', definitions })
+
+  assert.match(rendered.document, /class="deck-chart deck-chart-doughnut"/)
+  assert.match(rendered.document, /class="deck-chart-doughnut-ring"/)
+  assert.match(rendered.document, /conic-gradient/)
+  assert.doesNotMatch(rendered.document, /<deck-chart/i)
+  assert.match(rendered.css, /section\.dark \.deck-chart-doughnut-ring::after/)
+
+  const out = path.join(tmpDir, 'doughnut-chart.pptx')
+  await writePptx({ deck, outputPath: out, brand: definitions.brand, mode: 'editable' })
+  const archive = await JSZip.loadAsync(await readFile(out))
+  const chartNames = Object.keys(archive.files).filter((name) => name.startsWith('ppt/charts/chart'))
+  assert.ok(chartNames.length >= 1)
+  const chartXml = await archive.file(chartNames[0]).async('string')
+  assert.match(chartXml, /doughnutChart/)
+  assert.match(chartXml, /Digital/)
+  assert.match(chartXml, /Contact centre/)
+})
+
+test('renders scatter deck charts in HTML and PPTX outputs', async () => {
+  await rm(tmpDir, { recursive: true, force: true })
+  await mkdir(tmpDir, { recursive: true })
+
+  const definitions = await loadDefinitions(new URL('../resources/definitions', import.meta.url))
+  const deck = parseDeckMarkdown(`# Impact effort
+
+<deck-chart
+  type="scatter"
+  title="Impact versus effort"
+  series="Initiatives"
+  x-axis="Effort"
+  y-axis="Impact"
+  points="2|8|Automate; 5|6|Consolidate; 8|3|Defer"
+></deck-chart>`)
+  const rendered = renderDeckHtml(deck, { resourcesDir: 'resources', definitions })
+
+  assert.match(rendered.document, /class="deck-chart deck-chart-scatter"/)
+  assert.match(rendered.document, /class="deck-chart-scatter-svg"/)
+  assert.match(rendered.document, /Automate/)
+  assert.doesNotMatch(rendered.document, /<deck-chart/i)
+  assert.match(rendered.css, /section\.dark \.deck-chart-scatter-grid/)
+
+  const out = path.join(tmpDir, 'scatter-chart.pptx')
+  await writePptx({ deck, outputPath: out, brand: definitions.brand, mode: 'editable' })
+  const archive = await JSZip.loadAsync(await readFile(out))
+  const chartNames = Object.keys(archive.files).filter((name) => name.startsWith('ppt/charts/chart'))
+  assert.ok(chartNames.length >= 1)
+  const chartXml = await archive.file(chartNames[0]).async('string')
+  assert.match(chartXml, /scatterChart/)
+  const slideXml = (
+    await Promise.all(
+      Object.keys(archive.files)
+        .filter((name) => /^ppt\/slides\/slide\d+\.xml$/.test(name))
+        .map((name) => archive.file(name).async('string')),
+    )
+  ).join('\n')
+  assert.match(slideXml, /Effort/)
+  assert.match(slideXml, /Impact/)
+})
+
+test('renders deck-signal-bars in HTML and PPTX outputs', async () => {
+  await rm(tmpDir, { recursive: true, force: true })
+  await mkdir(tmpDir, { recursive: true })
+
+  const definitions = await loadDefinitions(new URL('../resources/definitions', import.meta.url))
+  const deck = parseDeckMarkdown(`# Concentration
+
+<deck-signal-bars
+  metric="97%"
+  metric-label="of volume is concentrated in the two largest segments."
+  title="Volume split"
+  subtitle="Structured component replaces hand-authored HTML."
+  labels="Segment A, Segment B, Long tail"
+  values="65, 32, 3"
+  unit="%"
+></deck-signal-bars>`)
+  const rendered = renderDeckHtml(deck, { resourcesDir: 'resources', definitions })
+
+  assert.match(rendered.document, /class="deck-signal-bars/)
+  assert.match(rendered.document, /class="deck-signal-row"/)
+  assert.doesNotMatch(rendered.document, /<deck-signal-bars/i)
+  assert.match(rendered.css, /section\.light \.deck-signal-summary p/)
+
+  const out = path.join(tmpDir, 'signal-bars.pptx')
+  await writePptx({ deck, outputPath: out, brand: definitions.brand, mode: 'editable' })
+  const info = await stat(out)
+  assert.equal(info.isFile(), true)
+  assert.ok(info.size > 1000)
+})
+
+test('renders deck-signal-board in HTML and PPTX outputs', async () => {
+  await rm(tmpDir, { recursive: true, force: true })
+  await mkdir(tmpDir, { recursive: true })
+
+  const definitions = await loadDefinitions(new URL('../resources/definitions', import.meta.url))
+  const deck = parseDeckMarkdown(`# Executive signal
+
+<deck-signal-board
+  title="Executive signal"
+  body="The renderer output can carry dashboard, callout, and narrative reporting patterns."
+  tags="Revenue protection, Journey speed, Audit confidence"
+  chart-title="Signal strength"
+  labels="Speed, Control, Effort"
+  values="82, 74, 63"
+></deck-signal-board>`)
+  const rendered = renderDeckHtml(deck, { resourcesDir: 'resources', definitions })
+
+  assert.match(rendered.document, /class="deck-signal-board/)
+  assert.match(rendered.document, /class="deck-signal-board-tag"/)
+  assert.match(rendered.document, /Signal strength/)
+  assert.doesNotMatch(rendered.document, /<deck-signal-board/i)
+  assert.match(rendered.css, /deck-signal-board-panel/)
+  assert.match(rendered.css, /deck-signal-board-panel :is\(h2, marp-h2\)/)
+  assert.match(rendered.css, /deck-signal-fill-in/)
+  assert.match(
+    rendered.css,
+    /section\.light \.deck-signal-board-panel,[^{]+section\.light \.deck-signal-board-chart\{background:#FDFDFD;border-color:#DEDEDE;color:#444444\}/,
+  )
+  assert.match(
+    rendered.css,
+    /section\.dark \.deck-signal-board-panel,[^{]+section\.dark \.deck-signal-board-chart\{background:#[0-9A-F]{6};border-color:#[0-9A-F]{6};color:#[0-9A-F]{6}\}/,
+  )
+  assert.match(
+    rendered.css,
+    /section\.light \.deck-signal-board-panel p,[^{]+section\.light \.deck-signal-board \.deck-signal-label\{color:#444444\}/,
+  )
+
+  const out = path.join(tmpDir, 'signal-board.pptx')
+  await writePptx({ deck, outputPath: out, brand: definitions.brand, mode: 'editable' })
+  const info = await stat(out)
+  assert.equal(info.isFile(), true)
+  assert.ok(info.size > 1000)
+})
+
+test('renders deck-funnel in HTML and PPTX outputs', async () => {
+  await rm(tmpDir, { recursive: true, force: true })
+  await mkdir(tmpDir, { recursive: true })
+
+  const definitions = await loadDefinitions(new URL('../resources/definitions', import.meta.url))
+  const deck = parseDeckMarkdown(`# Conversion funnel
+
+<deck-funnel
+  title="Completion funnel"
+  labels="Invited, Started, Completed"
+  values="8420, 6568, 5136"
+></deck-funnel>`)
+  const rendered = renderDeckHtml(deck, { resourcesDir: 'resources', definitions })
+
+  assert.match(rendered.document, /class="deck-funnel/)
+  assert.match(rendered.document, /class="deck-funnel-svg"/)
+  assert.match(rendered.document, /class="deck-funnel-segment"/)
+  assert.doesNotMatch(rendered.document, /<deck-funnel/i)
+  assert.match(rendered.css, /section\.light \.deck-funnel/)
+
+  const out = path.join(tmpDir, 'funnel.pptx')
+  await writePptx({ deck, outputPath: out, brand: definitions.brand, mode: 'editable' })
+  const info = await stat(out)
+  assert.equal(info.isFile(), true)
+  assert.ok(info.size > 1000)
+})
+
+test('renders deck-metric-trend in HTML and PPTX outputs', async () => {
+  await rm(tmpDir, { recursive: true, force: true })
+  await mkdir(tmpDir, { recursive: true })
+
+  const definitions = await loadDefinitions(new URL('../resources/definitions', import.meta.url))
+  const deck = parseDeckMarkdown(`# Operating signal
+
+<deck-metric-trend
+  metric="92%"
+  metric-label="completed within SLA"
+  title="Weekly trend"
+  labels="W1, W2, W3, W4, W5"
+  values="70, 78, 76, 86, 92"
+  unit="%"
+></deck-metric-trend>`)
+  const rendered = renderDeckHtml(deck, { resourcesDir: 'resources', definitions })
+
+  assert.match(rendered.document, /class="deck-metric-trend/)
+  assert.match(rendered.document, /class="deck-metric-trend-line"/)
+  assert.match(rendered.document, />92%<\/text>/)
+  assert.doesNotMatch(rendered.document, /<deck-metric-trend/i)
+
+  const out = path.join(tmpDir, 'metric-trend.pptx')
+  await writePptx({ deck, outputPath: out, brand: definitions.brand, mode: 'editable' })
+  const info = await stat(out)
+  assert.equal(info.isFile(), true)
+  assert.ok(info.size > 1000)
+})
+
+test('renders deck-heatmap in HTML and PPTX outputs', async () => {
+  await rm(tmpDir, { recursive: true, force: true })
+  await mkdir(tmpDir, { recursive: true })
+
+  const definitions = await loadDefinitions(new URL('../resources/definitions', import.meta.url))
+  const deck = parseDeckMarkdown(`# Activity heatmap
+
+<deck-heatmap
+  title="Activity by hour"
+  x-labels="08, 09, 10"
+  y-labels="Mon, Tue"
+  values="42, 58, 76; 35, 61, 88"
+  unit=" cases"
+  caption="Darker cells represent higher activity."
+></deck-heatmap>`)
+  const rendered = renderDeckHtml(deck, { resourcesDir: 'resources', definitions })
+
+  assert.match(rendered.document, /class="deck-heatmap/)
+  assert.match(rendered.document, /--deck-heatmap-columns:3/)
+  assert.match(rendered.document, /title="Tue 10: 88 cases"/)
+  assert.doesNotMatch(rendered.document, /<deck-heatmap/i)
+
+  const out = path.join(tmpDir, 'heatmap.pptx')
+  await writePptx({ deck, outputPath: out, brand: definitions.brand, mode: 'editable' })
+  const info = await stat(out)
+  assert.equal(info.isFile(), true)
+  assert.ok(info.size > 1000)
+})
+
+test('renders deck-impact-radar in HTML and PPTX outputs', async () => {
+  await rm(tmpDir, { recursive: true, force: true })
+  await mkdir(tmpDir, { recursive: true })
+
+  const definitions = await loadDefinitions(new URL('../resources/definitions', import.meta.url))
+  const deck = parseDeckMarkdown(`# Operating profile
+
+<deck-impact-radar
+  title="Scenario operating model"
+  bar-title="Workstream impact"
+  radar-title="Operating balance"
+  labels="Speed, Control, Effort, Visibility"
+  values="84, 76, 68, 91"
+  radar-values="84, 76, 68, 91"
+  caption="Renderer-owned SVG in HTML and static SVG in PPTX."
+></deck-impact-radar>`)
+  const rendered = renderDeckHtml(deck, { resourcesDir: 'resources', definitions })
+
+  assert.match(rendered.document, /class="deck-impact-radar/)
+  assert.match(rendered.document, /class="deck-impact-radar-svg/)
+  assert.match(rendered.document, /deck-impact-radar-bar-fill/)
+  assert.match(rendered.document, /deck-impact-radar-shape-animated/)
+  assert.match(rendered.document, /Operating balance/)
+  assert.doesNotMatch(rendered.document, /<deck-impact-radar/i)
+  assert.match(rendered.css, /deck-impact-radar-fill-0/)
+
+  const out = path.join(tmpDir, 'impact-radar.pptx')
+  await writePptx({ deck, outputPath: out, brand: definitions.brand, mode: 'editable' })
+  const info = await stat(out)
+  assert.equal(info.isFile(), true)
+  assert.ok(info.size > 1000)
+})
+
+test('renders deck-treemap in HTML and PPTX outputs', async () => {
+  await rm(tmpDir, { recursive: true, force: true })
+  await mkdir(tmpDir, { recursive: true })
+
+  const definitions = await loadDefinitions(new URL('../resources/definitions', import.meta.url))
+  const deck = parseDeckMarkdown(`# Portfolio treemap
+
+<deck-treemap
+  title="Portfolio mix"
+  labels="J0107, J0106, J0101, J0116"
+  values="52208, 11119, 8648, 3751"
+  unit=" cases"
+  caption="Tile area is proportional to case volume."
+></deck-treemap>`)
+  const rendered = renderDeckHtml(deck, { resourcesDir: 'resources', definitions })
+
+  assert.match(rendered.document, /class="deck-treemap/)
+  assert.match(rendered.document, /class="deck-treemap-svg"/)
+  assert.match(rendered.document, />J0107<\/text>/)
+  assert.doesNotMatch(rendered.document, /<deck-treemap/i)
+
+  const out = path.join(tmpDir, 'treemap.pptx')
+  await writePptx({ deck, outputPath: out, brand: definitions.brand, mode: 'editable' })
+  const info = await stat(out)
+  assert.equal(info.isFile(), true)
+  assert.ok(info.size > 1000)
+})
+
+test('renders deck-journey-map in HTML and PPTX outputs', async () => {
+  await rm(tmpDir, { recursive: true, force: true })
+  await mkdir(tmpDir, { recursive: true })
+
+  const definitions = await loadDefinitions(new URL('../resources/definitions', import.meta.url))
+  const deck = parseDeckMarkdown(`# Customer journey
+
+<deck-journey-map>
+  <deck-journey-step label="01" title="Invite" body="Start the secure journey."></deck-journey-step>
+  <deck-journey-step label="02" title="Capture" body="Collect evidence and consent."></deck-journey-step>
+  <deck-journey-step label="03" title="Review" body="Check completeness."></deck-journey-step>
+</deck-journey-map>`)
+  const rendered = renderDeckHtml(deck, { resourcesDir: 'resources', definitions })
+
+  assert.match(rendered.document, /class="deck-journey-map/)
+  assert.match(rendered.document, /class="deck-journey-step/)
+  assert.doesNotMatch(rendered.document, /<deck-journey-map/i)
+
+  const out = path.join(tmpDir, 'journey-map.pptx')
+  await writePptx({ deck, outputPath: out, brand: definitions.brand, mode: 'editable' })
+  const info = await stat(out)
+  assert.equal(info.isFile(), true)
+  assert.ok(info.size > 1000)
+})
+
+test('renders deck-journey-path in HTML and PPTX outputs', async () => {
+  await rm(tmpDir, { recursive: true, force: true })
+  await mkdir(tmpDir, { recursive: true })
+
+  const definitions = await loadDefinitions(new URL('../resources/definitions', import.meta.url))
+  const deck = parseDeckMarkdown(`# Journey signal
+
+<deck-journey-path
+  metric="42%"
+  metric-label="of avoidable delay sits in two handoffs."
+  labels="Invite, Evidence, Approval, Complete"
+  notes="fast start, largest rework loop, decision queue, customer notified"
+  hotspots="Evidence, Approval"
+  callout-title="Recommended intervention"
+  callout-body="Automated reminders plus controlled evidence checks"
+></deck-journey-path>`)
+  const rendered = renderDeckHtml(deck, { resourcesDir: 'resources', definitions })
+
+  assert.match(rendered.document, /class="deck-journey-path/)
+  assert.match(rendered.document, /class="deck-journey-path-svg/)
+  assert.match(rendered.document, /journey-path-line/)
+  assert.match(rendered.document, /@keyframes journey-path-draw/)
+  assert.doesNotMatch(rendered.document, /<animate\b/i)
+  assert.doesNotMatch(rendered.document, /<deck-journey-path/i)
+  assert.match(rendered.css, /deck-journey-path-accent/)
+
+  const out = path.join(tmpDir, 'journey-path.pptx')
+  await writePptx({ deck, outputPath: out, brand: definitions.brand, mode: 'editable' })
+  const info = await stat(out)
+  assert.equal(info.isFile(), true)
+  assert.ok(info.size > 1000)
 })
 
 test('normalizes brand colour tokens before writing PPTX XML', async () => {
@@ -420,31 +1129,31 @@ test('spaces wrapped divider titles above subtitles in native PPTX', async () =>
   assert.doesNotMatch(titleShape, /<a:spcPts/)
 })
 
-test('renders multiline SVG visual components as live HTML SVG', async () => {
+test('renders renderer-owned SVG components as live HTML SVG', async () => {
   const source = `# Cover
 
 ---
 
-# Visual report
+# Journey signal
 
-<deck-visual title="Operating model">
-  <svg viewBox="0 0 200 100" role="img" aria-label="Simple metric">
-    <rect x="10" y="10" width="180" height="80" fill="#eef6fe"/>
-
-    <circle cx="100" cy="50" r="20" fill="#0f82f5"/>
-    <text x="30" y="60">84%</text>
-  </svg>
-</deck-visual>`
+<deck-journey-path
+  metric="42%"
+  metric-label="require attention"
+  labels="Invite, Evidence, Approval, Complete"
+  notes="fast start, largest rework loop, decision queue, customer notified"
+  hotspots="Evidence, Approval"
+></deck-journey-path>`
   const definitions = await loadDefinitions(new URL('../resources/definitions', import.meta.url))
   const deck = parseDeckMarkdown(source)
   const rendered = renderDeckHtml(deck, { resourcesDir: 'resources', definitions })
 
-  assert.match(rendered.document, /<circle cx="100"/)
-  assert.doesNotMatch(rendered.document, /&lt;circle/)
-  assert.doesNotMatch(rendered.document, /&lt;text/)
+  assert.match(rendered.document, /class="deck-journey-path-svg"/)
+  assert.match(rendered.document, /class="journey-path-line"/)
+  assert.match(rendered.document, /@keyframes journey-path-draw/)
+  assert.doesNotMatch(rendered.document, /<deck-journey-path/i)
 })
 
-test('renders raw SVG blocks with blank lines as valid HTML SVG', async () => {
+test('rejects raw SVG blocks in deck Markdown', async () => {
   const source = `# Cover
 
 ---
@@ -462,29 +1171,26 @@ test('renders raw SVG blocks with blank lines as valid HTML SVG', async () => {
   <rect x="10" y="10" width="80" height="40" fill="url(#g)"/>
   <text x="50" y="35" text-anchor="middle">Claude</text>
 </svg>`
-  const definitions = await loadDefinitions(new URL('../resources/definitions', import.meta.url))
-  const deck = parseDeckMarkdown(source)
-  const rendered = renderDeckHtml(deck, { resourcesDir: 'resources', definitions })
-
-  assert.match(rendered.document, /<svg viewBox="0 0 100 60"/)
-  assert.match(rendered.document, /<rect x="10"/)
-  assert.match(rendered.document, /<text x="50"/)
-  assert.doesNotMatch(rendered.document, /<p><rect/)
-  assert.doesNotMatch(rendered.document, /<br \/>[\s\S]*<text x="50"/)
+  assert.throws(
+    () => parseDeckMarkdown(source),
+    /Raw <svg> is not supported in deck Markdown.*ask the skill maker/,
+  )
 })
 
-test('HTML component chrome constrains visuals and swimlanes inside the slide', async () => {
+test('HTML component chrome constrains structured components and swimlanes inside the slide', async () => {
   const source = `# Cover
 
 ---
 
 # Architecture
 
-<deck-visual title="Oversized chart">
-  <svg viewBox="0 0 2000 600" role="img" aria-label="Oversized chart">
-    <rect width="2000" height="600" fill="#0f82f5"/>
-  </svg>
-</deck-visual>
+<deck-impact-radar
+  title="Scenario operating model"
+  bar-title="Workstream impact"
+  radar-title="Operating balance"
+  labels="Speed, Control, Effort, Visibility"
+  values="84, 76, 68, 91"
+></deck-impact-radar>
 
 <deck-swimlane>
   <deck-lane title="Initiate" color="blue">
@@ -503,9 +1209,10 @@ test('HTML component chrome constrains visuals and swimlanes inside the slide', 
 
   assert.match(rendered.document, /class="deck-swimlane deck-swimlane-3"/)
   assert.match(rendered.document, /class="deck-lane-steps deck-lane-steps-1"/)
+  assert.match(rendered.document, /class="deck-impact-radar/)
+  assert.match(rendered.document, /class="deck-impact-radar-svg/)
   assert.match(rendered.document, /<style data-deckbuilder-theme>[\s\S]*section\s*\{[\s\S]*position:\s*relative/)
   assert.match(rendered.document, /section img\s*\{[^}]*max-width:\s*100%/)
-  assert.match(rendered.document, /\.deck-visual-stage\s*\{[^}]*overflow:\s*hidden/)
   assert.match(rendered.document, /\.deck-swimlane\s*\{[^}]*max-height:/)
   assert.match(rendered.document, /\.deck-lane-steps\s*\{[^}]*grid-template-columns:\s*repeat\(auto-fit/)
   assert.match(rendered.document, /section > p > img:not\(\.deck-brand-logo\)/)
@@ -652,6 +1359,253 @@ Body copy
   assert.doesNotMatch(rendered.document, /resource:content-bg\.png/)
 })
 
+test('deck-slide surface metadata keeps branded background assets visible', async () => {
+  await rm(tmpDir, { recursive: true, force: true })
+  await mkdir(path.join(tmpDir, 'resources'), { recursive: true })
+
+  const tinyPng = Buffer.from(
+    'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAFgwJ/l3sqqwAAAABJRU5ErkJggg==',
+    'base64',
+  )
+  await writeFile(path.join(tmpDir, 'resources', 'dark-bg.png'), tinyPng)
+  await writeFile(path.join(tmpDir, 'resources', 'light-bg.png'), tinyPng)
+
+  const baseDefinitions = await loadDefinitions(
+    new URL('../resources/definitions', import.meta.url),
+  )
+  const definitions = {
+    ...baseDefinitions,
+    brand: {
+      ...baseDefinitions.brand,
+      assets: {
+        backgrounds: {
+          dark: 'resource:dark-bg.png',
+          light: 'resource:light-bg.png',
+        },
+      },
+    },
+  }
+  const deck = parseDeckMarkdown(`<deck-slide layout="content" surface="dark" />
+
+# Dark branded slide
+
+Body copy
+
+---
+
+<deck-slide surface="light" />
+
+# Light branded slide
+
+Body copy`)
+  const rendered = renderDeckHtml(deck, {
+    resourcesDir: path.join(tmpDir, 'resources'),
+    definitions,
+    inlineAssets: true,
+  })
+
+  assert.match(rendered.document, /<section[^>]*class="dark"/)
+  assert.match(rendered.document, /<section[^>]*class="light"/)
+  assert.match(rendered.css, /section\{background-image:url\("data:image\/png;base64,/)
+  assert.match(rendered.css, /section\.light\{background-image:url\("data:image\/png;base64,/)
+  assert.doesNotMatch(rendered.css, /section\.light\{background-color:#ffffff;background-image:none\}/)
+})
+
+test('structured component panels preserve branded background imagery', async () => {
+  await rm(tmpDir, { recursive: true, force: true })
+  await mkdir(path.join(tmpDir, 'resources'), { recursive: true })
+
+  const tinyPng = Buffer.from(
+    'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAFgwJ/l3sqqwAAAABJRU5ErkJggg==',
+    'base64',
+  )
+  await writeFile(path.join(tmpDir, 'resources', 'dark-bg.png'), tinyPng)
+  await writeFile(path.join(tmpDir, 'resources', 'light-bg.png'), tinyPng)
+
+  const baseDefinitions = await loadDefinitions(
+    new URL('../resources/definitions', import.meta.url),
+  )
+  const definitions = {
+    ...baseDefinitions,
+    brand: {
+      ...baseDefinitions.brand,
+      assets: {
+        backgrounds: {
+          dark: 'resource:dark-bg.png',
+          light: 'resource:light-bg.png',
+        },
+      },
+    },
+  }
+  const deck = parseDeckMarkdown(`<deck-slide surface="dark" />
+
+# Dark funnel
+
+<deck-funnel labels="Invited,Started" values="100,80"></deck-funnel>
+
+---
+
+<deck-slide surface="light" />
+
+# Light funnel
+
+<deck-funnel labels="Invited,Started" values="100,80"></deck-funnel>
+
+---
+
+<deck-slide surface="dark" />
+
+# Dark journey
+
+<deck-journey-map>
+  <deck-journey-step label="01" title="Invite" body="Start"></deck-journey-step>
+  <deck-journey-step label="02" title="Approve" body="Finish"></deck-journey-step>
+</deck-journey-map>
+
+---
+
+<deck-slide surface="light" />
+
+# Light journey
+
+<deck-journey-map>
+  <deck-journey-step label="01" title="Invite" body="Start"></deck-journey-step>
+  <deck-journey-step label="02" title="Approve" body="Finish"></deck-journey-step>
+</deck-journey-map>
+
+---
+
+<deck-slide surface="dark" />
+
+# Dark heatmap
+
+<deck-heatmap x-labels="08,09" y-labels="Mon,Tue" values="10,20;30,40"></deck-heatmap>
+
+---
+
+<deck-slide surface="light" />
+
+# Light heatmap
+
+<deck-heatmap x-labels="08,09" y-labels="Mon,Tue" values="10,20;30,40"></deck-heatmap>
+
+---
+
+<deck-slide surface="dark" />
+
+# Dark treemap
+
+<deck-treemap labels="A,B,C" values="60,25,15"></deck-treemap>
+
+---
+
+<deck-slide surface="light" />
+
+# Light treemap
+
+<deck-treemap labels="A,B,C" values="60,25,15"></deck-treemap>`)
+  const rendered = renderDeckHtml(deck, {
+    resourcesDir: path.join(tmpDir, 'resources'),
+    definitions,
+    inlineAssets: true,
+  })
+
+  assert.match(
+    rendered.document,
+    /section\.dark \.card-grid article,[\s\S]*section\.dark \.deck-funnel,[\s\S]*background: rgba\(29, 30, 41, 0\.86\);/,
+  )
+  assert.match(
+    rendered.document,
+    /section\.dark \.card-grid article,[\s\S]*section\.dark \.deck-journey-step,[\s\S]*background: rgba\(29, 30, 41, 0\.86\);/,
+  )
+  assert.match(
+    rendered.document,
+    /section\.dark \.card-grid article,[\s\S]*section\.dark \.deck-heatmap,[\s\S]*background: rgba\(29, 30, 41, 0\.86\);/,
+  )
+  assert.match(
+    rendered.document,
+    /section\.dark \.card-grid article,[\s\S]*section\.dark \.deck-treemap,[\s\S]*background: rgba\(29, 30, 41, 0\.86\);/,
+  )
+  assert.match(
+    rendered.document,
+    /section\.light \.card-grid article,[\s\S]*section\.light \.deck-funnel,[\s\S]*background: rgba\(253, 253, 253, 0\.92\);/,
+  )
+  assert.match(
+    rendered.document,
+    /section\.light \.card-grid article,[\s\S]*section\.light \.deck-journey-step,[\s\S]*background: rgba\(253, 253, 253, 0\.92\);/,
+  )
+  assert.match(
+    rendered.document,
+    /section\.light \.card-grid article,[\s\S]*section\.light \.deck-heatmap,[\s\S]*background: rgba\(253, 253, 253, 0\.92\);/,
+  )
+  assert.match(
+    rendered.document,
+    /section\.light \.card-grid article,[\s\S]*section\.light \.deck-treemap,[\s\S]*background: rgba\(253, 253, 253, 0\.92\);/,
+  )
+})
+
+test('HTML divider and close slides use full dark surfaces without brand backgrounds', async () => {
+  const definitions = await loadDefinitions(new URL('../resources/definitions', import.meta.url))
+  const deck = parseDeckMarkdown(`<deck-divider title="Section" subtitle="Transition"></deck-divider>
+
+---
+
+<deck-close title="Thanks" name="Jane Smith" role="VP Solutions"></deck-close>`)
+  const rendered = renderDeckHtml(deck, { resourcesDir: 'resources', definitions })
+
+  assert.match(
+    rendered.css,
+    /section\.cover,\s*[^,{]*section\.deck-divider-slide,\s*[^,{]*section\.deck-close-slide\{padding:92px 48px;background:#090909;color:#ffffff\}/,
+  )
+  assert.doesNotMatch(rendered.css, /\.deck-divider,\s*[^,{]*\.deck-close\{[^}]*background:#090909/)
+})
+
+test('brand background assets target divider and close slide surfaces', async () => {
+  await rm(tmpDir, { recursive: true, force: true })
+  await mkdir(path.join(tmpDir, 'resources'), { recursive: true })
+
+  const tinyPng = Buffer.from(
+    'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAFgwJ/l3sqqwAAAABJRU5ErkJggg==',
+    'base64',
+  )
+  await writeFile(path.join(tmpDir, 'resources', 'dark-bg.png'), tinyPng)
+
+  const baseDefinitions = await loadDefinitions(
+    new URL('../resources/definitions', import.meta.url),
+  )
+  const definitions = {
+    ...baseDefinitions,
+    brand: {
+      ...baseDefinitions.brand,
+      assets: {
+        backgrounds: {
+          cover: 'resource:dark-bg.png',
+        },
+      },
+    },
+  }
+  const deck = parseDeckMarkdown(`<deck-divider title="Section"></deck-divider>
+
+---
+
+<deck-close title="Thanks"></deck-close>`)
+  const rendered = renderDeckHtml(deck, {
+    resourcesDir: path.join(tmpDir, 'resources'),
+    definitions,
+    inlineAssets: true,
+  })
+
+  assert.match(
+    rendered.css,
+    /section\.deck-divider-slide,\s*[^,{]*section:has\(\.deck-divider\)\{background-image:url\("data:image\/png;base64,/,
+  )
+  assert.match(
+    rendered.css,
+    /section\.deck-close-slide,\s*[^,{]*section:has\(\.deck-close\)\{background-image:url\("data:image\/png;base64,/,
+  )
+  assert.doesNotMatch(rendered.css, /\.deck-close\{background-image:/)
+})
+
 test('applies brand logo assets to self-contained HTML slides', async () => {
   await rm(tmpDir, { recursive: true, force: true })
   await mkdir(path.join(tmpDir, 'resources'), { recursive: true })
@@ -748,7 +1702,7 @@ customerName: HSBC
 
 # Content
 
-<img class="deck-customer-logo" src="resource:logos/customer.svg" alt="HSBC">
+<deck-slide customer-logo="resource:logos/customer.svg" customer-name="HSBC" />
 
 Body copy`)
   const rendered = renderDeckHtml(deck, {
@@ -1084,13 +2038,13 @@ test('HTML light and dark surfaces emit fallback background colours', async () =
     },
   }
   const deck = parseDeckMarkdown(`<deck-exec-cards surface="dark" columns="2">
-  <deck-exec-card number="01" title="Dark surface" body="Readable dark content."></deck-exec-card>
+  <deck-exec-card label="01" title="Dark surface" body="Readable dark content."></deck-exec-card>
 </deck-exec-cards>
 
 ---
 
 <deck-exec-cards surface="light" columns="2">
-  <deck-exec-card number="01" title="Light surface" body="Readable light content."></deck-exec-card>
+  <deck-exec-card label="01" title="Light surface" body="Readable light content."></deck-exec-card>
 </deck-exec-cards>`)
   const rendered = renderDeckHtml(deck, { resourcesDir: 'resources', definitions })
 
@@ -1486,7 +2440,7 @@ test('writes executive layouts with independent light and dark surfaces in PPTX'
   assert.match(darkSlideXml, /FFFFFF/)
 })
 
-test('splits premium HTML slides from editable PPTX fallback slides', async () => {
+test('splits structured HTML slides from editable PPTX fallback slides', async () => {
   await rm(tmpDir, { recursive: true, force: true })
   await mkdir(tmpDir, { recursive: true })
 
@@ -1494,18 +2448,15 @@ test('splits premium HTML slides from editable PPTX fallback slides', async () =
 
 ---
 
-<!-- pptx: skip -->
+<deck-slide pptx-skip="true" />
 
-# Browser-only animation
+# HTML-only structured emphasis
 
-<div id="animated-demo"></div>
-<script>
-  window.deckbuilderDemoRan = true
-</script>
+<deck-signal-bars metric="72%" metric-label="HTML signal" title="HTML-only structured signal" labels="A,B" values="72,28"></deck-signal-bars>
 
 ---
 
-<!-- html: skip -->
+<deck-slide html-skip="true" />
 
 # Editable PowerPoint fallback
 
@@ -1514,7 +2465,7 @@ test('splits premium HTML slides from editable PPTX fallback slides', async () =
   const deck = parseDeckMarkdown(source)
   const rendered = renderDeckHtml(deck, { resourcesDir: 'resources', definitions })
 
-  assert.match(rendered.document, /window\.deckbuilderDemoRan = true/)
+  assert.match(rendered.document, /HTML-only structured signal/)
   assert.doesNotMatch(rendered.document, /Editable PowerPoint fallback/)
 
   const out = path.join(tmpDir, 'split-output.pptx')
