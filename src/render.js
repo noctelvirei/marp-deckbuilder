@@ -253,6 +253,22 @@ section.dark .deck-chart-scatter-axis {
   stroke: ${darkMuted};
 }
 
+section.dark .deck-chart-line-path,
+section.dark .deck-chart-area-path,
+section.dark .deck-metric-trend-line {
+  stroke: ${darkAccent};
+}
+
+section.dark .deck-chart-line-point,
+section.dark .deck-chart-area-point,
+section.dark .deck-metric-trend-dot {
+  fill: ${darkAccent};
+}
+
+section.dark .deck-chart-area-fill {
+  fill: ${cssRgba(darkAccent, 0.22)};
+}
+
 section.dark .deck-chart-waterfall {
   --deck-waterfall-grid: ${darkBorder};
   --deck-waterfall-axis: ${darkMuted};
@@ -412,6 +428,22 @@ section.light .deck-chart-line-axis,
 section.light .deck-chart-area-axis,
 section.light .deck-chart-scatter-axis {
   stroke: #9aa8bd;
+}
+
+section.light .deck-chart-line-path,
+section.light .deck-chart-area-path,
+section.light .deck-metric-trend-line {
+  stroke: ${lightAccent};
+}
+
+section.light .deck-chart-line-point,
+section.light .deck-chart-area-point,
+section.light .deck-metric-trend-dot {
+  fill: ${lightAccent};
+}
+
+section.light .deck-chart-area-fill {
+  fill: ${cssRgba(lightAccent, 0.22)};
 }
 
 section.light .deck-chart-waterfall {
@@ -707,6 +739,45 @@ section.dark .deck-heatmap-accent-yellow {
 section.light .deck-journey-path-accent-yellow,
 section.dark .deck-journey-path-accent-yellow {
   --deck-journey-path-accent: ${cssColor(brand, 'yellow', 'FBC546')};
+}
+
+section.light .deck-signal-bars,
+section.dark .deck-signal-bars,
+section.light .deck-signal-board,
+section.dark .deck-signal-board {
+  --deck-signal-accent: ${cssColor(brand, 'blue', '0F82F5')};
+}
+
+section.light .deck-signal-accent-lightBlue,
+section.dark .deck-signal-accent-lightBlue,
+section.light .deck-signal-accent-cyan,
+section.dark .deck-signal-accent-cyan {
+  --deck-signal-accent: ${cssColor(brand, 'lightBlue', '59D6FD')};
+}
+
+section.light .deck-signal-accent-purple,
+section.dark .deck-signal-accent-purple {
+  --deck-signal-accent: ${cssColor(brand, 'purple', '5143D5')};
+}
+
+section.light .deck-signal-accent-green,
+section.dark .deck-signal-accent-green {
+  --deck-signal-accent: ${cssColor(brand, 'green', '66CC8E')};
+}
+
+section.light .deck-signal-accent-orange,
+section.dark .deck-signal-accent-orange {
+  --deck-signal-accent: ${cssColor(brand, 'orange', 'F9935B')};
+}
+
+section.light .deck-signal-accent-red,
+section.dark .deck-signal-accent-red {
+  --deck-signal-accent: ${cssColor(brand, 'red', 'FC5161')};
+}
+
+section.light .deck-signal-accent-yellow,
+section.dark .deck-signal-accent-yellow {
+  --deck-signal-accent: ${cssColor(brand, 'yellow', 'FBC546')};
 }
 
 section.light .deck-signal-board-panel h2,

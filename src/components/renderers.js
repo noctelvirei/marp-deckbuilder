@@ -92,7 +92,7 @@ function renderLineChartHtml(chart) {
   const geometry = categoricalSeriesGeometry(chart)
   const markers = geometry.points
     .map((point) => `<g transform="translate(${point.x.toFixed(2)} ${point.y.toFixed(2)})">
-  <circle class="deck-chart-line-point" r="6"><title>${escapeHtml(point.label)}: ${escapeHtml(formatNumber(point.value))}</title></circle>
+  <circle class="deck-chart-line-point" r="6" fill="#0f82f5" stroke="#ffffff"><title>${escapeHtml(point.label)}: ${escapeHtml(formatNumber(point.value))}</title></circle>
   <text class="deck-chart-line-point-value" x="0" y="-13" text-anchor="middle">${escapeHtml(formatNumber(point.value))}</text>
 </g>`)
     .join('\n')
@@ -102,7 +102,7 @@ function renderLineChartHtml(chart) {
   <svg class="deck-chart-line-svg" viewBox="0 0 ${geometry.width} ${geometry.height}" role="img" aria-label="${escapeAttr(chart.title || 'Line chart')}">
     ${renderSeriesGrid(geometry, 'line')}
     ${renderSeriesAxes(geometry, 'line')}
-    <path class="deck-chart-line-path" d="${linePath(geometry.points)}"></path>
+    <path class="deck-chart-line-path" d="${linePath(geometry.points)}" fill="none" stroke="#0f82f5"></path>
     ${markers}
     ${renderSeriesXLabels(geometry, 'line')}
   </svg>
@@ -110,8 +110,11 @@ function renderLineChartHtml(chart) {
 }
 
 function renderAreaChartHtml(chart) {
-  const geometry = categoricalSeriesGeometry(chart, { includeZero: true })
-  const baseline = geometry.yFor(0)
+  const minValue = Math.min(...chart.values)
+  const maxValue = Math.max(...chart.values)
+  const includeZero = minValue <= 0 && maxValue >= 0
+  const geometry = categoricalSeriesGeometry(chart, { includeZero })
+  const baseline = geometry.yFor(includeZero ? 0 : geometry.minY)
   const areaPath = [
     `M ${geometry.points[0].x.toFixed(2)} ${baseline.toFixed(2)}`,
     ...geometry.points.map((point) => `L ${point.x.toFixed(2)} ${point.y.toFixed(2)}`),
@@ -120,7 +123,7 @@ function renderAreaChartHtml(chart) {
   ].join(' ')
   const markers = geometry.points
     .map((point) => `<g transform="translate(${point.x.toFixed(2)} ${point.y.toFixed(2)})">
-  <circle class="deck-chart-area-point" r="5"><title>${escapeHtml(point.label)}: ${escapeHtml(formatNumber(point.value))}</title></circle>
+  <circle class="deck-chart-area-point" r="5" fill="#0f82f5" stroke="#ffffff"><title>${escapeHtml(point.label)}: ${escapeHtml(formatNumber(point.value))}</title></circle>
   <text class="deck-chart-area-point-value" x="0" y="-12" text-anchor="middle">${escapeHtml(formatNumber(point.value))}</text>
 </g>`)
     .join('\n')
@@ -130,8 +133,8 @@ function renderAreaChartHtml(chart) {
   <svg class="deck-chart-area-svg" viewBox="0 0 ${geometry.width} ${geometry.height}" role="img" aria-label="${escapeAttr(chart.title || 'Area chart')}">
     ${renderSeriesGrid(geometry, 'area')}
     ${renderSeriesAxes(geometry, 'area')}
-    <path class="deck-chart-area-fill" d="${areaPath}"></path>
-    <path class="deck-chart-area-path" d="${linePath(geometry.points)}"></path>
+    <path class="deck-chart-area-fill" d="${areaPath}" fill="rgba(15, 130, 245, .22)"></path>
+    <path class="deck-chart-area-path" d="${linePath(geometry.points)}" fill="none" stroke="#0f82f5"></path>
     ${markers}
     ${renderSeriesXLabels(geometry, 'area')}
   </svg>
@@ -141,7 +144,7 @@ function renderAreaChartHtml(chart) {
 function categoricalSeriesGeometry(chart, options = {}) {
   const width = 760
   const height = 342
-  const margin = { top: 30, right: 28, bottom: 54, left: 64 }
+  const margin = { top: 30, right: 44, bottom: 54, left: 70 }
   const values = chart.values
   const minValue = Math.min(...values)
   const maxValue = Math.max(...values)
@@ -183,8 +186,15 @@ function renderSeriesAxes(geometry, prefix) {
 }
 
 function renderSeriesXLabels(geometry, prefix) {
+  const lastIndex = geometry.points.length - 1
   return geometry.points
-    .map((point) => `<text class="deck-chart-${prefix}-tick" x="${point.x.toFixed(2)}" y="${geometry.height - 24}" text-anchor="middle">${escapeHtml(point.label)}</text>`)
+    .map((point, index) => {
+      const isFirst = index === 0
+      const isLast = index === lastIndex
+      const anchor = isFirst ? 'start' : isLast ? 'end' : 'middle'
+      const x = point.x + (isFirst ? 2 : isLast ? -2 : 0)
+      return `<text class="deck-chart-${prefix}-tick" x="${x.toFixed(2)}" y="${geometry.height - 24}" text-anchor="${anchor}">${escapeHtml(point.label)}</text>`
+    })
     .join('\n')
 }
 
@@ -526,12 +536,14 @@ export function renderTreemapHtml(treemap) {
       const labelY = rect.y + 26
       const valueY = rect.y + Math.min(rect.h - 14, 50)
       const compact = rect.w < 92 || rect.h < 54
+      const fillIndex = index % chartPalette.length
+      const fallbackFill = chartPalette[fillIndex]
       const valueText = compact
         ? ''
-        : `<text class="deck-treemap-value" x="${rect.x + 12}" y="${valueY}">${escapeHtml(value)}</text>`
-      return `<g class="deck-treemap-cell deck-treemap-fill-${index % 6}" clip-path="url(#${id}-${index})">
-  <rect x="${rect.x}" y="${rect.y}" width="${rect.w}" height="${rect.h}" rx="6"></rect>
-  <text class="deck-treemap-label${compact ? ' deck-treemap-label-compact' : ''}" x="${rect.x + 12}" y="${labelY}">${escapeHtml(rect.label)}</text>
+        : `<text class="deck-treemap-value" x="${rect.x + 12}" y="${valueY}" fill="#ffffff">${escapeHtml(value)}</text>`
+      return `<g class="deck-treemap-cell deck-treemap-fill-${fillIndex}" clip-path="url(#${id}-${index})">
+  <rect x="${rect.x}" y="${rect.y}" width="${rect.w}" height="${rect.h}" rx="6" fill="${fallbackFill}" style="fill:var(--deck-treemap-fill-${fillIndex}, ${fallbackFill})"></rect>
+  <text class="deck-treemap-label${compact ? ' deck-treemap-label-compact' : ''}" x="${rect.x + 12}" y="${labelY}" fill="#ffffff">${escapeHtml(rect.label)}</text>
   ${valueText}
 </g>`
     })
@@ -597,14 +609,21 @@ function hashString(value) {
 function renderMetricTrendSvg(metricTrend) {
   const width = 520
   const height = 220
-  const pad = { left: 28, right: 28, top: 22, bottom: 42 }
+  const pad = { left: 36, right: 44, top: 22, bottom: 42 }
   const points = metricTrendPoints(metricTrend.values, width, height, pad)
   const pathPoints = points.map((point) => `${point.x},${point.y}`).join(' ')
+  const lastIndex = points.length - 1
   const labels = points
-    .map((point, index) => `<text x="${point.x}" y="204">${escapeHtml(metricTrend.labels[index])}</text>`)
+    .map((point, index) => {
+      const isFirst = index === 0
+      const isLast = index === lastIndex
+      const anchor = isFirst ? 'start' : isLast ? 'end' : 'middle'
+      const x = point.x + (isFirst ? 2 : isLast ? -2 : 0)
+      return `<text x="${x}" y="204" text-anchor="${anchor}">${escapeHtml(metricTrend.labels[index])}</text>`
+    })
     .join('')
   const dots = points
-    .map((point) => `<circle class="deck-metric-trend-dot" cx="${point.x}" cy="${point.y}" r="5"></circle>`)
+    .map((point) => `<circle class="deck-metric-trend-dot" cx="${point.x}" cy="${point.y}" r="5" fill="#0f82f5" stroke="#ffffff"></circle>`)
     .join('')
   const last = points.at(-1)
   const lastValue = metricTrend.values.at(-1) ?? 0
@@ -614,7 +633,7 @@ function renderMetricTrendSvg(metricTrend) {
 
   return `<svg class="deck-metric-trend-svg" viewBox="0 0 ${width} ${height}" role="img" aria-label="${escapeAttr(metricTrend.title || metricTrend.metricLabel)}">
       <line class="deck-metric-trend-axis" x1="${pad.left}" y1="${height - pad.bottom}" x2="${width - pad.right}" y2="${height - pad.bottom}"></line>
-      <polyline class="deck-metric-trend-line" points="${pathPoints}"></polyline>
+      <polyline class="deck-metric-trend-line" points="${pathPoints}" fill="none" stroke="#0f82f5"></polyline>
       ${dots}
       <g class="deck-metric-trend-labels">${labels}</g>
       ${valueTag}

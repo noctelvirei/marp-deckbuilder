@@ -1235,6 +1235,7 @@ li {
 }
 
 .deck-signal-bars {
+  --deck-signal-accent: #0f82f5;
   display: grid;
   grid-template-columns: .72fr 1.28fr;
   gap: 28px;
@@ -1254,7 +1255,7 @@ li {
 
 .deck-signal-summary strong {
   display: block;
-  color: #0f82f5;
+  color: var(--deck-signal-accent, #0f82f5);
   font-size: 72px;
   font-weight: 500;
   line-height: 1;
@@ -1313,7 +1314,7 @@ li {
 .deck-signal-fill {
   display: block;
   height: 100%;
-  background: #0f82f5;
+  background: var(--deck-signal-accent, #0f82f5);
 }
 
 .deck-signal-row strong {
@@ -1322,52 +1323,28 @@ li {
   font-weight: 500;
 }
 
-.deck-signal-accent-lightBlue .deck-signal-summary strong {
-  color: #59d6fd;
+.deck-signal-accent-lightBlue {
+  --deck-signal-accent: #59d6fd;
 }
 
-.deck-signal-accent-lightBlue .deck-signal-fill {
-  background: #59d6fd;
+.deck-signal-accent-purple {
+  --deck-signal-accent: #5143d5;
 }
 
-.deck-signal-accent-purple .deck-signal-summary strong {
-  color: #5143d5;
+.deck-signal-accent-green {
+  --deck-signal-accent: #66cc8e;
 }
 
-.deck-signal-accent-purple .deck-signal-fill {
-  background: #5143d5;
+.deck-signal-accent-orange {
+  --deck-signal-accent: #f9935b;
 }
 
-.deck-signal-accent-green .deck-signal-summary strong {
-  color: #66cc8e;
+.deck-signal-accent-red {
+  --deck-signal-accent: #fc5161;
 }
 
-.deck-signal-accent-green .deck-signal-fill {
-  background: #66cc8e;
-}
-
-.deck-signal-accent-orange .deck-signal-summary strong {
-  color: #f9935b;
-}
-
-.deck-signal-accent-orange .deck-signal-fill {
-  background: #f9935b;
-}
-
-.deck-signal-accent-red .deck-signal-summary strong {
-  color: #fc5161;
-}
-
-.deck-signal-accent-red .deck-signal-fill {
-  background: #fc5161;
-}
-
-.deck-signal-accent-yellow .deck-signal-summary strong {
-  color: #fbc546;
-}
-
-.deck-signal-accent-yellow .deck-signal-fill {
-  background: #fbc546;
+.deck-signal-accent-yellow {
+  --deck-signal-accent: #fbc546;
 }
 
 .deck-signal-board {

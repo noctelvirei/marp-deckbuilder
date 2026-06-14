@@ -27,7 +27,7 @@ import {
   resolveResourceFile,
   resolveSurfaceResourceFile,
   treemapRects
-} from "./chunk-HK76IMZ2.mjs";
+} from "./chunk-MG2GTSGR.mjs";
 import {
   __commonJS,
   __require,

@@ -2,26 +2,26 @@ import { escapeAttr, escapeHtml } from './utils.js'
 
 const PRESETS = {
   2: [
-    { x: 70, y: 292 },
+    { x: 70, y: 260 },
     { x: 610, y: 96 },
   ],
   3: [
-    { x: 58, y: 300 },
+    { x: 58, y: 264 },
     { x: 340, y: 136 },
-    { x: 626, y: 96 },
+    { x: 610, y: 96 },
   ],
   4: [
-    { x: 50, y: 300 },
+    { x: 50, y: 264 },
     { x: 260, y: 150 },
     { x: 470, y: 150 },
-    { x: 630, y: 95 },
+    { x: 610, y: 95 },
   ],
   5: [
-    { x: 50, y: 300 },
-    { x: 205, y: 210 },
-    { x: 340, y: 128 },
-    { x: 500, y: 170 },
-    { x: 630, y: 95 },
+    { x: 50, y: 264 },
+    { x: 205, y: 198 },
+    { x: 340, y: 122 },
+    { x: 490, y: 164 },
+    { x: 610, y: 95 },
   ],
 }
 
@@ -39,8 +39,9 @@ export function renderJourneyPathSvg(journeyPath, options = {}) {
       const point = points[index]
       const note = journeyPath.notes[index] || ''
       const isHotspot = hotspotSet.has(label.toLowerCase()) || hotspotSet.has(String(index + 1))
-      const labelY = point.y > 220 ? point.y + 52 : point.y - 48
-      const noteY = labelY + 20
+      const labelY = point.y > 220 ? point.y + 44 : point.y - 40
+      const noteY = labelY + 18
+      const edgeText = edgeTextPlacement(point.x)
       const hotspot = isHotspot
         ? `<g class="journey-path-hotspot-marker" transform="translate(${point.x} ${point.y})">
   <title>Attention hotspot</title>
@@ -51,8 +52,8 @@ export function renderJourneyPathSvg(journeyPath, options = {}) {
       return `<g>
   <circle class="journey-path-node" cx="${point.x}" cy="${point.y}" r="22"></circle>
   ${hotspot}
-  <text class="journey-path-label" x="${point.x}" y="${labelY}" text-anchor="middle">${escapeHtml(label)}</text>
-  ${note ? `<text class="journey-path-note" x="${point.x}" y="${noteY}" text-anchor="middle">${escapeHtml(note)}</text>` : ''}
+  <text class="journey-path-label" x="${edgeText.x}" y="${labelY}" text-anchor="${edgeText.anchor}">${escapeHtml(label)}</text>
+  ${note ? `<text class="journey-path-note" x="${edgeText.x}" y="${noteY}" text-anchor="${edgeText.anchor}">${escapeHtml(note)}</text>` : ''}
 </g>`
     })
     .join('\n')
@@ -68,7 +69,7 @@ export function renderJourneyPathSvg(journeyPath, options = {}) {
     }`
     : ''
 
-  return `<svg class="deck-journey-path-svg" viewBox="0 0 680 390" role="img" aria-label="${escapeAttr(journeyPath.title || 'Journey path')}">
+  return `<svg class="deck-journey-path-svg" viewBox="0 0 680 360" overflow="visible" role="img" aria-label="${escapeAttr(journeyPath.title || 'Journey path')}">
   <style>
     .journey-path-line { fill: none; stroke: ${color('accent')}; stroke-width: 10; stroke-linecap: round; stroke-linejoin: round; stroke-dasharray: 980;${lineAnimation} }
     .journey-path-node { fill: ${color('surface')}; stroke: ${color('accent')}; stroke-width: 5; }
@@ -84,6 +85,12 @@ export function renderJourneyPathSvg(journeyPath, options = {}) {
   ${nodes}
   ${callout}
 </svg>`
+}
+
+function edgeTextPlacement(x) {
+  if (x < 90) return { x: 24, anchor: 'start' }
+  if (x > 590) return { x: 656, anchor: 'end' }
+  return { x, anchor: 'middle' }
 }
 
 function renderCallout(journeyPath) {

@@ -426,8 +426,8 @@ function renderFunnelSvg(funnel, options = {}) {
   const mode = options.mode === "dark" ? "dark" : "light";
   const colors = {
     ...DEFAULT_COLORS3[mode],
-    accent: options.accentColor || DEFAULT_COLORS3[mode].accent,
-    onAccent: options.onAccentColor || DEFAULT_COLORS3[mode].onAccent
+    accent: cssColor(options.accentColor, DEFAULT_COLORS3[mode].accent),
+    onAccent: cssColor(options.onAccentColor, DEFAULT_COLORS3[mode].onAccent)
   };
   const color = (name) => useVariables ? `var(--deck-funnel-${name}, ${colors[name]})` : colors[name];
   const stages = funnelStages(funnel);
@@ -490,6 +490,12 @@ function funnelStages(funnel) {
 }
 function round3(value) {
   return Math.round(value * 10) / 10;
+}
+function cssColor(value, fallback) {
+  const raw = String(value || fallback || "").trim();
+  if (/^#[0-9a-f]{6}$/i.test(raw)) return raw;
+  if (/^[0-9a-f]{6}$/i.test(raw)) return `#${raw}`;
+  return fallback;
 }
 
 // src/components/histogram.js
@@ -743,26 +749,26 @@ function round5(value) {
 // src/components/journey-path.js
 var PRESETS = {
   2: [
-    { x: 70, y: 292 },
+    { x: 70, y: 260 },
     { x: 610, y: 96 }
   ],
   3: [
-    { x: 58, y: 300 },
+    { x: 58, y: 264 },
     { x: 340, y: 136 },
-    { x: 626, y: 96 }
+    { x: 610, y: 96 }
   ],
   4: [
-    { x: 50, y: 300 },
+    { x: 50, y: 264 },
     { x: 260, y: 150 },
     { x: 470, y: 150 },
-    { x: 630, y: 95 }
+    { x: 610, y: 95 }
   ],
   5: [
-    { x: 50, y: 300 },
-    { x: 205, y: 210 },
-    { x: 340, y: 128 },
-    { x: 500, y: 170 },
-    { x: 630, y: 95 }
+    { x: 50, y: 264 },
+    { x: 205, y: 198 },
+    { x: 340, y: 122 },
+    { x: 490, y: 164 },
+    { x: 610, y: 95 }
   ]
 };
 function renderJourneyPathSvg(journeyPath, options = {}) {
@@ -778,8 +784,9 @@ function renderJourneyPathSvg(journeyPath, options = {}) {
     const point = points[index];
     const note = journeyPath.notes[index] || "";
     const isHotspot = hotspotSet.has(label.toLowerCase()) || hotspotSet.has(String(index + 1));
-    const labelY = point.y > 220 ? point.y + 52 : point.y - 48;
-    const noteY = labelY + 20;
+    const labelY = point.y > 220 ? point.y + 44 : point.y - 40;
+    const noteY = labelY + 18;
+    const edgeText = edgeTextPlacement(point.x);
     const hotspot = isHotspot ? `<g class="journey-path-hotspot-marker" transform="translate(${point.x} ${point.y})">
   <title>Attention hotspot</title>
   <circle r="8"></circle>
@@ -788,8 +795,8 @@ function renderJourneyPathSvg(journeyPath, options = {}) {
     return `<g>
   <circle class="journey-path-node" cx="${point.x}" cy="${point.y}" r="22"></circle>
   ${hotspot}
-  <text class="journey-path-label" x="${point.x}" y="${labelY}" text-anchor="middle">${escapeHtml(label)}</text>
-  ${note ? `<text class="journey-path-note" x="${point.x}" y="${noteY}" text-anchor="middle">${escapeHtml(note)}</text>` : ""}
+  <text class="journey-path-label" x="${edgeText.x}" y="${labelY}" text-anchor="${edgeText.anchor}">${escapeHtml(label)}</text>
+  ${note ? `<text class="journey-path-note" x="${edgeText.x}" y="${noteY}" text-anchor="${edgeText.anchor}">${escapeHtml(note)}</text>` : ""}
 </g>`;
   }).join("\n");
   const callout = renderCallout(journeyPath);
@@ -799,7 +806,7 @@ function renderJourneyPathSvg(journeyPath, options = {}) {
     @media (prefers-reduced-motion: reduce) {
       .journey-path-line { animation: none; stroke-dashoffset: 0; }
     }` : "";
-  return `<svg class="deck-journey-path-svg" viewBox="0 0 680 390" role="img" aria-label="${escapeAttr(journeyPath.title || "Journey path")}">
+  return `<svg class="deck-journey-path-svg" viewBox="0 0 680 360" overflow="visible" role="img" aria-label="${escapeAttr(journeyPath.title || "Journey path")}">
   <style>
     .journey-path-line { fill: none; stroke: ${color("accent")}; stroke-width: 10; stroke-linecap: round; stroke-linejoin: round; stroke-dasharray: 980;${lineAnimation} }
     .journey-path-node { fill: ${color("surface")}; stroke: ${color("accent")}; stroke-width: 5; }
@@ -815,6 +822,11 @@ function renderJourneyPathSvg(journeyPath, options = {}) {
   ${nodes}
   ${callout}
 </svg>`;
+}
+function edgeTextPlacement(x) {
+  if (x < 90) return { x: 24, anchor: "start" };
+  if (x > 590) return { x: 656, anchor: "end" };
+  return { x, anchor: "middle" };
 }
 function renderCallout(journeyPath) {
   if (!journeyPath.calloutTitle) return "";

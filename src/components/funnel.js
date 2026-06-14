@@ -26,8 +26,8 @@ export function renderFunnelSvg(funnel, options = {}) {
   const mode = options.mode === 'dark' ? 'dark' : 'light'
   const colors = {
     ...DEFAULT_COLORS[mode],
-    accent: options.accentColor || DEFAULT_COLORS[mode].accent,
-    onAccent: options.onAccentColor || DEFAULT_COLORS[mode].onAccent,
+    accent: cssColor(options.accentColor, DEFAULT_COLORS[mode].accent),
+    onAccent: cssColor(options.onAccentColor, DEFAULT_COLORS[mode].onAccent),
   }
   const color = (name) => useVariables ? `var(--deck-funnel-${name}, ${colors[name]})` : colors[name]
   const stages = funnelStages(funnel)
@@ -99,4 +99,11 @@ function funnelStages(funnel) {
 
 function round(value) {
   return Math.round(value * 10) / 10
+}
+
+function cssColor(value, fallback) {
+  const raw = String(value || fallback || '').trim()
+  if (/^#[0-9a-f]{6}$/i.test(raw)) return raw
+  if (/^[0-9a-f]{6}$/i.test(raw)) return `#${raw}`
+  return fallback
 }

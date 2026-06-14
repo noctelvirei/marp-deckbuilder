@@ -245,6 +245,9 @@ test('renders line deck charts in HTML and PPTX outputs', async () => {
   assert.match(rendered.document, /class="deck-chart deck-chart-line"/)
   assert.match(rendered.document, /class="deck-chart-line-svg"/)
   assert.match(rendered.document, /class="deck-chart-line-path"/)
+  assert.match(rendered.document, /class="deck-chart-line-path"[^>]*fill="none"[^>]*stroke="#0f82f5"/)
+  assert.match(rendered.document, /class="deck-chart-line-point"[^>]*fill="#0f82f5"[^>]*stroke="#ffffff"/)
+  assert.match(rendered.document, /text-anchor="end">W4<\/text>/)
   assert.doesNotMatch(rendered.document, /<deck-chart/i)
   assert.match(rendered.css, /section\.dark \.deck-chart-line-grid/)
 
@@ -278,6 +281,9 @@ test('renders area deck charts in HTML and PPTX outputs', async () => {
   assert.match(rendered.document, /class="deck-chart-area-svg"/)
   assert.match(rendered.document, /class="deck-chart-area-fill"/)
   assert.match(rendered.document, /class="deck-chart-area-path"/)
+  assert.match(rendered.document, /class="deck-chart-area-fill"[^>]*fill="rgba\(15, 130, 245, \.22\)"/)
+  assert.match(rendered.document, /class="deck-chart-area-path"[^>]*fill="none"[^>]*stroke="#0f82f5"/)
+  assert.match(rendered.document, /text-anchor="end">Apr<\/text>/)
   assert.doesNotMatch(rendered.document, /<deck-chart/i)
   assert.match(rendered.css, /section\.dark \.deck-chart-area-grid/)
 
@@ -290,6 +296,25 @@ test('renders area deck charts in HTML and PPTX outputs', async () => {
   assert.match(chartXml, /areaChart/)
   assert.match(chartXml, /Users/)
   assert.match(chartXml, /Apr/)
+})
+
+test('scales positive area charts around the data range in HTML', async () => {
+  const definitions = await loadDefinitions(new URL('../resources/definitions', import.meta.url))
+  const deck = parseDeckMarkdown(`# Sessions
+
+<deck-chart
+  type="area"
+  title="Cumulative digital sessions"
+  series="Sessions"
+  points="Jan:21400, Feb:20100, Mar:22300, Apr:23100, May:24800, Jun:26720"
+></deck-chart>`)
+  const rendered = renderDeckHtml(deck, { resourcesDir: 'resources', definitions })
+  const ticks = [...rendered.document.matchAll(/class="deck-chart-area-tick"[^>]*>([^<]+)<\/text>/g)]
+    .map((match) => match[1])
+
+  assert.equal(ticks.includes('0'), false)
+  assert.ok(ticks.some((tick) => tick.startsWith('19,')))
+  assert.match(rendered.document, /text-anchor="end">Jun<\/text>/)
 })
 
 test('renders waterfall deck charts in HTML and PPTX outputs', async () => {
@@ -640,6 +665,8 @@ test('renders deck-signal-bars in HTML and PPTX outputs', async () => {
   assert.match(rendered.document, /class="deck-signal-bars/)
   assert.match(rendered.document, /class="deck-signal-row"/)
   assert.doesNotMatch(rendered.document, /<deck-signal-bars/i)
+  assert.match(rendered.css, /--deck-signal-accent: #0f82f5/)
+  assert.match(rendered.css, /section\.light \.deck-signal-bars/)
   assert.match(rendered.css, /section\.light \.deck-signal-summary p/)
 
   const out = path.join(tmpDir, 'signal-bars.pptx')
@@ -718,6 +745,17 @@ test('renders deck-funnel in HTML and PPTX outputs', async () => {
   const info = await stat(out)
   assert.equal(info.isFile(), true)
   assert.ok(info.size > 1000)
+
+  const archive = await JSZip.loadAsync(await readFile(out))
+  const svgNames = Object.keys(archive.files).filter((name) => name.startsWith('ppt/media/') && name.endsWith('.svg'))
+  const svgTexts = await Promise.all(svgNames.map((name) => archive.file(name).async('string')))
+  const funnelSvg = svgTexts.find((svgText) => /deck-funnel-svg/.test(svgText))
+  assert.ok(funnelSvg)
+  assert.doesNotMatch(funnelSvg, /var\(--deck-funnel/)
+  assert.match(funnelSvg, /fill:\s*#0f82f5/i)
+  assert.match(funnelSvg, /deck-funnel-stage-label/)
+  assert.match(funnelSvg, />Invited<\/text>/)
+  assert.match(funnelSvg, /fill:\s*#ffffff/i)
 })
 
 test('renders deck-metric-trend in HTML and PPTX outputs', async () => {
@@ -739,6 +777,9 @@ test('renders deck-metric-trend in HTML and PPTX outputs', async () => {
 
   assert.match(rendered.document, /class="deck-metric-trend/)
   assert.match(rendered.document, /class="deck-metric-trend-line"/)
+  assert.match(rendered.document, /class="deck-metric-trend-line"[^>]*fill="none"[^>]*stroke="#0f82f5"/)
+  assert.match(rendered.document, /class="deck-metric-trend-dot"[^>]*fill="#0f82f5"[^>]*stroke="#ffffff"/)
+  assert.match(rendered.document, /text-anchor="end">W5<\/text>/)
   assert.match(rendered.document, />92%<\/text>/)
   assert.doesNotMatch(rendered.document, /<deck-metric-trend/i)
 
@@ -829,7 +870,8 @@ test('renders deck-treemap in HTML and PPTX outputs', async () => {
 
   assert.match(rendered.document, /class="deck-treemap/)
   assert.match(rendered.document, /class="deck-treemap-svg"/)
-  assert.match(rendered.document, />Journey A<\/text>/)
+  assert.match(rendered.document, /style="fill:var\(--deck-treemap-fill-0, #0f82f5\)"/)
+  assert.match(rendered.document, /fill="#ffffff">Journey A<\/text>/)
   assert.doesNotMatch(rendered.document, /<deck-treemap/i)
 
   const out = path.join(tmpDir, 'treemap.pptx')
@@ -884,8 +926,11 @@ test('renders deck-journey-path in HTML and PPTX outputs', async () => {
 
   assert.match(rendered.document, /class="deck-journey-path/)
   assert.match(rendered.document, /class="deck-journey-path-svg/)
+  assert.match(rendered.document, /viewBox="0 0 680 360" overflow="visible"/)
   assert.match(rendered.document, /journey-path-line/)
   assert.match(rendered.document, /@keyframes journey-path-draw/)
+  assert.match(rendered.document, /x="24" y="308" text-anchor="start">Invite<\/text>/)
+  assert.match(rendered.document, /x="656" y="55" text-anchor="end">Complete<\/text>/)
   assert.doesNotMatch(rendered.document, /<animate\b/i)
   assert.doesNotMatch(rendered.document, /<deck-journey-path/i)
   assert.match(rendered.css, /deck-journey-path-accent/)
