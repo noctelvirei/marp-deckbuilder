@@ -2,6 +2,11 @@ import { Marp } from '@marp-team/marp-core'
 import { Element } from '@marp-team/marpit'
 import { pathToFileURL } from 'node:url'
 
+import {
+  htmlAnimationClassNames,
+  presentationAnimationCss,
+  presentationAnimationScript,
+} from './animations/html.js'
 import { hasSlideBackgroundAsset, slideBackgroundAsset } from './brand.js'
 import { buildMarpMarkdown } from './markdown.js'
 import {
@@ -40,6 +45,7 @@ export function renderDeckHtml(deck, options = {}) {
       brandBackgroundCss(definitions.brand),
       brandSurfaceCss(definitions.brand),
       brandLogoCss(definitions.brand),
+      presentationAnimationCss(htmlDeck.slides),
     ]
       .filter(Boolean)
       .join('\n'),
@@ -66,6 +72,7 @@ export function renderDeckHtml(deck, options = {}) {
       comments,
       bespokeCss: definitions.bespokeCss,
       bespokeJs: definitions.bespokeJs,
+      deckbuilderJs: presentationAnimationScript(htmlDeck.slides),
       title: deck.frontmatter.title || 'Deck',
     }),
     assets: assetMap
@@ -884,9 +891,9 @@ function applyHtmlBranding(slide, brand = {}, resourcesDir = 'resources') {
 }
 
 function applyHtmlSlideClass(slide) {
-  const className = htmlClassForSlide(slide)
-  if (!className || /<!--\s*_class\s*:/i.test(slide.source)) return slide.source
-  return `<!-- _class: ${className} -->\n${slide.source}`
+  const classNames = htmlClassNamesForSlide(slide)
+  if (!classNames.length) return slide.source
+  return mergeHtmlClassDirective(slide.source, classNames)
 }
 
 function insertLogoHtml(source, logo) {
@@ -1002,8 +1009,28 @@ function htmlClassForLayout(layout) {
   }
 }
 
-function htmlClassForSlide(slide) {
-  return htmlClassForLayout(slide.layout) || slide.surface || ''
+function htmlClassNamesForSlide(slide) {
+  return [
+    htmlClassForLayout(slide.layout) || slide.surface || '',
+    ...htmlAnimationClassNames(slide),
+  ].filter(Boolean)
+}
+
+function mergeHtmlClassDirective(source, classNames) {
+  const uniqueClasses = (classes) => [...new Set(
+    classes
+      .join(' ')
+      .split(/\s+/)
+      .map((className) => className.trim())
+      .filter(Boolean),
+  )]
+  const existingDirective = /<!--\s*_class\s*:\s*([\s\S]*?)\s*-->/i
+  const match = String(source || '').match(existingDirective)
+  if (match) {
+    const merged = uniqueClasses([match[1], ...classNames]).join(' ')
+    return source.replace(existingDirective, `<!-- _class: ${merged} -->`)
+  }
+  return `<!-- _class: ${uniqueClasses(classNames).join(' ')} -->\n${source}`
 }
 
 function customerLogoBackplateEnabled(brand = {}) {
@@ -1029,6 +1056,7 @@ export function htmlDocument({
   comments = [],
   bespokeCss = '',
   bespokeJs = '',
+  deckbuilderJs = '',
   title = 'Deck',
 }) {
   return `<!doctype html>
@@ -1050,6 +1078,7 @@ ${bespokeOsc()}
 ${html}
 ${renderNotes(comments)}
 <script>${bespokeJs}</script>
+<script>${deckbuilderJs}</script>
 </body>
 </html>
 `

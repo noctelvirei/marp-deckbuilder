@@ -1,3 +1,4 @@
+import { animationAttributes } from '../animations/registry.js'
 import { cleanText, splitCsv } from './utils.js'
 
 export function parseChart(chart) {
@@ -172,6 +173,7 @@ export function parseSlideMeta(slide) {
     'pptx-skip',
     'html-only',
     'pptx-only',
+    ...animationAttributes,
   ]) {
     const value = slide.attr(attr)
     if (value !== undefined) directives[attr] = value

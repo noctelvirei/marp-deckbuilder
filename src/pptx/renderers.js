@@ -10,6 +10,11 @@ import { renderSankeySvg } from '../components/sankey.js'
 import { treemapRects } from '../components/treemap.js'
 import { renderWaterfallSvg } from '../components/waterfall.js'
 import {
+  markPptxAnimationTargetsEnd,
+  markPptxAnimationTargetsStart,
+  markPptxChromeComplete,
+} from './animation-targets.js'
+import {
   addCell,
   addRect,
   addResourceImage,
@@ -33,6 +38,11 @@ export function addCover(slide, model, frontmatter, brand, resourcesDir) {
 
 export function addContent(slide, model, brand, resourcesDir) {
   const header = addBaseHeader(slide, model, brand, resourcesDir)
+  if (isClickStaggerAnimation(model)) {
+    addClickStaggerContent(slide, model, brand, header)
+    return
+  }
+
   const body = contentBody(model)
   if (body) {
     const paragraphBox = boxAfterHeader(brand.layouts.body.paragraph, header.contentTop, 44)
@@ -41,6 +51,46 @@ export function addContent(slide, model, brand, resourcesDir) {
       fit: 'shrink',
     })
   }
+  addTakeaway(slide, model, brand)
+}
+
+function addClickStaggerContent(slide, model, brand, header) {
+  const entries = contentBodyEntries(model)
+  if (!entries.length) {
+    addTakeaway(slide, model, brand)
+    return
+  }
+
+  const bodyBox = surfaceBox(
+    brand,
+    model,
+    boxAfterHeader(brand.layouts.body.paragraph, header.contentTop, 44),
+    'body',
+  )
+  const fontSize = bodyBox.size || 18
+  const lineHeight = Math.ceil(fontSize * 1.35)
+  const bottom = bodyBox.y + bodyBox.h
+  let y = bodyBox.y
+
+  markPptxAnimationTargetsStart(slide)
+  for (const entry of entries) {
+    const lines = estimateWrappedLines(entry.text, { ...bodyBox, size: fontSize })
+    const h = Math.max(lineHeight, Math.min(bottom - y, lines * lineHeight))
+    if (h <= 0) break
+    addTextBox(slide, brand, entry.text, {
+      ...bodyBox,
+      y,
+      h,
+      margin: 0,
+      fit: 'shrink',
+    }, {
+      breakLine: entry.type !== 'bullet',
+    })
+    y += h + (entry.type === 'bullet' ? 7 : 12)
+    if (y >= bottom) break
+  }
+  markPptxAnimationTargetsEnd(slide)
+
   addTakeaway(slide, model, brand)
 }
 
@@ -53,6 +103,23 @@ function contentBody(model) {
   }
   return parts.filter(Boolean).join('\n\n')
 }
+
+function contentBodyEntries(model) {
+  const entries = []
+  if (model.subtitle) entries.push({ type: 'paragraph', text: model.subtitle })
+  for (const paragraph of model.paragraphs || []) {
+    entries.push({ type: 'paragraph', text: paragraph })
+  }
+  for (const bullet of model.bullets || []) {
+    entries.push({ type: 'bullet', text: `• ${bullet}` })
+  }
+  return entries.filter((entry) => entry.text)
+}
+
+function isClickStaggerAnimation(model) {
+  return model.animation?.trigger === 'on-click' && model.animation.sequence === 'stagger'
+}
+
 
 export function addDivider(slide, model, brand, resourcesDir) {
   const layout = brand.layouts.divider
@@ -1945,6 +2012,8 @@ function addSlideChrome(slide, brand, resourcesDir, kind, fallbackColor, model =
       { fit: 'contain' },
     )
   }
+
+  markPptxChromeComplete(slide)
 }
 
 function avoidBoxOverlap(box, reservedBox, gap = 12) {
