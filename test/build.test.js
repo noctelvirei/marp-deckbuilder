@@ -2274,7 +2274,7 @@ test('HTML exec layouts reserve space above takeaway bars', async () => {
 <deck-exec-metrics surface="dark" section-title="Target returns" takeaway="Conservative assumptions.">
   <deck-exec-metric value="10pts" label="Completion lift target"></deck-exec-metric>
   <deck-exec-metric value="6,800" label="Additional completions per quarter"></deck-exec-metric>
-  <deck-exec-panel value="GBP4M" title="Annual revenue" body="Based on current session volume."></deck-exec-panel>
+  <deck-exec-panel value="£4M" title="Annual revenue" body="Based on £147 average revenue."></deck-exec-panel>
   <deck-exec-panel value="8 weeks" title="Deployment" body="Configuration, integration, UAT, and pilot."></deck-exec-panel>
 </deck-exec-metrics>`)
   const rendered = renderDeckHtml(deck, { resourcesDir: 'resources', definitions })
@@ -2282,11 +2282,16 @@ test('HTML exec layouts reserve space above takeaway bars', async () => {
   assert.match(rendered.document, /deck-exec-rows deck-exec-surface-dark has-takeaway/)
   assert.match(rendered.document, /deck-exec-timeline deck-exec-surface-dark deck-exec-timeline-5 has-takeaway" style="--deck-exec-timeline-count:5"/)
   assert.match(rendered.document, /deck-exec-metrics deck-exec-surface-dark has-takeaway/)
+  assert.match(rendered.document, /£4M/)
+  assert.match(rendered.document, /£147/)
   assert.match(rendered.css, /\.deck-exec-rows\.has-takeaway \.deck-exec-row-stack\s*\{[^}]*height:\s*calc\(100% - 91px\)/)
   assert.match(rendered.css, /\.deck-exec-timeline-items\s*\{[^}]*repeat\(var\(--deck-exec-timeline-count, 3\), minmax\(0, 1fr\)\)/)
   assert.match(rendered.css, /\.deck-exec-timeline-5 \.deck-exec-timeline-line\s*\{[^}]*top:\s*111px/)
   assert.match(rendered.css, /\.deck-exec-timeline-5 \.deck-exec-timeline-item p\s*\{[^}]*font-size:\s*15px!important/)
-  assert.match(rendered.css, /\.deck-exec-metrics\.has-takeaway \.deck-exec-panel\s*\{[^}]*min-height:\s*142px/)
+  assert.match(rendered.css, /\.deck-exec-metrics\.has-takeaway\s*\{[^}]*padding-bottom:\s*91px/)
+  assert.match(rendered.css, /\.deck-exec-metrics\.has-takeaway \.deck-exec-panel-grid\s*\{[^}]*max-height:\s*none/)
+  assert.match(rendered.css, /\.deck-exec-metrics\.has-takeaway \.deck-exec-panel\s*\{[^}]*height:\s*100%/)
+  assert.match(rendered.css, /\.deck-exec-panel\s*\{[^}]*grid-template-columns:\s*170px minmax\(0, 1fr\)/)
 })
 
 test('HTML exec rows keep row copy and side panel readable', async () => {
