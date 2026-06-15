@@ -47,6 +47,7 @@ import {
   renderSignalBarsHtml,
   renderSignalBoardHtml,
   renderSwimlaneHtml,
+  renderTakeawayHeroHtml,
   renderTreemapHtml,
 } from './components/renderers.js'
 import { cleanText, escapeHtml } from './components/utils.js'
@@ -457,8 +458,10 @@ function compileClose(root, element, components) {
 function compileTakeaway(root, element, components) {
   const takeaway = root(element)
   const text = cleanText(takeaway.attr('text') || takeaway.text())
-  components.push({ type: 'takeaway', text })
-  takeaway.replaceWith(`<div class="takeaway">${escapeHtml(text)}</div>`)
+  const slideMeta = components.find((component) => component.type === 'slide')
+  const model = { type: 'takeaway', text, eyebrow: slideMeta?.directives?.eyebrow || '' }
+  components.push(model)
+  takeaway.replaceWith(renderTakeawayHeroHtml(model))
 }
 
 function renderStatGridHtml(stats) {

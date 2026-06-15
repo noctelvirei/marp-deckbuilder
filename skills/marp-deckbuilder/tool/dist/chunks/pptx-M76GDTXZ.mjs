@@ -15450,6 +15450,34 @@ function addContent(slide, model, brand, resourcesDir) {
   }
   addTakeaway(slide, model, brand);
 }
+function addTakeawayHero(slide, model, brand, resourcesDir) {
+  addSlideChrome(slide, brand, resourcesDir, "content", isLightSurface(model) ? "white" : "dark", model);
+  const text = model.takeawayHero?.text || model.takeaway || model.title;
+  if (model.eyebrow) {
+    addTextBox(slide, brand, model.eyebrow.toUpperCase(), surfaceBox(brand, model, {
+      x: 120,
+      y: 158,
+      w: 720,
+      h: 20,
+      font: "medium",
+      size: 10,
+      color: "blue",
+      align: "center"
+    }, "accent"), { margin: 0 });
+  }
+  addLargeTextBox(slide, brand, text, surfaceBox(brand, model, {
+    x: 112,
+    y: 194,
+    w: 736,
+    h: 184,
+    font: "light",
+    size: 38,
+    color: isLightSurface(model) ? "dark" : "white",
+    align: "center",
+    margin: 0,
+    fit: "shrink"
+  }, "heading"));
+}
 function addClickStaggerContent(slide, model, brand, header) {
   const entries = contentBodyEntries(model);
   if (!entries.length) {
@@ -17578,6 +17606,8 @@ function addNativeSlide(pptx, slide, model, frontmatter, brand, resourcesDir) {
       return addExecMetrics(slide, model, brand, resourcesDir);
     case "close":
       return addClose(slide, model, frontmatter, brand, resourcesDir);
+    case "takeaway":
+      return addTakeawayHero(slide, model, brand, resourcesDir);
     default:
       return addContent(slide, model, brand, resourcesDir);
   }

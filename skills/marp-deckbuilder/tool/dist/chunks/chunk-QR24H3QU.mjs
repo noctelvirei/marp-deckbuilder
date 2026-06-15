@@ -48251,6 +48251,13 @@ function renderCloseHtml(close) {
   ${close.name ? `<p><strong>${escapeHtml(close.name)}</strong>${close.role ? `<br><span>${escapeHtml(close.role)}</span>` : ""}</p>` : ""}
 </div>`;
 }
+function renderTakeawayHeroHtml(takeaway) {
+  return `<div class="deck-takeaway-hero">
+  ${takeaway.eyebrow ? `<p class="eyebrow">${escapeHtml(takeaway.eyebrow)}</p>` : ""}
+  <h1>${escapeHtml(takeaway.text)}</h1>
+</div>
+<div class="takeaway">${escapeHtml(takeaway.text)}</div>`;
+}
 function renderExecTitleHtml(execTitle) {
   return `<div class="deck-exec deck-exec-title ${surfaceClass(execTitle)} deck-exec-accent-${escapeAttr(execTitle.accent)}">
   ${execTitle.eyebrow ? `<p class="deck-exec-eyebrow">${escapeHtml(execTitle.eyebrow)}</p>` : ""}
@@ -48260,25 +48267,18 @@ function renderExecTitleHtml(execTitle) {
 }
 function renderExecRowsHtml(execRows) {
   const takeawayClass = execRows.takeaway ? " has-takeaway" : "";
-  const side = execRows.side ? `<aside class="deck-exec-side deck-exec-accent-${escapeAttr(execRows.side.accent)}">
-    ${execRows.side.title ? `<h3>${escapeHtml(execRows.side.title)}</h3>` : ""}
-    ${execRows.side.value ? `<strong>${escapeHtml(execRows.side.value)}</strong>` : ""}
-    ${execRows.side.body ? `<p>${escapeHtml(execRows.side.body)}</p>` : ""}
-  </aside>` : "";
+  const side = execRows.side ? `<aside class="deck-exec-side deck-exec-accent-${escapeAttr(execRows.side.accent)}">${[
+    execRows.side.title ? `<h3>${escapeHtml(execRows.side.title)}</h3>` : "",
+    execRows.side.value ? `<strong>${escapeHtml(execRows.side.value)}</strong>` : "",
+    execRows.side.body ? `<p>${escapeHtml(execRows.side.body)}</p>` : ""
+  ].filter(Boolean).join("")}</aside>` : "";
   return `<div class="deck-exec deck-exec-rows ${surfaceClass(execRows)}${side ? " has-side" : ""}${takeawayClass}">
-  <div class="deck-exec-row-stack">${execRows.rows.map(
-    (row) => `<article class="deck-exec-row deck-exec-accent-${escapeAttr(row.accent)}">
-    <div class="deck-exec-row-label">
-      <strong>${escapeHtml(row.label)}</strong>
-      ${row.kicker ? `<span>${escapeHtml(row.kicker)}</span>` : ""}
-    </div>
-    <div class="deck-exec-row-copy">
-      <h3>${escapeHtml(row.title)}</h3>
-      ${row.body ? `<p>${escapeHtml(row.body)}</p>` : ""}
-    </div>
-    ${row.note ? `<em>${escapeHtml(row.note)}</em>` : ""}
-  </article>`
-  ).join("\n")}</div>
+  <div class="deck-exec-row-stack">${execRows.rows.map((row) => {
+    const label = `<div class="deck-exec-row-label"><strong>${escapeHtml(row.label)}</strong>${row.kicker ? `<span>${escapeHtml(row.kicker)}</span>` : ""}</div>`;
+    const copy = `<div class="deck-exec-row-copy"><h3>${escapeHtml(row.title)}</h3>${row.body ? `<p>${escapeHtml(row.body)}</p>` : ""}</div>`;
+    const note = row.note ? `<em>${escapeHtml(row.note)}</em>` : "";
+    return `<article class="deck-exec-row deck-exec-accent-${escapeAttr(row.accent)}">${label}${copy}${note}</article>`;
+  }).join("\n")}</div>
   ${side}
   ${renderExecTakeawayHtml(execRows.takeaway, execRows.takeawayAccent)}
 </div>`;
@@ -48705,8 +48705,10 @@ function compileClose(root2, element, components) {
 function compileTakeaway(root2, element, components) {
   const takeaway = root2(element);
   const text3 = cleanText(takeaway.attr("text") || takeaway.text());
-  components.push({ type: "takeaway", text: text3 });
-  takeaway.replaceWith(`<div class="takeaway">${escapeHtml(text3)}</div>`);
+  const slideMeta = components.find((component) => component.type === "slide");
+  const model = { type: "takeaway", text: text3, eyebrow: slideMeta?.directives?.eyebrow || "" };
+  components.push(model);
+  takeaway.replaceWith(renderTakeawayHeroHtml(model));
 }
 function renderStatGridHtml(stats) {
   return `<div class="stat-grid">${stats.map(
@@ -49684,6 +49686,7 @@ function parseSlide(source, index2, originalSource = source, components = [], fr
     treemap: firstComponent(components, "treemap"),
     journeyMap: firstComponent(components, "journey-map"),
     journeyPath: firstComponent(components, "journey-path"),
+    takeawayHero: layout === "takeaway" ? componentTakeaway : void 0,
     comparison: firstComponent(components, "comparison"),
     swimlane: firstComponent(components, "swimlane"),
     proof,
@@ -49724,6 +49727,7 @@ function inferLayout(source, index2) {
   if (/<figure[^>]+class=["'][^"']*deck-treemap/i.test(source)) return "treemap";
   if (/<div[^>]+class=["'][^"']*deck-journey-map/i.test(source)) return "journey-map";
   if (/<div[^>]+class=["'][^"']*deck-journey-path/i.test(source)) return "journey-path";
+  if (/<div[^>]+class=["'][^"']*deck-takeaway-hero/i.test(source)) return "takeaway";
   if (/<table[^>]+class=["'][^"']*deck-comparison/i.test(source)) return "comparison";
   if (/<div[^>]+class=["'][^"']*deck-swimlane/i.test(source)) return "swimlane";
   if (/<div[^>]+class=["'][^"']*deck-proof/i.test(source)) return "proof";
@@ -49761,6 +49765,7 @@ function inferComponentLayout(components) {
     ["treemap", "treemap"],
     ["journey-map", "journey-map"],
     ["journey-path", "journey-path"],
+    ["takeaway", "takeaway"],
     ["chart", "chart"],
     ["card-grid", "cards"],
     ["stat-grid", "three-stat"]

@@ -7,7 +7,7 @@ const __dirname = __deckbuilderDirname(__filename);
 import {
   buildMarpMarkdown,
   getAnimation
-} from "./chunk-PL2O5SDA.mjs";
+} from "./chunk-QR24H3QU.mjs";
 import {
   require_node
 } from "./chunk-MGQWBMZO.mjs";
@@ -137324,13 +137324,17 @@ function htmlClassForLayout(layout) {
       return "deck-divider-slide";
     case "close":
       return "deck-close-slide";
+    case "takeaway":
+      return "deck-takeaway-slide";
     default:
       return "";
   }
 }
 function htmlClassNamesForSlide(slide) {
+  const layoutClass = htmlClassForLayout(slide.layout);
   return [
-    htmlClassForLayout(slide.layout) || slide.surface || "",
+    layoutClass || slide.surface || "",
+    slide.layout === "takeaway" ? slide.surface || "" : "",
     ...htmlAnimationClassNames(slide)
   ].filter(Boolean);
 }

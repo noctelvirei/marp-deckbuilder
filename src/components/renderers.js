@@ -745,6 +745,14 @@ export function renderCloseHtml(close) {
 </div>`
 }
 
+export function renderTakeawayHeroHtml(takeaway) {
+  return `<div class="deck-takeaway-hero">
+  ${takeaway.eyebrow ? `<p class="eyebrow">${escapeHtml(takeaway.eyebrow)}</p>` : ''}
+  <h1>${escapeHtml(takeaway.text)}</h1>
+</div>
+<div class="takeaway">${escapeHtml(takeaway.text)}</div>`
+}
+
 export function renderExecTitleHtml(execTitle) {
   return `<div class="deck-exec deck-exec-title ${surfaceClass(execTitle)} deck-exec-accent-${escapeAttr(execTitle.accent)}">
   ${execTitle.eyebrow ? `<p class="deck-exec-eyebrow">${escapeHtml(execTitle.eyebrow)}</p>` : ''}
@@ -756,28 +764,21 @@ export function renderExecTitleHtml(execTitle) {
 export function renderExecRowsHtml(execRows) {
   const takeawayClass = execRows.takeaway ? ' has-takeaway' : ''
   const side = execRows.side
-    ? `<aside class="deck-exec-side deck-exec-accent-${escapeAttr(execRows.side.accent)}">
-    ${execRows.side.title ? `<h3>${escapeHtml(execRows.side.title)}</h3>` : ''}
-    ${execRows.side.value ? `<strong>${escapeHtml(execRows.side.value)}</strong>` : ''}
-    ${execRows.side.body ? `<p>${escapeHtml(execRows.side.body)}</p>` : ''}
-  </aside>`
+    ? `<aside class="deck-exec-side deck-exec-accent-${escapeAttr(execRows.side.accent)}">${[
+      execRows.side.title ? `<h3>${escapeHtml(execRows.side.title)}</h3>` : '',
+      execRows.side.value ? `<strong>${escapeHtml(execRows.side.value)}</strong>` : '',
+      execRows.side.body ? `<p>${escapeHtml(execRows.side.body)}</p>` : '',
+    ].filter(Boolean).join('')}</aside>`
     : ''
 
   return `<div class="deck-exec deck-exec-rows ${surfaceClass(execRows)}${side ? ' has-side' : ''}${takeawayClass}">
   <div class="deck-exec-row-stack">${execRows.rows
-    .map(
-      (row) => `<article class="deck-exec-row deck-exec-accent-${escapeAttr(row.accent)}">
-    <div class="deck-exec-row-label">
-      <strong>${escapeHtml(row.label)}</strong>
-      ${row.kicker ? `<span>${escapeHtml(row.kicker)}</span>` : ''}
-    </div>
-    <div class="deck-exec-row-copy">
-      <h3>${escapeHtml(row.title)}</h3>
-      ${row.body ? `<p>${escapeHtml(row.body)}</p>` : ''}
-    </div>
-    ${row.note ? `<em>${escapeHtml(row.note)}</em>` : ''}
-  </article>`,
-    )
+    .map((row) => {
+      const label = `<div class="deck-exec-row-label"><strong>${escapeHtml(row.label)}</strong>${row.kicker ? `<span>${escapeHtml(row.kicker)}</span>` : ''}</div>`
+      const copy = `<div class="deck-exec-row-copy"><h3>${escapeHtml(row.title)}</h3>${row.body ? `<p>${escapeHtml(row.body)}</p>` : ''}</div>`
+      const note = row.note ? `<em>${escapeHtml(row.note)}</em>` : ''
+      return `<article class="deck-exec-row deck-exec-accent-${escapeAttr(row.accent)}">${label}${copy}${note}</article>`
+    })
     .join('\n')}</div>
   ${side}
   ${renderExecTakeawayHtml(execRows.takeaway, execRows.takeawayAccent)}

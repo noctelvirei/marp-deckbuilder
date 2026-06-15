@@ -27,6 +27,7 @@ import {
   addSignalBars,
   addSignalBoard,
   addSwimlane,
+  addTakeawayHero,
   addThreeStat,
   addTreemap,
 } from './pptx/renderers.js'
@@ -141,6 +142,8 @@ function addNativeSlide(pptx, slide, model, frontmatter, brand, resourcesDir) {
       return addExecMetrics(slide, model, brand, resourcesDir)
     case 'close':
       return addClose(slide, model, frontmatter, brand, resourcesDir)
+    case 'takeaway':
+      return addTakeawayHero(slide, model, brand, resourcesDir)
     default:
       return addContent(slide, model, brand, resourcesDir)
   }

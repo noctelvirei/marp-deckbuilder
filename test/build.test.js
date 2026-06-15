@@ -1305,7 +1305,7 @@ test('HTML component chrome constrains structured components and swimlanes insid
   assert.match(rendered.document, /\.deck-lane-steps\s*\{[^}]*grid-template-columns:\s*repeat\(auto-fit/)
   assert.match(rendered.document, /\.deck-lane-steps article\s*\{[^}]*min-height:\s*48px/)
   assert.match(rendered.document, /section > p > img:not\(\.deck-brand-logo\)/)
-  assert.match(rendered.document, /-webkit-line-clamp:\s*2/)
+  assert.match(rendered.document, /-webkit-line-clamp:\s*3/)
 })
 
 test('HTML swimlane keeps multi-step lane card content visible', async () => {
@@ -1331,9 +1331,12 @@ test('HTML swimlane keeps multi-step lane card content visible', async () => {
 
   assert.match(rendered.document, /Platform configuration/)
   assert.match(rendered.document, /Week 8/)
+  assert.match(rendered.document, /Journey mapping and brand setup\./)
   assert.match(rendered.document, /Full rollout and hypercare/)
-  assert.match(rendered.css, /\.deck-swimlane-3\s*\{[^}]*grid-auto-rows:\s*minmax\(116px, 1fr\)/)
-  assert.match(rendered.css, /\.deck-swimlane-3 \.deck-lane-steps article\s*\{[^}]*min-height:\s*44px/)
+  assert.match(rendered.css, /\.deck-swimlane\s*\{[^}]*max-height:\s*calc\(100% - 96px\)/)
+  assert.match(rendered.css, /\.deck-swimlane-3\s*\{[^}]*grid-auto-rows:\s*minmax\(108px, 1fr\)/)
+  assert.match(rendered.css, /\.deck-swimlane-3 \.deck-lane-steps article\s*\{[^}]*min-height:\s*58px/)
+  assert.match(rendered.css, /\.deck-swimlane-3 \.deck-lane-steps p\s*\{[^}]*-webkit-line-clamp:\s*3/)
 })
 
 test('resolves resource URLs inside brand theme CSS', async () => {
@@ -2205,6 +2208,45 @@ test('HTML exec layouts reserve space above takeaway bars', async () => {
   assert.match(rendered.css, /\.deck-exec-rows\.has-takeaway \.deck-exec-row-stack\s*\{[^}]*height:\s*calc\(100% - 91px\)/)
   assert.match(rendered.css, /\.deck-exec-timeline-items\s*\{[^}]*repeat\(var\(--deck-exec-timeline-count, 3\), minmax\(0, 1fr\)\)/)
   assert.match(rendered.css, /\.deck-exec-metrics\.has-takeaway \.deck-exec-panel\s*\{[^}]*min-height:\s*142px/)
+})
+
+test('HTML exec rows keep row copy and side panel readable', async () => {
+  const definitions = await loadDefinitions(new URL('../resources/definitions', import.meta.url))
+  const deck = parseDeckMarkdown(`<deck-exec-rows
+  surface="dark"
+  side-title="Why now"
+  side-body="Three signals make Q3 2026 the optimal intervention window."
+  takeaway="Focus the next build on conversion leakage."
+>
+  <deck-exec-row label="01" title="Mobile leads entry" body="A 10pt lift creates thousands of additional completions per quarter."></deck-exec-row>
+  <deck-exec-row label="02" title="Identity drop-off" body="Customers stall when capture paths are rigid and support queues are already constrained."></deck-exec-row>
+  <deck-exec-row label="03" title="Lift recovers revenue" body="Deploying before peak demand protects the strongest conversion window."></deck-exec-row>
+</deck-exec-rows>`)
+  const rendered = renderDeckHtml(deck, { resourcesDir: 'resources', definitions })
+
+  assert.match(rendered.document, /additional completions per quarter\./)
+  assert.match(rendered.document, /Three signals make Q3 2026 the optimal intervention window\./)
+  assert.doesNotMatch(rendered.html, /<pre><code>[\s\S]*deck-exec-row-copy/)
+  assert.match(rendered.css, /\.deck-exec-rows\.has-side\s*\{[^}]*grid-template-columns:\s*minmax\(0, 1fr\) minmax\(224px, 260px\)/)
+  assert.match(rendered.css, /\.deck-exec-row\s*\{[^}]*grid-template-columns:\s*112px minmax\(0, 1fr\)/)
+  assert.match(rendered.css, /\.deck-exec-side :is\(h3, marp-h3\)\s*\{[^}]*white-space:\s*nowrap/)
+})
+
+test('HTML standalone deck-takeaway renders a hero statement', async () => {
+  const definitions = await loadDefinitions(new URL('../resources/definitions', import.meta.url))
+  const deck = parseDeckMarkdown(`<deck-slide surface="dark" eyebrow="Decision" />
+
+<deck-takeaway text="Focus the next build on conversion leakage before the Q3 peak." />`)
+  const rendered = renderDeckHtml(deck, { resourcesDir: 'resources', definitions })
+
+  assert.equal(deck.slides[0].layout, 'takeaway')
+  assert.equal(deck.slides[0].takeawayHero.text, 'Focus the next build on conversion leakage before the Q3 peak.')
+  assert.match(rendered.document, /class="deck-takeaway-slide dark"/)
+  assert.match(rendered.document, /<div class="deck-takeaway-hero">/)
+  assert.match(rendered.document, /<p class="eyebrow">Decision<\/p>/)
+  assert.match(rendered.document, /<h1>Focus the next build on conversion leakage before the Q3 peak\.<\/h1>/)
+  assert.match(rendered.css, /section\.deck-takeaway-slide \.takeaway\s*\{[^}]*display:\s*none/)
+  assert.match(rendered.css, /section\.deck-takeaway-slide \.deck-takeaway-hero\s*\{[^}]*display:\s*flex/)
 })
 
 test('PPTX light content slides use light fills and both logo slots', async () => {

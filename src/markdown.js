@@ -110,6 +110,7 @@ export function parseSlide(source, index, originalSource = source, components = 
     treemap: firstComponent(components, 'treemap'),
     journeyMap: firstComponent(components, 'journey-map'),
     journeyPath: firstComponent(components, 'journey-path'),
+    takeawayHero: layout === 'takeaway' ? componentTakeaway : undefined,
     comparison: firstComponent(components, 'comparison'),
     swimlane: firstComponent(components, 'swimlane'),
     proof,
@@ -152,6 +153,7 @@ function inferLayout(source, index) {
   if (/<figure[^>]+class=["'][^"']*deck-treemap/i.test(source)) return 'treemap'
   if (/<div[^>]+class=["'][^"']*deck-journey-map/i.test(source)) return 'journey-map'
   if (/<div[^>]+class=["'][^"']*deck-journey-path/i.test(source)) return 'journey-path'
+  if (/<div[^>]+class=["'][^"']*deck-takeaway-hero/i.test(source)) return 'takeaway'
   if (/<table[^>]+class=["'][^"']*deck-comparison/i.test(source)) return 'comparison'
   if (/<div[^>]+class=["'][^"']*deck-swimlane/i.test(source)) return 'swimlane'
   if (/<div[^>]+class=["'][^"']*deck-proof/i.test(source)) return 'proof'
@@ -190,6 +192,7 @@ function inferComponentLayout(components) {
     ['treemap', 'treemap'],
     ['journey-map', 'journey-map'],
     ['journey-path', 'journey-path'],
+    ['takeaway', 'takeaway'],
     ['chart', 'chart'],
     ['card-grid', 'cards'],
     ['stat-grid', 'three-stat'],
