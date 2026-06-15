@@ -283,14 +283,28 @@ li {
 
 .deck-chart-grouped-bar-row {
   display: grid;
-  grid-template-columns: 96px 1fr 58px;
+  grid-template-columns: 96px minmax(0, 1fr) 86px;
   gap: 12px;
   align-items: center;
+  min-width: 0;
 }
 
 .deck-chart-series-label {
   color: #555555;
   font-size: 12px;
+}
+
+.deck-chart-grouped-bar-row strong {
+  min-width: 0;
+  color: #090909;
+  font-size: 14px !important;
+  font-variant-numeric: tabular-nums;
+  font-weight: 500;
+  line-height: 1 !important;
+  overflow-wrap: normal;
+  text-align: right;
+  white-space: nowrap;
+  word-break: keep-all;
 }
 
 .deck-chart-series-0 .deck-chart-fill,
@@ -2303,6 +2317,13 @@ section.deck-takeaway-slide.light {
   gap: 24px;
 }
 
+.deck-exec-metrics.has-takeaway {
+  display: grid;
+  grid-template-rows: auto auto minmax(0, 1fr);
+  min-height: 0;
+  padding-bottom: 91px;
+}
+
 .deck-exec-metric {
   min-height: 120px;
   padding: 24px 30px;
@@ -2358,11 +2379,16 @@ section.deck-takeaway-slide.light {
 
 .deck-exec-metrics.has-takeaway .deck-exec-panel-grid {
   gap: 24px;
-  max-height: calc(100% - 228px);
-  overflow: hidden;
+  min-height: 0;
+  max-height: none;
+  overflow: visible;
 }
 
 .deck-exec-panel {
+  display: grid;
+  grid-template-columns: 170px minmax(0, 1fr);
+  column-gap: 20px;
+  align-content: start;
   min-height: 174px;
   padding: 32px 36px;
   border-left: 7px solid #4fa8e8;
@@ -2370,25 +2396,29 @@ section.deck-takeaway-slide.light {
 }
 
 .deck-exec-metrics.has-takeaway .deck-exec-panel {
-  min-height: 142px;
+  min-height: 0;
+  height: 100%;
   padding: 24px 30px;
+  overflow: hidden;
 }
 
 .deck-exec-panel strong {
   display: block;
-  float: left;
-  width: 170px;
+  grid-column: 1;
+  grid-row: 1 / span 2;
+  min-width: 0;
   color: #4fa8e8;
   font-size: 58px;
   line-height: .95;
 }
 
 .deck-exec-metrics.has-takeaway .deck-exec-panel strong {
-  width: 148px;
   font-size: 48px;
 }
 
 .deck-exec-panel h3 {
+  grid-column: 2;
+  min-width: 0;
   color: #ffffff;
   font-size: 29px;
   font-weight: 700;
@@ -2400,6 +2430,8 @@ section.deck-takeaway-slide.light {
 }
 
 .deck-exec-panel p {
+  grid-column: 2;
+  min-width: 0;
   margin-top: 18px;
   color: #8a95a8;
   font-size: 22px;
@@ -2414,7 +2446,7 @@ section.deck-takeaway-slide.light {
 
 .deck-exec-panel em {
   display: block;
-  clear: both;
+  grid-column: 1 / -1;
   margin-top: 34px;
   color: #ffffff;
   font-size: 18px;
