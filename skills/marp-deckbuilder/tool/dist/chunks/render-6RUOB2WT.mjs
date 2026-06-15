@@ -12,7 +12,7 @@ import {
   renderDeckHtml,
   resolveResourceUrls,
   shouldSkipHtml
-} from "./chunk-VJPCM5MK.mjs";
+} from "./chunk-LVY5AOL7.mjs";
 import "./chunk-QR24H3QU.mjs";
 import "./chunk-MGQWBMZO.mjs";
 import "./chunk-RQ4ZKSEQ.mjs";

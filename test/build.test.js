@@ -1680,6 +1680,39 @@ test('HTML divider and close slides use full dark surfaces without brand backgro
   assert.doesNotMatch(rendered.css, /\.deck-divider,\s*[^,{]*\.deck-close\{[^}]*background:#090909/)
 })
 
+test('HTML dark image slide headings inline brand blue over Marp presenter defaults', async () => {
+  const baseDefinitions = await loadDefinitions(new URL('../resources/definitions', import.meta.url))
+  const definitions = {
+    ...baseDefinitions,
+    brand: {
+      ...baseDefinitions.brand,
+      colors: {
+        ...baseDefinitions.brand.colors,
+        blue: '2468AC',
+      },
+    },
+  }
+  const deck = parseDeckMarkdown(`# Cover title
+
+---
+
+<deck-divider title="Divider title" subtitle="Transition"></deck-divider>
+
+---
+
+<deck-close title="Close title"></deck-close>
+
+---
+
+# Content title`)
+  const rendered = renderDeckHtml(deck, { resourcesDir: 'resources', definitions })
+
+  assert.match(rendered.html, /<h1[^>]*style="color: #2468AC"[^>]*>Cover title<\/h1>/)
+  assert.match(rendered.html, /<h1[^>]*style="color: #2468AC"[^>]*>Divider title<\/h1>/)
+  assert.match(rendered.html, /<h1[^>]*style="color: #2468AC"[^>]*>Close title<\/h1>/)
+  assert.match(rendered.html, /<h1 id="content-title">Content title<\/h1>/)
+})
+
 test('brand background assets target divider and close slide surfaces', async () => {
   await rm(tmpDir, { recursive: true, force: true })
   await mkdir(path.join(tmpDir, 'resources'), { recursive: true })

@@ -6,7 +6,8 @@ const __filename = __deckbuilderFileURLToPath(import.meta.url);
 const __dirname = __deckbuilderDirname(__filename);
 import {
   buildMarpMarkdown,
-  getAnimation
+  getAnimation,
+  load
 } from "./chunk-QR24H3QU.mjs";
 import {
   require_node
@@ -13986,7 +13987,7 @@ var require_loader = __commonJS({
         iterator(documents[index]);
       }
     }
-    function load(input, options) {
+    function load2(input, options) {
       var documents = loadDocuments(input, options);
       if (documents.length === 0) {
         return void 0;
@@ -13996,7 +13997,7 @@ var require_loader = __commonJS({
       throw new YAMLException("expected a single document in the stream, but found more");
     }
     module.exports.loadAll = loadAll;
-    module.exports.load = load;
+    module.exports.load = load2;
   }
 });
 
@@ -136357,12 +136358,17 @@ function renderDeckHtml(deck, options = {}) {
     resolverOptions
   );
   const { html, css, comments } = marp.render(markdown);
-  return {
+  const htmlWithInlineHeadingColors = inlineDarkImageHeadingColors(
     html,
+    htmlDeck.slides,
+    definitions.brand
+  );
+  return {
+    html: htmlWithInlineHeadingColors,
     css,
     comments,
     document: htmlDocument({
-      html,
+      html: htmlWithInlineHeadingColors,
       css,
       deckbuilderCss: themeCss,
       comments,
@@ -137243,6 +137249,29 @@ function applyHtmlBranding(slide, brand = {}, resourcesDir = "resources") {
     ));
   }
   return logos.length ? insertLogoHtml(source, logos.join("\n")) : source;
+}
+function inlineDarkImageHeadingColors(html, slides = [], brand = {}) {
+  const headingLayouts = /* @__PURE__ */ new Set(["cover", "divider", "close"]);
+  if (!slides.some((slide) => headingLayouts.has(slide.layout))) return html;
+  const root = load(`<root>${html}</root>`, {
+    decodeEntities: false,
+    lowerCaseAttributeNames: false
+  });
+  const headingColor = cssColor(brand, "blue", "0F82F5");
+  root("section").each((index, section) => {
+    const slide = slides[index];
+    if (!headingLayouts.has(slide?.layout)) return;
+    const heading = root(section).find("h1, marp-h1").first();
+    if (!heading.length) return;
+    mergeInlineStyle(heading, "color", headingColor);
+  });
+  return root("root").html() || html;
+}
+function mergeInlineStyle(element, property, value) {
+  const normalized = property.toLowerCase();
+  const declarations = String(element.attr("style") || "").split(";").map((declaration) => declaration.trim()).filter(Boolean).filter((declaration) => declaration.split(":", 1)[0]?.trim().toLowerCase() !== normalized);
+  declarations.push(`${property}: ${value}`);
+  element.attr("style", declarations.join("; "));
 }
 function applyHtmlSlideClass(slide) {
   const classNames = htmlClassNamesForSlide(slide);
