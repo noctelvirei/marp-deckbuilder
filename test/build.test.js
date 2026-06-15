@@ -556,6 +556,8 @@ test('renders stacked bar deck charts in HTML and PPTX outputs', async () => {
   assert.match(rendered.document, /class="deck-chart-stacked-row"/)
   assert.match(rendered.document, /deck-chart-stacked-segment/)
   assert.doesNotMatch(rendered.document, /<deck-chart/i)
+  assert.match(rendered.css, /grid-template-columns:\s*150px minmax\(0, 1fr\) 76px/)
+  assert.match(rendered.css, /\.deck-chart-stacked-row strong\s*\{[^}]*white-space:\s*nowrap/)
   assert.match(rendered.css, /section\.dark \.deck-chart-stacked-track/)
 
   const out = path.join(tmpDir, 'stacked-chart.pptx')
@@ -568,6 +570,25 @@ test('renders stacked bar deck charts in HTML and PPTX outputs', async () => {
   assert.match(chartXml, /Returning/)
   assert.match(chartXml, /Expansion/)
   assert.match(chartXml, /Q3/)
+})
+
+test('renders six-row stacked bar charts without wrapping totals', async () => {
+  const definitions = await loadDefinitions(new URL('../resources/definitions', import.meta.url))
+  const deck = parseDeckMarkdown(`# Channel mix
+
+<deck-chart
+  type="stacked-bar"
+  title="Session volume by channel per month"
+  series="Mobile, Desktop, Tablet"
+  labels="Jan, Feb, Mar, Apr, May, Jun"
+  values="11200, 11800, 12400, 13100, 14200, 17584; 8100, 7900, 7600, 7200, 6800, 6915; 1100, 1200, 1300, 1500, 1600, 1490"
+></deck-chart>`)
+  const rendered = renderDeckHtml(deck, { resourcesDir: 'resources', definitions })
+
+  assert.match(rendered.document, />Jun<\/span>/)
+  assert.match(rendered.document, />25,989<\/strong>/)
+  assert.match(rendered.css, /\.deck-chart-stacked-rows\s*\{[^}]*gap:\s*12px/)
+  assert.match(rendered.css, /\.deck-chart-stacked-track\s*\{[^}]*height:\s*24px/)
 })
 
 test('renders doughnut deck charts in HTML and PPTX outputs', async () => {
@@ -898,12 +919,33 @@ test('renders deck-journey-map in HTML and PPTX outputs', async () => {
   assert.match(rendered.document, /class="deck-journey-map/)
   assert.match(rendered.document, /class="deck-journey-step/)
   assert.doesNotMatch(rendered.document, /<deck-journey-map/i)
+  assert.match(rendered.css, /deck-journey-step\{[^}]*container-type:inline-size/)
+  assert.match(rendered.css, /font-size:clamp\(14px, 8cqw, 18px\)/)
+  assert.match(rendered.css, /white-space:nowrap/)
 
   const out = path.join(tmpDir, 'journey-map.pptx')
   await writePptx({ deck, outputPath: out, brand: definitions.brand, mode: 'editable' })
   const info = await stat(out)
   assert.equal(info.isFile(), true)
   assert.ok(info.size > 1000)
+})
+
+test('keeps five-step journey map titles on one line in HTML CSS', async () => {
+  const definitions = await loadDefinitions(new URL('../resources/definitions', import.meta.url))
+  const deck = parseDeckMarkdown(`# Customer journey
+
+<deck-journey-map>
+  <deck-journey-step label="01" title="Invite" body="Start"></deck-journey-step>
+  <deck-journey-step label="02" title="Identity" body="Capture ID"></deck-journey-step>
+  <deck-journey-step label="03" title="Documents" body="Upload docs"></deck-journey-step>
+  <deck-journey-step label="04" title="Review" body="Check"></deck-journey-step>
+  <deck-journey-step label="05" title="Confirm" body="Notify"></deck-journey-step>
+</deck-journey-map>`)
+  const rendered = renderDeckHtml(deck, { resourcesDir: 'resources', definitions })
+
+  assert.match(rendered.document, /class="deck-journey-map deck-journey-map-5"/)
+  assert.match(rendered.document, />Documents<\/h2>/)
+  assert.match(rendered.css, /font-size:\s*clamp\(14px, 8cqw, 18px\)/)
 })
 
 test('renders deck-journey-path in HTML and PPTX outputs', async () => {
@@ -1259,9 +1301,39 @@ test('HTML component chrome constrains structured components and swimlanes insid
   assert.match(rendered.document, /<style data-deckbuilder-theme>[\s\S]*section\s*\{[\s\S]*position:\s*relative/)
   assert.match(rendered.document, /section img\s*\{[^}]*max-width:\s*100%/)
   assert.match(rendered.document, /\.deck-swimlane\s*\{[^}]*max-height:/)
+  assert.match(rendered.document, /\.deck-swimlane\s*\{[^}]*grid-auto-rows:\s*minmax\(120px, 1fr\)/)
   assert.match(rendered.document, /\.deck-lane-steps\s*\{[^}]*grid-template-columns:\s*repeat\(auto-fit/)
+  assert.match(rendered.document, /\.deck-lane-steps article\s*\{[^}]*min-height:\s*48px/)
   assert.match(rendered.document, /section > p > img:not\(\.deck-brand-logo\)/)
   assert.match(rendered.document, /-webkit-line-clamp:\s*2/)
+})
+
+test('HTML swimlane keeps multi-step lane card content visible', async () => {
+  const definitions = await loadDefinitions(new URL('../resources/definitions', import.meta.url))
+  const deck = parseDeckMarkdown(`# Delivery plan
+
+<deck-swimlane>
+  <deck-lane title="Platform configuration" color="blue">
+    <deck-step title="Week 1-2">Journey mapping and brand setup.</deck-step>
+    <deck-step title="Week 3-4">ID flow configuration and testing.</deck-step>
+    <deck-step title="Week 5-6">Session resume and escalation wiring.</deck-step>
+  </deck-lane>
+  <deck-lane title="Integration" color="cyan">
+    <deck-step title="Week 2-3">API integration kickoff.</deck-step>
+    <deck-step title="Week 4-6">UAT and security review.</deck-step>
+  </deck-lane>
+  <deck-lane title="Go-live" color="purple">
+    <deck-step title="Week 7">Pilot cohort - 5% of volume.</deck-step>
+    <deck-step title="Week 8">Full rollout and hypercare.</deck-step>
+  </deck-lane>
+</deck-swimlane>`)
+  const rendered = renderDeckHtml(deck, { resourcesDir: 'resources', definitions })
+
+  assert.match(rendered.document, /Platform configuration/)
+  assert.match(rendered.document, /Week 8/)
+  assert.match(rendered.document, /Full rollout and hypercare/)
+  assert.match(rendered.css, /\.deck-swimlane-3\s*\{[^}]*grid-auto-rows:\s*minmax\(116px, 1fr\)/)
+  assert.match(rendered.css, /\.deck-swimlane-3 \.deck-lane-steps article\s*\{[^}]*min-height:\s*44px/)
 })
 
 test('resolves resource URLs inside brand theme CSS', async () => {
@@ -2097,6 +2169,42 @@ test('HTML light and dark surfaces emit fallback background colours', async () =
   assert.match(rendered.css, /section\.light\s*\{\s*background-color:\s*#FAFBFC(?:;|\})/)
   assert.match(rendered.document, /<section[^>]*class="dark"/)
   assert.match(rendered.document, /<section[^>]*class="light"/)
+})
+
+test('HTML exec layouts reserve space above takeaway bars', async () => {
+  const definitions = await loadDefinitions(new URL('../resources/definitions', import.meta.url))
+  const deck = parseDeckMarkdown(`<deck-exec-rows surface="dark" takeaway="Focus the next build on conversion leakage.">
+  <deck-exec-row label="01" title="Mobile leads entry" body="More than half of all sessions originate on mobile devices."></deck-exec-row>
+  <deck-exec-row label="02" title="Identity drop-off" body="Customers stall when capture paths are rigid."></deck-exec-row>
+  <deck-exec-row label="03" title="Lift recovers revenue" body="A 10pt lift at current volume recovers millions annually."></deck-exec-row>
+</deck-exec-rows>
+
+---
+
+<deck-exec-timeline surface="dark" takeaway="Launch in Q3.">
+  <deck-exec-milestone year="Week 1-2" title="Configure" body="Journey mapping and brand setup."></deck-exec-milestone>
+  <deck-exec-milestone year="Week 3-4" title="Integrate" body="ID flow configuration and testing."></deck-exec-milestone>
+  <deck-exec-milestone year="Week 5-6" title="Validate" body="UAT and security review."></deck-exec-milestone>
+  <deck-exec-milestone year="Week 7" title="Pilot" body="Pilot cohort - 5% of volume."></deck-exec-milestone>
+  <deck-exec-milestone year="Week 8" title="Roll out" body="Full rollout and hypercare."></deck-exec-milestone>
+</deck-exec-timeline>
+
+---
+
+<deck-exec-metrics surface="dark" section-title="Target returns" takeaway="Conservative assumptions.">
+  <deck-exec-metric value="10pts" label="Completion lift target"></deck-exec-metric>
+  <deck-exec-metric value="6,800" label="Additional completions per quarter"></deck-exec-metric>
+  <deck-exec-panel value="GBP4M" title="Annual revenue" body="Based on current session volume."></deck-exec-panel>
+  <deck-exec-panel value="8 weeks" title="Deployment" body="Configuration, integration, UAT, and pilot."></deck-exec-panel>
+</deck-exec-metrics>`)
+  const rendered = renderDeckHtml(deck, { resourcesDir: 'resources', definitions })
+
+  assert.match(rendered.document, /deck-exec-rows deck-exec-surface-dark has-takeaway/)
+  assert.match(rendered.document, /deck-exec-timeline deck-exec-surface-dark deck-exec-timeline-5 has-takeaway" style="--deck-exec-timeline-count:5"/)
+  assert.match(rendered.document, /deck-exec-metrics deck-exec-surface-dark has-takeaway/)
+  assert.match(rendered.css, /\.deck-exec-rows\.has-takeaway \.deck-exec-row-stack\s*\{[^}]*height:\s*calc\(100% - 91px\)/)
+  assert.match(rendered.css, /\.deck-exec-timeline-items\s*\{[^}]*repeat\(var\(--deck-exec-timeline-count, 3\), minmax\(0, 1fr\)\)/)
+  assert.match(rendered.css, /\.deck-exec-metrics\.has-takeaway \.deck-exec-panel\s*\{[^}]*min-height:\s*142px/)
 })
 
 test('PPTX light content slides use light fills and both logo slots', async () => {

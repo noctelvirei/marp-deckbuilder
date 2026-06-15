@@ -48259,12 +48259,13 @@ function renderExecTitleHtml(execTitle) {
 </div>`;
 }
 function renderExecRowsHtml(execRows) {
+  const takeawayClass = execRows.takeaway ? " has-takeaway" : "";
   const side = execRows.side ? `<aside class="deck-exec-side deck-exec-accent-${escapeAttr(execRows.side.accent)}">
     ${execRows.side.title ? `<h3>${escapeHtml(execRows.side.title)}</h3>` : ""}
     ${execRows.side.value ? `<strong>${escapeHtml(execRows.side.value)}</strong>` : ""}
     ${execRows.side.body ? `<p>${escapeHtml(execRows.side.body)}</p>` : ""}
   </aside>` : "";
-  return `<div class="deck-exec deck-exec-rows ${surfaceClass(execRows)}${side ? " has-side" : ""}">
+  return `<div class="deck-exec deck-exec-rows ${surfaceClass(execRows)}${side ? " has-side" : ""}${takeawayClass}">
   <div class="deck-exec-row-stack">${execRows.rows.map(
     (row) => `<article class="deck-exec-row deck-exec-accent-${escapeAttr(row.accent)}">
     <div class="deck-exec-row-label">
@@ -48283,6 +48284,7 @@ function renderExecRowsHtml(execRows) {
 </div>`;
 }
 function renderExecCardsHtml(execCards) {
+  const takeawayClass = execCards.takeaway ? " has-takeaway" : "";
   const cards = execCards.cards.map((card) => {
     const parts2 = [
       `<article class="deck-exec-card deck-exec-accent-${escapeAttr(card.accent)}">`,
@@ -48296,7 +48298,7 @@ function renderExecCardsHtml(execCards) {
     return parts2.join("");
   }).join("");
   const parts = [
-    `<div class="deck-exec deck-exec-cards ${surfaceClass(execCards)} deck-exec-cards-${execCards.columns} deck-exec-cards-${escapeAttr(execCards.variant)}">`
+    `<div class="deck-exec deck-exec-cards ${surfaceClass(execCards)} deck-exec-cards-${execCards.columns} deck-exec-cards-${escapeAttr(execCards.variant)}${takeawayClass}">`
   ];
   if (execCards.intro) parts.push(`<p class="deck-exec-intro">${escapeHtml(execCards.intro)}</p>`);
   parts.push(`<div class="deck-exec-card-grid">${cards}</div>`);
@@ -48313,7 +48315,9 @@ function renderExecCardsHtml(execCards) {
   return parts.join("");
 }
 function renderExecTimelineHtml(execTimeline) {
-  return `<div class="deck-exec deck-exec-timeline ${surfaceClass(execTimeline)}">
+  const count = Math.max(1, execTimeline.items.length);
+  const takeawayClass = execTimeline.takeaway ? " has-takeaway" : "";
+  return `<div class="deck-exec deck-exec-timeline ${surfaceClass(execTimeline)} deck-exec-timeline-${Math.min(count, 5)}${takeawayClass}" style="--deck-exec-timeline-count:${Math.min(count, 5)}">
   <div class="deck-exec-timeline-line"></div>
   <div class="deck-exec-timeline-items">${execTimeline.items.map(
     (item) => `<article class="deck-exec-timeline-item deck-exec-accent-${escapeAttr(item.accent)}">
@@ -48327,7 +48331,8 @@ function renderExecTimelineHtml(execTimeline) {
 </div>`;
 }
 function renderExecMetricsHtml(execMetrics) {
-  return `<div class="deck-exec deck-exec-metrics ${surfaceClass(execMetrics)}">
+  const takeawayClass = execMetrics.takeaway ? " has-takeaway" : "";
+  return `<div class="deck-exec deck-exec-metrics ${surfaceClass(execMetrics)}${takeawayClass}">
   <div class="deck-exec-metric-row">${execMetrics.metrics.map(
     (metric) => `<article class="deck-exec-metric deck-exec-accent-${escapeAttr(metric.accent)}">
     <strong>${escapeHtml(metric.value)}</strong>

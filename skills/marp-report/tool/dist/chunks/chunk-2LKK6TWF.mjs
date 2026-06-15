@@ -7,7 +7,7 @@ const __dirname = __deckbuilderDirname(__filename);
 import {
   buildMarpMarkdown,
   getAnimation
-} from "./chunk-HUUC2BMZ.mjs";
+} from "./chunk-PL2O5SDA.mjs";
 import {
   require_node
 } from "./chunk-MGQWBMZO.mjs";
