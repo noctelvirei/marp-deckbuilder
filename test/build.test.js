@@ -2263,6 +2263,8 @@ test('HTML exec layouts reserve space above takeaway bars', async () => {
   assert.match(rendered.document, /deck-exec-metrics deck-exec-surface-dark has-takeaway/)
   assert.match(rendered.css, /\.deck-exec-rows\.has-takeaway \.deck-exec-row-stack\s*\{[^}]*height:\s*calc\(100% - 91px\)/)
   assert.match(rendered.css, /\.deck-exec-timeline-items\s*\{[^}]*repeat\(var\(--deck-exec-timeline-count, 3\), minmax\(0, 1fr\)\)/)
+  assert.match(rendered.css, /\.deck-exec-timeline-5 \.deck-exec-timeline-line\s*\{[^}]*top:\s*111px/)
+  assert.match(rendered.css, /\.deck-exec-timeline-5 \.deck-exec-timeline-item p\s*\{[^}]*font-size:\s*15px!important/)
   assert.match(rendered.css, /\.deck-exec-metrics\.has-takeaway \.deck-exec-panel\s*\{[^}]*min-height:\s*142px/)
 })
 
@@ -2285,6 +2287,8 @@ test('HTML exec rows keep row copy and side panel readable', async () => {
   assert.doesNotMatch(rendered.html, /<pre><code>[\s\S]*deck-exec-row-copy/)
   assert.match(rendered.css, /\.deck-exec-rows\.has-side\s*\{[^}]*grid-template-columns:\s*minmax\(0, 1fr\) minmax\(224px, 260px\)/)
   assert.match(rendered.css, /\.deck-exec-row\s*\{[^}]*grid-template-columns:\s*112px minmax\(0, 1fr\)/)
+  assert.match(rendered.css, /\.deck-exec-row-copy p\s*\{[^}]*font-size:\s*16px!important/)
+  assert.match(rendered.css, /\.deck-exec-row-copy p\s*\{[^}]*max-height:\s*38px/)
   assert.match(rendered.css, /\.deck-exec-side :is\(h3, marp-h3\)\s*\{[^}]*white-space:\s*nowrap/)
 })
 
