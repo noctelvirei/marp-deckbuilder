@@ -15776,9 +15776,9 @@ function addSvgChartImage(slide, model, brand, layout, chartBox, type) {
   const sharedOptions = {
     cssVariables: false,
     mode: isLightSurface(model) ? "light" : "dark",
-    gridColor: surfaceLine(brand, model, layout.gridLineColor || "border"),
-    axisColor: surfaceTextColor(brand, model, layout.valueAxis.color, "muted"),
-    textColor: surfaceTextColor(brand, model, layout.valueAxis.color, "muted")
+    gridColor: svgColor(surfaceLine(brand, model, layout.gridLineColor || "border")),
+    axisColor: svgColor(surfaceTextColor(brand, model, layout.valueAxis.color, "muted")),
+    textColor: svgColor(surfaceTextColor(brand, model, layout.valueAxis.color, "muted"))
   };
   const svg = renderSvgChartByType(type, model.chart, brand, model, layout, sharedOptions);
   slide.addImage({
@@ -15794,54 +15794,57 @@ function renderSvgChartByType(type, chart, brand, model, layout, sharedOptions) 
   if (type === "waterfall") {
     return renderWaterfallSvg(chart, {
       ...sharedOptions,
-      connectorColor: surfaceTextColor(brand, model, layout.valueAxis.color, "muted"),
-      positiveColor: color(brand, "green"),
-      negativeColor: color(brand, "red")
+      connectorColor: svgColor(surfaceTextColor(brand, model, layout.valueAxis.color, "muted")),
+      positiveColor: svgColor(color(brand, "green")),
+      negativeColor: svgColor(color(brand, "red"))
     });
   }
   if (type === "bullet") {
     return renderBulletSvg(chart, {
       ...sharedOptions,
-      barColor: color(brand, "blue"),
-      onBarColor: color(brand, "white"),
-      targetColor: color(brand, "orange"),
-      trackColor: surfaceFill(brand, model, layout.plotAreaFill || layout.chartAreaFill || "cardLight")
+      barColor: svgColor(color(brand, "blue")),
+      onBarColor: svgColor(color(brand, "white")),
+      targetColor: svgColor(color(brand, "orange")),
+      trackColor: svgColor(surfaceFill(brand, model, layout.plotAreaFill || layout.chartAreaFill || "cardLight"))
     });
   }
   if (type === "histogram") {
     return renderHistogramSvg(chart, {
       ...sharedOptions,
-      barColor: color(brand, "purple"),
-      barBorderColor: color(brand, "blue")
+      barColor: svgColor(color(brand, "purple")),
+      barBorderColor: svgColor(color(brand, "blue"))
     });
   }
   if (type === "boxplot") {
     return renderBoxplotSvg(chart, {
       ...sharedOptions,
-      boxColor: color(brand, "blue"),
-      fillColor: surfaceFill(brand, model, layout.plotAreaFill || layout.chartAreaFill || "cardLight"),
-      medianColor: color(brand, "orange")
+      boxColor: svgColor(color(brand, "blue")),
+      fillColor: svgColor(surfaceFill(brand, model, layout.plotAreaFill || layout.chartAreaFill || "cardLight")),
+      medianColor: svgColor(color(brand, "orange"))
     });
   }
   if (type === "pareto") {
     return renderParetoSvg(chart, {
       ...sharedOptions,
-      barColor: color(brand, "blue"),
-      barBorderColor: color(brand, "lightBlue"),
-      lineColor: color(brand, "orange"),
-      pointColor: color(brand, "orange")
+      barColor: svgColor(color(brand, "blue")),
+      barBorderColor: svgColor(color(brand, "lightBlue")),
+      lineColor: svgColor(color(brand, "orange")),
+      pointColor: svgColor(color(brand, "orange"))
     });
   }
   if (type === "sankey") {
     return renderSankeySvg(chart, {
       ...sharedOptions,
-      mutedColor: surfaceTextColor(brand, model, layout.valueAxis.color, "muted"),
-      labelHaloColor: surfaceFill(brand, model, layout.chartAreaFill || "cardLight"),
-      palette: layout.colors.map((chartColor) => color(brand, chartColor)),
+      mutedColor: svgColor(surfaceTextColor(brand, model, layout.valueAxis.color, "muted")),
+      labelHaloColor: svgColor(surfaceFill(brand, model, layout.chartAreaFill || "cardLight")),
+      palette: layout.colors.map((chartColor) => svgColor(color(brand, chartColor))),
       linkOpacity: "0.52"
     });
   }
   throw new Error(`Unsupported SVG chart type: ${type}`);
+}
+function svgColor(value) {
+  return typeof value === "string" && /^[0-9a-f]{6}$/i.test(value) ? `#${value}` : value;
 }
 function addScatterAxisLabels(slide, model, brand, layout, chartBox) {
   const xAxisLabel = model.chart.xAxisLabel || "X";

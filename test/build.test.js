@@ -368,7 +368,11 @@ test('renders waterfall deck charts in HTML and PPTX outputs', async () => {
   assert.ok(mediaNames.some((name) => name.endsWith('.svg')))
   const svgNames = mediaNames.filter((name) => name.endsWith('.svg'))
   const svgTexts = await Promise.all(svgNames.map((name) => archive.file(name).async('string')))
-  assert.ok(svgTexts.some((svgText) => /deck-chart-waterfall-svg/.test(svgText)))
+  const waterfallSvg = svgTexts.find((svgText) => /deck-chart-waterfall-svg/.test(svgText))
+  assert.ok(waterfallSvg)
+  assert.match(waterfallSvg, /fill:\s*#66CC8E/i)
+  assert.match(waterfallSvg, /fill:\s*#FC5161/i)
+  assert.doesNotMatch(waterfallSvg, /(?:fill|stroke):\s*(?:66CC8E|FC5161|0F82F5|F9935B)\b/i)
 })
 
 test('renders bullet deck charts in HTML and PPTX outputs', async () => {
@@ -524,7 +528,11 @@ test('renders pareto deck charts in HTML and PPTX outputs', async () => {
   const archive = await JSZip.loadAsync(await readFile(out))
   const mediaNames = Object.keys(archive.files).filter((name) => name.startsWith('ppt/media/') && name.endsWith('.svg'))
   const svgTexts = await Promise.all(mediaNames.map((name) => archive.file(name).async('string')))
-  assert.ok(svgTexts.some((svgText) => /deck-chart-pareto-svg/.test(svgText)))
+  const paretoSvg = svgTexts.find((svgText) => /deck-chart-pareto-svg/.test(svgText))
+  assert.ok(paretoSvg)
+  assert.match(paretoSvg, /fill:\s*#0F82F5/i)
+  assert.match(paretoSvg, /stroke:\s*#F9935B/i)
+  assert.doesNotMatch(paretoSvg, /(?:fill|stroke):\s*(?:0F82F5|59D6FD|F9935B)\b/i)
 })
 
 test('renders sankey deck charts in HTML and PPTX outputs', async () => {
@@ -554,7 +562,11 @@ test('renders sankey deck charts in HTML and PPTX outputs', async () => {
   const archive = await JSZip.loadAsync(await readFile(out))
   const mediaNames = Object.keys(archive.files).filter((name) => name.startsWith('ppt/media/') && name.endsWith('.svg'))
   const svgTexts = await Promise.all(mediaNames.map((name) => archive.file(name).async('string')))
-  assert.ok(svgTexts.some((svgText) => /deck-chart-sankey-svg/.test(svgText)))
+  const sankeySvg = svgTexts.find((svgText) => /deck-chart-sankey-svg/.test(svgText))
+  assert.ok(sankeySvg)
+  assert.match(sankeySvg, /stroke="#0F82F5"/i)
+  assert.match(sankeySvg, /fill="#0F82F5"/i)
+  assert.doesNotMatch(sankeySvg, /(?:fill|stroke)="(?:0F82F5|5143D5|66CC8E)"/i)
 })
 
 test('renders stacked bar deck charts in HTML and PPTX outputs', async () => {
