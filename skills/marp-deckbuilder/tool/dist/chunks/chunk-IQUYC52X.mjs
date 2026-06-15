@@ -48195,18 +48195,17 @@ function renderComparisonHtml(comparison) {
 }
 function renderSwimlaneHtml(swimlane) {
   const laneCount = Math.max(swimlane.lanes.length, 1);
-  return `<div class="deck-swimlane deck-swimlane-${laneCount}">${swimlane.lanes.map(
-    (lane) => `<div class="deck-lane deck-lane-${escapeAttr(lane.color)}">
-  <h2>${escapeHtml(lane.title)}</h2>
-  <div class="deck-lane-steps deck-lane-steps-${Math.max(lane.steps.length, 1)}">${lane.steps.map(
-      (step) => `<article>
-    <h3>${escapeHtml(step.title)}</h3>
-    ${step.body ? `<p>${escapeHtml(step.body)}</p>` : ""}
-  </article>`
-    ).join('<span class="deck-arrow">&gt;</span>')}</div>
-</div>`
-  ).join("\n")}</div>`;
+  const lanes = swimlane.lanes.map((lane) => {
+    const steps = lane.steps.map((step) => {
+      const body = step.body ? `<p class="deck-lane-step-body" style="${swimlaneStepBodyStyle}">${escapeHtml(step.body)}</p>` : "";
+      return `<article class="deck-lane-step"><h3 class="deck-lane-step-title" style="${swimlaneStepTitleStyle}">${escapeHtml(step.title)}</h3>${body}</article>`;
+    }).join('<span class="deck-arrow">&gt;</span>');
+    return `<div class="deck-lane deck-lane-${escapeAttr(lane.color)}"><h2>${escapeHtml(lane.title)}</h2><div class="deck-lane-steps deck-lane-steps-${Math.max(lane.steps.length, 1)}">${steps}</div></div>`;
+  }).join("");
+  return `<div class="deck-swimlane deck-swimlane-${laneCount}">${lanes}</div>`;
 }
+var swimlaneStepTitleStyle = "display:block;visibility:visible;opacity:1;position:relative;z-index:1;margin:0 0 var(--deck-swimlane-step-title-margin, 6px);font-size:var(--deck-swimlane-step-title-size, 14px);line-height:var(--deck-swimlane-step-title-line-height, 1.18);color:var(--deck-swimlane-step-title-color, #090909)";
+var swimlaneStepBodyStyle = "display:block;visibility:visible;opacity:1;position:relative;z-index:1;margin:0;font-size:var(--deck-swimlane-step-body-size, 11px);line-height:var(--deck-swimlane-step-body-line-height, 1.25);max-height:var(--deck-swimlane-step-body-max-height, 42px);overflow:hidden;color:var(--deck-swimlane-step-body-color, #444444)";
 function renderProofHtml(proof) {
   const stats = proof.stats.map(
     (stat) => `<div class="stat-card">
