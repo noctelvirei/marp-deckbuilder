@@ -36,6 +36,7 @@ node scripts/build-deck.mjs <output-folder>/deck.md --out-dir <output-folder>
 - Use supported `deck-*` components when the slide must remain editable in PowerPoint.
 - Use only documented attributes on `deck-*` components. Unsupported attributes fail validation; fix the Markdown or ask the skill maker to add the missing capability as a renderer-backed component.
 - Use `<deck-slide ... />` at the top of a slide for slide metadata such as `layout`, `surface`, `eyebrow`, `takeaway`, `html-skip`, `pptx-skip`, and slide-specific customer/company logo overrides. Do not use HTML comments for new slide metadata.
+- For animated or progressive decks, use controlled `deck-slide` animation metadata (`animation`, `animation-trigger`, `animation-duration`, `animation-delay`, `animation-sequence`). Read `examples/animations.md` for the full working animation showcase; supported entrance animations are also listed in `REFERENCE.md`.
 - Use `deck-signal-bars` for a headline metric paired with horizontal contribution/concentration bars. Do not hand-author HTML/SVG/CSS for that pattern.
 - Use `deck-signal-board` for a two-panel narrative signal board with summary copy, tag pills, and contribution bars. HTML may include renderer-owned visual polish; PPTX stays static native shapes. Do not hand-author HTML/CSS dashboards for that pattern.
 - Use `deck-funnel` for conversion or completion stage funnels. Do not hand-author HTML/SVG/CSS bars for that pattern.
