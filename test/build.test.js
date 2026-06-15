@@ -212,6 +212,8 @@ test('renders grouped bar deck charts in HTML and PPTX outputs', async () => {
   assert.match(rendered.document, /class="deck-chart-legend"/)
   assert.match(rendered.document, /deck-chart-grouped-bar-row/)
   assert.doesNotMatch(rendered.document, /<deck-chart/i)
+  assert.match(rendered.css, /\.deck-chart-grouped-bar-row\s*\{[^}]*grid-template-columns:\s*96px minmax\(0, 1fr\) 86px/)
+  assert.match(rendered.css, /\.deck-chart-grouped-bar-row strong\s*\{[^}]*white-space:\s*nowrap/)
   assert.match(rendered.css, /section\.dark \.deck-chart-track/)
 
   const out = path.join(tmpDir, 'grouped-chart.pptx')
@@ -224,6 +226,25 @@ test('renders grouped bar deck charts in HTML and PPTX outputs', async () => {
   assert.match(chartXml, /Target/)
   assert.match(chartXml, /Q1/)
   assert.match(chartXml, /Q3/)
+})
+
+test('renders grouped bar value labels on one line', async () => {
+  const definitions = await loadDefinitions(new URL('../resources/definitions', import.meta.url))
+  const deck = parseDeckMarkdown(`# Journey volume
+
+<deck-chart
+  type="grouped-bar"
+  title="Sessions opened vs completed by journey"
+  series="Opened, Completed"
+  labels="Home Insurance, Policy Amendment, Claims"
+  values="28400, 31200, 19800; 25276, 26832, 15440"
+></deck-chart>`)
+  const rendered = renderDeckHtml(deck, { resourcesDir: 'resources', definitions })
+
+  assert.match(rendered.document, />28,400<\/strong>/)
+  assert.match(rendered.document, />25,276<\/strong>/)
+  assert.match(rendered.css, /\.deck-chart-grouped-bar-row strong\s*\{[^}]*font-size:\s*14px!important/)
+  assert.match(rendered.css, /\.deck-chart-grouped-bar-row strong\s*\{[^}]*word-break:\s*keep-all/)
 })
 
 test('renders line deck charts in HTML and PPTX outputs', async () => {

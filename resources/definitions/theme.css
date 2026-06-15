@@ -283,14 +283,28 @@ li {
 
 .deck-chart-grouped-bar-row {
   display: grid;
-  grid-template-columns: 96px 1fr 58px;
+  grid-template-columns: 96px minmax(0, 1fr) 86px;
   gap: 12px;
   align-items: center;
+  min-width: 0;
 }
 
 .deck-chart-series-label {
   color: #555555;
   font-size: 12px;
+}
+
+.deck-chart-grouped-bar-row strong {
+  min-width: 0;
+  color: #090909;
+  font-size: 14px !important;
+  font-variant-numeric: tabular-nums;
+  font-weight: 500;
+  line-height: 1 !important;
+  overflow-wrap: normal;
+  text-align: right;
+  white-space: nowrap;
+  word-break: keep-all;
 }
 
 .deck-chart-series-0 .deck-chart-fill,
