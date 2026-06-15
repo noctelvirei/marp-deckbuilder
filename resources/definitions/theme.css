@@ -1991,7 +1991,7 @@ section.deck-takeaway-slide.light {
   column-gap: 18px;
   min-height: 101px;
   min-width: 0;
-  padding: 16px 24px 14px 28px;
+  padding: 14px 22px 13px 28px;
   border-left: 8px solid #4fa8e8;
   background: #13213d;
   overflow: hidden;
@@ -2024,16 +2024,18 @@ section.deck-takeaway-slide.light {
 
 .deck-exec-row-copy h3 {
   color: #ffffff;
-  font-size: 24px;
+  font-size: 24px !important;
   font-weight: 700;
-  line-height: 1.1;
+  line-height: 1.08 !important;
 }
 
 .deck-exec-row-copy p {
-  margin-top: 8px;
+  margin-top: 6px !important;
   color: #8a95a8;
-  font-size: 18px;
-  line-height: 1.23;
+  font-size: 16px !important;
+  line-height: 1.18 !important;
+  max-height: 38px;
+  overflow: hidden;
 }
 
 .deck-exec-row em {
@@ -2088,8 +2090,8 @@ section.deck-takeaway-slide.light {
 
 .deck-exec-side p {
   color: #c9d2e8;
-  font-size: 21px;
-  line-height: 1.22;
+  font-size: 19px !important;
+  line-height: 1.18 !important;
 }
 
 .deck-exec-takeaway {
@@ -2097,14 +2099,14 @@ section.deck-takeaway-slide.light {
   left: 0;
   right: 0;
   bottom: 0;
-  min-height: 67px;
-  padding: 18px 30px;
+  min-height: 64px;
+  padding: 14px 30px;
   border-left: 8px solid #4fa8e8;
   background: #13213d;
   color: #ffffff;
-  font-size: 26px;
+  font-size: 24px;
   font-style: italic;
-  line-height: 1.2;
+  line-height: 1.16;
 }
 
 .deck-exec-card-grid {
@@ -2223,25 +2225,31 @@ section.deck-takeaway-slide.light {
 
 .deck-exec-timeline-4 .deck-exec-timeline-items,
 .deck-exec-timeline-5 .deck-exec-timeline-items {
-  gap: 18px;
+  gap: 14px;
+}
+
+.deck-exec-timeline-4 .deck-exec-timeline-line,
+.deck-exec-timeline-5 .deck-exec-timeline-line {
+  top: 111px;
 }
 
 .deck-exec-timeline-item {
   position: relative;
+  min-width: 0;
   padding-top: 10px;
 }
 
 .deck-exec-timeline-item strong {
   display: block;
   color: #4fa8e8;
-  font-size: 34px;
-  line-height: 1;
+  font-size: 34px !important;
+  line-height: 1 !important;
   text-align: center;
 }
 
 .deck-exec-timeline-4 .deck-exec-timeline-item strong,
 .deck-exec-timeline-5 .deck-exec-timeline-item strong {
-  font-size: 27px;
+  font-size: 27px !important;
 }
 
 .deck-exec-timeline-item span {
@@ -2260,28 +2268,29 @@ section.deck-takeaway-slide.light {
 
 .deck-exec-timeline-item h3 {
   color: #ffffff;
-  font-size: 30px;
+  font-size: 30px !important;
   font-weight: 700;
+  line-height: 1.08 !important;
 }
 
 .deck-exec-timeline-4 .deck-exec-timeline-item h3,
 .deck-exec-timeline-5 .deck-exec-timeline-item h3 {
-  font-size: 23px;
-  line-height: 1.08;
+  font-size: 22px !important;
+  line-height: 1.06 !important;
 }
 
 .deck-exec-timeline-item p {
-  margin-top: 22px;
+  margin-top: 22px !important;
   color: #8a95a8;
-  font-size: 24px;
-  line-height: 1.24;
+  font-size: 24px !important;
+  line-height: 1.24 !important;
 }
 
 .deck-exec-timeline-4 .deck-exec-timeline-item p,
 .deck-exec-timeline-5 .deck-exec-timeline-item p {
-  margin-top: 14px;
-  font-size: 17px;
-  line-height: 1.2;
+  margin-top: 12px !important;
+  font-size: 15px !important;
+  line-height: 1.18 !important;
 }
 
 .deck-exec-metric-row {
