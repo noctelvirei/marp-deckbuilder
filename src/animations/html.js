@@ -44,9 +44,28 @@ export function presentationAnimationScript(slides = []) {
   }
 
   function activeSlide() {
-    return document.querySelector('svg.bespoke-marp-active > foreignObject > ' + selector) ||
+    return document.querySelector('[data-deckbuilder-slide].active > foreignObject > ' + selector) ||
+      document.querySelector('svg.bespoke-marp-active > foreignObject > ' + selector) ||
       document.querySelector(selector + '.bespoke-active') ||
       document.querySelector(selector + '.bespoke-marp-active')
+  }
+
+  function slideWrapper(slide) {
+    return slide?.closest?.('[data-deckbuilder-slide]') || slide?.closest?.('svg[data-marpit-svg]')
+  }
+
+  function isSlideActive(slide) {
+    const wrapper = slideWrapper(slide)
+    return Boolean(
+      wrapper?.classList.contains('active') ||
+      wrapper?.classList.contains('bespoke-marp-active') ||
+      slide?.classList.contains('bespoke-active') ||
+      slide?.classList.contains('bespoke-marp-active')
+    )
+  }
+
+  function isInteractiveTarget(target) {
+    return Boolean(target?.closest?.('button, a, input, select, textarea, video, audio, [contenteditable="true"], .deckbuilder-nav'))
   }
 
   document.querySelectorAll(selector).forEach((slide) => {
@@ -69,25 +88,33 @@ export function presentationAnimationScript(slides = []) {
   }
 
   function syncActiveSlide() {
+    document.querySelectorAll(selector).forEach((candidate) => {
+      if (!isSlideActive(candidate)) {
+        candidate.dataset.deckAnimActive = 'false'
+        if (candidate === armedSlide) armedSlide = null
+      }
+    })
     const slide = activeSlide()
     if (!slide) {
       armedSlide = null
       return
     }
-    if (slide === armedSlide) return
+    if (slide === armedSlide && slide.dataset.deckAnimActive === 'true') return
     prepare(slide)
     arm(slide)
+    slide.dataset.deckAnimActive = 'true'
     armedSlide = slide
   }
 
   const observer = new MutationObserver(syncActiveSlide)
-  document.querySelectorAll('svg[data-marpit-svg], ' + selector).forEach((element) => {
+  document.querySelectorAll('[data-deckbuilder-slide], svg[data-marpit-svg], ' + selector).forEach((element) => {
     observer.observe(element, { attributes: true, attributeFilter: ['class'] })
   })
   window.addEventListener('hashchange', () => setTimeout(syncActiveSlide, 0))
   setTimeout(syncActiveSlide, 0)
 
   function play(event) {
+    if (isInteractiveTarget(event.target)) return
     const slide = activeSlide()
     if (!slide) return
     if (slide.classList.contains('deck-anim-sequence-stagger')) {
@@ -110,7 +137,7 @@ export function presentationAnimationScript(slides = []) {
   document.addEventListener('keydown', (event) => {
     if (event.key === ' ' || event.key === 'Enter') play(event)
   }, true)
-})()`
+})();`
 }
 
 function baseAnimationCss() {

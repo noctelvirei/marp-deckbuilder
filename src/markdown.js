@@ -102,6 +102,7 @@ export function parseSlide(source, index, originalSource = source, components = 
     cards: firstComponent(components, 'card-grid')?.cards || extractCards(source),
     chart: firstComponent(components, 'chart'),
     signalBars: firstComponent(components, 'signal-bars'),
+    orchestration: firstComponent(components, 'orchestration'),
     signalBoard: firstComponent(components, 'signal-board'),
     funnel: firstComponent(components, 'funnel'),
     metricTrend: firstComponent(components, 'metric-trend'),
@@ -145,6 +146,7 @@ function inferLayout(source, index) {
   if (/<div[^>]+class=["'][^"']*card-grid/i.test(source)) return 'cards'
   if (/<figure[^>]+class=["'][^"']*deck-chart/i.test(source)) return 'chart'
   if (/<div[^>]+class=["'][^"']*deck-signal-bars/i.test(source)) return 'signal-bars'
+  if (/<div[^>]+class=["'][^"']*deck-orchestration/i.test(source)) return 'orchestration'
   if (/<div[^>]+class=["'][^"']*deck-signal-board/i.test(source)) return 'signal-board'
   if (/<figure[^>]+class=["'][^"']*deck-funnel/i.test(source)) return 'funnel'
   if (/<div[^>]+class=["'][^"']*deck-metric-trend/i.test(source)) return 'metric-trend'
@@ -183,6 +185,7 @@ function inferComponentLayout(components) {
     ['exec-metrics', 'exec-metrics'],
     ['divider', 'divider'],
     ['close', 'close'],
+    ['orchestration', 'orchestration'],
     ['signal-board', 'signal-board'],
     ['signal-bars', 'signal-bars'],
     ['funnel', 'funnel'],
@@ -220,8 +223,7 @@ function inferSurface(layout, directives = {}, frontmatter = {}, componentSurfac
   )
   if (defaultSurface) return defaultSurface
 
-  if (['cover', 'divider', 'close'].includes(layout)) return 'dark'
-  return 'light'
+  return 'dark'
 }
 
 function normalizeSurface(value = '') {

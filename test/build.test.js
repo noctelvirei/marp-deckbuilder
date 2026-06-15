@@ -31,14 +31,109 @@ test('renders Marp Deckbuilder HTML', async () => {
   const rendered = renderDeckHtml(deck, { resourcesDir: 'resources', definitions })
 
   assert.match(rendered.document, /id=":\$p"/)
-  assert.match(rendered.document, /bespoke-marp-osc/)
-  assert.match(rendered.document, /bespoke-marp-parent/)
-  assert.match(rendered.document, /data-bespoke-marp-osc="overview"/)
-  assert.match(rendered.document, /data-bespoke-marp-osc="presenter"/)
-  assert.match(rendered.document, /bespoke\.js\.LICENSE/)
+  assert.match(rendered.document, /deckbuilder-progress/)
+  assert.match(rendered.document, /deckbuilder-nav/)
+  assert.match(rendered.document, /data-deckbuilder-jump="0"/)
+  assert.match(rendered.document, /<span class="deckbuilder-dots"><button/)
+  assert.match(rendered.document, /data-deckbuilder-slide="0"/)
+  assert.match(rendered.document, /class="[^"]*deckbuilder-slide[^"]*active/)
+  assert.doesNotMatch(rendered.document, /bespoke-marp-osc/)
   assert.match(rendered.document, /Marp Deckbuilder Demo/)
+  assert.match(rendered.document, /class="cover/)
+  assert.match(rendered.document, /class="stat-grid"/)
+  assert.match(rendered.document, /class="card-grid/)
+  assert.match(rendered.document, /<figure class="deck-chart/)
   assert.match(rendered.document, /@page/)
   assert.match(rendered.document, /<style data-deckbuilder-theme>/)
+  assert.match(rendered.document, /<style data-deckbuilder-html>/)
+  assert.match(rendered.document, /document\.addEventListener\('wheel', consumeWheel/)
+  assert.match(rendered.document, /document\.addEventListener\('touchstart'/)
+  assert.match(rendered.document, /'ArrowDown'/)
+  assert.match(rendered.document, /requestFullscreen/)
+  assert.match(rendered.document, /@keyframes deckbuilder-sweep/)
+  assert.match(rendered.document, /radial-gradient\(120% 90% at 12% 8%, #0c2143 0%, rgba\(12, 33, 67, 0\) 55%\)/)
+  assert.match(rendered.document, /section\.cover,\s*[\s\S]*section\.deck-divider-slide,[\s\S]*--deckbuilder-title-bg-image/)
+  assert.match(rendered.document, /mask-image: radial-gradient\(120% 120% at 50% 40%, #000 30%, transparent 80%\)/)
+  assert.match(rendered.document, /className = 'deck-inline-brand'/)
+  assert.match(rendered.document, /function enhanceInlineBrand/)
+  assert.match(rendered.document, /section\.dark \.stat-card :is\(span, marp-span\)/)
+  assert.match(rendered.document, /\[data-deckbuilder-slide\]\.active\s*\{[^}]*z-index: 2/s)
+  assert.doesNotMatch(rendered.document, /\)\(\)\s*\(\(\) =>/)
+  assert.match(rendered.document, /@media screen and \(pointer: coarse\)/)
+})
+
+test('renders default bar deck charts as Chart.js-enhanced HTML with static fallback', async () => {
+  const definitions = await loadDefinitions(new URL('../resources/definitions', import.meta.url))
+  const deck = parseDeckMarkdown(`# Chart
+
+<deck-chart title="Volume" labels="A,B" values="10,20"></deck-chart>`)
+  const rendered = renderDeckHtml(deck, { resourcesDir: 'resources', definitions })
+
+  assert.match(rendered.document, /class="deck-chart deck-chart-bar deck-chart-js"/)
+  assert.match(rendered.document, /data-deck-chart-type="bar"/)
+  assert.match(rendered.document, /data-deck-chartjs="bar"/)
+  assert.match(rendered.document, /data-deck-chart-config="\{&quot;type&quot;:&quot;bar&quot;/)
+  assert.match(rendered.document, /class="deck-chart-rows deck-chart-js-fallback"/)
+  assert.match(rendered.document, /new Chart\(canvas, \{/)
+  assert.match(rendered.document, /deckbuilderBarValueLabels/)
+  assert.match(rendered.document, /\.deck-chart-js\[data-deck-chart-animating="scheduled"\] \.deck-chart-js-canvas/)
+  assert.match(rendered.document, /\.deck-chart-js\[data-deck-chart-animating="scheduled"\] \.deck-chart-js-frame/)
+  assert.match(rendered.document, /visibility: hidden/)
+  assert.match(rendered.document, /function prepareEnteringSlide\(slide\)/)
+  assert.match(rendered.document, /const activationDelay = 520/)
+  assert.match(rendered.document, /function resetChart\(figure\)/)
+  assert.match(rendered.document, /chart\.render\(\)/)
+  assert.match(rendered.document, /function replayChart\(figure\)/)
+  assert.match(rendered.document, /chart\.reset\(\)/)
+  assert.match(rendered.document, /function activateChartsForSlide\(slide\)/)
+  assert.match(rendered.document, /figure\.dataset\.deckChartAnimating = 'scheduled'/)
+  assert.match(rendered.document, /function hasPendingClickReveal\(\)/)
+  assert.match(rendered.document, /!hasPendingClickReveal\(\)/)
+})
+
+test('HTML shell condenses long deck dots without losing direct jumps', async () => {
+  const definitions = await loadDefinitions(new URL('../resources/definitions', import.meta.url))
+  const source = Array.from({ length: 30 }, (_, index) => `# Slide ${index + 1}\n\nBody ${index + 1}`).join('\n\n---\n\n')
+  const deck = parseDeckMarkdown(source)
+  const rendered = renderDeckHtml(deck, { resourcesDir: 'resources', definitions })
+
+  assert.match(rendered.document, /data-deckbuilder-slide-count="30"/)
+  assert.match(rendered.document, /data-deckbuilder-nav-mode="scroll"/)
+  assert.equal(rendered.document.match(/data-deckbuilder-jump="/g)?.length, 30)
+  assert.match(rendered.document, /title="Slide 30"/)
+  assert.match(rendered.document, /\.deckbuilder-nav\[data-deckbuilder-nav-mode="scroll"\] \.deckbuilder-dots/)
+  assert.match(rendered.document, /width: min\(34vw, 300px\)/)
+  assert.match(rendered.document, /dotRail\.scrollTo\(\{ left, behavior: reduceMotion\?\.matches \? 'auto' : 'smooth' \}\)/)
+})
+
+test('HTML shell carries configured brand words for inline logo replacement', async () => {
+  const definitions = await loadDefinitions(new URL('../resources/definitions', import.meta.url))
+  const deck = parseDeckMarkdown(`# Lightico orchestration layer
+
+Lightico coordinates every journey.`)
+  const rendered = renderDeckHtml(deck, {
+    resourcesDir: 'resources',
+    definitions: {
+      ...definitions,
+      brand: {
+        ...definitions.brand,
+        name: 'Lightico',
+      },
+    },
+  })
+
+  assert.match(rendered.document, /const configuredBrandTerms = \["Lightico"\]/)
+  assert.match(rendered.document, /className = 'deck-inline-brand'/)
+})
+
+test('HTML cover headings support a branded accent line', async () => {
+  const definitions = await loadDefinitions(new URL('../resources/definitions', import.meta.url))
+  const deck = parseDeckMarkdown(`# Faster calls.<br>**Total compliance.**<br>No trade-off.`)
+  const rendered = renderDeckHtml(deck, { resourcesDir: 'resources', definitions })
+
+  assert.match(rendered.html, /<strong>Total compliance\.<\/strong>/)
+  assert.match(rendered.document, /section\.cover h1 b,[\s\S]*section\.cover h1 strong,[\s\S]*background: var\(--deckbuilder-accent\)/)
+  assert.match(rendered.document, /section\.cover h1 b,[\s\S]*font-weight: 700 !important/)
 })
 
 test('writes editable fallback PPTX', async () => {
@@ -209,6 +304,12 @@ test('renders grouped bar deck charts in HTML and PPTX outputs', async () => {
   const rendered = renderDeckHtml(deck, { resourcesDir: 'resources', definitions })
 
   assert.match(rendered.document, /class="deck-chart deck-chart-grouped-bar"/)
+  assert.match(rendered.document, /data-deck-chart-type="grouped-bar"/)
+  assert.match(rendered.document, /data-deck-chartjs="grouped-bar"/)
+  assert.match(rendered.document, /data-deck-chart-config="\{&quot;type&quot;:&quot;grouped-bar&quot;/)
+  assert.match(rendered.document, /deckbuilderMultiBarValueLabels/)
+  assert.match(rendered.document, /mode: valueMode/)
+  assert.match(rendered.document, /suggestedMax/)
   assert.match(rendered.document, /class="deck-chart-legend"/)
   assert.match(rendered.document, /deck-chart-grouped-bar-row/)
   assert.doesNotMatch(rendered.document, /<deck-chart/i)
@@ -264,6 +365,10 @@ test('renders line deck charts in HTML and PPTX outputs', async () => {
   const rendered = renderDeckHtml(deck, { resourcesDir: 'resources', definitions })
 
   assert.match(rendered.document, /class="deck-chart deck-chart-line"/)
+  assert.match(rendered.document, /data-deck-chart-type="line"/)
+  assert.match(rendered.document, /data-deck-chartjs="line"/)
+  assert.match(rendered.document, /data-deck-chart-config="\{&quot;type&quot;:&quot;line&quot;/)
+  assert.match(rendered.document, /deckbuilderPointValueLabels/)
   assert.match(rendered.document, /class="deck-chart-line-svg"/)
   assert.match(rendered.document, /class="deck-chart-line-path"/)
   assert.match(rendered.document, /class="deck-chart-line-path"[^>]*fill="none"[^>]*stroke="#0f82f5"/)
@@ -299,6 +404,9 @@ test('renders area deck charts in HTML and PPTX outputs', async () => {
   const rendered = renderDeckHtml(deck, { resourcesDir: 'resources', definitions })
 
   assert.match(rendered.document, /class="deck-chart deck-chart-area"/)
+  assert.match(rendered.document, /data-deck-chart-type="area"/)
+  assert.match(rendered.document, /data-deck-chartjs="area"/)
+  assert.match(rendered.document, /data-deck-chart-config="\{&quot;type&quot;:&quot;area&quot;/)
   assert.match(rendered.document, /class="deck-chart-area-svg"/)
   assert.match(rendered.document, /class="deck-chart-area-fill"/)
   assert.match(rendered.document, /class="deck-chart-area-path"/)
@@ -355,6 +463,11 @@ test('renders waterfall deck charts in HTML and PPTX outputs', async () => {
   const rendered = renderDeckHtml(deck, { resourcesDir: 'resources', definitions })
 
   assert.match(rendered.document, /class="deck-chart deck-chart-waterfall"/)
+  assert.match(rendered.document, /data-deck-chart-type="waterfall"/)
+  assert.match(rendered.document, /data-deck-chartjs="waterfall"/)
+  assert.match(rendered.document, /data-deck-chart-config="\{&quot;type&quot;:&quot;waterfall&quot;/)
+  assert.match(rendered.document, /function initWaterfallChart\(figure\)/)
+  assert.match(rendered.document, /deckbuilderWaterfallBuild/)
   assert.match(rendered.document, /class="deck-chart-waterfall-svg"/)
   assert.match(rendered.document, /deck-waterfall-bar-positive/)
   assert.match(rendered.document, /deck-waterfall-bar-negative/)
@@ -393,6 +506,11 @@ test('renders bullet deck charts in HTML and PPTX outputs', async () => {
   const rendered = renderDeckHtml(deck, { resourcesDir: 'resources', definitions })
 
   assert.match(rendered.document, /class="deck-chart deck-chart-bullet"/)
+  assert.match(rendered.document, /data-deck-chart-type="bullet"/)
+  assert.match(rendered.document, /data-deck-chartjs="bullet"/)
+  assert.match(rendered.document, /data-deck-chart-config="\{&quot;type&quot;:&quot;bullet&quot;/)
+  assert.match(rendered.document, /function initBulletChart\(figure\)/)
+  assert.match(rendered.document, /deckbuilderBulletTargets/)
   assert.match(rendered.document, /class="deck-chart-bullet-svg"/)
   assert.match(rendered.document, /deck-bullet-bar/)
   assert.match(rendered.document, /deck-bullet-target/)
@@ -425,6 +543,11 @@ test('renders bubble deck charts in HTML and PPTX outputs', async () => {
   const rendered = renderDeckHtml(deck, { resourcesDir: 'resources', definitions })
 
   assert.match(rendered.document, /class="deck-chart deck-chart-bubble"/)
+  assert.match(rendered.document, /data-deck-chart-type="bubble"/)
+  assert.match(rendered.document, /data-deck-chartjs="bubble"/)
+  assert.match(rendered.document, /data-deck-chart-config="\{&quot;type&quot;:&quot;bubble&quot;/)
+  assert.match(rendered.document, /function initPointChart\(figure, options = \{\}\)/)
+  assert.match(rendered.document, /type: options\.bubble \? 'bubble' : 'scatter'/)
   assert.match(rendered.document, /class="deck-chart-bubble-svg"/)
   assert.match(rendered.document, /deck-chart-bubble-point/)
   assert.doesNotMatch(rendered.document, /<deck-chart/i)
@@ -457,6 +580,11 @@ test('renders histogram deck charts in HTML and PPTX outputs', async () => {
   const rendered = renderDeckHtml(deck, { resourcesDir: 'resources', definitions })
 
   assert.match(rendered.document, /class="deck-chart deck-chart-histogram"/)
+  assert.match(rendered.document, /data-deck-chart-type="histogram"/)
+  assert.match(rendered.document, /data-deck-chartjs="histogram"/)
+  assert.match(rendered.document, /data-deck-chart-config="\{&quot;type&quot;:&quot;histogram&quot;/)
+  assert.match(rendered.document, /function initHistogramChart\(figure\)/)
+  assert.match(rendered.document, /deckbuilderVerticalBarValueLabels/)
   assert.match(rendered.document, /class="deck-chart-histogram-svg"/)
   assert.match(rendered.document, /deck-histogram-bar/)
   assert.doesNotMatch(rendered.document, /<deck-chart/i)
@@ -492,6 +620,8 @@ test('renders boxplot deck charts in HTML and PPTX outputs', async () => {
   assert.match(rendered.document, /deck-boxplot-median/)
   assert.doesNotMatch(rendered.document, /<deck-chart/i)
   assert.match(rendered.css, /section\.dark \.deck-chart-boxplot/)
+  assert.match(rendered.document, /@keyframes deckbuilder-boxplot-grow/)
+  assert.match(rendered.document, /\[data-deckbuilder-slide\]\.active \.deck-chart-boxplot-svg \.deck-boxplot-whisker/)
 
   const out = path.join(tmpDir, 'boxplot-chart.pptx')
   await writePptx({ deck, outputPath: out, brand: definitions.brand, mode: 'editable' })
@@ -518,6 +648,11 @@ test('renders pareto deck charts in HTML and PPTX outputs', async () => {
   const rendered = renderDeckHtml(deck, { resourcesDir: 'resources', definitions })
 
   assert.match(rendered.document, /class="deck-chart deck-chart-pareto"/)
+  assert.match(rendered.document, /data-deck-chart-type="pareto"/)
+  assert.match(rendered.document, /data-deck-chartjs="pareto"/)
+  assert.match(rendered.document, /data-deck-chart-config="\{&quot;type&quot;:&quot;pareto&quot;/)
+  assert.match(rendered.document, /function initParetoChart\(figure\)/)
+  assert.match(rendered.document, /deckbuilderParetoLabels/)
   assert.match(rendered.document, /class="deck-chart-pareto-svg"/)
   assert.match(rendered.document, /deck-pareto-line/)
   assert.doesNotMatch(rendered.document, /<deck-chart/i)
@@ -533,6 +668,44 @@ test('renders pareto deck charts in HTML and PPTX outputs', async () => {
   assert.match(paretoSvg, /fill:\s*#0F82F5/i)
   assert.match(paretoSvg, /stroke:\s*#F9935B/i)
   assert.doesNotMatch(paretoSvg, /(?:fill|stroke):\s*(?:0F82F5|59D6FD|F9935B)\b/i)
+})
+
+test('renders radar deck charts in HTML and PPTX outputs', async () => {
+  await rm(tmpDir, { recursive: true, force: true })
+  await mkdir(tmpDir, { recursive: true })
+
+  const definitions = await loadDefinitions(new URL('../resources/definitions', import.meta.url))
+  const deck = parseDeckMarkdown(`# Operating balance
+
+<deck-chart
+  type="radar"
+  title="Operating balance"
+  series="Score"
+  labels="Speed, Control, Effort, Visibility"
+  values="84, 76, 68, 91"
+></deck-chart>`)
+  const rendered = renderDeckHtml(deck, { resourcesDir: 'resources', definitions })
+
+  assert.match(rendered.document, /class="deck-chart deck-chart-radar"/)
+  assert.match(rendered.document, /data-deck-chart-type="radar"/)
+  assert.match(rendered.document, /data-deck-chartjs="radar"/)
+  assert.match(rendered.document, /data-deck-chart-config="\{&quot;type&quot;:&quot;radar&quot;/)
+  assert.match(rendered.document, /function initRadarChart\(figure\)/)
+  assert.match(rendered.document, /deckbuilderRadarValueLabels/)
+  assert.match(rendered.document, /class="deck-chart-radar-svg"/)
+  assert.match(rendered.document, /deck-radar-shape/)
+  assert.doesNotMatch(rendered.document, /<deck-chart/i)
+  assert.match(rendered.css, /section\.dark \.deck-chart-radar/)
+
+  const out = path.join(tmpDir, 'radar-chart.pptx')
+  await writePptx({ deck, outputPath: out, brand: definitions.brand, mode: 'editable' })
+  const archive = await JSZip.loadAsync(await readFile(out))
+  const mediaNames = Object.keys(archive.files).filter((name) => name.startsWith('ppt/media/') && name.endsWith('.svg'))
+  const svgTexts = await Promise.all(mediaNames.map((name) => archive.file(name).async('string')))
+  const radarSvg = svgTexts.find((svgText) => /deck-chart-radar-svg/.test(svgText))
+  assert.ok(radarSvg)
+  assert.match(radarSvg, /deck-radar-shape/)
+  assert.doesNotMatch(radarSvg, /var\(--deck-radar/)
 })
 
 test('renders sankey deck charts in HTML and PPTX outputs', async () => {
@@ -554,8 +727,12 @@ test('renders sankey deck charts in HTML and PPTX outputs', async () => {
   assert.match(rendered.document, /class="deck-chart-sankey-svg"/)
   assert.match(rendered.document, /deck-sankey-link/)
   assert.match(rendered.document, /deck-sankey-node/)
+  assert.match(rendered.document, /deck-sankey-value/)
   assert.doesNotMatch(rendered.document, /<deck-chart/i)
   assert.match(rendered.css, /section\.dark \.deck-chart-sankey/)
+  assert.match(rendered.document, /\[data-deckbuilder-slide\]\.active \.deck-chart-sankey-svg \.deck-sankey-link/)
+  assert.match(rendered.document, /\[data-deckbuilder-slide\]\.active \.deck-impact-radar-svg \.deck-impact-radar-bar-fill/)
+  assert.match(rendered.document, /stroke-dasharray: var\(--deck-chart-dash\)/)
 
   const out = path.join(tmpDir, 'sankey-chart.pptx')
   await writePptx({ deck, outputPath: out, brand: definitions.brand, mode: 'editable' })
@@ -586,6 +763,12 @@ test('renders stacked bar deck charts in HTML and PPTX outputs', async () => {
   const rendered = renderDeckHtml(deck, { resourcesDir: 'resources', definitions })
 
   assert.match(rendered.document, /class="deck-chart deck-chart-stacked-bar"/)
+  assert.match(rendered.document, /data-deck-chart-type="stacked-bar"/)
+  assert.match(rendered.document, /data-deck-chartjs="stacked-bar"/)
+  assert.match(rendered.document, /data-deck-chart-config="\{&quot;type&quot;:&quot;stacked-bar&quot;/)
+  assert.match(rendered.document, /deckbuilderMultiBarValueLabels/)
+  assert.match(rendered.document, /mode: valueMode/)
+  assert.match(rendered.document, /suggestedMax/)
   assert.match(rendered.document, /class="deck-chart-stacked-row"/)
   assert.match(rendered.document, /deck-chart-stacked-segment/)
   assert.doesNotMatch(rendered.document, /<deck-chart/i)
@@ -641,6 +824,13 @@ test('renders doughnut deck charts in HTML and PPTX outputs', async () => {
   const rendered = renderDeckHtml(deck, { resourcesDir: 'resources', definitions })
 
   assert.match(rendered.document, /class="deck-chart deck-chart-doughnut"/)
+  assert.match(rendered.document, /data-deck-chart-type="doughnut"/)
+  assert.match(rendered.document, /data-deck-chartjs="doughnut"/)
+  assert.match(rendered.document, /data-deck-chart-config="\{&quot;type&quot;:&quot;doughnut&quot;/)
+  assert.match(rendered.document, /deckbuilderDoughnutValueLabels/)
+  assert.match(rendered.document, /chart\.data\.labels\.map/)
+  assert.match(rendered.document, /String\(label\) \+ ': ' \+ formatNumber\.format\(value\)/)
+  assert.match(rendered.document, /fontColor: theme\.text/)
   assert.match(rendered.document, /class="deck-chart-doughnut-ring"/)
   assert.match(rendered.document, /conic-gradient/)
   assert.doesNotMatch(rendered.document, /<deck-chart/i)
@@ -675,6 +865,10 @@ test('renders scatter deck charts in HTML and PPTX outputs', async () => {
   const rendered = renderDeckHtml(deck, { resourcesDir: 'resources', definitions })
 
   assert.match(rendered.document, /class="deck-chart deck-chart-scatter"/)
+  assert.match(rendered.document, /data-deck-chart-type="scatter"/)
+  assert.match(rendered.document, /data-deck-chartjs="scatter"/)
+  assert.match(rendered.document, /data-deck-chart-config="\{&quot;type&quot;:&quot;scatter&quot;/)
+  assert.match(rendered.document, /deckbuilderPointValueLabels/)
   assert.match(rendered.document, /class="deck-chart-scatter-svg"/)
   assert.match(rendered.document, /Automate/)
   assert.doesNotMatch(rendered.document, /<deck-chart/i)
@@ -722,6 +916,7 @@ test('renders deck-signal-bars in HTML and PPTX outputs', async () => {
   assert.match(rendered.css, /--deck-signal-accent: #0f82f5/)
   assert.match(rendered.css, /section\.light \.deck-signal-bars/)
   assert.match(rendered.css, /section\.light \.deck-signal-summary p/)
+  assert.match(rendered.document, /\[data-deckbuilder-slide\]\.active :is\(\.deck-signal-fill, \.deck-chart-fill, \.deck-chart-stacked-fill\)/)
 
   const out = path.join(tmpDir, 'signal-bars.pptx')
   await writePptx({ deck, outputPath: out, brand: definitions.brand, mode: 'editable' })
@@ -774,6 +969,46 @@ test('renders deck-signal-board in HTML and PPTX outputs', async () => {
   assert.ok(info.size > 1000)
 })
 
+test('renders deck-orchestration with inline brand slot and dark-safe defaults', async () => {
+  await rm(tmpDir, { recursive: true, force: true })
+  await mkdir(tmpDir, { recursive: true })
+
+  const definitions = await loadDefinitions(new URL('../resources/definitions', import.meta.url))
+  const deck = parseDeckMarkdown(`# What we do
+
+<deck-orchestration
+  upstream-label="Customer channels"
+  upstream="Voice, Chat, Web, App, In-store"
+  layer="ExampleCo"
+  logo="company"
+  tagline="the AI orchestration layer"
+  capabilities="Identity & MFA, eSignatures, Document capture & IDP, Structured compliance steps"
+  downstream-label="Core systems"
+  downstream="CRM, Billing, Credit, CCaaS, Document store"
+  caption="One connected, agent-guided journey with compliance built into the flow."
+></deck-orchestration>`)
+  const rendered = renderDeckHtml(deck, { resourcesDir: 'resources', definitions })
+
+  assert.equal(deck.slides[0].layout, 'orchestration')
+  assert.match(rendered.document, /class="deck-orchestration/)
+  assert.match(rendered.document, /deck-orchestration-layer-brand/)
+  assert.match(rendered.document, /data-deck-inline-logo="company"/)
+  assert.match(rendered.document, /element\.dataset\.deckInlineLogo === 'company'/)
+  assert.match(rendered.document, /section \.deck-orchestration-layer-brand/)
+  assert.match(rendered.document, /deck-orchestration-layer::after/)
+  assert.match(rendered.document, /deck-orchestration-cap/)
+  assert.match(rendered.document, /section\.dark \.deck-chart-row strong/)
+  assert.match(rendered.document, /section\.dark \.deck-logo-wall \.deck-logo-tile img/)
+  assert.doesNotMatch(rendered.document, /<deck-orchestration/i)
+  assert.doesNotMatch(rendered.document, /section\.dark \.deck-logo-wall \.deck-logo-tile,[^{]+background: rgba\(255, 255, 255, \.94\)/)
+
+  const out = path.join(tmpDir, 'orchestration.pptx')
+  await writePptx({ deck, outputPath: out, brand: definitions.brand, mode: 'editable' })
+  const info = await stat(out)
+  assert.equal(info.isFile(), true)
+  assert.ok(info.size > 1000)
+})
+
 test('renders deck-funnel in HTML and PPTX outputs', async () => {
   await rm(tmpDir, { recursive: true, force: true })
   await mkdir(tmpDir, { recursive: true })
@@ -793,6 +1028,7 @@ test('renders deck-funnel in HTML and PPTX outputs', async () => {
   assert.match(rendered.document, /class="deck-funnel-segment"/)
   assert.doesNotMatch(rendered.document, /<deck-funnel/i)
   assert.match(rendered.css, /section\.light \.deck-funnel/)
+  assert.match(rendered.document, /\[data-deckbuilder-slide\]\.active \.deck-funnel-stage/)
 
   const out = path.join(tmpDir, 'funnel.pptx')
   await writePptx({ deck, outputPath: out, brand: definitions.brand, mode: 'editable' })
@@ -833,6 +1069,7 @@ test('renders deck-metric-trend in HTML and PPTX outputs', async () => {
   assert.match(rendered.document, /class="deck-metric-trend-line"/)
   assert.match(rendered.document, /class="deck-metric-trend-line"[^>]*fill="none"[^>]*stroke="#0f82f5"/)
   assert.match(rendered.document, /class="deck-metric-trend-dot"[^>]*fill="#0f82f5"[^>]*stroke="#ffffff"/)
+  assert.match(rendered.document, /\[data-deckbuilder-slide\]\.active \.deck-metric-trend-line/)
   assert.match(rendered.document, /text-anchor="end">W5<\/text>/)
   assert.match(rendered.document, />92%<\/text>/)
   assert.doesNotMatch(rendered.document, /<deck-metric-trend/i)
@@ -865,6 +1102,7 @@ test('renders deck-heatmap in HTML and PPTX outputs', async () => {
   assert.match(rendered.document, /--deck-heatmap-columns:3/)
   assert.match(rendered.document, /title="Tue 10: 88 cases"/)
   assert.doesNotMatch(rendered.document, /<deck-heatmap/i)
+  assert.match(rendered.document, /\[data-deckbuilder-slide\]\.active \.deck-heatmap-cell/)
 
   const out = path.join(tmpDir, 'heatmap.pptx')
   await writePptx({ deck, outputPath: out, brand: definitions.brand, mode: 'editable' })
@@ -927,6 +1165,7 @@ test('renders deck-treemap in HTML and PPTX outputs', async () => {
   assert.match(rendered.document, /style="fill:var\(--deck-treemap-fill-0, #0f82f5\)"/)
   assert.match(rendered.document, /fill="#ffffff">Journey A<\/text>/)
   assert.doesNotMatch(rendered.document, /<deck-treemap/i)
+  assert.match(rendered.document, /\[data-deckbuilder-slide\]\.active \.deck-treemap-cell/)
 
   const out = path.join(tmpDir, 'treemap.pptx')
   await writePptx({ deck, outputPath: out, brand: definitions.brand, mode: 'editable' })
@@ -1512,12 +1751,17 @@ Body copy
   assert.match(rendered.document, /section\.cover/)
   assert.match(rendered.document, /deck-divider-slide/)
   assert.match(rendered.document, /deck-close-slide/)
-  assert.match(rendered.document, /background-image:url\("data:image\/png;base64,/)
+  assert.match(rendered.document, /section\.cover\{[^}]*background-image:url\("data:image\/png;base64,/)
+  assert.match(rendered.document, /section\.deck-divider-slide,[^{]+section:has\(\.deck-divider\)\{[^}]*background-image:url\("data:image\/png;base64,/)
+  assert.match(rendered.document, /section\.deck-close-slide,[^{]+section:has\(\.deck-close\)\{[^}]*background-image:url\("data:image\/png;base64,/)
+  assert.match(rendered.document, /--deckbuilder-title-bg-image:\s*url\("data:image\/png;base64,/)
+  assert.doesNotMatch(rendered.document, /section\{background-image:url\("data:image\/png;base64,/)
+  assert.match(rendered.document, /<style data-deckbuilder-html>[\s\S]*section\.cover[\s\S]*radial-gradient\(120% 90% at 12% 8%, #0c2143/)
   assert.doesNotMatch(rendered.document, /resource:title-bg\.png/)
   assert.doesNotMatch(rendered.document, /resource:content-bg\.png/)
 })
 
-test('deck-slide surface metadata keeps branded background assets visible', async () => {
+test('deck-slide surface metadata keeps content slides gradient-backed', async () => {
   await rm(tmpDir, { recursive: true, force: true })
   await mkdir(path.join(tmpDir, 'resources'), { recursive: true })
 
@@ -1564,9 +1808,10 @@ Body copy`)
 
   assert.match(rendered.document, /<section[^>]*class="dark"/)
   assert.match(rendered.document, /<section[^>]*class="light"/)
-  assert.match(rendered.css, /section\{background-image:url\("data:image\/png;base64,/)
-  assert.match(rendered.css, /section\.light\{background-image:url\("data:image\/png;base64,/)
-  assert.doesNotMatch(rendered.css, /section\.light\{background-color:#ffffff;background-image:none\}/)
+  assert.doesNotMatch(rendered.css, /section\{background-image:url\("data:image\/png;base64,/)
+  assert.doesNotMatch(rendered.css, /section\.light\{background-image:url\("data:image\/png;base64,/)
+  assert.match(rendered.document, /section\.dark\s*\{[\s\S]*radial-gradient/)
+  assert.match(rendered.document, /section\.light\s*\{[\s\S]*radial-gradient/)
 })
 
 test('structured component panels preserve branded background imagery', async () => {
@@ -1806,11 +2051,11 @@ test('brand background assets target divider and close slide surfaces', async ()
 
   assert.match(
     rendered.css,
-    /section\.deck-divider-slide,\s*[^,{]*section:has\(\.deck-divider\)\{background-image:url\("data:image\/png;base64,/,
+    /section\.deck-divider-slide,\s*[^,{]*section:has\(\.deck-divider\)\{[^}]*background-image:url\("data:image\/png;base64,/,
   )
   assert.match(
     rendered.css,
-    /section\.deck-close-slide,\s*[^,{]*section:has\(\.deck-close\)\{background-image:url\("data:image\/png;base64,/,
+    /section\.deck-close-slide,\s*[^,{]*section:has\(\.deck-close\)\{[^}]*background-image:url\("data:image\/png;base64,/,
   )
   assert.doesNotMatch(rendered.css, /\.deck-close\{background-image:/)
 })
@@ -1909,9 +2154,9 @@ customerName: Customer A
 
 ---
 
-# Content
+<deck-slide surface="light" customer-logo="resource:logos/customer.svg" customer-name="Customer A" />
 
-<deck-slide customer-logo="resource:logos/customer.svg" customer-name="Customer A" />
+# Content
 
 Body copy`)
   const rendered = renderDeckHtml(deck, {
@@ -2171,6 +2416,8 @@ customerLogo: resource:logos/customer.svg
 # Dark cover
 
 ---
+
+<deck-slide surface="light" />
 
 # Light content`)
   const rendered = renderDeckHtml(deck, {

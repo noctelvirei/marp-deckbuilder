@@ -34,6 +34,30 @@ async function smokeDeckSkill() {
   await assertFile(join(outputDir, 'example.html'), 1000)
   await assertFile(join(outputDir, 'example.pptx'), 1000)
   await assertVendorInjection(join(outputDir, 'example.html'), 'data-marp-deckbuilder-vendor')
+
+  const htmlOnlyDir = join(skillRoot, 'output-html')
+  await run(process.execPath, [
+    'scripts/build-deck.mjs',
+    'examples/example.md',
+    '--out-dir',
+    'output-html',
+    '--output',
+    'html',
+  ], skillRoot)
+  await assertFile(join(htmlOnlyDir, 'example.html'), 1000)
+  await assertAbsent(join(htmlOnlyDir, 'example.pptx'))
+
+  const pptxOnlyDir = join(skillRoot, 'output-pptx')
+  await run(process.execPath, [
+    'scripts/build-deck.mjs',
+    'examples/example.md',
+    '--out-dir',
+    'output-pptx',
+    '--output',
+    'pptx',
+  ], skillRoot)
+  await assertFile(join(pptxOnlyDir, 'example.pptx'), 1000)
+  await assertAbsent(join(pptxOnlyDir, 'example.html'))
 }
 
 async function smokeReportSkill() {
@@ -115,6 +139,10 @@ async function assertFile(path, minBytes) {
   if (!info.isFile() || info.size < minBytes) {
     throw new Error(`Expected smoke output ${path} to be a file larger than ${minBytes} bytes.`)
   }
+}
+
+async function assertAbsent(path) {
+  if (existsSync(path)) throw new Error(`Expected no smoke output at ${path}.`)
 }
 
 async function assertPdf(path) {

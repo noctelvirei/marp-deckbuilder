@@ -116,12 +116,13 @@ the slide design instead of being covered by default component cards.
 
 Surface is a design choice, not a fixed layout rule. Branded forks should
 provide readable dark and light variants for the main deck styles, especially
-executive layouts. Cover, divider, and close slides may default dark for
-compatibility, but content/component slides can be dark or light depending on
-the story and audience. Authors may use `defaultSurface: dark|light`,
-`<deck-slide surface="dark|light" />`, or component attributes such as
-`surface="dark"` to choose a surface. Ordinary deck Markdown should not set
-global theme names or hand-position logos.
+executive layouts. Dark is the default deck surface; cover, divider, and close
+slides use dark header treatment and may use image backgrounds, while normal
+content/component slides use renderer-owned gradient/glass backgrounds by
+default. Authors may use `defaultSurface: light`,
+`<deck-slide surface="light" />`, or component attributes such as
+`surface="light"` when a light slide is intentional. Ordinary deck Markdown
+should not set global theme names or hand-position logos.
 
 Avoid theme CSS rules that invert `.deck-customer-logo`; customer logos should
 keep their original brand colours. Prefer transparent PNG customer logo exports

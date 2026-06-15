@@ -9,7 +9,7 @@ presenter:
 
 <deck-slide layout="cover" />
 
-# Deckbuilder Capability Showcase
+# Browser impact.<br>**Editable handoff.**<br>One source.
 
 A tasteful tour of the HTML presenter, native PPTX handoff, controlled animations, executive layouts, chart types, and renderer-backed slide components.
 
@@ -27,7 +27,7 @@ A tasteful tour of the HTML presenter, native PPTX handoff, controlled animation
 
 <deck-stat-grid>
   <deck-stat value="16" label="controlled entrance animations"></deck-stat>
-  <deck-stat value="14" label="structured chart types"></deck-stat>
+  <deck-stat value="15" label="structured chart types"></deck-stat>
   <deck-stat value="9" label="premium renderer-backed visuals"></deck-stat>
 </deck-stat-grid>
 
@@ -37,8 +37,8 @@ The showcase uses compact component Markdown so the renderer owns brand chrome, 
 
 <deck-divider
   label="Executive Surfaces"
-  title="Large-format narrative slides now work on dark and light surfaces."
-  subtitle="Use executive components when the deck needs stronger hierarchy than normal content slides."
+  title="Dark is the default; light is an explicit opt-in."
+  subtitle="The next section keeps one or two light slides only to prove the renderer can handle them."
 ></deck-divider>
 
 ---
@@ -407,6 +407,27 @@ The showcase uses compact component Markdown so the renderer owns brand chrome, 
 ---
 
 <deck-slide
+  eyebrow="ORCHESTRATION"
+  takeaway="Use the orchestration layer when the story is how channels, compliance actions, and systems connect."
+/>
+
+# We sit between your channels and your core systems
+
+<deck-orchestration
+  upstream-label="Customer channels"
+  upstream="Voice, Chat, Web, App, In-store"
+  layer="ExampleCo"
+  logo="company"
+  tagline="the AI orchestration layer"
+  capabilities="Identity & MFA, eSignatures, Document capture & IDP, Structured compliance steps"
+  downstream-label="Core systems"
+  downstream="CRM, Billing, Credit, CCaaS, Document store"
+  caption="One connected, agent-guided journey. Compliance built into the flow, with no system-switching, no app download, and no rip-and-replace."
+></deck-orchestration>
+
+---
+
+<deck-slide
   eyebrow="SIGNAL BOARD"
   takeaway="A narrative panel plus signal bars keeps an executive dashboard readable."
 />
@@ -510,6 +531,23 @@ The showcase uses compact component Markdown so the renderer owns brand chrome, 
   radar-values="84, 76, 68, 91"
   caption="The PPTX version embeds this renderer-owned visual as a crisp SVG."
 ></deck-impact-radar>
+
+---
+
+<deck-slide
+  eyebrow="RADAR CHART"
+  takeaway="Radar charts compare capability balance without leaving the component system."
+/>
+
+# The strongest profile is speed, compliance, and channel reach
+
+<deck-chart
+  type="radar"
+  title="Capability profile"
+  series="Score"
+  labels="Speed, Compliance, Reach, Resilience, Effort, Insight"
+  values="91, 88, 84, 72, 58, 79"
+></deck-chart>
 
 ---
 

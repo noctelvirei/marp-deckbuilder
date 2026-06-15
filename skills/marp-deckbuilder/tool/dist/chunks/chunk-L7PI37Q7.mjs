@@ -681,10 +681,8 @@ function renderImpactRadarSvg(impactRadar, options = {}) {
     .deck-impact-radar-track { fill: ${color("track")}; }
     .deck-impact-radar-grid { fill: none; stroke: ${color("radarGrid")}; }
     .deck-impact-radar-shape { fill: ${color("radarFill")}; stroke: ${color("radarStroke")}; stroke-width: 5; }
-    .deck-impact-radar-bar-fill { transform-box: fill-box; transform-origin: left center; animation: deck-impact-radar-fill-in 800ms ease-out both; }
-    .deck-impact-radar-shape-animated { opacity: 0; animation: deck-impact-radar-fade-in 800ms ease-out 240ms both; }
-    @keyframes deck-impact-radar-fill-in { from { transform: scaleX(0); } to { transform: scaleX(1); } }
-    @keyframes deck-impact-radar-fade-in { from { opacity: 0; } to { opacity: 1; } }
+    .deck-impact-radar-bar-fill { transform-box: fill-box; transform-origin: left center; }
+    .deck-impact-radar-shape-animated { transform-box: fill-box; transform-origin: center; }
   </style>
   <rect class="deck-impact-radar-surface" x="0" y="0" width="920" height="360" rx="0"></rect>
   <rect class="deck-impact-radar-panel" x="18" y="18" width="884" height="324"></rect>
@@ -1052,8 +1050,102 @@ function round7(value) {
   return Math.round(value * 10) / 10;
 }
 
-// src/components/sankey.js
+// src/components/radar.js
 var DEFAULT_COLORS7 = {
+  light: {
+    grid: "#d8e2f0",
+    text: "#333333",
+    muted: "#666666",
+    fill: "rgba(15, 130, 245, .18)",
+    stroke: "#0f82f5",
+    point: "#59d6fd"
+  },
+  dark: {
+    grid: "#31557e",
+    text: "#f4f8ff",
+    muted: "#c8d8f0",
+    fill: "rgba(89, 214, 253, .20)",
+    stroke: "#59d6fd",
+    point: "#0f82f5"
+  }
+};
+function renderRadarSvg(chart, options = {}) {
+  const useVariables = options.cssVariables !== false;
+  const mode = options.mode === "dark" ? "dark" : "light";
+  const colors = {
+    ...DEFAULT_COLORS7[mode],
+    grid: options.gridColor || DEFAULT_COLORS7[mode].grid,
+    text: options.textColor || DEFAULT_COLORS7[mode].text,
+    muted: options.mutedColor || DEFAULT_COLORS7[mode].muted,
+    fill: options.fillColor || DEFAULT_COLORS7[mode].fill,
+    stroke: options.strokeColor || DEFAULT_COLORS7[mode].stroke,
+    point: options.pointColor || DEFAULT_COLORS7[mode].point
+  };
+  const color = (name) => useVariables ? `var(--deck-radar-${name}, ${colors[name]})` : colors[name];
+  const geometry = radarGeometry(chart);
+  const rings = [0.25, 0.5, 0.75, 1].map((scale) => `<polygon class="deck-radar-grid" points="${radarPoints2(chart.labels.length, geometry.center, geometry.radius * scale).join(" ")}"></polygon>`).join("\n  ");
+  const axes = radarPointObjects2(chart.labels.length, geometry.center, geometry.radius).map((point) => `<line class="deck-radar-grid" x1="${geometry.center.x}" y1="${geometry.center.y}" x2="${point.x}" y2="${point.y}"></line>`).join("\n  ");
+  const labels = radarPointObjects2(chart.labels.length, geometry.center, geometry.radius + 34).map((point, index) => {
+    const anchor = point.x < geometry.center.x - 8 ? "end" : point.x > geometry.center.x + 8 ? "start" : "middle";
+    return `<text class="deck-radar-label" x="${point.x}" y="${point.y + 5}" text-anchor="${anchor}">${escapeHtml(chart.labels[index])}</text>`;
+  }).join("\n  ");
+  const shapePoints = chart.values.map((value, index) => radarPoint2(index, chart.values.length, geometry.center, geometry.radius * (value / geometry.maxValue))).map((point) => `${point.x},${point.y}`).join(" ");
+  const dots = chart.values.map((value, index) => {
+    const point = radarPoint2(index, chart.values.length, geometry.center, geometry.radius * (value / geometry.maxValue));
+    return `<g class="deck-radar-point" transform="translate(${point.x} ${point.y})">
+    <circle r="5"><title>${escapeHtml(chart.labels[index])}: ${escapeHtml(formatNumber(value))}</title></circle>
+    <text x="0" y="-12" text-anchor="middle">${escapeHtml(formatNumber(value))}</text>
+  </g>`;
+  }).join("\n  ");
+  return `<svg class="deck-chart-radar-svg" viewBox="0 0 ${geometry.width} ${geometry.height}" role="img" aria-label="${escapeAttr(chart.title || "Radar chart")}">
+  <style>
+    .deck-radar-grid { fill: none; stroke: ${color("grid")}; stroke-width: 1.4; }
+    .deck-radar-shape { fill: ${color("fill")}; stroke: ${color("stroke")}; stroke-width: 4; stroke-linejoin: round; }
+    .deck-radar-point circle { fill: ${color("point")}; stroke: ${color("stroke")}; stroke-width: 2; }
+    .deck-radar-point text, .deck-radar-label, .deck-radar-scale { fill: ${color("text")}; font: 600 12px "Poppins", "Aptos", sans-serif; }
+    .deck-radar-scale { fill: ${color("muted")}; font-weight: 500; }
+  </style>
+  <text class="deck-radar-scale" x="${geometry.center.x + 10}" y="${geometry.center.y - geometry.radius - 8}">${escapeHtml(formatNumber(geometry.maxValue))}</text>
+  ${rings}
+  ${axes}
+  <polygon class="deck-radar-shape" points="${shapePoints}"></polygon>
+  ${dots}
+  ${labels}
+</svg>`;
+}
+function radarGeometry(chart) {
+  const width = 760;
+  const height = 350;
+  const center = { x: 380, y: 176 };
+  const radius = 116;
+  const maxValue = niceCeiling4(Math.max(1, ...chart.values));
+  return { width, height, center, radius, maxValue };
+}
+function radarPoints2(count, center, radius) {
+  return radarPointObjects2(count, center, radius).map((point) => `${point.x},${point.y}`);
+}
+function radarPointObjects2(count, center, radius) {
+  return Array.from({ length: count }, (_, index) => radarPoint2(index, count, center, radius));
+}
+function radarPoint2(index, count, center, radius) {
+  const angle = -Math.PI / 2 + index / count * Math.PI * 2;
+  return {
+    x: round8(center.x + Math.cos(angle) * radius),
+    y: round8(center.y + Math.sin(angle) * radius)
+  };
+}
+function niceCeiling4(value) {
+  const magnitude = 10 ** Math.floor(Math.log10(value));
+  const normalized = value / magnitude;
+  const nice = normalized <= 1 ? 1 : normalized <= 2 ? 2 : normalized <= 2.5 ? 2.5 : normalized <= 5 ? 5 : 10;
+  return nice * magnitude;
+}
+function round8(value) {
+  return Math.round(value * 10) / 10;
+}
+
+// src/components/sankey.js
+var DEFAULT_COLORS8 = {
   light: {
     grid: "#d8e2f0",
     text: "#333333",
@@ -1074,7 +1166,7 @@ var DEFAULT_COLORS7 = {
 function renderSankeySvg(chart, options = {}) {
   const useVariables = options.cssVariables !== false;
   const mode = options.mode === "dark" ? "dark" : "light";
-  const defaults = DEFAULT_COLORS7[mode];
+  const defaults = DEFAULT_COLORS8[mode];
   const colors = {
     grid: options.gridColor || defaults.grid,
     text: options.textColor || defaults.text,
@@ -1089,23 +1181,25 @@ function renderSankeySvg(chart, options = {}) {
     return useVariables ? `var(--deck-sankey-node-${index % 6}, ${fallback})` : fallback;
   };
   const geometry = sankeyGeometry(chart);
-  const links = geometry.links.map((link) => `<path class="deck-sankey-link deck-sankey-link-${link.source.index % 6}" d="${linkPath(link, geometry.nodeWidth)}" stroke="${nodeColor(link.source.index)}" stroke-width="${round8(link.width)}">
+  const links = geometry.links.map((link) => `<path class="deck-sankey-link deck-sankey-link-${link.source.index % 6}" d="${linkPath(link, geometry.nodeWidth)}" stroke="${nodeColor(link.source.index)}" stroke-width="${round9(link.width)}">
     <title>${escapeHtml(link.source.label)} to ${escapeHtml(link.target.label)}: ${escapeHtml(formatNumber(link.value))}</title>
   </path>`).join("\n  ");
   const nodes = geometry.nodes.map((node) => {
-    const labelAnchor = node.depth === geometry.maxDepth ? "end" : "start";
-    const labelX = node.depth === geometry.maxDepth ? -8 : geometry.nodeWidth + 8;
-    return `<g class="deck-sankey-node deck-sankey-node-${node.index % 6}" transform="translate(${round8(node.x)} ${round8(node.y)})">
-    <rect class="deck-sankey-node-rect" width="${geometry.nodeWidth}" height="${round8(node.height)}" rx="5" fill="${nodeColor(node.index)}"><title>${escapeHtml(node.label)}: in ${escapeHtml(formatNumber(node.incoming))}, out ${escapeHtml(formatNumber(node.outgoing))}</title></rect>
-    <text class="deck-sankey-label" x="${labelX}" y="${round8(Math.max(12, node.height / 2))}" dy="0.35em" text-anchor="${labelAnchor}">${escapeHtml(truncateLabel(node.label))}</text>
+    const label = nodeLabel(node, geometry);
+    const nodeValue = Math.max(node.incoming, node.outgoing);
+    return `<g class="deck-sankey-node deck-sankey-node-${node.index % 6}" transform="translate(${round9(node.x)} ${round9(node.y)})">
+    <rect class="deck-sankey-node-rect" width="${geometry.nodeWidth}" height="${round9(node.height)}" rx="5" fill="${nodeColor(node.index)}"><title>${escapeHtml(node.label)}: in ${escapeHtml(formatNumber(node.incoming))}, out ${escapeHtml(formatNumber(node.outgoing))}</title></rect>
+    <text class="deck-sankey-label" x="${label.x}" y="${label.y}" text-anchor="${label.anchor}">${escapeHtml(truncateLabel(node.label))}</text>
+    <text class="deck-sankey-value" x="${label.x}" y="${label.y + 15}" text-anchor="${label.anchor}">${escapeHtml(formatNumber(nodeValue))}</text>
   </g>`;
   }).join("\n  ");
   return `<svg class="deck-chart-sankey-svg" viewBox="0 0 ${geometry.width} ${geometry.height}" role="img" aria-label="${escapeAttr(chart.title || "Sankey chart")}">
   <style>
     .deck-sankey-link { fill: none; stroke-linecap: round; opacity: ${color("linkOpacity")}; }
     .deck-sankey-node-rect { stroke: ${color("grid")}; stroke-width: 1; }
-    .deck-sankey-label, .deck-sankey-caption { fill: ${color("text")}; font: 700 12px "Poppins", "Aptos", sans-serif; }
+    .deck-sankey-label, .deck-sankey-value, .deck-sankey-caption { fill: ${color("text")}; font: 700 12px "Poppins", "Aptos", sans-serif; }
     .deck-sankey-label { paint-order: stroke; stroke: ${color("label-halo")}; stroke-width: 5; stroke-linejoin: round; }
+    .deck-sankey-value { fill: ${color("muted")}; font-size: 10.5px; font-weight: 600; paint-order: stroke; stroke: ${color("label-halo")}; stroke-width: 4; stroke-linejoin: round; }
     .deck-sankey-caption { fill: ${color("muted")}; font-weight: 500; }
   </style>
   <g class="deck-sankey-links">
@@ -1127,8 +1221,8 @@ function sankeyRows(chart) {
 function sankeyGeometry(chart) {
   const width = 760;
   const height = 330;
-  const nodeWidth = 18;
-  const margin = { top: 24, right: 118, bottom: 24, left: 34 };
+  const nodeWidth = 16;
+  const margin = { top: 48, right: 86, bottom: 34, left: 86 };
   const innerHeight = Math.max(120, height - margin.top - margin.bottom);
   const innerWidth = Math.max(220, width - margin.left - margin.right - nodeWidth);
   const nodeMap = /* @__PURE__ */ new Map();
@@ -1164,46 +1258,32 @@ function sankeyGeometry(chart) {
   const nodes = Array.from(nodeMap.values());
   const maxDepth = Math.max(...nodes.map((node) => node.depth), 1);
   const columns = groupBy(nodes, (node) => node.depth);
-  columns.forEach((column) => {
-    column.sort((a, b) => Math.max(b.incoming, b.outgoing) - Math.max(a.incoming, a.outgoing));
-    const gap = column.length > 1 ? 12 : 0;
-    const available = Math.max(24, innerHeight - gap * Math.max(0, column.length - 1));
-    const totalWeight = column.reduce((sum, node) => sum + Math.max(node.incoming, node.outgoing, 1), 0);
-    const minHeight = column.length * 16 <= available ? 16 : Math.max(6, available / Math.max(1, column.length));
-    let y = margin.top;
-    column.forEach((node) => {
+  const maxNodeWeight = Math.max(...nodes.map((node) => Math.max(node.incoming, node.outgoing, 1)), 1);
+  columns.forEach((column, depth) => {
+    column.sort((a, b) => Math.max(b.incoming, b.outgoing) - Math.max(a.incoming, a.outgoing) || a.index - b.index);
+    const gap = column.length > 1 ? 44 : 0;
+    const heights = column.map((node) => {
       const weight = Math.max(node.incoming, node.outgoing, 1);
-      node.x = margin.left + node.depth / maxDepth * innerWidth;
+      return clamp(28 + Math.sqrt(weight / maxNodeWeight) * 42, 30, 72);
+    });
+    const totalHeight = heights.reduce((sum, value) => sum + value, 0) + gap * Math.max(0, column.length - 1);
+    let y = margin.top + Math.max(0, (innerHeight - totalHeight) / 2);
+    column.forEach((node) => {
+      node.x = margin.left + depth / maxDepth * innerWidth;
       node.y = y;
-      node.height = Math.max(minHeight, weight / Math.max(totalWeight, 1) * available);
+      node.height = heights[column.indexOf(node)];
       y += node.height + gap;
     });
   });
-  const maxColumnWeight = Math.max(
-    ...Array.from(
-      columns.values(),
-      (column) => column.reduce((sum, node) => sum + Math.max(node.incoming, node.outgoing, 1), 0)
-    ),
-    1
-  );
-  const linkScale = innerHeight / maxColumnWeight;
+  const maxLinkValue = Math.max(...links.map((link) => link.value), 1);
   links.forEach((link) => {
-    const maxLinkWidth = Math.max(2, Math.min(link.source.height, link.target.height, innerHeight * 0.24));
-    link.width = Math.min(maxLinkWidth, Math.max(2, link.value * linkScale));
+    link.width = clamp(5 + Math.sqrt(link.value / maxLinkValue) * 33, 7, 38);
   });
   nodes.forEach((node) => {
     node.sourceLinks.sort((a, b) => a.target.y - b.target.y);
     node.targetLinks.sort((a, b) => a.source.y - b.source.y);
-    let sourceOffset = Math.max(0, (node.height - totalLinkWidth(node.sourceLinks)) / 2);
-    node.sourceLinks.forEach((link) => {
-      link.y0 = node.y + Math.min(node.height - link.width / 2, sourceOffset + link.width / 2);
-      sourceOffset += link.width;
-    });
-    let targetOffset = Math.max(0, (node.height - totalLinkWidth(node.targetLinks)) / 2);
-    node.targetLinks.forEach((link) => {
-      link.y1 = node.y + Math.min(node.height - link.width / 2, targetOffset + link.width / 2);
-      targetOffset += link.width;
-    });
+    spreadAnchors(node, node.sourceLinks, "y0");
+    spreadAnchors(node, node.targetLinks, "y1");
   });
   return {
     width,
@@ -1218,11 +1298,38 @@ function sankeyGeometry(chart) {
 function linkPath(link, nodeWidth) {
   const x0 = link.source.x + nodeWidth;
   const x1 = link.target.x;
-  const mid = x0 + (x1 - x0) * 0.5;
-  return `M${round8(x0)},${round8(link.y0)}C${round8(mid)},${round8(link.y0)} ${round8(mid)},${round8(link.y1)} ${round8(x1)},${round8(link.y1)}`;
+  const mid = x0 + (x1 - x0) * 0.46;
+  return `M${round9(x0)},${round9(link.y0)}C${round9(mid)},${round9(link.y0)} ${round9(mid)},${round9(link.y1)} ${round9(x1)},${round9(link.y1)}`;
 }
-function totalLinkWidth(links) {
-  return links.reduce((sum, link) => sum + link.width, 0);
+function spreadAnchors(node, links, key) {
+  if (!links.length) return;
+  const center = node.y + node.height / 2;
+  const spacing = links.length > 1 ? Math.min(24, node.height / Math.max(1, links.length - 0.25)) : 0;
+  const start = center - spacing * (links.length - 1) / 2;
+  links.forEach((link, index) => {
+    link[key] = start + spacing * index;
+  });
+}
+function nodeLabel(node, geometry) {
+  if (node.depth === 0) {
+    return {
+      x: -12,
+      y: round9(node.height / 2 - 2),
+      anchor: "end"
+    };
+  }
+  if (node.depth === geometry.maxDepth) {
+    return {
+      x: geometry.nodeWidth + 12,
+      y: round9(node.height / 2 - 2),
+      anchor: "start"
+    };
+  }
+  return {
+    x: round9(geometry.nodeWidth / 2),
+    y: -10,
+    anchor: "middle"
+  };
 }
 function groupBy(items, keyFor) {
   const groups = /* @__PURE__ */ new Map();
@@ -1237,7 +1344,10 @@ function truncateLabel(label) {
   const value = String(label || "");
   return value.length > 18 ? `${value.slice(0, 16).trim()}...` : value;
 }
-function round8(value) {
+function clamp(value, min, max) {
+  return Math.max(min, Math.min(max, value));
+}
+function round9(value) {
   return Math.round(value * 10) / 10;
 }
 
@@ -1291,18 +1401,18 @@ function sumValues(items) {
 }
 function insetBox(box, inset) {
   return {
-    x: round9(box.x + inset),
-    y: round9(box.y + inset),
-    w: round9(Math.max(0, box.w - inset * 2)),
-    h: round9(Math.max(0, box.h - inset * 2))
+    x: round10(box.x + inset),
+    y: round10(box.y + inset),
+    w: round10(Math.max(0, box.w - inset * 2)),
+    h: round10(Math.max(0, box.h - inset * 2))
   };
 }
-function round9(value) {
+function round10(value) {
   return Number(value.toFixed(2));
 }
 
 // src/components/waterfall.js
-var DEFAULT_COLORS8 = {
+var DEFAULT_COLORS9 = {
   light: {
     grid: "#e8eef7",
     axis: "#9aa8bd",
@@ -1324,32 +1434,32 @@ function renderWaterfallSvg(chart, options = {}) {
   const useVariables = options.cssVariables !== false;
   const mode = options.mode === "dark" ? "dark" : "light";
   const colors = {
-    ...DEFAULT_COLORS8[mode],
-    grid: options.gridColor || DEFAULT_COLORS8[mode].grid,
-    axis: options.axisColor || DEFAULT_COLORS8[mode].axis,
-    text: options.textColor || DEFAULT_COLORS8[mode].text,
-    positive: options.positiveColor || DEFAULT_COLORS8[mode].positive,
-    negative: options.negativeColor || DEFAULT_COLORS8[mode].negative,
-    connector: options.connectorColor || DEFAULT_COLORS8[mode].connector
+    ...DEFAULT_COLORS9[mode],
+    grid: options.gridColor || DEFAULT_COLORS9[mode].grid,
+    axis: options.axisColor || DEFAULT_COLORS9[mode].axis,
+    text: options.textColor || DEFAULT_COLORS9[mode].text,
+    positive: options.positiveColor || DEFAULT_COLORS9[mode].positive,
+    negative: options.negativeColor || DEFAULT_COLORS9[mode].negative,
+    connector: options.connectorColor || DEFAULT_COLORS9[mode].connector
   };
   const color = (name) => useVariables ? `var(--deck-waterfall-${name}, ${colors[name]})` : colors[name];
   const geometry = waterfallGeometry(chart);
   const bars = geometry.steps.map((step) => {
     const className = step.delta < 0 ? "negative" : "positive";
     return `<g class="deck-waterfall-step deck-waterfall-step-${className}">
-    <rect class="deck-waterfall-bar deck-waterfall-bar-${className}" x="${round10(step.x)}" y="${round10(step.y)}" width="${round10(step.w)}" height="${round10(step.h)}" rx="5"></rect>
-    <text class="deck-waterfall-value" x="${round10(step.x + step.w / 2)}" y="${round10(step.valueY)}" text-anchor="middle">${escapeHtml(formatDelta(step.delta))}</text>
-    <text class="deck-waterfall-label" x="${round10(step.x + step.w / 2)}" y="${geometry.height - 18}" text-anchor="middle">${escapeHtml(step.label)}</text>
+    <rect class="deck-waterfall-bar deck-waterfall-bar-${className}" x="${round11(step.x)}" y="${round11(step.y)}" width="${round11(step.w)}" height="${round11(step.h)}" rx="5"></rect>
+    <text class="deck-waterfall-value" x="${round11(step.x + step.w / 2)}" y="${round11(step.valueY)}" text-anchor="middle">${escapeHtml(formatDelta(step.delta))}</text>
+    <text class="deck-waterfall-label" x="${round11(step.x + step.w / 2)}" y="${geometry.height - 18}" text-anchor="middle">${escapeHtml(step.label)}</text>
   </g>`;
   }).join("\n  ");
   const connectors = geometry.steps.slice(0, -1).map((step, index) => {
     const next = geometry.steps[index + 1];
-    return `<line class="deck-waterfall-connector" x1="${round10(step.x + step.w)}" y1="${round10(step.endY)}" x2="${round10(next.x)}" y2="${round10(step.endY)}"></line>`;
+    return `<line class="deck-waterfall-connector" x1="${round11(step.x + step.w)}" y1="${round11(step.endY)}" x2="${round11(next.x)}" y2="${round11(step.endY)}"></line>`;
   }).join("\n  ");
   const grid = geometry.ticks.map((tick) => {
     const y = geometry.yFor(tick);
-    return `<line class="deck-waterfall-grid" x1="${geometry.margin.left}" y1="${round10(y)}" x2="${round10(geometry.width - geometry.margin.right)}" y2="${round10(y)}"></line>
-  <text class="deck-waterfall-tick" x="${geometry.margin.left - 14}" y="${round10(y + 5)}" text-anchor="end">${escapeHtml(formatNumber(tick))}</text>`;
+    return `<line class="deck-waterfall-grid" x1="${geometry.margin.left}" y1="${round11(y)}" x2="${round11(geometry.width - geometry.margin.right)}" y2="${round11(y)}"></line>
+  <text class="deck-waterfall-tick" x="${geometry.margin.left - 14}" y="${round11(y + 5)}" text-anchor="end">${escapeHtml(formatNumber(tick))}</text>`;
   }).join("\n  ");
   return `<svg class="deck-chart-waterfall-svg" viewBox="0 0 ${geometry.width} ${geometry.height}" role="img" aria-label="${escapeAttr(chart.title || "Waterfall chart")}">
   <style>
@@ -1362,8 +1472,8 @@ function renderWaterfallSvg(chart, options = {}) {
     .deck-waterfall-value { font-weight: 600; }
   </style>
   ${grid}
-  <line class="deck-waterfall-axis" x1="${geometry.margin.left}" y1="${round10(geometry.zeroY)}" x2="${round10(geometry.width - geometry.margin.right)}" y2="${round10(geometry.zeroY)}"></line>
-  <line class="deck-waterfall-axis" x1="${geometry.margin.left}" y1="${geometry.margin.top}" x2="${geometry.margin.left}" y2="${round10(geometry.height - geometry.margin.bottom)}"></line>
+  <line class="deck-waterfall-axis" x1="${geometry.margin.left}" y1="${round11(geometry.zeroY)}" x2="${round11(geometry.width - geometry.margin.right)}" y2="${round11(geometry.zeroY)}"></line>
+  <line class="deck-waterfall-axis" x1="${geometry.margin.left}" y1="${geometry.margin.top}" x2="${geometry.margin.left}" y2="${round11(geometry.height - geometry.margin.bottom)}"></line>
   ${connectors}
   ${bars}
 </svg>`;
@@ -1442,7 +1552,7 @@ function formatDelta(value) {
   if (value < 0) return `-${formatted}`;
   return formatted;
 }
-function round10(value) {
+function round11(value) {
   return Math.round(value * 10) / 10;
 }
 
@@ -1456,9 +1566,12 @@ export {
   renderBulletSvg,
   renderFunnelSvg,
   renderHistogramSvg,
+  histogramBins,
   renderImpactRadarSvg,
   renderJourneyPathSvg,
   renderParetoSvg,
+  paretoRows,
+  renderRadarSvg,
   renderSankeySvg,
   treemapRects,
   renderWaterfallSvg,

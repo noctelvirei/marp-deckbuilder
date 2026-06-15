@@ -6,6 +6,7 @@ import { renderHistogramSvg } from '../components/histogram.js'
 import { renderImpactRadarSvg } from '../components/impact-radar.js'
 import { renderJourneyPathSvg } from '../components/journey-path.js'
 import { renderParetoSvg } from '../components/pareto.js'
+import { renderRadarSvg } from '../components/radar.js'
 import { renderSankeySvg } from '../components/sankey.js'
 import { treemapRects } from '../components/treemap.js'
 import { renderWaterfallSvg } from '../components/waterfall.js'
@@ -288,8 +289,9 @@ export function addChartSlide(pptx, slide, model, brand, resourcesDir) {
   const isHistogram = model.chart.chartType === 'histogram'
   const isBoxplot = model.chart.chartType === 'boxplot'
   const isPareto = model.chart.chartType === 'pareto'
+  const isRadar = model.chart.chartType === 'radar'
   const isSankey = model.chart.chartType === 'sankey'
-  if (isWaterfall || isBullet || isHistogram || isBoxplot || isPareto || isSankey) {
+  if (isWaterfall || isBullet || isHistogram || isBoxplot || isPareto || isRadar || isSankey) {
     addSvgChartImage(slide, model, brand, layout, chartBox, model.chart.chartType)
     addTakeaway(slide, model, brand)
     return
@@ -481,6 +483,15 @@ function renderSvgChartByType(type, chart, brand, model, layout, sharedOptions) 
       pointColor: svgColor(color(brand, 'orange')),
     })
   }
+  if (type === 'radar') {
+    return renderRadarSvg(chart, {
+      ...sharedOptions,
+      gridColor: svgColor(surfaceLine(brand, model, layout.plotAreaBorder || 'border')),
+      fillColor: 'rgba(89, 214, 253, .20)',
+      strokeColor: svgColor(color(brand, 'lightBlue')),
+      pointColor: svgColor(color(brand, 'blue')),
+    })
+  }
   if (type === 'sankey') {
     return renderSankeySvg(chart, {
       ...sharedOptions,
@@ -644,6 +655,132 @@ export function addSignalBars(slide, model, brand, resourcesDir) {
       fit: 'shrink',
     })
   })
+
+  addTakeaway(slide, model, brand)
+}
+
+export function addOrchestration(slide, model, brand, resourcesDir) {
+  const header = addBaseHeader(slide, model, brand, resourcesDir)
+  const orchestration = model.orchestration
+  if (!orchestration) return addContent(slide, model, brand, resourcesDir)
+
+  const layout = {
+    x: 68,
+    y: 140,
+    w: 824,
+    tierH: 56,
+    layerH: 94,
+    captionH: 44,
+    gap: 16,
+    pad: 20,
+    nodeH: 24,
+    nodeGap: 8,
+    ...(brand.layouts.orchestration || {}),
+  }
+  const y = Math.max(layout.y, header.contentTop)
+  const lightSurface = isLightSurface(model)
+  const panelFill = lightSurface ? surfaceCardFill(brand, model) : panelFillForSurface(brand, model, layout.panelFill || '0D1D36')
+  const nodeFill = lightSurface ? surfaceCardFill(brand, model) : panelFillForSurface(brand, model, layout.nodeFill || '0D1D36')
+  const border = lightSurface ? surfaceBorder(brand, model) : color(brand, layout.panelBorder || '1E3A5F')
+  const accent = color(brand, orchestration.accent || layout.accent || 'blue')
+  const heading = lightSurface ? lightToken(brand, 'headingLight', '090909') : (brand.colors?.white ? 'white' : 'FFFFFF')
+  const body = lightSurface ? lightToken(brand, 'bodyLight', '444444') : (brand.colors?.bodyOnDark ? 'bodyOnDark' : 'C8D8F0')
+  const muted = lightSurface ? lightToken(brand, 'mutedLight', '666666') : (brand.colors?.mutedOnDark ? 'mutedOnDark' : '9FB5D9')
+
+  const addTier = (label, nodes, tierY) => {
+    addTextBox(slide, brand, label.toUpperCase(), {
+      x: layout.x,
+      y: tierY,
+      w: layout.w,
+      h: 14,
+      font: 'medium',
+      size: 8,
+      color: muted,
+      margin: 0,
+      fit: 'shrink',
+    })
+    const nodeCount = Math.max(nodes.length, 1)
+    const nodeW = Math.min(150, (layout.w - layout.nodeGap * (nodeCount - 1)) / nodeCount)
+    nodes.forEach((node, index) => {
+      const nodeX = layout.x + index * (nodeW + layout.nodeGap)
+      addRect(slide, brand, nodeX, tierY + 24, nodeW, layout.nodeH, nodeFill, border, 0.5)
+      addTextBox(slide, brand, node, {
+        x: nodeX + 8,
+        y: tierY + 29,
+        w: nodeW - 16,
+        h: 12,
+        font: 'regular',
+        size: 9,
+        color: body,
+        margin: 0,
+        align: 'center',
+        fit: 'shrink',
+      })
+    })
+  }
+
+  addTier(orchestration.upstreamLabel, orchestration.upstream, y)
+
+  const layerY = y + layout.tierH + layout.gap
+  addRect(slide, brand, layout.x, layerY, layout.w, layout.layerH, panelFill, accent, 0.5)
+  addTextBox(slide, brand, orchestration.layer, {
+    x: layout.x + layout.pad,
+    y: layerY + 18,
+    w: 190,
+    h: 28,
+    font: 'medium',
+    size: 18,
+    color: heading,
+    margin: 0,
+    fit: 'shrink',
+  })
+  addTextBox(slide, brand, orchestration.tagline, {
+    x: layout.x + layout.pad + 205,
+    y: layerY + 22,
+    w: layout.w - layout.pad * 2 - 205,
+    h: 20,
+    font: 'regular',
+    size: 12,
+    color: orchestration.accent || 'blue',
+    margin: 0,
+    fit: 'shrink',
+  })
+  const capY = layerY + 56
+  const caps = orchestration.capabilities.slice(0, 6)
+  const capW = Math.min(190, (layout.w - layout.pad * 2 - layout.nodeGap * (caps.length - 1)) / Math.max(caps.length, 1))
+  caps.forEach((capability, index) => {
+    const capX = layout.x + layout.pad + index * (capW + layout.nodeGap)
+    addRect(slide, brand, capX, capY, capW, 22, nodeFill, accent, 0.5)
+    addTextBox(slide, brand, capability, {
+      x: capX + 7,
+      y: capY + 5,
+      w: capW - 14,
+      h: 12,
+      font: 'regular',
+      size: 8,
+      color: heading,
+      margin: 0,
+      align: 'center',
+      fit: 'shrink',
+    })
+  })
+
+  const downstreamY = layerY + layout.layerH + layout.gap
+  addTier(orchestration.downstreamLabel, orchestration.downstream, downstreamY)
+  if (orchestration.caption) {
+    addTextBox(slide, brand, orchestration.caption, {
+      x: layout.x,
+      y: downstreamY + layout.tierH + 8,
+      w: layout.w * 0.72,
+      h: layout.captionH,
+      font: 'regular',
+      size: 13,
+      color: body,
+      margin: 0,
+      fit: 'shrink',
+      breakLine: true,
+    })
+  }
 
   addTakeaway(slide, model, brand)
 }

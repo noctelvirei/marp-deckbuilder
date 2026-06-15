@@ -66,19 +66,26 @@ export function renderDeckHtml(deck, options = {}) {
     htmlDeck.slides,
     definitions.brand,
   )
+  const htmlWithDeckShell = prepareHtmlDeckShell(htmlWithInlineHeadingColors)
+  const deckbuilderJs = [
+    presentationAnimationScript(htmlDeck.slides),
+    htmlDeckEnhancementScript(definitions.brand),
+    htmlDeckNavigationScript(),
+    htmlDeckChartScript(),
+  ].filter(Boolean).join('\n')
 
   return {
-    html: htmlWithInlineHeadingColors,
+    html: htmlWithDeckShell,
     css,
     comments,
     document: htmlDocument({
-      html: htmlWithInlineHeadingColors,
+      html: htmlWithDeckShell,
       css,
       deckbuilderCss: themeCss,
       comments,
-      bespokeCss: definitions.bespokeCss,
-      bespokeJs: definitions.bespokeJs,
-      deckbuilderJs: presentationAnimationScript(htmlDeck.slides),
+      deckbuilderHtmlCss: htmlDeckShellCss(definitions.brand),
+      deckbuilderJs,
+      slideCount: htmlDeck.slides.length,
       title: deck.frontmatter.title || 'Deck',
     }),
     assets: assetMap
@@ -92,8 +99,6 @@ export function renderDeckHtml(deck, options = {}) {
 
 export function brandBackgroundCss(brand = {}) {
   const rules = [
-    backgroundRule('section', slideBackgroundAsset(brand, 'content', 'dark')),
-    lightBackgroundRule(slideBackgroundAsset(brand, 'content', 'light')),
     backgroundRule('section.cover', slideBackgroundAsset(brand, 'cover', 'dark')),
     backgroundRule(
       'section.deck-divider-slide, section:has(.deck-divider)',
@@ -228,6 +233,7 @@ section.dark .deck-chart-label,
 section.dark .deck-chart-legend-item,
 section.dark .deck-chart-series-label,
 section.dark .deck-chart-value,
+section.dark .deck-chart-row strong,
 section.dark .deck-chart-grouped-bar-row strong,
 section.dark .deck-chart-stacked-row strong,
 section.dark .deck-chart-doughnut-row strong,
@@ -407,6 +413,7 @@ section.light .deck-chart-label,
 section.light .deck-chart-legend-item,
 section.light .deck-chart-series-label,
 section.light .deck-chart-value,
+section.light .deck-chart-row strong,
 section.light .deck-chart-grouped-bar-row strong,
 section.light .deck-chart-stacked-row strong,
 section.light .deck-chart-doughnut-row strong,
@@ -562,6 +569,189 @@ section.light .deck-funnel {
   --deck-funnel-muted: ${lightMuted};
 }
 
+section.dark .deck-orchestration,
+section.light .deck-orchestration {
+  --deck-orchestration-accent: ${darkAccent};
+}
+
+section.dark .deck-orchestration-accent-lightBlue,
+section.dark .deck-orchestration-accent-cyan,
+section.light .deck-orchestration-accent-lightBlue,
+section.light .deck-orchestration-accent-cyan {
+  --deck-orchestration-accent: ${darkLightBlue};
+}
+
+section.dark .deck-orchestration-accent-purple,
+section.light .deck-orchestration-accent-purple {
+  --deck-orchestration-accent: ${darkPurple};
+}
+
+section.dark .deck-orchestration-accent-green,
+section.light .deck-orchestration-accent-green {
+  --deck-orchestration-accent: ${darkGreen};
+}
+
+section.dark .deck-orchestration-accent-orange,
+section.light .deck-orchestration-accent-orange {
+  --deck-orchestration-accent: ${darkOrange};
+}
+
+section.dark .deck-orchestration-accent-red,
+section.light .deck-orchestration-accent-red {
+  --deck-orchestration-accent: ${darkRed};
+}
+
+section.dark .deck-orchestration {
+  --deck-orchestration-node-bg: ${darkPanel};
+  --deck-orchestration-node-border: ${darkBorder};
+  --deck-orchestration-node-text: ${darkText};
+  --deck-orchestration-muted: ${darkMuted};
+  --deck-orchestration-heading: ${darkHeading};
+  --deck-orchestration-body: ${darkText};
+  --deck-orchestration-layer-bg: linear-gradient(180deg, ${cssRgba(darkAccent, 0.16)}, ${cssRgba(darkLightBlue, 0.06)});
+  --deck-orchestration-layer-border: ${cssRgba(darkLightBlue, 0.35)};
+  --deck-orchestration-sweep: rgba(255, 255, 255, .14);
+}
+
+section.light .deck-orchestration {
+  --deck-orchestration-node-bg: rgba(255, 255, 255, .78);
+  --deck-orchestration-node-border: ${lightBorder};
+  --deck-orchestration-node-text: ${lightText};
+  --deck-orchestration-muted: ${lightMuted};
+  --deck-orchestration-heading: ${lightHeading};
+  --deck-orchestration-body: ${lightText};
+  --deck-orchestration-layer-bg: linear-gradient(180deg, ${cssRgba(lightAccent, 0.12)}, ${cssRgba(lightBlue, 0.06)});
+  --deck-orchestration-layer-border: ${cssRgba(lightAccent, 0.26)};
+  --deck-orchestration-sweep: rgba(15, 130, 245, .1);
+}
+
+.deck-orchestration {
+  display: flex;
+  flex-direction: column;
+  gap: clamp(14px, 2.4vh, 26px);
+  margin-top: clamp(26px, 4vh, 46px);
+}
+
+.deck-orchestration-tier-label {
+  margin-bottom: 10px;
+  color: var(--deck-orchestration-muted);
+  font-size: clamp(9px, .95vw, 12px);
+  font-weight: 600;
+  letter-spacing: .2em;
+  text-transform: uppercase;
+}
+
+.deck-orchestration-nodes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: clamp(8px, 1vw, 12px);
+}
+
+.deck-orchestration-node {
+  border: 1px solid var(--deck-orchestration-node-border);
+  border-radius: 12px;
+  background: var(--deck-orchestration-node-bg);
+  color: var(--deck-orchestration-node-text);
+  padding: .6em 1.05em;
+  font-size: clamp(12px, 1.2vw, 15px);
+  font-weight: 400;
+}
+
+.deck-orchestration-layer {
+  position: relative;
+  overflow: hidden;
+  border: 1px solid var(--deck-orchestration-layer-border);
+  border-radius: 16px;
+  background: var(--deck-orchestration-layer-bg);
+  box-shadow: 0 0 0 1px ${cssRgba(darkLightBlue, 0.06)}, 0 14px 50px -16px ${cssRgba(darkAccent, 0.6)};
+  padding: clamp(18px, 2.6vh, 26px) clamp(20px, 2.6vw, 30px);
+}
+
+.deck-orchestration-layer::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: -45%;
+  width: 40%;
+  background: linear-gradient(90deg, transparent, var(--deck-orchestration-sweep), transparent);
+  pointer-events: none;
+  animation: deckbuilder-sweep 4.5s cubic-bezier(.22, .61, .36, 1) infinite;
+}
+
+.deck-orchestration-layer > * {
+  position: relative;
+  z-index: 1;
+}
+
+.deck-orchestration-layer-head {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 14px;
+}
+
+.deck-orchestration-layer-brand {
+  display: inline-flex;
+  align-items: center;
+  min-height: 1.12em;
+  color: var(--deck-orchestration-heading);
+  font-size: clamp(18px, 2vw, 24px);
+  font-weight: 500;
+  line-height: 1;
+}
+
+.deck-orchestration-layer-brand .deck-inline-brand {
+  height: 1.2em;
+  margin: 0;
+}
+
+.deck-orchestration-layer-brand .deck-inline-brand img {
+  height: 1.1em;
+  max-width: 8.5em;
+}
+
+.deck-orchestration-layer-tag {
+  color: var(--deck-orchestration-accent);
+  font-size: clamp(11px, 1.1vw, 14px);
+  font-weight: 500;
+  letter-spacing: .04em;
+}
+
+.deck-orchestration-caps {
+  display: flex;
+  flex-wrap: wrap;
+  gap: clamp(8px, 1vw, 16px);
+  margin-top: 14px;
+}
+
+.deck-orchestration-cap {
+  display: flex;
+  align-items: center;
+  gap: .5em;
+  color: var(--deck-orchestration-heading);
+  font-size: clamp(11px, 1.15vw, 15px);
+  font-weight: 400;
+}
+
+.deck-orchestration-cap b {
+  display: block;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--deck-orchestration-accent);
+  box-shadow: 0 0 10px ${darkLightBlue};
+}
+
+.deck-orchestration-caption {
+  max-width: 60ch;
+  margin: 0;
+  color: var(--deck-orchestration-body);
+  font-size: clamp(14px, 1.5vw, 18px);
+  font-weight: 300;
+  line-height: 1.45;
+}
+
 section.dark .deck-lane-blue .deck-lane-steps article,
 section.dark .deck-lane-lightBlue .deck-lane-steps article,
 section.dark .deck-lane-cyan .deck-lane-steps article,
@@ -633,14 +823,32 @@ section.dark .deck-heatmap {
   --deck-heatmap-accent: ${cssColor(brand, 'blue', '0F82F5')};
 }
 
-section.light .deck-treemap,
-section.dark .deck-treemap {
-  --deck-treemap-fill-0: ${cssColor(brand, 'blue', '0F82F5')};
+  section.light .deck-treemap,
+  section.dark .deck-treemap {
+    --deck-treemap-fill-0: ${cssColor(brand, 'blue', '0F82F5')};
   --deck-treemap-fill-1: ${cssColor(brand, 'lightBlue', '59D6FD')};
   --deck-treemap-fill-2: ${cssColor(brand, 'purple', '5143D5')};
   --deck-treemap-fill-3: ${cssColor(brand, 'green', '66CC8E')};
   --deck-treemap-fill-4: ${cssColor(brand, 'orange', 'F9935B')};
-  --deck-treemap-fill-5: ${cssColor(brand, 'yellow', 'FBC546')};
+    --deck-treemap-fill-5: ${cssColor(brand, 'yellow', 'FBC546')};
+  }
+
+section.light .deck-chart-radar {
+  --deck-radar-grid: ${lightBorder};
+  --deck-radar-text: ${lightHeading};
+  --deck-radar-muted: ${lightMuted};
+  --deck-radar-fill: rgba(15, 130, 245, .18);
+  --deck-radar-stroke: ${cssColor(brand, 'blue', '0F82F5')};
+  --deck-radar-point: ${cssColor(brand, 'lightBlue', '59D6FD')};
+}
+
+section.dark .deck-chart-radar {
+  --deck-radar-grid: ${darkBorder};
+  --deck-radar-text: ${darkHeading};
+  --deck-radar-muted: ${darkMuted};
+  --deck-radar-fill: rgba(89, 214, 253, .20);
+  --deck-radar-stroke: ${cssColor(brand, 'lightBlue', '59D6FD')};
+  --deck-radar-point: ${cssColor(brand, 'blue', '0F82F5')};
 }
 
 section.light .deck-impact-radar {
@@ -940,20 +1148,11 @@ section.dark .deck-signal-board .deck-signal-track {
 function backgroundRule(selector, resource) {
   if (!resource) return ''
   return `${selector} {
+  --deckbuilder-title-bg-image: url("${escapeCssUrl(resource)}");
   background-image: url("${escapeCssUrl(resource)}");
   background-size: cover;
   background-position: center;
   background-repeat: no-repeat;
-}`
-}
-
-function lightBackgroundRule(resource) {
-  if (resource) {
-    return backgroundRule('section.light', resource)
-  }
-  return `section.light {
-  background-color: #ffffff;
-  background-image: none;
 }`
 }
 
@@ -998,6 +1197,23 @@ function inlineDarkImageHeadingColors(html, slides = [], brand = {}) {
     const titleColor = brand.layouts?.[slide.layout]?.title?.color || 'blue'
     const headingColor = cssColor(brand, titleColor, '0F82F5')
     mergeInlineStyle(heading, 'color', headingColor)
+  })
+
+  return root('root').html() || html
+}
+
+function prepareHtmlDeckShell(html) {
+  const root = cheerio.load(`<root>${html}</root>`, {
+    decodeEntities: false,
+    lowerCaseAttributeNames: false,
+  })
+
+  root('svg[data-marpit-svg]').each((index, svg) => {
+    const slide = root(svg)
+    slide.addClass('deckbuilder-slide')
+    slide.attr('data-deckbuilder-slide', String(index))
+    slide.attr('aria-hidden', index === 0 ? 'false' : 'true')
+    if (index === 0) slide.addClass('active bespoke-marp-active')
   })
 
   return root('root').html() || html
@@ -1181,10 +1397,10 @@ export function htmlDocument({
   html,
   css,
   deckbuilderCss = '',
+  deckbuilderHtmlCss = '',
   comments = [],
-  bespokeCss = '',
-  bespokeJs = '',
   deckbuilderJs = '',
+  slideCount = 0,
   title = 'Deck',
 }) {
   return `<!doctype html>
@@ -1199,13 +1415,12 @@ export function htmlDocument({
   <title>${escapeHtml(title)}</title>
   <style>${css}</style>
   <style data-deckbuilder-theme>${deckbuilderCss}</style>
-  <style>${bespokeCss}</style>
+  <style data-deckbuilder-html>${deckbuilderHtmlCss}</style>
 </head>
 <body>
-${bespokeOsc()}
+${deckbuilderChrome(slideCount)}
 ${html}
 ${renderNotes(comments)}
-<script>${bespokeJs}</script>
 <script>${deckbuilderJs}</script>
 </body>
 </html>
@@ -1315,15 +1530,2985 @@ function normalizeDirective(value) {
   return String(value || '').trim().toLowerCase()
 }
 
-function bespokeOsc() {
-  return `<div class="bespoke-marp-osc">
-  <button data-bespoke-marp-osc="prev" tabindex="-1" title="Previous slide">Previous slide</button>
-  <span data-bespoke-marp-osc="page"></span>
-  <button data-bespoke-marp-osc="next" tabindex="-1" title="Next slide">Next slide</button>
-  <button data-bespoke-marp-osc="fullscreen" tabindex="-1" title="Toggle fullscreen (f)">Toggle fullscreen</button>
-  <button data-bespoke-marp-osc="overview" tabindex="-1" title="Toggle overview view (o)">Toggle overview view</button>
-  <button data-bespoke-marp-osc="presenter" tabindex="-1" title="Open presenter view (p)">Open presenter view</button>
-</div>`
+function deckbuilderChrome(slideCount = 0) {
+  const total = Math.max(0, Number(slideCount) || 0)
+  const navMode = total > 24 ? 'scroll' : 'dots'
+  const dots = Array.from({ length: total }, (_, index) =>
+    `<button type="button" data-deckbuilder-jump="${index}" aria-label="Go to slide ${index + 1}" title="Slide ${index + 1}"></button>`,
+  ).join('')
+  return `<div class="deckbuilder-progress" aria-hidden="true"><span data-deckbuilder-progress-bar></span></div>
+<div class="deckbuilder-topbar" aria-hidden="true">
+  <div></div>
+  <div class="deckbuilder-counter"><b data-deckbuilder-current>01</b> / ${pad2(total)}</div>
+</div>
+<nav class="deckbuilder-nav" data-deckbuilder-slide-count="${total}" data-deckbuilder-nav-mode="${navMode}" aria-label="Slide navigation">
+  <button type="button" class="deckbuilder-prev" data-deckbuilder-prev aria-label="Previous slide">
+    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 18 9 12l6-6"></path></svg>
+  </button>
+  <span class="deckbuilder-dots">${dots}</span>
+  <button type="button" class="deckbuilder-next" data-deckbuilder-next aria-label="Next slide">
+    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m9 18 6-6-6-6"></path></svg>
+  </button>
+</nav>
+<div class="deckbuilder-hint" aria-hidden="true">Swipe or tap</div>`
+}
+
+function pad2(value) {
+  return String(Math.max(0, Number(value) || 0)).padStart(2, '0')
+}
+
+function htmlDeckShellCss(brand = {}) {
+  const background = cssColor(brand, 'backgroundDark', cssColor(brand, 'dark', '060D18'))
+  const surface = cssColor(brand, 'cardDark', '0D1D36')
+  const blue = cssColor(brand, 'blue', '0F82F5')
+  const cyan = cssColor(brand, 'lightBlue', '59D6FD')
+  const border = cssColor(brand, 'border', '1E3A5F')
+  const white = cssColor(brand, 'white', 'FFFFFF')
+  const body = readableDarkCssColor(brand, 'body', 'C8D8F0')
+  const muted = readableDarkCssColor(brand, 'muted', '8B9AB5')
+
+  return `@media screen {
+  :root {
+    --deckbuilder-bg: ${background};
+    --deckbuilder-surface: ${surface};
+    --deckbuilder-blue: ${blue};
+    --deckbuilder-cyan: ${cyan};
+    --deckbuilder-border: ${border};
+    --deckbuilder-white: ${white};
+    --deckbuilder-body: ${body};
+    --deckbuilder-muted: ${muted};
+    --deckbuilder-accent: linear-gradient(90deg, ${blue} 0%, ${cyan} 100%);
+    --deckbuilder-ease: cubic-bezier(.22, .61, .36, 1);
+  }
+
+  html,
+  body {
+    width: 100%;
+    height: 100%;
+    margin: 0;
+    overflow: hidden;
+    background: var(--deckbuilder-bg);
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+    -webkit-tap-highlight-color: transparent;
+    overscroll-behavior: none;
+    user-select: none;
+  }
+
+  body {
+    position: fixed;
+    inset: 0;
+    color: var(--deckbuilder-white);
+    touch-action: none;
+  }
+
+  body::before {
+    content: "";
+    position: fixed;
+    inset: 0;
+    z-index: 0;
+    pointer-events: none;
+    background:
+      radial-gradient(120% 90% at 12% 8%, #0c2143 0%, rgba(12, 33, 67, 0) 55%),
+      radial-gradient(90% 80% at 100% 100%, #0a1c3a 0%, rgba(10, 28, 58, 0) 50%),
+      var(--deckbuilder-bg);
+  }
+
+  body::after {
+    content: "";
+    position: fixed;
+    width: 60vw;
+    height: 60vw;
+    left: 55%;
+    top: -15%;
+    z-index: 0;
+    pointer-events: none;
+    background: radial-gradient(closest-side, ${cssRgba(cyan, 0.1)}, transparent 70%);
+    filter: blur(10px);
+    animation: deckbuilder-float 16s var(--deckbuilder-ease) infinite alternate;
+  }
+
+  @keyframes deckbuilder-float {
+    from { transform: translate(0, 0); }
+    to { transform: translate(-6%, 8%); }
+  }
+
+  [id=":$p"] {
+    position: fixed;
+    inset: 0;
+    z-index: 1;
+  }
+
+  [data-deckbuilder-slide] {
+    position: absolute !important;
+    inset: 0 !important;
+    display: block !important;
+    width: 100% !important;
+    height: 100% !important;
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+    z-index: 1;
+    transform: scale(1.012);
+    transition: opacity .6s var(--deckbuilder-ease), transform .6s var(--deckbuilder-ease), visibility 0s linear .6s;
+  }
+
+  [data-deckbuilder-slide].active {
+    opacity: 1;
+    visibility: visible;
+    pointer-events: auto;
+    z-index: 2;
+    transform: scale(1);
+    transition: opacity .7s var(--deckbuilder-ease), transform .7s var(--deckbuilder-ease), visibility 0s;
+  }
+
+  [data-deckbuilder-slide]:not(.active) * {
+    view-transition-name: none !important;
+  }
+
+  @keyframes deckbuilder-reveal {
+    from { opacity: 0; transform: translateY(22px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  [data-deckbuilder-slide].active > foreignObject > section:not(.deck-anim-controlled) > :not(.deck-brand-logo):not(.deck-company-logo):not(.deck-customer-logo-frame) {
+    animation: deckbuilder-reveal .7s var(--deckbuilder-ease) both;
+  }
+
+  [data-deckbuilder-slide].active > foreignObject > section:not(.deck-anim-controlled) > :nth-child(1) { animation-delay: .1s; }
+  [data-deckbuilder-slide].active > foreignObject > section:not(.deck-anim-controlled) > :nth-child(2) { animation-delay: .2s; }
+  [data-deckbuilder-slide].active > foreignObject > section:not(.deck-anim-controlled) > :nth-child(3) { animation-delay: .32s; }
+  [data-deckbuilder-slide].active > foreignObject > section:not(.deck-anim-controlled) > :nth-child(4) { animation-delay: .44s; }
+  [data-deckbuilder-slide].active > foreignObject > section:not(.deck-anim-controlled) > :nth-child(5) { animation-delay: .56s; }
+  [data-deckbuilder-slide].active > foreignObject > section:not(.deck-anim-controlled) > :nth-child(6) { animation-delay: .68s; }
+
+  @keyframes deckbuilder-sweep {
+    0% { left: -48%; }
+    54% { left: 122%; }
+    100% { left: 122%; }
+  }
+
+  section.dark {
+    background:
+      radial-gradient(120% 90% at 12% 8%, #0c2143 0%, rgba(12, 33, 67, 0) 55%),
+      radial-gradient(90% 80% at 100% 100%, #0a1c3a 0%, rgba(10, 28, 58, 0) 50%),
+      var(--deckbuilder-bg) !important;
+  }
+
+  section.cover,
+  section.deck-divider-slide,
+  section.deck-close-slide,
+  section:has(.deck-divider),
+  section:has(.deck-close) {
+    background:
+      var(--deckbuilder-title-bg-image, none),
+      radial-gradient(120% 90% at 12% 8%, #0c2143 0%, rgba(12, 33, 67, 0) 55%),
+      radial-gradient(90% 80% at 100% 100%, #0a1c3a 0%, rgba(10, 28, 58, 0) 50%),
+      var(--deckbuilder-bg) !important;
+    background-position: center, center, center, center !important;
+    background-repeat: no-repeat, no-repeat, no-repeat, no-repeat !important;
+    background-size: cover, auto, auto, auto !important;
+    color: var(--deckbuilder-white) !important;
+  }
+
+  section.dark::before,
+  section.cover::before,
+  section.deck-divider-slide::before,
+  section.deck-close-slide::before,
+  section:has(.deck-divider)::before,
+  section:has(.deck-close)::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: 0;
+    pointer-events: none;
+    opacity: .5;
+    background-image: radial-gradient(rgba(255, 255, 255, .045) 1px, transparent 1px);
+    background-size: 34px 34px;
+    mask-image: radial-gradient(120% 120% at 50% 40%, #000 30%, transparent 80%);
+    -webkit-mask-image: radial-gradient(120% 120% at 50% 40%, #000 30%, transparent 80%);
+  }
+
+  section.light {
+    background:
+      radial-gradient(120% 90% at 12% 8%, rgba(15, 130, 245, .07) 0%, transparent 52%),
+      radial-gradient(90% 80% at 100% 100%, rgba(89, 214, 253, .08) 0%, transparent 48%),
+      #ffffff !important;
+  }
+
+  section.cover,
+  section.deck-divider-slide,
+  section.deck-close-slide,
+  section:has(.deck-divider),
+  section:has(.deck-close),
+  section:has(.deck-takeaway-hero),
+  section:has(.deck-exec-title) {
+    display: flex !important;
+    flex-direction: column !important;
+    justify-content: center !important;
+    box-sizing: border-box !important;
+    padding: 92px 72px 78px !important;
+  }
+
+  section.cover > :not(.deck-brand-logo):not(.deck-company-logo):not(.deck-customer-logo-frame),
+  section .deck-divider,
+  section .deck-close,
+  section .deck-takeaway-hero,
+  section .deck-exec-title {
+    position: relative !important;
+    inset: auto !important;
+    z-index: 1;
+    display: block !important;
+    align-content: normal !important;
+    height: auto !important;
+    min-height: 0 !important;
+    padding: 0 !important;
+    overflow: visible !important;
+    width: min(760px, calc(100% - 360px));
+    max-width: 760px;
+    margin-left: clamp(250px, 26%, 340px) !important;
+    margin-right: auto !important;
+  }
+
+  section.cover h1,
+  section .deck-divider h1,
+  section .deck-close h1,
+  section .deck-takeaway-hero h1,
+  section .deck-exec-title h1 {
+    margin: 0 !important;
+    max-width: none !important;
+    color: var(--deckbuilder-white) !important;
+    font-family: "Poppins", "Aptos", "Segoe UI", sans-serif !important;
+    font-size: 60px !important;
+    font-weight: 300 !important;
+    line-height: 1.04 !important;
+    letter-spacing: 0 !important;
+    text-wrap: balance;
+  }
+
+  section.cover h1 b,
+  section.cover h1 strong,
+  section .deck-divider h1 b,
+  section .deck-divider h1 strong,
+  section .deck-close h1 b,
+  section .deck-close h1 strong,
+  section .deck-takeaway-hero h1 b,
+  section .deck-takeaway-hero h1 strong,
+  section .deck-exec-title h1 b,
+  section .deck-exec-title h1 strong {
+    background: var(--deckbuilder-accent);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent !important;
+    font-weight: 700 !important;
+  }
+
+  section.cover p,
+  section .deck-divider p,
+  section .deck-close p,
+  section .deck-takeaway-hero p,
+  section .deck-exec-title p {
+    color: var(--deckbuilder-body) !important;
+    font-family: "Poppins", "Aptos", "Segoe UI", sans-serif !important;
+    font-size: 18px !important;
+    font-weight: 300 !important;
+    line-height: 1.5 !important;
+    max-width: 44ch;
+  }
+
+  section.cover p:not(.eyebrow),
+  section .deck-divider p:not(.eyebrow),
+  section .deck-close p:not(.eyebrow),
+  section .deck-takeaway-hero p:not(.eyebrow),
+  section .deck-exec-title p:not(.deck-exec-eyebrow) {
+    margin-top: 24px !important;
+  }
+
+  section.cover .eyebrow,
+  section .deck-divider .eyebrow,
+  section .deck-takeaway-hero .eyebrow,
+  section .deck-exec-title .deck-exec-eyebrow {
+    display: inline-flex;
+    align-items: center;
+    gap: .7em;
+    margin: 0 0 24px !important;
+    color: var(--deckbuilder-cyan) !important;
+    font-size: 12px !important;
+    font-weight: 600 !important;
+    letter-spacing: .22em !important;
+    line-height: 1.2 !important;
+    text-transform: uppercase;
+  }
+
+  section.cover .eyebrow::before,
+  section .deck-divider .eyebrow::before,
+  section .deck-takeaway-hero .eyebrow::before,
+  section .deck-exec-title .deck-exec-eyebrow::before {
+    content: "";
+    width: 30px;
+    height: 2px;
+    border-radius: 2px;
+    background: var(--deckbuilder-accent);
+    box-shadow: 0 0 16px ${cssRgba(cyan, 0.36)};
+  }
+
+  section .deck-close p strong {
+    color: var(--deckbuilder-white) !important;
+    font-weight: 500 !important;
+  }
+
+  section .deck-close p span {
+    color: var(--deckbuilder-muted) !important;
+    font-size: 15px !important;
+    letter-spacing: .04em;
+  }
+
+  section.dark h1,
+  section.dark h2 {
+    color: var(--deckbuilder-white) !important;
+    font-family: "Poppins", "Aptos", "Segoe UI", sans-serif !important;
+    font-weight: 300 !important;
+    line-height: 1.06 !important;
+    letter-spacing: 0 !important;
+    text-wrap: balance;
+  }
+
+  section.dark h1 b,
+  section.dark h2 b,
+  section.dark h1 strong,
+  section.dark h2 strong {
+    background: var(--deckbuilder-accent);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    font-weight: 700;
+  }
+
+  section.dark .lead,
+  section.dark p.lead,
+  section.dark > p,
+  section.dark > ul,
+  section.dark > ol {
+    color: var(--deckbuilder-body) !important;
+  }
+
+  section.dark .eyebrow {
+    display: inline-flex;
+    align-items: center;
+    gap: .75em;
+    color: var(--deckbuilder-cyan);
+    font-weight: 600;
+    letter-spacing: .18em;
+    text-transform: uppercase;
+  }
+
+  section.dark .eyebrow::before {
+    content: "";
+    width: 3.5em;
+    height: 1px;
+    border-radius: 999px;
+    background: var(--deckbuilder-accent);
+    box-shadow: 0 0 16px ${cssRgba(cyan, 0.36)};
+  }
+
+  .deck-inline-brand {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    height: 1em;
+    margin: 0 .08em;
+    vertical-align: -.1em;
+  }
+
+  .deck-inline-brand img {
+    display: block;
+    width: auto;
+    max-width: 5.6em;
+    height: .72em;
+    object-fit: contain;
+  }
+
+  section.dark .stat-card {
+    min-height: 0 !important;
+    padding: 18px 0 0 !important;
+    border-right: 0 !important;
+    border-bottom: 0 !important;
+    border-left: 0 !important;
+    border-top: 2px solid transparent !important;
+    border-image-source: var(--deckbuilder-accent) !important;
+    border-image-slice: 1 !important;
+    text-align: left !important;
+  }
+
+  section.dark .stat-grid .stat-card {
+    border-right-width: 0 !important;
+    border-right-color: transparent !important;
+  }
+
+  section.dark .stat-card strong {
+    background: var(--deckbuilder-accent);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent !important;
+    font-size: 58px !important;
+    font-weight: 600 !important;
+    letter-spacing: 0 !important;
+  }
+
+  section.dark .stat-card :is(span, marp-span) {
+    max-width: 24ch !important;
+    margin: 12px 0 0 !important;
+    color: var(--deckbuilder-body) !important;
+    font-size: 16px !important;
+    font-weight: 300 !important;
+    line-height: 1.35 !important;
+  }
+
+  section.light .stat-card :is(span, marp-span) {
+    color: #3b4a5f !important;
+  }
+
+  .deck-comparison {
+    border-collapse: separate !important;
+    border-spacing: 0 !important;
+    overflow: hidden !important;
+  }
+
+  section.dark .deck-comparison :is(th, td) {
+    border-color: ${cssRgba(cyan, 0.16)} !important;
+  }
+
+  section.dark .deck-comparison th {
+    background: linear-gradient(180deg, ${cssRgba(blue, 0.18)}, ${cssRgba(cyan, 0.07)}) !important;
+    color: var(--deckbuilder-white) !important;
+    font-weight: 500 !important;
+  }
+
+  section.dark .deck-comparison td {
+    background: ${cssRgba(surface, 0.28)} !important;
+    color: var(--deckbuilder-body) !important;
+  }
+
+  section.dark .deck-comparison tbody tr:nth-child(even) td {
+    background: ${cssRgba(surface, 0.42)} !important;
+  }
+
+  section.dark .deck-next-steps li {
+    color: var(--deckbuilder-body) !important;
+  }
+
+  section.dark .deck-next-steps li strong {
+    color: var(--deckbuilder-white) !important;
+    font-weight: 500 !important;
+  }
+
+  section.dark .deck-next-steps li span {
+    color: var(--deckbuilder-body) !important;
+    font-weight: 300 !important;
+  }
+
+  section.dark .deck-logo-tile,
+  section.dark .deck-proof-logo {
+    background: ${cssRgba(surface, 0.58)} !important;
+    border-color: ${cssRgba(cyan, 0.28)} !important;
+    border-radius: 16px !important;
+    color: var(--deckbuilder-white) !important;
+    box-shadow: 0 18px 50px -28px rgba(0, 0, 0, .55) !important;
+  }
+
+  section.dark .deck-logo-tile span,
+  section.dark .deck-proof-logo span {
+    color: var(--deckbuilder-white) !important;
+  }
+
+  section.dark .deck-logo-tile img,
+  section.dark .deck-proof-logo img {
+    filter: brightness(0) invert(1) grayscale(1) contrast(1.08) !important;
+    opacity: .92;
+  }
+
+  section.dark .deck-chart-row strong {
+    color: var(--deckbuilder-white) !important;
+  }
+
+  section.light .deck-chart-row strong {
+    color: #090909 !important;
+  }
+
+  section.dark .card-grid article,
+  section.dark .deck-chart,
+  section.dark .deck-comparison,
+  section.dark .deck-funnel,
+  section.dark .deck-heatmap,
+  section.dark .deck-impact-radar,
+  section.dark .deck-treemap,
+  section.dark .deck-lane,
+  section.dark .deck-lane-steps article,
+  section.dark .deck-journey-step,
+  section.dark .deck-journey-path-summary,
+  section.dark .deck-proof,
+  section.dark .deck-logo-tile,
+  section.dark .deck-orchestration-node,
+  section.dark .deck-next-steps li,
+  section.dark .deck-signal-summary,
+  section.dark .deck-signal-chart,
+  section.dark .deck-signal-board-panel,
+  section.dark .deck-signal-board-chart,
+  section.dark .deck-metric-trend-summary,
+  section.dark .deck-metric-trend-chart,
+  section.dark .deck-exec-row,
+  section.dark .deck-exec-card,
+  section.dark .deck-exec-side,
+  section.dark .deck-exec-timeline-item,
+  section.dark .deck-exec-panel,
+  section.dark .deck-exec-metric {
+    background: ${cssRgba(surface, 0.58)} !important;
+    border-color: ${cssRgba(cyan, 0.28)} !important;
+  }
+
+  section.light .card-grid article,
+  section.light .deck-chart,
+  section.light .deck-comparison,
+  section.light .deck-funnel,
+  section.light .deck-heatmap,
+  section.light .deck-impact-radar,
+  section.light .deck-treemap,
+  section.light .deck-lane,
+  section.light .deck-lane-steps article,
+  section.light .deck-journey-step,
+  section.light .deck-journey-path-summary,
+  section.light .deck-proof,
+  section.light .deck-logo-tile,
+  section.light .deck-orchestration-node,
+  section.light .deck-next-steps li,
+  section.light .deck-signal-summary,
+  section.light .deck-signal-chart,
+  section.light .deck-signal-board-panel,
+  section.light .deck-signal-board-chart,
+  section.light .deck-metric-trend-summary,
+  section.light .deck-metric-trend-chart,
+  section.light .deck-exec-row,
+  section.light .deck-exec-card,
+  section.light .deck-exec-side,
+  section.light .deck-exec-timeline-item,
+  section.light .deck-exec-panel,
+  section.light .deck-exec-metric {
+    background: rgba(255, 255, 255, .72) !important;
+    border-color: rgba(15, 130, 245, .16) !important;
+  }
+
+  .card-grid article,
+  .deck-chart,
+  .deck-comparison,
+  .deck-funnel,
+  .deck-heatmap,
+  .deck-impact-radar,
+  .deck-treemap,
+  .deck-lane,
+  .deck-lane-steps article,
+  .deck-journey-step,
+  .deck-journey-path-summary,
+  .deck-proof,
+  .deck-logo-tile,
+  .deck-orchestration-node,
+  .deck-orchestration-layer,
+  .deck-next-steps li,
+  .deck-signal-summary,
+  .deck-signal-chart,
+  .deck-signal-board-panel,
+  .deck-signal-board-chart,
+  .deck-metric-trend-summary,
+  .deck-metric-trend-chart,
+  .deck-exec-row,
+  .deck-exec-card,
+  .deck-exec-side,
+  .deck-exec-timeline-item,
+  .deck-exec-panel,
+  .deck-exec-metric {
+    border-style: solid !important;
+    border-width: 1px !important;
+    border-top-width: 1px !important;
+    border-radius: 16px;
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    box-shadow: 0 18px 50px -28px rgba(0, 0, 0, .55);
+  }
+
+  section.dark .deck-logo-wall .deck-logo-tile,
+  section.dark .deck-proof .deck-proof-logo {
+    background: ${cssRgba(surface, 0.58)} !important;
+    border-color: ${cssRgba(cyan, 0.28)} !important;
+    border-radius: 16px !important;
+    color: var(--deckbuilder-white) !important;
+    box-shadow: 0 18px 50px -28px rgba(0, 0, 0, .55) !important;
+  }
+
+  section.dark .deck-logo-wall .deck-logo-tile span,
+  section.dark .deck-proof .deck-proof-logo span {
+    color: var(--deckbuilder-white) !important;
+  }
+
+  section.dark .deck-logo-wall .deck-logo-tile img,
+  section.dark .deck-proof .deck-proof-logo img {
+    filter: brightness(0) invert(1) grayscale(1) contrast(1.08) !important;
+    opacity: .92;
+  }
+
+  .deck-signal-board-panel,
+  .deck-orchestration-layer,
+  .deck-signal-summary,
+  .deck-metric-trend-summary,
+  .deck-journey-path-summary,
+  .deck-exec-panel,
+  .deck-proof {
+    position: relative;
+    overflow: hidden;
+  }
+
+  .deck-signal-board-panel > *,
+  .deck-orchestration-layer > *,
+  .deck-signal-summary > *,
+  .deck-metric-trend-summary > *,
+  .deck-journey-path-summary > *,
+  .deck-exec-panel > *,
+  .deck-proof > * {
+    position: relative;
+    z-index: 1;
+  }
+
+  section.dark .deck-signal-board-panel::after,
+  section.dark .deck-orchestration-layer::after,
+  section.dark .deck-signal-summary::after,
+  section.dark .deck-metric-trend-summary::after,
+  section.dark .deck-journey-path-summary::after,
+  section.dark .deck-exec-panel::after,
+  section.dark .deck-proof::after {
+    content: "";
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: -48%;
+    z-index: 0;
+    width: 42%;
+    pointer-events: none;
+    background: linear-gradient(90deg, transparent, ${cssRgba(white, 0.14)}, transparent);
+    animation: deckbuilder-sweep 4.8s var(--deckbuilder-ease) infinite;
+  }
+
+  section.light .deck-signal-board-panel::after,
+  section.light .deck-orchestration-layer::after,
+  section.light .deck-signal-summary::after,
+  section.light .deck-metric-trend-summary::after,
+  section.light .deck-journey-path-summary::after,
+  section.light .deck-exec-panel::after,
+  section.light .deck-proof::after {
+    content: "";
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: -48%;
+    z-index: 0;
+    width: 42%;
+    pointer-events: none;
+    background: linear-gradient(90deg, transparent, rgba(15, 130, 245, .1), transparent);
+    animation: deckbuilder-sweep 5.6s var(--deckbuilder-ease) infinite;
+  }
+
+  .deck-signal-board-tag,
+  .deck-signal-tag,
+  .deck-journey-path-hotspot,
+  .deck-lane-label {
+    border-radius: 999px;
+    box-shadow: 0 0 0 1px ${cssRgba(cyan, 0.16)}, 0 12px 34px -24px ${cssRgba(cyan, 0.7)};
+  }
+
+  .deck-chart-track,
+  .deck-chart-stacked-track {
+    border-radius: 999px;
+    overflow: hidden;
+  }
+
+  .deck-chart-fill,
+  .deck-chart-stacked-fill {
+    background: var(--deckbuilder-accent) !important;
+  }
+
+  .deck-chart-js-frame {
+    display: none;
+    position: relative;
+    width: 100%;
+    min-height: 245px;
+    height: min(38vh, 340px);
+  }
+
+  .deck-chart-js[data-deck-chart-enhanced="true"] .deck-chart-js-frame {
+    display: block;
+  }
+
+  .deck-chart-js[data-deck-chart-enhanced="true"] .deck-chart-js-fallback {
+    display: none;
+  }
+
+  .deck-chart-js-canvas {
+    display: block;
+    width: 100% !important;
+    height: 100% !important;
+    opacity: 1;
+    transition: opacity .18s var(--deckbuilder-ease);
+  }
+
+  .deck-chart-js[data-deck-chart-animating="scheduled"] .deck-chart-js-canvas {
+    opacity: 0;
+    visibility: hidden;
+  }
+
+  .deck-chart-js[data-deck-chart-animating="scheduled"] .deck-chart-js-frame,
+  .deck-chart-js[data-deck-chart-animating="scheduled"] .deck-chart-js-fallback {
+    visibility: hidden;
+  }
+
+  @keyframes deckbuilder-chart-fade-up {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  @keyframes deckbuilder-chart-fade-in {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+
+  @keyframes deckbuilder-chart-draw-stroke {
+    from { stroke-dashoffset: var(--deck-chart-dash, 260); }
+    to { stroke-dashoffset: 0; }
+  }
+
+  @keyframes deckbuilder-boxplot-grow {
+    from { opacity: 0; transform: scaleY(.08); }
+    to { opacity: 1; transform: scaleY(1); }
+  }
+
+  @keyframes deckbuilder-chart-scale-x {
+    from { opacity: .35; transform: scaleX(0); }
+    to { opacity: 1; transform: scaleX(1); }
+  }
+
+  @keyframes deckbuilder-chart-pop {
+    from { opacity: 0; transform: scale(.82); }
+    to { opacity: 1; transform: scale(1); }
+  }
+
+  [data-deckbuilder-slide]:not(.active) .deck-chart-boxplot-svg :is(.deck-boxplot-whisker, .deck-boxplot-box, .deck-boxplot-median, .deck-boxplot-grid, .deck-boxplot-axis, .deck-boxplot-label, .deck-boxplot-tick, .deck-boxplot-axis-label) {
+    opacity: 0;
+  }
+
+  [data-deckbuilder-slide].active .deck-chart-boxplot-svg :is(.deck-boxplot-grid, .deck-boxplot-axis) {
+    animation: deckbuilder-chart-fade-up .42s var(--deckbuilder-ease) both;
+  }
+
+  [data-deckbuilder-slide].active .deck-chart-boxplot-svg .deck-boxplot-whisker {
+    --deck-chart-dash: 240;
+    stroke-dasharray: var(--deck-chart-dash);
+    stroke-dashoffset: var(--deck-chart-dash);
+    animation: deckbuilder-chart-draw-stroke .72s var(--deckbuilder-ease) .18s both;
+  }
+
+  [data-deckbuilder-slide].active .deck-chart-boxplot-svg .deck-boxplot-box {
+    transform-box: fill-box;
+    transform-origin: center bottom;
+    animation: deckbuilder-boxplot-grow .7s var(--deckbuilder-ease) .22s both;
+  }
+
+  [data-deckbuilder-slide].active .deck-chart-boxplot-svg .deck-boxplot-median {
+    --deck-chart-dash: 110;
+    stroke-dasharray: var(--deck-chart-dash);
+    stroke-dashoffset: var(--deck-chart-dash);
+    animation: deckbuilder-chart-draw-stroke .44s var(--deckbuilder-ease) .58s both;
+  }
+
+  [data-deckbuilder-slide].active .deck-chart-boxplot-svg :is(.deck-boxplot-label, .deck-boxplot-tick, .deck-boxplot-axis-label) {
+    animation: deckbuilder-chart-fade-up .52s var(--deckbuilder-ease) .5s both;
+  }
+
+  [data-deckbuilder-slide]:not(.active) .deck-chart-sankey-svg :is(.deck-sankey-link, .deck-sankey-node, .deck-sankey-caption) {
+    opacity: 0;
+  }
+
+  [data-deckbuilder-slide].active .deck-chart-sankey-svg .deck-sankey-link {
+    --deck-chart-dash: 900;
+    stroke-dasharray: var(--deck-chart-dash);
+    stroke-dashoffset: var(--deck-chart-dash);
+    animation: deckbuilder-chart-draw-stroke .92s var(--deckbuilder-ease) both;
+  }
+
+  [data-deckbuilder-slide].active .deck-chart-sankey-svg .deck-sankey-link:nth-child(2) { animation-delay: .08s; }
+  [data-deckbuilder-slide].active .deck-chart-sankey-svg .deck-sankey-link:nth-child(3) { animation-delay: .16s; }
+  [data-deckbuilder-slide].active .deck-chart-sankey-svg .deck-sankey-link:nth-child(4) { animation-delay: .24s; }
+  [data-deckbuilder-slide].active .deck-chart-sankey-svg .deck-sankey-link:nth-child(5) { animation-delay: .32s; }
+  [data-deckbuilder-slide].active .deck-chart-sankey-svg .deck-sankey-link:nth-child(6) { animation-delay: .4s; }
+
+  [data-deckbuilder-slide].active .deck-chart-sankey-svg .deck-sankey-node {
+    animation: deckbuilder-chart-fade-in .5s var(--deckbuilder-ease) .46s both;
+  }
+
+  [data-deckbuilder-slide].active .deck-chart-sankey-svg .deck-sankey-caption {
+    animation: deckbuilder-chart-fade-in .45s var(--deckbuilder-ease) .72s both;
+  }
+
+  [data-deckbuilder-slide]:not(.active) .deck-impact-radar-svg :is(.deck-impact-radar-bar-fill, .deck-impact-radar-shape-animated) {
+    opacity: 0;
+  }
+
+  [data-deckbuilder-slide].active .deck-impact-radar-svg .deck-impact-radar-bar-fill {
+    animation: deckbuilder-chart-scale-x .82s var(--deckbuilder-ease) both;
+  }
+
+  [data-deckbuilder-slide].active .deck-impact-radar-svg .deck-impact-radar-shape-animated {
+    animation: deckbuilder-chart-pop .72s var(--deckbuilder-ease) .36s both;
+  }
+
+  [data-deckbuilder-slide]:not(.active) :is(.deck-funnel-stage, .deck-heatmap-cell, .deck-treemap-cell, .deck-metric-trend-line, .deck-metric-trend-dot, .deck-metric-trend-final, .deck-signal-fill, .deck-chart-fill, .deck-chart-stacked-fill) {
+    opacity: 0;
+  }
+
+  [data-deckbuilder-slide].active .deck-funnel-stage {
+    transform-box: fill-box;
+    transform-origin: center;
+    animation: deckbuilder-chart-pop .56s var(--deckbuilder-ease) both;
+  }
+
+  [data-deckbuilder-slide].active .deck-funnel-stage:nth-child(2) { animation-delay: .08s; }
+  [data-deckbuilder-slide].active .deck-funnel-stage:nth-child(3) { animation-delay: .16s; }
+  [data-deckbuilder-slide].active .deck-funnel-stage:nth-child(4) { animation-delay: .24s; }
+  [data-deckbuilder-slide].active .deck-funnel-stage:nth-child(5) { animation-delay: .32s; }
+  [data-deckbuilder-slide].active .deck-funnel-stage:nth-child(6) { animation-delay: .4s; }
+
+  [data-deckbuilder-slide].active .deck-heatmap-cell {
+    transform-origin: center;
+    animation: deckbuilder-chart-pop .42s var(--deckbuilder-ease) both;
+  }
+
+  [data-deckbuilder-slide].active .deck-heatmap-cell:nth-of-type(3n + 1) { animation-delay: .06s; }
+  [data-deckbuilder-slide].active .deck-heatmap-cell:nth-of-type(3n + 2) { animation-delay: .12s; }
+  [data-deckbuilder-slide].active .deck-heatmap-cell:nth-of-type(3n + 3) { animation-delay: .18s; }
+
+  [data-deckbuilder-slide].active .deck-treemap-cell {
+    transform-box: fill-box;
+    transform-origin: center;
+    animation: deckbuilder-chart-pop .58s var(--deckbuilder-ease) both;
+  }
+
+  [data-deckbuilder-slide].active .deck-treemap-cell:nth-child(2) { animation-delay: .08s; }
+  [data-deckbuilder-slide].active .deck-treemap-cell:nth-child(3) { animation-delay: .16s; }
+  [data-deckbuilder-slide].active .deck-treemap-cell:nth-child(4) { animation-delay: .24s; }
+  [data-deckbuilder-slide].active .deck-treemap-cell:nth-child(5) { animation-delay: .32s; }
+
+  [data-deckbuilder-slide].active .deck-metric-trend-line {
+    --deck-chart-dash: 700;
+    stroke-dasharray: var(--deck-chart-dash);
+    stroke-dashoffset: var(--deck-chart-dash);
+    animation: deckbuilder-chart-draw-stroke .82s var(--deckbuilder-ease) .12s both;
+  }
+
+  [data-deckbuilder-slide].active :is(.deck-metric-trend-dot, .deck-metric-trend-final) {
+    transform-box: fill-box;
+    transform-origin: center;
+    animation: deckbuilder-chart-pop .46s var(--deckbuilder-ease) .68s both;
+  }
+
+  [data-deckbuilder-slide].active :is(.deck-signal-fill, .deck-chart-fill, .deck-chart-stacked-fill) {
+    transform-origin: left center;
+    animation: deckbuilder-chart-scale-x .72s var(--deckbuilder-ease) .16s both;
+  }
+
+  section.dark .deck-impact-radar {
+    --deck-impact-radar-surface: transparent !important;
+    --deck-impact-radar-panel: ${cssRgba(surface, 0.32)} !important;
+    --deck-impact-radar-border: ${cssRgba(cyan, 0.24)} !important;
+    --deck-impact-radar-track: ${cssRgba(border, 0.52)} !important;
+    --deck-impact-radar-radarGrid: ${cssRgba(cyan, 0.24)} !important;
+    --deck-impact-radar-radarFill: ${cssRgba(cyan, 0.2)} !important;
+    --deck-impact-radar-radarStroke: var(--deckbuilder-cyan) !important;
+  }
+
+  section.light .deck-impact-radar {
+    --deck-impact-radar-surface: transparent !important;
+    --deck-impact-radar-panel: rgba(255, 255, 255, .5) !important;
+    --deck-impact-radar-border: rgba(15, 130, 245, .16) !important;
+    --deck-impact-radar-track: rgba(15, 130, 245, .1) !important;
+    --deck-impact-radar-radarGrid: rgba(15, 130, 245, .18) !important;
+    --deck-impact-radar-radarFill: rgba(15, 130, 245, .16) !important;
+    --deck-impact-radar-radarStroke: var(--deckbuilder-blue) !important;
+  }
+
+  .deck-impact-radar-svg {
+    position: relative;
+    z-index: 1;
+  }
+
+  .deckbuilder-topbar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 6;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: clamp(20px, 3vw, 40px) clamp(28px, 5vw, 72px);
+    pointer-events: none;
+  }
+
+  .deckbuilder-counter {
+    color: var(--deckbuilder-muted);
+    font-family: "Poppins", "Aptos", "Segoe UI", sans-serif;
+    font-size: clamp(11px, 1.1vw, 14px);
+    font-weight: 500;
+    letter-spacing: .18em;
+  }
+
+  .deckbuilder-counter b {
+    color: var(--deckbuilder-white);
+    font-weight: 600;
+  }
+
+  .deckbuilder-progress {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 7;
+    height: 3px;
+    pointer-events: none;
+  }
+
+  .deckbuilder-progress span {
+    display: block;
+    width: 0;
+    height: 100%;
+    background: var(--deckbuilder-accent);
+    box-shadow: 0 0 12px ${cssRgba(cyan, 0.6)};
+    transition: width .6s var(--deckbuilder-ease);
+  }
+
+  .deckbuilder-nav {
+    position: fixed;
+    left: 50%;
+    bottom: calc(env(safe-area-inset-bottom, 0px) + clamp(14px, 2.4vh, 28px));
+    z-index: 7;
+    display: flex;
+    align-items: center;
+    gap: clamp(6px, .8vw, 10px);
+    max-width: calc(100vw - 32px);
+    padding: 5px 7px;
+    border: 1px solid rgba(255, 255, 255, .08);
+    border-radius: 999px;
+    background: rgba(3, 10, 22, .34);
+    box-shadow: 0 14px 38px -24px rgba(0, 0, 0, .7);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    transform: translateX(-50%);
+  }
+
+  .deckbuilder-nav button {
+    appearance: none;
+    border: 0;
+    font: inherit;
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  .deckbuilder-nav > button {
+    width: clamp(34px, 3.5vw, 40px);
+    height: clamp(34px, 3.5vw, 40px);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--deckbuilder-white);
+    border: 1px solid rgba(255, 255, 255, .14);
+    border-radius: 50%;
+    background: rgba(13, 29, 54, .6);
+    box-shadow: 0 12px 32px -22px rgba(0, 0, 0, .7);
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+    transition: border-color .3s var(--deckbuilder-ease), background .3s var(--deckbuilder-ease), transform .3s var(--deckbuilder-ease), opacity .3s var(--deckbuilder-ease);
+  }
+
+  .deckbuilder-nav > button:hover {
+    border-color: var(--deckbuilder-cyan);
+    background: rgba(15, 130, 245, .18);
+  }
+
+  .deckbuilder-nav > button:active {
+    transform: scale(.92);
+  }
+
+  .deckbuilder-nav > button:disabled {
+    cursor: default;
+    opacity: .3;
+  }
+
+  .deckbuilder-nav svg {
+    width: 42%;
+    height: 42%;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 2.2;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+  }
+
+  .deckbuilder-dots {
+    flex: 0 1 auto;
+    min-width: 0;
+    display: flex;
+    align-items: center;
+    gap: 2px;
+  }
+
+  .deckbuilder-dots button {
+    position: relative;
+    flex: 0 0 18px;
+    width: 18px;
+    height: 24px;
+    padding: 0;
+    border-radius: 999px;
+    background: transparent;
+    transition: flex-basis .35s var(--deckbuilder-ease);
+  }
+
+  .deckbuilder-dots button::before {
+    content: "";
+    display: block;
+    width: 6px;
+    height: 6px;
+    margin: auto;
+    border-radius: 50%;
+    background: var(--deckbuilder-border);
+    opacity: .86;
+    transition: width .35s var(--deckbuilder-ease), border-radius .35s var(--deckbuilder-ease), background .35s var(--deckbuilder-ease), opacity .35s var(--deckbuilder-ease);
+  }
+
+  .deckbuilder-dots button[aria-current=true]::before {
+    width: 20px;
+    border-radius: 4px;
+    background: var(--deckbuilder-accent);
+    opacity: 1;
+  }
+
+  .deckbuilder-nav[data-deckbuilder-nav-mode="scroll"] {
+    max-width: min(68vw, 520px);
+  }
+
+  .deckbuilder-nav[data-deckbuilder-nav-mode="scroll"] .deckbuilder-dots {
+    width: min(34vw, 300px);
+    max-width: calc(100vw - 116px);
+    overflow-x: auto;
+    overflow-y: hidden;
+    overscroll-behavior-x: contain;
+    scroll-padding-inline: 24px;
+    scrollbar-width: none;
+    touch-action: pan-x;
+    mask-image: linear-gradient(90deg, transparent 0%, #000 12%, #000 88%, transparent 100%);
+    -webkit-mask-image: linear-gradient(90deg, transparent 0%, #000 12%, #000 88%, transparent 100%);
+  }
+
+  .deckbuilder-nav[data-deckbuilder-nav-mode="scroll"] .deckbuilder-dots::-webkit-scrollbar {
+    display: none;
+  }
+
+  .deckbuilder-nav[data-deckbuilder-nav-mode="scroll"] .deckbuilder-dots button {
+    flex-basis: 11px;
+    width: 11px;
+    height: 24px;
+  }
+
+  .deckbuilder-nav[data-deckbuilder-nav-mode="scroll"] .deckbuilder-dots button::before {
+    width: 4.5px;
+    height: 4.5px;
+    opacity: .54;
+  }
+
+  .deckbuilder-nav[data-deckbuilder-nav-mode="scroll"] .deckbuilder-dots button[aria-current=true] {
+    flex-basis: 22px;
+  }
+
+  .deckbuilder-nav[data-deckbuilder-nav-mode="scroll"] .deckbuilder-dots button[aria-current=true]::before {
+    width: 18px;
+    height: 6px;
+    opacity: 1;
+  }
+
+  .deckbuilder-hint {
+    position: fixed;
+    right: clamp(24px, 4vw, 48px);
+    bottom: clamp(20px, 3.2vh, 38px);
+    z-index: 6;
+    color: var(--deckbuilder-muted);
+    font-family: "Poppins", "Aptos", "Segoe UI", sans-serif;
+    font-size: 11px;
+    font-weight: 500;
+    letter-spacing: .16em;
+    text-transform: uppercase;
+    pointer-events: none;
+    opacity: .7;
+    animation: deckbuilder-hint-fade 4s ease 3s forwards;
+  }
+
+  @keyframes deckbuilder-hint-fade {
+    to { opacity: 0; }
+  }
+
+  .bespoke-marp-note {
+    display: none;
+  }
+}
+
+@media screen and (max-width: 760px), screen and (orientation: portrait) {
+  .deckbuilder-topbar {
+    padding: clamp(18px, 5vw, 30px) clamp(24px, 7vw, 48px);
+  }
+
+  .deckbuilder-dots {
+    max-width: 46vw;
+    overflow: hidden;
+  }
+
+  .deckbuilder-nav[data-deckbuilder-nav-mode="scroll"] .deckbuilder-dots {
+    width: min(42vw, 280px);
+    max-width: 42vw;
+  }
+
+  .deckbuilder-hint {
+    display: none;
+  }
+}
+
+@media screen and (pointer: coarse) {
+  .deckbuilder-nav {
+    gap: 6px;
+    padding: 6px 8px;
+  }
+
+  .deckbuilder-nav > button {
+    width: 46px;
+    height: 46px;
+  }
+
+  .deckbuilder-dots button {
+    width: 24px;
+    height: 30px;
+  }
+
+  .deckbuilder-nav[data-deckbuilder-nav-mode="scroll"] .deckbuilder-dots button {
+    flex-basis: 15px;
+    width: 15px;
+    height: 30px;
+  }
+
+  .deckbuilder-nav[data-deckbuilder-nav-mode="scroll"] .deckbuilder-dots button[aria-current=true] {
+    flex-basis: 26px;
+  }
+}
+
+@media screen and (prefers-reduced-motion: reduce) {
+  body::after,
+  .deck-signal-board-panel::after,
+  .deck-orchestration-layer::after,
+  .deck-signal-summary::after,
+  .deck-metric-trend-summary::after,
+  .deck-journey-path-summary::after,
+  .deck-exec-panel::after,
+  .deck-proof::after,
+  .deckbuilder-hint {
+    animation: none !important;
+  }
+
+  [data-deckbuilder-slide],
+  [data-deckbuilder-slide].active {
+    transition-duration: .001s !important;
+  }
+
+  [data-deckbuilder-slide].active > foreignObject > section:not(.deck-anim-controlled) > :not(.deck-brand-logo):not(.deck-company-logo):not(.deck-customer-logo-frame) {
+    animation: none !important;
+  }
+}`
+}
+
+function htmlInlineLogoTerms(brand = {}) {
+  const explicit =
+    brand.html?.inlineLogoWords ||
+    brand.inlineLogoWords ||
+    brand.inlineBrandWords ||
+    brand.logoWords ||
+    brand.logoTextWords
+  const candidates = explicit
+    ? Array.isArray(explicit)
+      ? explicit
+      : String(explicit).split(',')
+    : [brand.companyName, brand.brandName, brand.displayName, brand.name]
+  const reserved = new Set(['brand', 'company', 'deck', 'deckbuilder'])
+  const terms = candidates
+    .map((value) => String(value || '').trim())
+    .filter(Boolean)
+    .filter((value) => explicit || !reserved.has(value.toLowerCase()))
+  return [...new Set(terms)].sort((a, b) => b.length - a.length)
+}
+
+function htmlDeckEnhancementScript(brand = {}) {
+  const brandTerms = JSON.stringify(htmlInlineLogoTerms(brand))
+  return `(() => {
+  const configuredBrandTerms = ${brandTerms}
+  const targetSelector = [
+    'section h1',
+    'section h2',
+    'section h3',
+    'section .eyebrow',
+    'section .deck-orchestration-layer-brand',
+    'section .deck-signal-board-panel',
+    'section .deck-signal-summary',
+    'section .deck-metric-trend-summary',
+    'section .deck-journey-path-summary',
+    'section .deck-exec-panel',
+    'section .deck-proof'
+  ].join(', ')
+
+  function logoFor(element) {
+    const sectionLogo = element.closest('section')?.querySelector?.('.deck-company-logo')
+    return sectionLogo || document.querySelector('.deck-company-logo')
+  }
+
+  function escapeRegExp(value) {
+    return String(value).split('').map((char) => {
+      if ('^$\\\\.*+?()[]{}|/'.includes(char) || char === '-') return '\\\\' + char
+      return char
+    }).join('')
+  }
+
+  function brandPatterns() {
+    const terms = configuredBrandTerms
+      .map((term) => String(term || '').trim())
+      .filter(Boolean)
+      .sort((a, b) => b.length - a.length)
+    if (!terms.length) return null
+    const source = '\\\\b(?:' + terms.map(escapeRegExp).join('|') + ')\\\\b'
+    return {
+      split: new RegExp('(' + source + ')', 'gi'),
+      test: new RegExp(source, 'i')
+    }
+  }
+
+  function shouldSkipTextNode(node, patterns) {
+    if (!patterns?.test.test(node.nodeValue || '')) return true
+    const parent = node.parentElement
+    if (!parent) return true
+    if (parent.closest('.deck-inline-brand, script, style')) return true
+    return parent.namespaceURI === 'http://www.w3.org/2000/svg'
+  }
+
+  function brandNode(logo, label) {
+    const wrapper = document.createElement('span')
+    const image = document.createElement('img')
+    wrapper.className = 'deck-inline-brand'
+    wrapper.setAttribute('aria-label', label)
+    image.src = logo.currentSrc || logo.src
+    image.alt = label
+    image.decoding = 'async'
+    wrapper.append(image)
+    return wrapper
+  }
+
+  function enhanceInlineBrand() {
+    document.querySelectorAll(targetSelector).forEach((element) => {
+      if (element.dataset.deckInlineBrandEnhanced === 'true') return
+      const logo = logoFor(element)
+      if (!logo?.src && !logo?.currentSrc) return
+      if (element.dataset.deckInlineLogo === 'company') {
+        const label = element.textContent.trim() || logo.alt || 'Company'
+        element.replaceChildren(brandNode(logo, label))
+        element.dataset.deckInlineBrandEnhanced = 'true'
+        return
+      }
+      const patterns = brandPatterns()
+      if (!patterns) return
+      const walker = document.createTreeWalker(element, 4, {
+        acceptNode(node) {
+          return shouldSkipTextNode(node, patterns) ? 2 : 1
+        }
+      })
+      const nodes = []
+      while (walker.nextNode()) nodes.push(walker.currentNode)
+      nodes.forEach((node) => {
+        const parts = node.nodeValue.split(patterns.split)
+        const fragment = document.createDocumentFragment()
+        parts.forEach((part) => {
+          if (patterns.test.test(part)) {
+            fragment.append(brandNode(logo, part))
+          } else if (part) {
+            fragment.append(document.createTextNode(part))
+          }
+        })
+        node.replaceWith(fragment)
+      })
+      element.dataset.deckInlineBrandEnhanced = 'true'
+    })
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', enhanceInlineBrand, { once: true })
+  } else {
+    enhanceInlineBrand()
+  }
+})();`
+}
+
+function htmlDeckNavigationScript() {
+  return `(() => {
+  const slides = Array.from(document.querySelectorAll('[data-deckbuilder-slide]'))
+  const dots = Array.from(document.querySelectorAll('[data-deckbuilder-jump]'))
+  const dotRail = document.querySelector('.deckbuilder-dots')
+  const progress = document.querySelector('[data-deckbuilder-progress-bar]')
+  const current = document.querySelector('[data-deckbuilder-current]')
+  const prev = document.querySelector('[data-deckbuilder-prev]')
+  const next = document.querySelector('[data-deckbuilder-next]')
+  if (!slides.length || !prev || !next) return
+
+  // ponytail: one tiny navigator beats owning a second presenter framework.
+  let index = 0
+  let wheelX = 0
+  let wheelY = 0
+  let wheelAt = 0
+  let wheelLockedUntil = 0
+  const reduceMotion = window.matchMedia?.('(prefers-reduced-motion: reduce)')
+  const pad = (value) => String(value).padStart(2, '0')
+  const nextKeys = new Set(['ArrowRight', 'ArrowDown', ' ', 'Spacebar', 'PageDown', 'Enter', 'n', 'N'])
+  const prevKeys = new Set(['ArrowLeft', 'ArrowUp', 'PageUp', 'Backspace', 'p', 'P'])
+
+  function isInteractiveTarget(target) {
+    return Boolean(target?.closest?.('button, a, input, select, textarea, video, audio, [contenteditable="true"], .deckbuilder-nav'))
+  }
+
+  function activeClickRevealSlide() {
+    return slides[index]?.querySelector?.('foreignObject > section.deck-anim-controlled.deck-anim-trigger-on-click')
+  }
+
+  function hasPendingClickReveal() {
+    const slide = activeClickRevealSlide()
+    if (!slide) return false
+    if (slide.classList.contains('deck-anim-sequence-stagger')) {
+      return Boolean(slide.querySelector('.deck-anim-item:not(.deck-anim-item-played)'))
+    }
+    return !slide.classList.contains('deck-anim-played')
+  }
+
+  function centerActiveDot() {
+    const activeDot = dots[index]
+    if (!dotRail || !activeDot) return
+    const schedule = window.requestAnimationFrame || ((callback) => setTimeout(callback, 0))
+    schedule(() => {
+      if (dotRail.scrollWidth <= dotRail.clientWidth) return
+      const left = Math.max(0, activeDot.offsetLeft - dotRail.clientWidth / 2 + activeDot.offsetWidth / 2)
+      try {
+        dotRail.scrollTo({ left, behavior: reduceMotion?.matches ? 'auto' : 'smooth' })
+      } catch {
+        dotRail.scrollLeft = left
+      }
+    })
+  }
+
+  function prepareEnteringSlide(slide) {
+    slide?.querySelectorAll?.('.deck-chart-js[data-deck-chart-type]').forEach((figure) => {
+      figure.dataset.deckChartAnimating = 'scheduled'
+    })
+  }
+
+  function go(nextIndex) {
+    if (nextIndex < 0 || nextIndex >= slides.length || nextIndex === index) return
+    slides[index].classList.remove('active', 'bespoke-marp-active')
+    slides[index].setAttribute('aria-hidden', 'true')
+    dots[index]?.removeAttribute('aria-current')
+    index = nextIndex
+    prepareEnteringSlide(slides[index])
+    sync()
+  }
+
+  function sync() {
+    prepareEnteringSlide(slides[index])
+    slides[index].classList.add('active', 'bespoke-marp-active')
+    slides[index].setAttribute('aria-hidden', 'false')
+    dots[index]?.setAttribute('aria-current', 'true')
+    if (current) current.textContent = pad(index + 1)
+    if (progress) progress.style.width = slides.length > 1 ? (index / (slides.length - 1) * 100) + '%' : '0'
+    prev.disabled = index === 0
+    next.disabled = index === slides.length - 1
+    centerActiveDot()
+  }
+
+  function toggleFullscreen() {
+    if (document.fullscreenElement) {
+      document.exitFullscreen?.()
+    } else {
+      document.documentElement.requestFullscreen?.()
+    }
+  }
+
+  function wheelDelta(value, mode) {
+    if (mode === 1) return value * 16
+    if (mode === 2) return value * window.innerHeight
+    return value
+  }
+
+  function consumeWheel(event) {
+    if (event.ctrlKey || event.metaKey || event.altKey || isInteractiveTarget(event.target)) return
+    const now = Date.now()
+    const dx = wheelDelta(event.deltaX || 0, event.deltaMode)
+    const dy = wheelDelta(event.deltaY || 0, event.deltaMode)
+    if (Math.abs(dx) < 1 && Math.abs(dy) < 1) return
+    event.preventDefault()
+    if (now < wheelLockedUntil) return
+    if (now - wheelAt > 260) {
+      wheelX = 0
+      wheelY = 0
+    }
+    wheelX += dx
+    wheelY += dy
+    wheelAt = now
+    const absX = Math.abs(wheelX)
+    const absY = Math.abs(wheelY)
+    if (absX > 78 && absX > absY * 1.1) {
+      go(index + (wheelX > 0 ? 1 : -1))
+      wheelLockedUntil = now + 620
+      wheelX = 0
+      wheelY = 0
+    } else if (absY > 110 && absY > absX * 1.2) {
+      go(index + (wheelY > 0 ? 1 : -1))
+      wheelLockedUntil = now + 620
+      wheelX = 0
+      wheelY = 0
+    }
+  }
+
+  prev.addEventListener('click', (event) => {
+    event.stopPropagation()
+    go(index - 1)
+  })
+  next.addEventListener('click', (event) => {
+    event.stopPropagation()
+    go(index + 1)
+  })
+  dots.forEach((dot) => {
+    dot.addEventListener('click', (event) => {
+      event.stopPropagation()
+      go(Number(dot.dataset.deckbuilderJump))
+    })
+  })
+
+  document.addEventListener('keydown', (event) => {
+    if (event.altKey || event.ctrlKey || event.metaKey) return
+    const target = event.target
+    if (target?.closest?.('input, select, textarea, [contenteditable="true"]')) return
+    if ((event.key === ' ' || event.key === 'Enter') && target?.closest?.('button, a')) return
+    if (event.key === 'f' || event.key === 'F') {
+      toggleFullscreen()
+      event.preventDefault()
+    } else if (nextKeys.has(event.key)) {
+      go(index + 1)
+      event.preventDefault()
+    } else if (prevKeys.has(event.key)) {
+      go(index - 1)
+      event.preventDefault()
+    } else if (event.key === 'Home') {
+      go(0)
+      event.preventDefault()
+    } else if (event.key === 'End') {
+      go(slides.length - 1)
+      event.preventDefault()
+    }
+  })
+  document.addEventListener('wheel', consumeWheel, { passive: false })
+
+  let start = null
+  document.addEventListener('pointerdown', (event) => {
+    if (isInteractiveTarget(event.target)) {
+      start = null
+      return
+    }
+    start = { x: event.clientX, y: event.clientY, time: Date.now(), target: event.target }
+  }, { passive: true })
+  document.addEventListener('pointercancel', () => {
+    start = null
+  }, { passive: true })
+  document.addEventListener('pointerup', (event) => {
+    if (!start || event.defaultPrevented) return
+    if (isInteractiveTarget(event.target) || isInteractiveTarget(start.target)) return
+    const dx = event.clientX - start.x
+    const dy = event.clientY - start.y
+    if (Math.abs(dx) > 45 && Math.abs(dx) > Math.abs(dy)) {
+      go(index + (dx < 0 ? 1 : -1))
+      return
+    }
+    if (Math.abs(dx) <= 8 && Math.abs(dy) <= 8 && Date.now() - start.time < 350 && !hasPendingClickReveal()) {
+      go(index + (event.clientX > window.innerWidth * .5 ? 1 : -1))
+    }
+  }, { passive: true })
+
+  if (!window.PointerEvent) {
+    let touchStart = null
+    document.addEventListener('touchstart', (event) => {
+      if (event.touches.length !== 1 || isInteractiveTarget(event.target)) {
+        touchStart = null
+        return
+      }
+      const touch = event.touches[0]
+      touchStart = { x: touch.clientX, y: touch.clientY, time: Date.now(), target: event.target }
+    }, { passive: true })
+    document.addEventListener('touchend', (event) => {
+      if (!touchStart || event.changedTouches.length !== 1) return
+      if (isInteractiveTarget(event.target) || isInteractiveTarget(touchStart.target)) return
+      const touch = event.changedTouches[0]
+      const dx = touch.clientX - touchStart.x
+      const dy = touch.clientY - touchStart.y
+      if (Math.abs(dx) > 45 && Math.abs(dx) > Math.abs(dy)) {
+        go(index + (dx < 0 ? 1 : -1))
+      } else if (Math.abs(dx) <= 8 && Math.abs(dy) <= 8 && Date.now() - touchStart.time < 350 && !hasPendingClickReveal()) {
+        go(index + (touch.clientX > window.innerWidth * .5 ? 1 : -1))
+      }
+      touchStart = null
+    }, { passive: true })
+    document.addEventListener('touchcancel', () => {
+      touchStart = null
+    }, { passive: true })
+  }
+
+  sync()
+})();`
+}
+
+function htmlDeckChartScript() {
+  return `(() => {
+  const chartFigures = Array.from(document.querySelectorAll('.deck-chart-js[data-deck-chart-type]'))
+  if (!chartFigures.length || !window.Chart) return
+
+  const rootStyle = getComputedStyle(document.documentElement)
+  const rootValue = (name, fallback) => rootStyle.getPropertyValue(name).trim() || fallback
+  const formatNumber = new Intl.NumberFormat('en-US', { maximumFractionDigits: 2 })
+  const activationDelay = 520
+
+  function readConfig(canvas) {
+    try {
+      return JSON.parse(canvas.getAttribute('data-deck-chart-config') || '{}')
+    } catch {
+      return null
+    }
+  }
+
+  function themeFor(figure) {
+    const section = figure.closest('section')
+    const isLight = section?.classList.contains('light')
+    return {
+      primary: rootValue('--deckbuilder-blue', '#0f82f5'),
+      secondary: rootValue('--deckbuilder-cyan', '#59d6fd'),
+      text: isLight ? '#102034' : rootValue('--deckbuilder-body', '#c8d8f0'),
+      muted: isLight ? '#5a6a80' : rootValue('--deckbuilder-muted', '#8b9ab5'),
+      grid: isLight ? 'rgba(15, 130, 245, .14)' : 'rgba(89, 214, 253, .16)',
+      border: isLight ? 'rgba(15, 130, 245, .22)' : 'rgba(89, 214, 253, .24)',
+      tooltipBg: isLight ? 'rgba(255, 255, 255, .96)' : 'rgba(6, 13, 24, .94)',
+      tooltipText: isLight ? '#102034' : rootValue('--deckbuilder-white', '#ffffff'),
+      tooltipMuted: isLight ? '#5a6a80' : rootValue('--deckbuilder-body', '#c8d8f0'),
+    }
+  }
+
+  function gradientFor(context, theme) {
+    const chart = context.chart
+    const area = chart.chartArea
+    if (!area) return theme.primary
+    const gradient = chart.ctx.createLinearGradient(area.left, 0, area.right, 0)
+    gradient.addColorStop(0, theme.primary)
+    gradient.addColorStop(1, theme.secondary)
+    return gradient
+  }
+
+  function paletteFor(theme) {
+    return [theme.primary, theme.secondary, '#5d4ee8', '#ff9f51', '#2fc27d', '#ff5c7a']
+  }
+
+  function formatDelta(value) {
+    const number = Number(value || 0)
+    const formatted = formatNumber.format(Math.abs(number))
+    if (number > 0) return '+' + formatted
+    if (number < 0) return '-' + formatted
+    return formatted
+  }
+
+  const valueLabelPlugin = {
+    id: 'deckbuilderBarValueLabels',
+    afterDatasetsDraw(chart) {
+      const theme = chart.$deckbuilderTheme
+      if (!theme) return
+      const dataset = chart.data.datasets[0]
+      const meta = chart.getDatasetMeta(0)
+      const ctx = chart.ctx
+      ctx.save()
+      ctx.fillStyle = theme.text
+      ctx.font = '600 12px Inter, Arial, sans-serif'
+      ctx.textAlign = 'left'
+      ctx.textBaseline = 'middle'
+      meta.data.forEach((bar, index) => {
+        const raw = Number(dataset.data[index] ?? 0)
+        const position = bar.tooltipPosition()
+        const x = Math.min(chart.chartArea.right - 46, position.x + 10)
+        ctx.fillText(formatNumber.format(raw), x, position.y)
+      })
+      ctx.restore()
+    },
+  }
+
+  const verticalBarValueLabelPlugin = {
+    id: 'deckbuilderVerticalBarValueLabels',
+    afterDatasetsDraw(chart) {
+      const theme = chart.$deckbuilderTheme
+      if (!theme) return
+      const dataset = chart.data.datasets[0]
+      const meta = chart.getDatasetMeta(0)
+      const ctx = chart.ctx
+      ctx.save()
+      ctx.fillStyle = theme.text
+      ctx.font = '700 12px Inter, Arial, sans-serif'
+      ctx.textAlign = 'center'
+      ctx.textBaseline = 'bottom'
+      meta.data.forEach((bar, index) => {
+        const raw = Number(dataset.data[index] ?? 0)
+        const position = bar.tooltipPosition()
+        ctx.fillText(formatNumber.format(raw), position.x, Math.max(chart.chartArea.top + 14, position.y - 8))
+      })
+      ctx.restore()
+    },
+  }
+
+  const pointValueLabelPlugin = {
+    id: 'deckbuilderPointValueLabels',
+    afterDatasetsDraw(chart) {
+      const theme = chart.$deckbuilderTheme
+      if (!theme) return
+      const dataset = chart.data.datasets[0]
+      const meta = chart.getDatasetMeta(0)
+      const ctx = chart.ctx
+      const mode = chart.$deckbuilderPointLabelMode || 'value'
+      ctx.save()
+      ctx.fillStyle = theme.text
+      ctx.font = '600 12px Inter, Arial, sans-serif'
+      ctx.textAlign = 'center'
+      ctx.textBaseline = 'bottom'
+      meta.data.forEach((point, index) => {
+        const raw = dataset.data[index] ?? 0
+        const label = typeof raw === 'object' && raw
+          ? (raw.label || formatNumber.format(Number(raw.y ?? 0)))
+          : formatNumber.format(Number(raw))
+        const position = point.tooltipPosition()
+        ctx.fillText(label, position.x, Math.max(chart.chartArea.top + 14, position.y - 10))
+        if (mode !== 'point-detail' || typeof raw !== 'object' || !raw) return
+        const detail = '(' + formatNumber.format(Number(raw.x ?? 0)) + ', ' + formatNumber.format(Number(raw.y ?? 0)) + ')'
+        ctx.fillStyle = theme.muted
+        ctx.font = '500 10px Inter, Arial, sans-serif'
+        ctx.textBaseline = 'top'
+        ctx.fillText(detail, position.x, Math.min(chart.chartArea.bottom - 12, position.y + 10))
+        ctx.fillStyle = theme.text
+        ctx.font = '600 12px Inter, Arial, sans-serif'
+        ctx.textBaseline = 'bottom'
+      })
+      ctx.restore()
+    },
+  }
+
+  const multiBarValueLabelPlugin = {
+    id: 'deckbuilderMultiBarValueLabels',
+    afterDatasetsDraw(chart, _args, pluginOptions) {
+      const theme = chart.$deckbuilderTheme || pluginOptions.theme
+      const mode = chart.$deckbuilderValueMode || pluginOptions.mode
+      if (!theme || !mode) return
+      const ctx = chart.ctx
+      ctx.save()
+      ctx.font = '600 11px Inter, Arial, sans-serif'
+      ctx.textBaseline = 'middle'
+
+      chart.data.datasets.forEach((dataset, datasetIndex) => {
+        const meta = chart.getDatasetMeta(datasetIndex)
+        meta.data.forEach((bar, dataIndex) => {
+          const raw = Number(dataset.data[dataIndex] ?? 0)
+          const label = formatNumber.format(raw)
+          const width = Math.abs((bar.x ?? 0) - (bar.base ?? 0))
+          const position = bar.tooltipPosition()
+          if (mode === 'stacked') {
+            if (width < 32) return
+            ctx.fillStyle = '#ffffff'
+            ctx.textAlign = 'center'
+            ctx.fillText(label, ((bar.x ?? position.x) + (bar.base ?? position.x)) / 2, position.y)
+            return
+          }
+          ctx.fillStyle = theme.text
+          ctx.textAlign = 'left'
+          ctx.fillText(label, Math.min(chart.chartArea.right - 34, position.x + 7), position.y)
+        })
+      })
+
+      if (mode === 'stacked') {
+        ctx.fillStyle = theme.text
+        ctx.textAlign = 'left'
+        chart.data.labels.forEach((_, dataIndex) => {
+          const total = chart.data.datasets.reduce((sum, dataset) => sum + Number(dataset.data[dataIndex] ?? 0), 0)
+          const firstMeta = chart.getDatasetMeta(0)
+          const firstBar = firstMeta.data[dataIndex]
+          if (!firstBar) return
+          const x = chart.scales.x.getPixelForValue(total)
+          ctx.fillText(formatNumber.format(total), Math.min(chart.chartArea.right - 34, x + 8), firstBar.y)
+        })
+      }
+      ctx.restore()
+    },
+  }
+
+  const doughnutValueLabelPlugin = {
+    id: 'deckbuilderDoughnutValueLabels',
+    afterDatasetsDraw(chart, _args, pluginOptions) {
+      const theme = chart.$deckbuilderTheme || pluginOptions.theme
+      if (!theme) return
+      const dataset = chart.data.datasets[0]
+      const values = dataset.data.map((value) => Number(value || 0))
+      const total = values.reduce((sum, value) => sum + value, 0)
+      const meta = chart.getDatasetMeta(0)
+      const ctx = chart.ctx
+      ctx.save()
+      ctx.fillStyle = '#ffffff'
+      ctx.font = '700 12px Inter, Arial, sans-serif'
+      ctx.textAlign = 'center'
+      ctx.textBaseline = 'middle'
+      meta.data.forEach((arc, index) => {
+        const value = values[index] || 0
+        const percent = total > 0 ? Math.round((value / total) * 100) : 0
+        if (percent < 8) return
+        const position = arc.tooltipPosition()
+        ctx.fillText(String(percent) + '%', position.x, position.y)
+      })
+      ctx.restore()
+    },
+  }
+
+  const waterfallBuildPlugin = {
+    id: 'deckbuilderWaterfallBuild',
+    afterDatasetsDraw(chart) {
+      const theme = chart.$deckbuilderTheme
+      const deltas = chart.$deckbuilderDeltas || []
+      if (!theme) return
+      const meta = chart.getDatasetMeta(0)
+      const ctx = chart.ctx
+      const yScale = chart.scales.y
+
+      ctx.save()
+      ctx.strokeStyle = theme.muted
+      ctx.lineWidth = 1.4
+      ctx.setLineDash([5, 5])
+      ctx.globalAlpha = .78
+      meta.data.slice(0, -1).forEach((bar, index) => {
+        const next = meta.data[index + 1]
+        const raw = chart.data.datasets[0].data[index]
+        if (!next || !Array.isArray(raw)) return
+        const end = Number(raw[1] || 0)
+        const y = yScale.getPixelForValue(end)
+        const half = Math.abs(bar.width || 0) / 2
+        const nextHalf = Math.abs(next.width || 0) / 2
+        ctx.beginPath()
+        ctx.moveTo(bar.x + half, y)
+        ctx.lineTo(next.x - nextHalf, y)
+        ctx.stroke()
+      })
+
+      ctx.setLineDash([])
+      ctx.globalAlpha = 1
+      ctx.fillStyle = theme.text
+      ctx.font = '700 12px Inter, Arial, sans-serif'
+      ctx.textAlign = 'center'
+      ctx.textBaseline = 'bottom'
+      meta.data.forEach((bar, index) => {
+        const delta = Number(deltas[index] || 0)
+        const top = Math.min(bar.y, bar.base)
+        const bottom = Math.max(bar.y, bar.base)
+        const y = delta < 0
+          ? Math.min(chart.chartArea.bottom - 8, bottom + 18)
+          : Math.max(chart.chartArea.top + 14, top - 8)
+        ctx.fillText(formatDelta(delta), bar.x, y)
+      })
+      ctx.restore()
+    },
+  }
+
+  const bulletTargetPlugin = {
+    id: 'deckbuilderBulletTargets',
+    afterDatasetsDraw(chart) {
+      const theme = chart.$deckbuilderTheme
+      const targets = chart.$deckbuilderTargets || []
+      if (!theme || !targets.length) return
+      const meta = chart.getDatasetMeta(0)
+      const xScale = chart.scales.x
+      const ctx = chart.ctx
+      ctx.save()
+      ctx.strokeStyle = '#ff9f51'
+      ctx.fillStyle = theme.text
+      ctx.lineWidth = 3
+      ctx.lineCap = 'round'
+      ctx.font = '600 10px Inter, Arial, sans-serif'
+      ctx.textAlign = 'center'
+      ctx.textBaseline = 'bottom'
+      meta.data.forEach((bar, index) => {
+        const target = Number(targets[index] || 0)
+        if (!Number.isFinite(target)) return
+        const x = xScale.getPixelForValue(target)
+        const markerHeight = Math.min(34, Math.max(18, Math.abs(bar.height || 24) + 10))
+        ctx.beginPath()
+        ctx.moveTo(x, bar.y - markerHeight / 2)
+        ctx.lineTo(x, bar.y + markerHeight / 2)
+        ctx.stroke()
+        ctx.fillText('T ' + formatNumber.format(target), x, Math.max(chart.chartArea.top + 12, bar.y - markerHeight / 2 - 4))
+      })
+      ctx.restore()
+    },
+  }
+
+  const paretoLabelPlugin = {
+    id: 'deckbuilderParetoLabels',
+    afterDatasetsDraw(chart) {
+      const theme = chart.$deckbuilderTheme
+      if (!theme) return
+      const ctx = chart.ctx
+      ctx.save()
+
+      const barDataset = chart.data.datasets[0]
+      const barMeta = chart.getDatasetMeta(0)
+      ctx.fillStyle = theme.text
+      ctx.font = '700 11px Inter, Arial, sans-serif'
+      ctx.textAlign = 'center'
+      ctx.textBaseline = 'bottom'
+      barMeta.data.forEach((bar, index) => {
+        const raw = Number(barDataset.data[index] ?? 0)
+        const y = Math.max(chart.chartArea.top + 13, bar.y - 7)
+        ctx.fillText(formatNumber.format(raw), bar.x, y)
+      })
+
+      const lineDataset = chart.data.datasets[1]
+      const lineMeta = chart.getDatasetMeta(1)
+      ctx.fillStyle = '#ff9f51'
+      ctx.font = '700 11px Inter, Arial, sans-serif'
+      lineMeta.data.forEach((point, index) => {
+        const raw = Number(lineDataset.data[index] ?? 0)
+        const y = Math.max(chart.chartArea.top + 13, point.y - 8)
+        ctx.fillText(Math.round(raw) + '%', point.x, y)
+      })
+
+      ctx.restore()
+    },
+  }
+
+  const radarValueLabelPlugin = {
+    id: 'deckbuilderRadarValueLabels',
+    afterDatasetsDraw(chart) {
+      const theme = chart.$deckbuilderTheme
+      if (!theme) return
+      const dataset = chart.data.datasets[0]
+      const meta = chart.getDatasetMeta(0)
+      const ctx = chart.ctx
+      ctx.save()
+      ctx.fillStyle = theme.text
+      ctx.font = '700 11px Inter, Arial, sans-serif'
+      ctx.textBaseline = 'middle'
+      meta.data.forEach((point, index) => {
+        const raw = Number(dataset.data[index] ?? 0)
+        const position = point.tooltipPosition()
+        const scale = chart.scales?.r
+        const centerX = Number(scale?.xCenter ?? chart.chartArea.left + chart.chartArea.width / 2)
+        const centerY = Number(scale?.yCenter ?? chart.chartArea.top + chart.chartArea.height / 2)
+        const dx = position.x - centerX
+        const dy = position.y - centerY
+        const distance = Math.max(1, Math.sqrt(dx * dx + dy * dy))
+        const labelX = position.x + (dx / distance) * 16
+        const labelY = position.y + (dy / distance) * 16
+        ctx.textAlign = dx < -8 ? 'right' : dx > 8 ? 'left' : 'center'
+        ctx.fillText(formatNumber.format(raw), labelX, labelY)
+      })
+      ctx.restore()
+    },
+  }
+
+  function initBarChart(figure) {
+    if (figure.__deckbuilderChart) {
+      figure.__deckbuilderChart.resize()
+      return
+    }
+    const canvas = figure.querySelector('canvas[data-deck-chartjs="bar"]')
+    if (!canvas) return
+    const config = readConfig(canvas)
+    if (!config || !Array.isArray(config.labels) || !Array.isArray(config.values)) return
+    const theme = themeFor(figure)
+    const label = config.series || config.title || 'Series 1'
+    const chart = new Chart(canvas, {
+      type: 'bar',
+      data: {
+        labels: config.labels,
+        datasets: [{
+          label,
+          data: config.values,
+          backgroundColor: (context) => gradientFor(context, theme),
+          borderColor: theme.primary,
+          borderWidth: 1,
+          borderRadius: 8,
+          borderSkipped: false,
+          maxBarThickness: 26,
+        }],
+      },
+      options: {
+        indexAxis: 'y',
+        responsive: true,
+        maintainAspectRatio: false,
+        animation: {
+          duration: 900,
+          easing: 'easeOutQuart',
+        },
+        interaction: {
+          mode: 'nearest',
+          axis: 'y',
+          intersect: false,
+        },
+        plugins: {
+          legend: { display: false },
+          tooltip: {
+            enabled: true,
+            backgroundColor: theme.tooltipBg,
+            titleColor: theme.tooltipText,
+            bodyColor: theme.tooltipMuted,
+            borderColor: theme.border,
+            borderWidth: 1,
+            displayColors: false,
+            padding: 12,
+            callbacks: {
+              label: (context) => label + ': ' + formatNumber.format(Number(context.parsed.x ?? context.raw ?? 0)),
+            },
+          },
+        },
+        scales: {
+          x: {
+            beginAtZero: true,
+            ticks: {
+              color: theme.muted,
+              callback: (value) => formatNumber.format(Number(value)),
+            },
+            grid: { color: theme.grid },
+            border: { color: theme.border },
+          },
+          y: {
+            ticks: {
+              color: theme.text,
+              font: { weight: '600' },
+            },
+            grid: { display: false },
+            border: { display: false },
+          },
+        },
+      },
+      plugins: [valueLabelPlugin],
+    })
+    chart.$deckbuilderTheme = theme
+    figure.__deckbuilderChart = chart
+    figure.dataset.deckChartEnhanced = 'true'
+  }
+
+  function initLineChart(figure, options = {}) {
+    if (figure.__deckbuilderChart) {
+      figure.__deckbuilderChart.resize()
+      return
+    }
+    const chartType = options.type || 'line'
+    const canvas = figure.querySelector('canvas[data-deck-chartjs="' + chartType + '"]')
+    if (!canvas) return
+    const config = readConfig(canvas)
+    if (!config || !Array.isArray(config.labels) || !Array.isArray(config.values)) return
+    const theme = themeFor(figure)
+    const label = config.series || config.title || 'Series 1'
+    const chart = new Chart(canvas, {
+      type: 'line',
+      data: {
+        labels: config.labels,
+        datasets: [{
+          label,
+          data: config.values,
+          borderColor: theme.primary,
+          backgroundColor: options.fill ? 'rgba(89, 214, 253, .2)' : 'rgba(89, 214, 253, .14)',
+          pointBackgroundColor: theme.secondary,
+          pointBorderColor: theme.tooltipBg,
+          pointBorderWidth: 2,
+          pointRadius: 4,
+          pointHoverRadius: 7,
+          borderWidth: 3,
+          tension: 0.36,
+          fill: Boolean(options.fill),
+        }],
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        animation: {
+          duration: 950,
+          easing: 'easeOutQuart',
+        },
+        interaction: {
+          mode: 'index',
+          intersect: false,
+        },
+        plugins: {
+          legend: { display: false },
+          tooltip: {
+            enabled: true,
+            backgroundColor: theme.tooltipBg,
+            titleColor: theme.tooltipText,
+            bodyColor: theme.tooltipMuted,
+            borderColor: theme.border,
+            borderWidth: 1,
+            displayColors: false,
+            padding: 12,
+            callbacks: {
+              label: (context) => label + ': ' + formatNumber.format(Number(context.parsed.y ?? context.raw ?? 0)),
+            },
+          },
+        },
+        scales: {
+          x: {
+            ticks: { color: theme.muted },
+            grid: { color: theme.grid },
+            border: { color: theme.border },
+          },
+          y: {
+            ticks: {
+              color: theme.muted,
+              callback: (value) => formatNumber.format(Number(value)),
+            },
+            grid: { color: theme.grid },
+            border: { color: theme.border },
+          },
+        },
+      },
+      plugins: [pointValueLabelPlugin],
+    })
+    chart.$deckbuilderTheme = theme
+    figure.__deckbuilderChart = chart
+    figure.dataset.deckChartEnhanced = 'true'
+  }
+
+  function initMultiBarChart(figure, options = {}) {
+    if (figure.__deckbuilderChart) {
+      figure.__deckbuilderChart.resize()
+      return
+    }
+    const chartType = options.type || 'grouped-bar'
+    const canvas = figure.querySelector('canvas[data-deck-chartjs="' + chartType + '"]')
+    if (!canvas) return
+    const config = readConfig(canvas)
+    if (!config || !Array.isArray(config.labels) || !Array.isArray(config.seriesNames) || !Array.isArray(config.matrix)) return
+    const theme = themeFor(figure)
+    const colors = paletteFor(theme)
+    const valueMode = options.stacked ? 'stacked' : 'grouped'
+    const dataMax = options.stacked
+      ? Math.max(...config.labels.map((_, dataIndex) => config.matrix.reduce((sum, row) => sum + Number(row?.[dataIndex] || 0), 0)))
+      : Math.max(...config.matrix.flatMap((row) => Array.isArray(row) ? row.map((value) => Number(value || 0)) : []))
+    const suggestedMax = dataMax > 0 ? dataMax * 1.14 : undefined
+    const datasets = config.seriesNames.map((series, index) => ({
+      label: series,
+      data: Array.isArray(config.matrix[index]) ? config.matrix[index] : [],
+      backgroundColor: colors[index % colors.length],
+      borderColor: colors[index % colors.length],
+      borderWidth: 1,
+      borderRadius: 6,
+      borderSkipped: false,
+      maxBarThickness: 18,
+    }))
+    const chart = new Chart(canvas, {
+      type: 'bar',
+      data: {
+        labels: config.labels,
+        datasets,
+      },
+      options: {
+        indexAxis: 'y',
+        responsive: true,
+        maintainAspectRatio: false,
+        layout: {
+          padding: { right: options.stacked ? 58 : 46 },
+        },
+        animation: {
+          duration: 900,
+          easing: 'easeOutQuart',
+        },
+        interaction: {
+          mode: 'index',
+          axis: 'y',
+          intersect: false,
+        },
+        plugins: {
+          deckbuilderMultiBarValueLabels: {
+            theme,
+            mode: valueMode,
+          },
+          legend: {
+            display: true,
+            position: 'top',
+            labels: {
+              color: theme.text,
+              boxWidth: 10,
+              boxHeight: 10,
+              padding: 14,
+            },
+          },
+          tooltip: {
+            enabled: true,
+            backgroundColor: theme.tooltipBg,
+            titleColor: theme.tooltipText,
+            bodyColor: theme.tooltipMuted,
+            borderColor: theme.border,
+            borderWidth: 1,
+            displayColors: true,
+            padding: 12,
+            callbacks: {
+              label: (context) => context.dataset.label + ': ' + formatNumber.format(Number(context.parsed.x ?? context.raw ?? 0)),
+            },
+          },
+        },
+        scales: {
+          x: {
+            beginAtZero: true,
+            stacked: Boolean(options.stacked),
+            suggestedMax,
+            ticks: {
+              color: theme.muted,
+              callback: (value) => formatNumber.format(Number(value)),
+            },
+            grid: { color: theme.grid },
+            border: { color: theme.border },
+          },
+          y: {
+            stacked: Boolean(options.stacked),
+            ticks: {
+              color: theme.text,
+              font: { weight: '600' },
+            },
+            grid: { display: false },
+            border: { display: false },
+          },
+        },
+      },
+      plugins: [multiBarValueLabelPlugin],
+    })
+    chart.$deckbuilderTheme = theme
+    chart.$deckbuilderValueMode = valueMode
+    figure.__deckbuilderChart = chart
+    figure.dataset.deckChartEnhanced = 'true'
+  }
+
+  function initPointChart(figure, options = {}) {
+    if (figure.__deckbuilderChart) {
+      figure.__deckbuilderChart.resize()
+      return
+    }
+    const chartType = options.type || 'scatter'
+    const canvas = figure.querySelector('canvas[data-deck-chartjs="' + chartType + '"]')
+    if (!canvas) return
+    const config = readConfig(canvas)
+    if (!config || !Array.isArray(config.points)) return
+    const theme = themeFor(figure)
+    const label = config.series || config.title || 'Series 1'
+    const colors = paletteFor(theme)
+    const points = config.points
+      .map((point) => ({
+        x: Number(point.x),
+        y: Number(point.y),
+        r: options.bubble ? Math.max(5, Number(point.r || 0)) : undefined,
+        label: point.label || '',
+      }))
+      .filter((point) => Number.isFinite(point.x) && Number.isFinite(point.y))
+    const radii = points.map((point) => Number(point.r || 0)).filter((value) => Number.isFinite(value))
+    const maxRadius = Math.max(...radii, 1)
+    const chart = new Chart(canvas, {
+      type: options.bubble ? 'bubble' : 'scatter',
+      data: {
+        datasets: [{
+          label,
+          data: points,
+          backgroundColor: (context) => colors[context.dataIndex % colors.length] + (options.bubble ? 'cc' : 'ee'),
+          borderColor: (context) => colors[context.dataIndex % colors.length],
+          borderWidth: 1.5,
+          pointRadius: options.bubble ? undefined : 6,
+          pointHoverRadius: options.bubble ? undefined : 9,
+          hoverBorderWidth: 2,
+        }],
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        layout: {
+          padding: { top: 22, right: 22, bottom: 8, left: 4 },
+        },
+        animation: {
+          duration: 950,
+          easing: 'easeOutQuart',
+        },
+        interaction: {
+          mode: 'nearest',
+          intersect: false,
+        },
+        plugins: {
+          legend: { display: false },
+          tooltip: {
+            enabled: true,
+            backgroundColor: theme.tooltipBg,
+            titleColor: theme.tooltipText,
+            bodyColor: theme.tooltipMuted,
+            borderColor: theme.border,
+            borderWidth: 1,
+            displayColors: false,
+            padding: 12,
+            callbacks: {
+              title: (items) => items[0]?.raw?.label || label,
+              label: (context) => {
+                const raw = context.raw || {}
+                const base = (config.xAxisLabel || 'X') + ': ' + formatNumber.format(Number(raw.x ?? 0)) + ', ' + (config.yAxisLabel || 'Y') + ': ' + formatNumber.format(Number(raw.y ?? 0))
+                return options.bubble ? base + ', Size: ' + formatNumber.format(Number(raw.r ?? 0)) : base
+              },
+            },
+          },
+        },
+        scales: {
+          x: {
+            title: {
+              display: Boolean(config.xAxisLabel),
+              text: config.xAxisLabel,
+              color: theme.text,
+              font: { weight: '600' },
+            },
+            ticks: {
+              color: theme.muted,
+              callback: (value) => formatNumber.format(Number(value)),
+            },
+            grid: { color: theme.grid },
+            border: { color: theme.border },
+          },
+          y: {
+            title: {
+              display: Boolean(config.yAxisLabel),
+              text: config.yAxisLabel,
+              color: theme.text,
+              font: { weight: '600' },
+            },
+            ticks: {
+              color: theme.muted,
+              callback: (value) => formatNumber.format(Number(value)),
+            },
+            grid: { color: theme.grid },
+            border: { color: theme.border },
+          },
+        },
+      },
+      plugins: [pointValueLabelPlugin],
+    })
+    if (options.bubble && chart.data.datasets[0]) {
+      chart.data.datasets[0].data = points.map((point) => ({
+        ...point,
+        r: Math.max(6, Math.min(25, 6 + (Number(point.r || 0) / maxRadius) * 19)),
+      }))
+    }
+    chart.$deckbuilderTheme = theme
+    chart.$deckbuilderPointLabelMode = 'point-detail'
+    figure.__deckbuilderChart = chart
+    figure.dataset.deckChartEnhanced = 'true'
+  }
+
+  function initHistogramChart(figure) {
+    if (figure.__deckbuilderChart) {
+      figure.__deckbuilderChart.resize()
+      return
+    }
+    const canvas = figure.querySelector('canvas[data-deck-chartjs="histogram"]')
+    if (!canvas) return
+    const config = readConfig(canvas)
+    if (!config || !Array.isArray(config.labels) || !Array.isArray(config.values)) return
+    const theme = themeFor(figure)
+    const label = config.series || config.title || 'Count'
+    const chart = new Chart(canvas, {
+      type: 'bar',
+      data: {
+        labels: config.labels,
+        datasets: [{
+          label,
+          data: config.values,
+          backgroundColor: 'rgba(93, 78, 232, .82)',
+          borderColor: '#9aa3ff',
+          borderWidth: 1,
+          borderRadius: 8,
+          borderSkipped: false,
+          maxBarThickness: 54,
+        }],
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        layout: {
+          padding: { top: 20, right: 14 },
+        },
+        animation: {
+          duration: 920,
+          easing: 'easeOutQuart',
+        },
+        interaction: {
+          mode: 'index',
+          intersect: false,
+        },
+        plugins: {
+          legend: { display: false },
+          tooltip: {
+            enabled: true,
+            backgroundColor: theme.tooltipBg,
+            titleColor: theme.tooltipText,
+            bodyColor: theme.tooltipMuted,
+            borderColor: theme.border,
+            borderWidth: 1,
+            displayColors: false,
+            padding: 12,
+            callbacks: {
+              label: (context) => label + ': ' + formatNumber.format(Number(context.parsed.y ?? context.raw ?? 0)),
+            },
+          },
+        },
+        scales: {
+          x: {
+            title: {
+              display: Boolean(config.xAxisLabel),
+              text: config.xAxisLabel,
+              color: theme.text,
+              font: { weight: '600' },
+            },
+            ticks: {
+              color: theme.muted,
+              maxRotation: 0,
+              autoSkip: true,
+              autoSkipPadding: 12,
+            },
+            grid: { display: false },
+            border: { color: theme.border },
+          },
+          y: {
+            beginAtZero: true,
+            title: {
+              display: Boolean(config.yAxisLabel),
+              text: config.yAxisLabel,
+              color: theme.text,
+              font: { weight: '600' },
+            },
+            ticks: {
+              color: theme.muted,
+              callback: (value) => formatNumber.format(Number(value)),
+              precision: 0,
+            },
+            grid: { color: theme.grid },
+            border: { color: theme.border },
+          },
+        },
+      },
+      plugins: [verticalBarValueLabelPlugin],
+    })
+    chart.$deckbuilderTheme = theme
+    figure.__deckbuilderChart = chart
+    figure.dataset.deckChartEnhanced = 'true'
+  }
+
+  function initWaterfallChart(figure) {
+    if (figure.__deckbuilderChart) {
+      figure.__deckbuilderChart.resize()
+      return
+    }
+    const canvas = figure.querySelector('canvas[data-deck-chartjs="waterfall"]')
+    if (!canvas) return
+    const config = readConfig(canvas)
+    if (!config || !Array.isArray(config.labels) || !Array.isArray(config.ranges)) return
+    const theme = themeFor(figure)
+    const positiveColor = '#2fc27d'
+    const negativeColor = '#ff5c7a'
+    const label = config.series || config.title || 'Change'
+    const chart = new Chart(canvas, {
+      type: 'bar',
+      data: {
+        labels: config.labels,
+        datasets: [{
+          label,
+          data: config.ranges,
+          backgroundColor: (context) => {
+            const raw = context.raw
+            const delta = Array.isArray(raw) ? Number(raw[1] || 0) - Number(raw[0] || 0) : 0
+            return delta < 0 ? negativeColor : positiveColor
+          },
+          borderColor: (context) => {
+            const raw = context.raw
+            const delta = Array.isArray(raw) ? Number(raw[1] || 0) - Number(raw[0] || 0) : 0
+            return delta < 0 ? negativeColor : positiveColor
+          },
+          borderWidth: 1,
+          borderRadius: 8,
+          borderSkipped: false,
+          maxBarThickness: 62,
+        }],
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        layout: {
+          padding: { top: 22, right: 18 },
+        },
+        animation: {
+          duration: 950,
+          easing: 'easeOutQuart',
+        },
+        interaction: {
+          mode: 'index',
+          intersect: false,
+        },
+        plugins: {
+          legend: { display: false },
+          tooltip: {
+            enabled: true,
+            backgroundColor: theme.tooltipBg,
+            titleColor: theme.tooltipText,
+            bodyColor: theme.tooltipMuted,
+            borderColor: theme.border,
+            borderWidth: 1,
+            displayColors: false,
+            padding: 12,
+            callbacks: {
+              label: (context) => label + ': ' + formatDelta(config.deltas?.[context.dataIndex] || 0),
+            },
+          },
+        },
+        scales: {
+          x: {
+            ticks: {
+              color: theme.text,
+              font: { weight: '600' },
+              maxRotation: 0,
+              autoSkip: true,
+            },
+            grid: { display: false },
+            border: { color: theme.border },
+          },
+          y: {
+            ticks: {
+              color: theme.muted,
+              callback: (value) => formatNumber.format(Number(value)),
+            },
+            grid: { color: theme.grid },
+            border: { color: theme.border },
+          },
+        },
+      },
+      plugins: [waterfallBuildPlugin],
+    })
+    chart.$deckbuilderTheme = theme
+    chart.$deckbuilderDeltas = Array.isArray(config.deltas) ? config.deltas : []
+    figure.__deckbuilderChart = chart
+    figure.dataset.deckChartEnhanced = 'true'
+  }
+
+  function initBulletChart(figure) {
+    if (figure.__deckbuilderChart) {
+      figure.__deckbuilderChart.resize()
+      return
+    }
+    const canvas = figure.querySelector('canvas[data-deck-chartjs="bullet"]')
+    if (!canvas) return
+    const config = readConfig(canvas)
+    if (!config || !Array.isArray(config.labels) || !Array.isArray(config.values)) return
+    const theme = themeFor(figure)
+    const targets = Array.isArray(config.targets) ? config.targets.map((value) => Number(value || 0)) : []
+    const values = config.values.map((value) => Number(value || 0))
+    const dataMax = Math.max(...values, ...targets, 1)
+    const label = config.series || config.title || 'Actual'
+    const chart = new Chart(canvas, {
+      type: 'bar',
+      data: {
+        labels: config.labels,
+        datasets: [{
+          label,
+          data: values,
+          backgroundColor: (context) => gradientFor(context, theme),
+          borderColor: theme.primary,
+          borderWidth: 1,
+          borderRadius: 7,
+          borderSkipped: false,
+          maxBarThickness: 24,
+        }],
+      },
+      options: {
+        indexAxis: 'y',
+        responsive: true,
+        maintainAspectRatio: false,
+        layout: {
+          padding: { top: 20, right: 64 },
+        },
+        animation: {
+          duration: 900,
+          easing: 'easeOutQuart',
+        },
+        interaction: {
+          mode: 'nearest',
+          axis: 'y',
+          intersect: false,
+        },
+        plugins: {
+          legend: { display: false },
+          tooltip: {
+            enabled: true,
+            backgroundColor: theme.tooltipBg,
+            titleColor: theme.tooltipText,
+            bodyColor: theme.tooltipMuted,
+            borderColor: theme.border,
+            borderWidth: 1,
+            displayColors: false,
+            padding: 12,
+            callbacks: {
+              label: (context) => {
+                const target = targets[context.dataIndex]
+                const targetText = Number.isFinite(target) ? ', target ' + formatNumber.format(target) : ''
+                return label + ': ' + formatNumber.format(Number(context.parsed.x ?? context.raw ?? 0)) + targetText
+              },
+            },
+          },
+        },
+        scales: {
+          x: {
+            beginAtZero: true,
+            suggestedMax: dataMax * 1.12,
+            ticks: {
+              color: theme.muted,
+              callback: (value) => formatNumber.format(Number(value)),
+            },
+            grid: { color: theme.grid },
+            border: { color: theme.border },
+          },
+          y: {
+            ticks: {
+              color: theme.text,
+              font: { weight: '600' },
+            },
+            grid: { display: false },
+            border: { display: false },
+          },
+        },
+      },
+      plugins: [valueLabelPlugin, bulletTargetPlugin],
+    })
+    chart.$deckbuilderTheme = theme
+    chart.$deckbuilderTargets = targets
+    figure.__deckbuilderChart = chart
+    figure.dataset.deckChartEnhanced = 'true'
+  }
+
+  function initParetoChart(figure) {
+    if (figure.__deckbuilderChart) {
+      figure.__deckbuilderChart.resize()
+      return
+    }
+    const canvas = figure.querySelector('canvas[data-deck-chartjs="pareto"]')
+    if (!canvas) return
+    const config = readConfig(canvas)
+    if (!config || !Array.isArray(config.labels) || !Array.isArray(config.values) || !Array.isArray(config.cumulativePercent)) return
+    const theme = themeFor(figure)
+    const label = config.series || config.title || 'Value'
+    const chart = new Chart(canvas, {
+      data: {
+        labels: config.labels,
+        datasets: [
+          {
+            type: 'bar',
+            label,
+            data: config.values,
+            backgroundColor: theme.primary,
+            borderColor: theme.secondary,
+            borderWidth: 1,
+            borderRadius: 8,
+            borderSkipped: false,
+            maxBarThickness: 48,
+            yAxisID: 'y',
+          },
+          {
+            type: 'line',
+            label: 'Cumulative %',
+            data: config.cumulativePercent,
+            borderColor: '#ff9f51',
+            backgroundColor: '#ff9f51',
+            pointBackgroundColor: '#ff9f51',
+            pointBorderColor: theme.tooltipBg,
+            pointBorderWidth: 2,
+            pointRadius: 4,
+            pointHoverRadius: 7,
+            borderWidth: 3,
+            tension: 0.28,
+            yAxisID: 'percent',
+          },
+        ],
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        layout: {
+          padding: { top: 22, right: 14 },
+        },
+        animation: {
+          duration: 980,
+          easing: 'easeOutQuart',
+        },
+        interaction: {
+          mode: 'index',
+          intersect: false,
+        },
+        plugins: {
+          legend: {
+            display: true,
+            position: 'top',
+            labels: {
+              color: theme.text,
+              boxWidth: 10,
+              boxHeight: 10,
+              padding: 14,
+            },
+          },
+          tooltip: {
+            enabled: true,
+            backgroundColor: theme.tooltipBg,
+            titleColor: theme.tooltipText,
+            bodyColor: theme.tooltipMuted,
+            borderColor: theme.border,
+            borderWidth: 1,
+            displayColors: true,
+            padding: 12,
+            callbacks: {
+              label: (context) => context.dataset.label + ': ' + (context.dataset.yAxisID === 'percent'
+                ? Math.round(Number(context.raw ?? 0)) + '%'
+                : formatNumber.format(Number(context.raw ?? 0))),
+            },
+          },
+        },
+        scales: {
+          x: {
+            ticks: {
+              color: theme.text,
+              font: { weight: '600' },
+              maxRotation: 0,
+              autoSkip: true,
+            },
+            grid: { display: false },
+            border: { color: theme.border },
+          },
+          y: {
+            beginAtZero: true,
+            title: {
+              display: Boolean(config.yAxisLabel),
+              text: config.yAxisLabel,
+              color: theme.text,
+              font: { weight: '600' },
+            },
+            ticks: {
+              color: theme.muted,
+              callback: (value) => formatNumber.format(Number(value)),
+            },
+            grid: { color: theme.grid },
+            border: { color: theme.border },
+          },
+          percent: {
+            beginAtZero: true,
+            position: 'right',
+            min: 0,
+            max: 100,
+            ticks: {
+              color: theme.muted,
+              callback: (value) => Number(value) + '%',
+            },
+            grid: { drawOnChartArea: false },
+            border: { color: theme.border },
+          },
+        },
+      },
+      plugins: [paretoLabelPlugin],
+    })
+    chart.$deckbuilderTheme = theme
+    figure.__deckbuilderChart = chart
+    figure.dataset.deckChartEnhanced = 'true'
+  }
+
+  function initRadarChart(figure) {
+    if (figure.__deckbuilderChart) {
+      figure.__deckbuilderChart.resize()
+      return
+    }
+    const canvas = figure.querySelector('canvas[data-deck-chartjs="radar"]')
+    if (!canvas) return
+    const config = readConfig(canvas)
+    if (!config || !Array.isArray(config.labels) || !Array.isArray(config.values)) return
+    const theme = themeFor(figure)
+    const label = config.series || config.title || 'Series 1'
+    const maxValue = Math.max(...config.values.map((value) => Number(value || 0)), 1)
+    const suggestedMax = maxValue <= 100
+      ? 100
+      : Math.ceil((maxValue * 1.12) / 10) * 10
+    const chart = new Chart(canvas, {
+      type: 'radar',
+      data: {
+        labels: config.labels,
+        datasets: [{
+          label,
+          data: config.values,
+          backgroundColor: 'rgba(89, 214, 253, .18)',
+          borderColor: theme.secondary,
+          pointBackgroundColor: theme.primary,
+          pointBorderColor: theme.tooltipBg,
+          pointBorderWidth: 2,
+          pointRadius: 4,
+          pointHoverRadius: 7,
+          borderWidth: 3,
+          fill: true,
+        }],
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        layout: {
+          padding: { top: 22, right: 22, bottom: 10, left: 22 },
+        },
+        animation: {
+          duration: 980,
+          easing: 'easeOutQuart',
+        },
+        interaction: {
+          mode: 'nearest',
+          intersect: false,
+        },
+        plugins: {
+          legend: { display: false },
+          tooltip: {
+            enabled: true,
+            backgroundColor: theme.tooltipBg,
+            titleColor: theme.tooltipText,
+            bodyColor: theme.tooltipMuted,
+            borderColor: theme.border,
+            borderWidth: 1,
+            displayColors: false,
+            padding: 12,
+            callbacks: {
+              label: (context) => label + ': ' + formatNumber.format(Number(context.raw ?? 0)),
+            },
+          },
+        },
+        scales: {
+          r: {
+            beginAtZero: true,
+            max: suggestedMax,
+            ticks: {
+              backdropColor: 'transparent',
+              color: theme.muted,
+              callback: (value) => Number(value) === suggestedMax ? '' : formatNumber.format(Number(value)),
+              stepSize: suggestedMax <= 100 ? 25 : undefined,
+              maxTicksLimit: 5,
+            },
+            angleLines: { color: theme.grid },
+            grid: { color: theme.grid },
+            pointLabels: {
+              color: theme.text,
+              font: { weight: '600', size: 12 },
+            },
+          },
+        },
+      },
+      plugins: [radarValueLabelPlugin],
+    })
+    chart.$deckbuilderTheme = theme
+    figure.__deckbuilderChart = chart
+    figure.dataset.deckChartEnhanced = 'true'
+  }
+
+  function initDoughnutChart(figure) {
+    if (figure.__deckbuilderChart) {
+      figure.__deckbuilderChart.resize()
+      return
+    }
+    const canvas = figure.querySelector('canvas[data-deck-chartjs="doughnut"]')
+    if (!canvas) return
+    const config = readConfig(canvas)
+    if (!config || !Array.isArray(config.labels) || !Array.isArray(config.values)) return
+    const theme = themeFor(figure)
+    const colors = paletteFor(theme)
+    const total = config.values.reduce((sum, value) => sum + Number(value || 0), 0)
+    const chart = new Chart(canvas, {
+      type: 'doughnut',
+      data: {
+        labels: config.labels,
+        datasets: [{
+          label: config.series || config.title || 'Series 1',
+          data: config.values,
+          backgroundColor: config.labels.map((_, index) => colors[index % colors.length]),
+          borderColor: theme.tooltipBg,
+          borderWidth: 2,
+          hoverOffset: 10,
+        }],
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        cutout: '62%',
+        animation: {
+          animateRotate: true,
+          animateScale: true,
+          duration: 900,
+          easing: 'easeOutQuart',
+        },
+        plugins: {
+          deckbuilderDoughnutValueLabels: {
+            theme,
+          },
+          legend: {
+            display: true,
+            position: 'right',
+            labels: {
+              color: theme.text,
+              boxWidth: 10,
+              boxHeight: 10,
+              padding: 14,
+              generateLabels(chart) {
+                const dataset = chart.data.datasets[0]
+                const values = dataset.data.map((value) => Number(value || 0))
+                const total = values.reduce((sum, value) => sum + value, 0)
+                return chart.data.labels.map((label, index) => {
+                  const value = values[index] || 0
+                  const percent = total > 0 ? Math.round((value / total) * 100) : 0
+                  const fillStyle = Array.isArray(dataset.backgroundColor) ? dataset.backgroundColor[index] : dataset.backgroundColor
+                  const strokeStyle = Array.isArray(dataset.borderColor) ? dataset.borderColor[index] : dataset.borderColor
+                  return {
+                    text: String(label) + ': ' + formatNumber.format(value) + ' (' + percent + '%)',
+                    fillStyle,
+                    fontColor: theme.text,
+                    strokeStyle: strokeStyle || fillStyle,
+                    lineWidth: 0,
+                    hidden: chart.getDataVisibility ? !chart.getDataVisibility(index) : false,
+                    index,
+                  }
+                })
+              },
+            },
+          },
+          tooltip: {
+            enabled: true,
+            backgroundColor: theme.tooltipBg,
+            titleColor: theme.tooltipText,
+            bodyColor: theme.tooltipMuted,
+            borderColor: theme.border,
+            borderWidth: 1,
+            displayColors: true,
+            padding: 12,
+            callbacks: {
+              label: (context) => {
+                const value = Number(context.raw ?? 0)
+                const percent = total > 0 ? Math.round((value / total) * 100) : 0
+                return context.label + ': ' + formatNumber.format(value) + ' (' + percent + '%)'
+              },
+            },
+          },
+        },
+      },
+      plugins: [doughnutValueLabelPlugin],
+    })
+    chart.$deckbuilderTheme = theme
+    figure.__deckbuilderChart = chart
+    figure.dataset.deckChartEnhanced = 'true'
+  }
+
+  function initChart(figure) {
+    const type = figure.getAttribute('data-deck-chart-type')
+    if (type === 'bar') initBarChart(figure)
+    if (type === 'line') initLineChart(figure)
+    if (type === 'area') initLineChart(figure, { type: 'area', fill: true })
+    if (type === 'grouped-bar') initMultiBarChart(figure, { type: 'grouped-bar', stacked: false })
+    if (type === 'stacked-bar') initMultiBarChart(figure, { type: 'stacked-bar', stacked: true })
+    if (type === 'scatter') initPointChart(figure, { type: 'scatter' })
+    if (type === 'bubble') initPointChart(figure, { type: 'bubble', bubble: true })
+    if (type === 'histogram') initHistogramChart(figure)
+    if (type === 'waterfall') initWaterfallChart(figure)
+    if (type === 'bullet') initBulletChart(figure)
+    if (type === 'pareto') initParetoChart(figure)
+    if (type === 'radar') initRadarChart(figure)
+    if (type === 'doughnut') initDoughnutChart(figure)
+  }
+
+  function resetChart(figure) {
+    const chart = figure.__deckbuilderChart
+    if (!chart) return
+    try {
+      chart.stop()
+      chart.reset()
+      chart.render()
+    } catch {
+      chart.resize()
+    }
+  }
+
+  function replayChart(figure) {
+    const chart = figure.__deckbuilderChart
+    if (!chart) return
+    try {
+      chart.update()
+    } catch {
+      chart.resize()
+    }
+  }
+
+  function activateChart(figure) {
+    window.clearTimeout(figure.__deckbuilderChartTimer)
+    figure.dataset.deckChartAnimating = 'scheduled'
+    initChart(figure)
+    if (!figure.__deckbuilderChart) return
+    resetChart(figure)
+    figure.__deckbuilderChartTimer = window.setTimeout(() => {
+      figure.dataset.deckChartAnimating = 'true'
+      replayChart(figure)
+      window.setTimeout(() => {
+        if (figure.dataset.deckChartAnimating === 'true') figure.dataset.deckChartAnimating = 'complete'
+      }, 980)
+    }, activationDelay)
+  }
+
+  function activateChartsForSlide(slide) {
+    const figures = slide
+      ? chartFigures.filter((figure) => figure.closest('[data-deckbuilder-slide]') === slide)
+      : chartFigures.filter((figure) => !figure.closest('[data-deckbuilder-slide]'))
+    figures.forEach(activateChart)
+  }
+
+  function initActiveCharts() {
+    const activeSlides = slides.filter((slide) => slide.classList.contains('active'))
+    activeSlides.forEach(activateChartsForSlide)
+    activateChartsForSlide(null)
+  }
+
+  const slides = Array.from(document.querySelectorAll('[data-deckbuilder-slide]'))
+  const observer = new MutationObserver((entries) => {
+    entries.forEach((entry) => {
+      if (entry.target.classList.contains('active')) activateChartsForSlide(entry.target)
+    })
+  })
+  slides.forEach((slide) => observer.observe(slide, { attributes: true, attributeFilter: ['class'] }))
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initActiveCharts, { once: true })
+  } else {
+    initActiveCharts()
+  }
+})();`
 }
 
 function renderNotes(comments = []) {

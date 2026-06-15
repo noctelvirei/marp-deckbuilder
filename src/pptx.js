@@ -23,6 +23,7 @@ import {
   addLogoWall,
   addMetricTrend,
   addNextSteps,
+  addOrchestration,
   addProof,
   addSignalBars,
   addSignalBoard,
@@ -104,6 +105,8 @@ function addNativeSlide(pptx, slide, model, frontmatter, brand, resourcesDir) {
       return addChartSlide(pptx, slide, model, brand, resourcesDir)
     case 'signal-bars':
       return addSignalBars(slide, model, brand, resourcesDir)
+    case 'orchestration':
+      return addOrchestration(slide, model, brand, resourcesDir)
     case 'signal-board':
       return addSignalBoard(slide, model, brand, resourcesDir)
     case 'funnel':

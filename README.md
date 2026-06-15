@@ -115,8 +115,12 @@ node src/cli.js report skills/marp-report/examples/example.md --html dist/report
 Build through the deck skill wrapper:
 
 ```powershell
-node skills\marp-deckbuilder\scripts\build-deck.mjs skills\marp-deckbuilder\examples\example.md --out-dir dist\skill-deck
+node skills\marp-deckbuilder\scripts\build-deck.mjs skills\marp-deckbuilder\examples\example.md --out-dir dist\skill-deck --output both
 ```
+
+The deck skill wrapper accepts `--output html`, `--output pptx`, or
+`--output both`. The default is `both` for compatibility, but the slide skill
+must ask the user which output they want before building a new deck.
 
 Build through the report skill wrapper:
 
@@ -183,6 +187,7 @@ Use known components for native editable PPTX:
 - `deck-chart`
 - `deck-signal-bars`
 - `deck-signal-board`
+- `deck-orchestration`
 - `deck-funnel`
 - `deck-metric-trend`
 - `deck-heatmap`
@@ -201,6 +206,25 @@ Use known components for native editable PPTX:
 
 Use `skills/marp-deckbuilder/REFERENCE.md` for exact syntax and examples.
 
+For title slides, use Markdown bold for branded accent text. Add `<br>` when the
+accent phrase should be its own row:
+
+```md
+# Faster calls.<br>**Total compliance.**<br>No trade-off.
+```
+
+### HTML Presenter Navigation
+
+HTML decks use renderer-owned navigation chrome. Keyboard shortcuts, touch
+gestures, touchpad wheel navigation, fullscreen, progress, and direct slide
+jumps are built into `src/render.js`; deck Markdown must not hand-author
+presenter CSS or JavaScript.
+
+Short decks show every bottom navigation dot. Long decks keep every slide as a
+direct-jump button, but display the dots inside a compact horizontal rail with
+fade edges and active-slide centering. This keeps large demos navigable without
+letting the footer visually overpower the slide.
+
 ### PPTX Editability Contract
 
 The native PPTX renderer only promises editability for known components and normal Markdown text.
@@ -210,7 +234,7 @@ Editable in PPTX:
 - Markdown headings and paragraphs.
 - Known `deck-*` components.
 - Native `deck-chart` bar, line, area, grouped-bar, stacked-bar, doughnut, scatter, and bubble charts.
-- Renderer-owned `deck-chart type="waterfall"`, `deck-chart type="bullet"`, `deck-chart type="histogram"`, `deck-chart type="boxplot"`, `deck-chart type="pareto"`, and `deck-chart type="sankey"` SVG charts embedded into HTML and PPTX.
+- Renderer-owned `deck-chart type="waterfall"`, `deck-chart type="bullet"`, `deck-chart type="histogram"`, `deck-chart type="boxplot"`, `deck-chart type="pareto"`, `deck-chart type="radar"`, and `deck-chart type="sankey"` SVG-backed charts embedded into HTML and PPTX.
 - Shapes, cards, rows, timelines, logo walls, and text created by the PPTX renderer.
 
 Known component tags and attributes are validated before output is written. Use `deck-slide` for slide metadata such as surface, layout, skip flags, and slide-specific logos. If a slide type, visual, or attribute is not available in `skills/marp-deckbuilder/REFERENCE.md`, add a renderer-backed component instead of relying on raw custom markup.
@@ -253,12 +277,14 @@ If a visual must stay editable in PowerPoint, add or extend a structured compone
 
 ## Slide Surfaces And CEO-Style Layouts
 
-Do not hard-code "dark header pages and white content pages" as a design law. The project now supports dark and light versions of the executive style.
+Do not hard-code "dark header pages and white content pages" as a design law. Dark is the default deck surface; light is available when it is chosen deliberately.
 
 Surface is a design choice independent of layout:
 
-- Use `defaultSurface: dark` or `defaultSurface: light` in frontmatter for the deck-wide default.
-- Use `<deck-slide surface="dark" />` or `<deck-slide surface="light" />` for a single slide.
+- Cover, divider, and close slides use dark header treatment and may use image backgrounds.
+- Normal content/component slides default dark with renderer-owned gradient/glass backgrounds.
+- Use `defaultSurface: light` in frontmatter when the whole deck should opt into light content surfaces.
+- Use `<deck-slide surface="light" />` for a single light slide.
 - Use `surface="dark"` or `surface="light"` on executive components.
 
 Good agent rule:

@@ -9,7 +9,9 @@ import {
   escapeAttr,
   escapeHtml,
   formatNumber,
+  histogramBins,
   normalizeResourceReference,
+  paretoRows,
   renderBoxplotSvg,
   renderBulletSvg,
   renderFunnelSvg,
@@ -17,11 +19,12 @@ import {
   renderImpactRadarSvg,
   renderJourneyPathSvg,
   renderParetoSvg,
+  renderRadarSvg,
   renderSankeySvg,
   renderWaterfallSvg,
   splitCsv,
   treemapRects
-} from "./chunk-MG2GTSGR.mjs";
+} from "./chunk-L7PI37Q7.mjs";
 import {
   __commonJS,
   __export,
@@ -47297,6 +47300,24 @@ function parseSignalBars(signalBars) {
     accent: normalizeAccent(signalBars.attr("accent") || "blue")
   };
 }
+function parseOrchestration(orchestration) {
+  return {
+    type: "orchestration",
+    upstreamLabel: orchestration.attr("upstream-label") || orchestration.attr("channels-label") || "Customer channels",
+    upstream: splitCsv(orchestration.attr("upstream") || orchestration.attr("channels")),
+    layer: orchestration.attr("layer") || orchestration.attr("title") || cleanText(orchestration.find("h2,h3,h4").first().text()),
+    logo: normalizeOrchestrationLogo(orchestration.attr("logo") || orchestration.attr("brand-logo") || orchestration.attr("company-logo") || orchestration.attr("inline-logo")),
+    tagline: orchestration.attr("tagline") || orchestration.attr("layer-tag") || "the AI orchestration layer",
+    capabilities: splitCsv(orchestration.attr("capabilities") || orchestration.attr("caps") || orchestration.attr("tags")),
+    downstreamLabel: orchestration.attr("downstream-label") || orchestration.attr("systems-label") || "Core systems",
+    downstream: splitCsv(orchestration.attr("downstream") || orchestration.attr("systems")),
+    caption: orchestration.attr("caption") || orchestration.attr("body") || cleanText(orchestration.find("p").first().text()),
+    accent: normalizeAccent(orchestration.attr("accent") || "blue")
+  };
+}
+function normalizeOrchestrationLogo(value = "") {
+  return ["company", "brand", "true", "yes", "on", "1"].includes(String(value || "").trim().toLowerCase());
+}
 function parseSignalBoard(signalBoard) {
   return {
     type: "signal-board",
@@ -47639,6 +47660,7 @@ function normalizeChartType(value) {
   if (token === "boxplot" || token === "box-plot") return "boxplot";
   if (token === "pareto" || token === "pareto-chart") return "pareto";
   if (token === "sankey" || token === "sankey-flow") return "sankey";
+  if (token === "radar" || token === "radar-chart" || token === "spider" || token === "spider-chart") return "radar";
   if (token === "donut") return "doughnut";
   if (token === "scatterplot" || token === "xy") return "scatter";
   if (token === "column") return "bar";
@@ -47662,9 +47684,17 @@ function renderChartHtml(chart) {
   if (chart.chartType === "histogram") return renderHistogramChartHtml(chart);
   if (chart.chartType === "boxplot") return renderBoxplotChartHtml(chart);
   if (chart.chartType === "pareto") return renderParetoChartHtml(chart);
+  if (chart.chartType === "radar") return renderRadarChartHtml(chart);
   if (chart.chartType === "sankey") return renderSankeyChartHtml(chart);
   if (chart.chartType === "waterfall") return renderWaterfallChartHtml(chart);
   if (chart.chartType === "bullet") return renderBulletChartHtml(chart);
+  const chartConfig = {
+    type: "bar",
+    labels: chart.labels,
+    values: chart.values,
+    series: chart.series || chart.title || "Series 1",
+    title: chart.title || ""
+  };
   const max = Math.max(...chart.values, 1);
   const rows = chart.labels.map((label, index2) => {
     const value = chart.values[index2] ?? 0;
@@ -47675,27 +47705,78 @@ function renderChartHtml(chart) {
   <strong>${escapeHtml(formatNumber(value))}</strong>
 </div>`;
   }).join("\n");
-  return `<figure class="deck-chart deck-chart-${chart.chartType}">
+  return `<figure class="deck-chart deck-chart-${chart.chartType} deck-chart-js" data-deck-chart-type="bar">
   ${chart.title ? `<figcaption>${escapeHtml(chart.title)}</figcaption>` : ""}
-  <div class="deck-chart-rows">${rows}</div>
+  <div class="deck-chart-js-frame">
+    <canvas class="deck-chart-js-canvas" data-deck-chartjs="bar" data-deck-chart-config="${escapeAttr(JSON.stringify(chartConfig))}" role="img" aria-label="${escapeAttr(chart.title || "Bar chart")}"></canvas>
+  </div>
+  <div class="deck-chart-rows deck-chart-js-fallback">${rows}</div>
 </figure>`;
 }
 function renderWaterfallChartHtml(chart) {
+  const steps = waterfallSteps(chart);
+  const chartConfig = {
+    type: "waterfall",
+    labels: steps.map((step) => step.label),
+    ranges: steps.map((step) => [step.start, step.end]),
+    deltas: steps.map((step) => step.delta),
+    series: chart.series || chart.title || "Change",
+    title: chart.title || ""
+  };
   return `<figure class="deck-chart deck-chart-waterfall">
   ${chart.title ? `<figcaption>${escapeHtml(chart.title)}</figcaption>` : ""}
-  ${renderWaterfallSvg(chart, { cssVariables: true })}
+  <div class="deck-chart-js" data-deck-chart-type="waterfall">
+    <div class="deck-chart-js-frame">
+      <canvas class="deck-chart-js-canvas" data-deck-chartjs="waterfall" data-deck-chart-config="${escapeAttr(JSON.stringify(chartConfig))}" role="img" aria-label="${escapeAttr(chart.title || "Waterfall chart")}"></canvas>
+    </div>
+    <div class="deck-chart-js-fallback">
+      ${renderWaterfallSvg(chart, { cssVariables: true })}
+    </div>
+  </div>
 </figure>`;
 }
 function renderBulletChartHtml(chart) {
+  const chartConfig = {
+    type: "bullet",
+    labels: chart.labels,
+    values: chart.values,
+    targets: chart.targets,
+    series: chart.series || chart.title || "Actual",
+    title: chart.title || ""
+  };
   return `<figure class="deck-chart deck-chart-bullet">
   ${chart.title ? `<figcaption>${escapeHtml(chart.title)}</figcaption>` : ""}
-  ${renderBulletSvg(chart, { cssVariables: true })}
+  <div class="deck-chart-js" data-deck-chart-type="bullet">
+    <div class="deck-chart-js-frame">
+      <canvas class="deck-chart-js-canvas" data-deck-chartjs="bullet" data-deck-chart-config="${escapeAttr(JSON.stringify(chartConfig))}" role="img" aria-label="${escapeAttr(chart.title || "Bullet chart")}"></canvas>
+    </div>
+    <div class="deck-chart-js-fallback">
+      ${renderBulletSvg(chart, { cssVariables: true })}
+    </div>
+  </div>
 </figure>`;
 }
 function renderHistogramChartHtml(chart) {
+  const bins = histogramBins(chart.values, chart.binCount);
+  const chartConfig = {
+    type: "histogram",
+    labels: bins.map((bin) => `${compactNumber(bin.start)}-${compactNumber(bin.end)}`),
+    values: bins.map((bin) => bin.count),
+    series: chart.series || chart.title || "Count",
+    title: chart.title || "",
+    xAxisLabel: chart.xAxisLabel || "Range",
+    yAxisLabel: chart.yAxisLabel || "Count"
+  };
   return `<figure class="deck-chart deck-chart-histogram">
   ${chart.title ? `<figcaption>${escapeHtml(chart.title)}</figcaption>` : ""}
-  ${renderHistogramSvg(chart, { cssVariables: true })}
+  <div class="deck-chart-js" data-deck-chart-type="histogram">
+    <div class="deck-chart-js-frame">
+      <canvas class="deck-chart-js-canvas" data-deck-chartjs="histogram" data-deck-chart-config="${escapeAttr(JSON.stringify(chartConfig))}" role="img" aria-label="${escapeAttr(chart.title || "Histogram chart")}"></canvas>
+    </div>
+    <div class="deck-chart-js-fallback">
+      ${renderHistogramSvg(chart, { cssVariables: true })}
+    </div>
+  </div>
 </figure>`;
 }
 function renderBoxplotChartHtml(chart) {
@@ -47705,9 +47786,52 @@ function renderBoxplotChartHtml(chart) {
 </figure>`;
 }
 function renderParetoChartHtml(chart) {
+  const rows = paretoRows(chart);
+  const total = rows.reduce((sum, row) => sum + row.value, 0);
+  let cumulative = 0;
+  const cumulativePercent = rows.map((row) => {
+    cumulative += row.value;
+    return total > 0 ? Math.round(cumulative / total * 1e3) / 10 : 0;
+  });
+  const chartConfig = {
+    type: "pareto",
+    labels: rows.map((row) => row.label),
+    values: rows.map((row) => row.value),
+    cumulativePercent,
+    series: chart.series || chart.title || "Value",
+    title: chart.title || "",
+    yAxisLabel: chart.yAxisLabel || chart.series || "Value"
+  };
   return `<figure class="deck-chart deck-chart-pareto">
   ${chart.title ? `<figcaption>${escapeHtml(chart.title)}</figcaption>` : ""}
-  ${renderParetoSvg(chart, { cssVariables: true })}
+  <div class="deck-chart-js" data-deck-chart-type="pareto">
+    <div class="deck-chart-js-frame">
+      <canvas class="deck-chart-js-canvas" data-deck-chartjs="pareto" data-deck-chart-config="${escapeAttr(JSON.stringify(chartConfig))}" role="img" aria-label="${escapeAttr(chart.title || "Pareto chart")}"></canvas>
+    </div>
+    <div class="deck-chart-js-fallback">
+      ${renderParetoSvg(chart, { cssVariables: true })}
+    </div>
+  </div>
+</figure>`;
+}
+function renderRadarChartHtml(chart) {
+  const chartConfig = {
+    type: "radar",
+    labels: chart.labels,
+    values: chart.values,
+    series: chart.series || chart.title || "Series 1",
+    title: chart.title || ""
+  };
+  return `<figure class="deck-chart deck-chart-radar">
+  ${chart.title ? `<figcaption>${escapeHtml(chart.title)}</figcaption>` : ""}
+  <div class="deck-chart-js" data-deck-chart-type="radar">
+    <div class="deck-chart-js-frame">
+      <canvas class="deck-chart-js-canvas" data-deck-chartjs="radar" data-deck-chart-config="${escapeAttr(JSON.stringify(chartConfig))}" role="img" aria-label="${escapeAttr(chart.title || "Radar chart")}"></canvas>
+    </div>
+    <div class="deck-chart-js-fallback">
+      ${renderRadarSvg(chart, { cssVariables: true })}
+    </div>
+  </div>
 </figure>`;
 }
 function renderSankeyChartHtml(chart) {
@@ -47717,6 +47841,13 @@ function renderSankeyChartHtml(chart) {
 </figure>`;
 }
 function renderLineChartHtml(chart) {
+  const chartConfig = {
+    type: "line",
+    labels: chart.labels,
+    values: chart.values,
+    series: chart.series || chart.title || "Series 1",
+    title: chart.title || ""
+  };
   const geometry = categoricalSeriesGeometry(chart);
   const markers = geometry.points.map((point) => `<g transform="translate(${point.x.toFixed(2)} ${point.y.toFixed(2)})">
   <circle class="deck-chart-line-point" r="6" fill="#0f82f5" stroke="#ffffff"><title>${escapeHtml(point.label)}: ${escapeHtml(formatNumber(point.value))}</title></circle>
@@ -47724,16 +47855,30 @@ function renderLineChartHtml(chart) {
 </g>`).join("\n");
   return `<figure class="deck-chart deck-chart-line">
   ${chart.title ? `<figcaption>${escapeHtml(chart.title)}</figcaption>` : ""}
-  <svg class="deck-chart-line-svg" viewBox="0 0 ${geometry.width} ${geometry.height}" role="img" aria-label="${escapeAttr(chart.title || "Line chart")}">
-    ${renderSeriesGrid(geometry, "line")}
-    ${renderSeriesAxes(geometry, "line")}
-    <path class="deck-chart-line-path" d="${linePath(geometry.points)}" fill="none" stroke="#0f82f5"></path>
-    ${markers}
-    ${renderSeriesXLabels(geometry, "line")}
-  </svg>
+  <div class="deck-chart-js" data-deck-chart-type="line">
+    <div class="deck-chart-js-frame">
+      <canvas class="deck-chart-js-canvas" data-deck-chartjs="line" data-deck-chart-config="${escapeAttr(JSON.stringify(chartConfig))}" role="img" aria-label="${escapeAttr(chart.title || "Line chart")}"></canvas>
+    </div>
+    <div class="deck-chart-js-fallback">
+      <svg class="deck-chart-line-svg" viewBox="0 0 ${geometry.width} ${geometry.height}" role="img" aria-label="${escapeAttr(chart.title || "Line chart")}">
+        ${renderSeriesGrid(geometry, "line")}
+        ${renderSeriesAxes(geometry, "line")}
+        <path class="deck-chart-line-path" d="${linePath(geometry.points)}" fill="none" stroke="#0f82f5"></path>
+        ${markers}
+        ${renderSeriesXLabels(geometry, "line")}
+      </svg>
+    </div>
+  </div>
 </figure>`;
 }
 function renderAreaChartHtml(chart) {
+  const chartConfig = {
+    type: "area",
+    labels: chart.labels,
+    values: chart.values,
+    series: chart.series || chart.title || "Series 1",
+    title: chart.title || ""
+  };
   const minValue = Math.min(...chart.values);
   const maxValue = Math.max(...chart.values);
   const includeZero = minValue <= 0 && maxValue >= 0;
@@ -47751,14 +47896,21 @@ function renderAreaChartHtml(chart) {
 </g>`).join("\n");
   return `<figure class="deck-chart deck-chart-area">
   ${chart.title ? `<figcaption>${escapeHtml(chart.title)}</figcaption>` : ""}
-  <svg class="deck-chart-area-svg" viewBox="0 0 ${geometry.width} ${geometry.height}" role="img" aria-label="${escapeAttr(chart.title || "Area chart")}">
-    ${renderSeriesGrid(geometry, "area")}
-    ${renderSeriesAxes(geometry, "area")}
-    <path class="deck-chart-area-fill" d="${areaPath}" fill="rgba(15, 130, 245, .22)"></path>
-    <path class="deck-chart-area-path" d="${linePath(geometry.points)}" fill="none" stroke="#0f82f5"></path>
-    ${markers}
-    ${renderSeriesXLabels(geometry, "area")}
-  </svg>
+  <div class="deck-chart-js" data-deck-chart-type="area">
+    <div class="deck-chart-js-frame">
+      <canvas class="deck-chart-js-canvas" data-deck-chartjs="area" data-deck-chart-config="${escapeAttr(JSON.stringify(chartConfig))}" role="img" aria-label="${escapeAttr(chart.title || "Area chart")}"></canvas>
+    </div>
+    <div class="deck-chart-js-fallback">
+      <svg class="deck-chart-area-svg" viewBox="0 0 ${geometry.width} ${geometry.height}" role="img" aria-label="${escapeAttr(chart.title || "Area chart")}">
+        ${renderSeriesGrid(geometry, "area")}
+        ${renderSeriesAxes(geometry, "area")}
+        <path class="deck-chart-area-fill" d="${areaPath}" fill="rgba(15, 130, 245, .22)"></path>
+        <path class="deck-chart-area-path" d="${linePath(geometry.points)}" fill="none" stroke="#0f82f5"></path>
+        ${markers}
+        ${renderSeriesXLabels(geometry, "area")}
+      </svg>
+    </div>
+  </div>
 </figure>`;
 }
 function categoricalSeriesGeometry(chart, options = {}) {
@@ -47834,6 +47986,29 @@ function renderSignalBarsHtml(signalBars) {
   </figure>
 </div>`;
 }
+function renderOrchestrationHtml(orchestration) {
+  const upstreamNodes = orchestration.upstream.map((node) => `<span class="deck-orchestration-node">${escapeHtml(node)}</span>`).join("");
+  const downstreamNodes = orchestration.downstream.map((node) => `<span class="deck-orchestration-node">${escapeHtml(node)}</span>`).join("");
+  const capabilities = orchestration.capabilities.map((capability) => `<span class="deck-orchestration-cap"><b></b>${escapeHtml(capability)}</span>`).join("");
+  return `<div class="deck-orchestration deck-orchestration-accent-${escapeAttr(orchestration.accent)}">
+  <div class="deck-orchestration-tier">
+    <div class="deck-orchestration-tier-label">${escapeHtml(orchestration.upstreamLabel)}</div>
+    <div class="deck-orchestration-nodes">${upstreamNodes}</div>
+  </div>
+  <article class="deck-orchestration-layer">
+    <div class="deck-orchestration-layer-head">
+      <strong class="deck-orchestration-layer-brand"${orchestration.logo ? ' data-deck-inline-logo="company"' : ""}>${escapeHtml(orchestration.layer)}</strong>
+      <span class="deck-orchestration-layer-tag">${escapeHtml(orchestration.tagline)}</span>
+    </div>
+    <div class="deck-orchestration-caps">${capabilities}</div>
+  </article>
+  <div class="deck-orchestration-tier">
+    <div class="deck-orchestration-tier-label">${escapeHtml(orchestration.downstreamLabel)}</div>
+    <div class="deck-orchestration-nodes">${downstreamNodes}</div>
+  </div>
+  ${orchestration.caption ? `<p class="deck-orchestration-caption">${escapeHtml(orchestration.caption)}</p>` : ""}
+</div>`;
+}
 function renderSignalBoardHtml(signalBoard) {
   const max = Math.max(...signalBoard.values, 1);
   const tags = signalBoard.tags.map((tag) => `<span class="deck-signal-board-tag">${escapeHtml(tag)}</span>`).join("\n");
@@ -47873,6 +48048,14 @@ function renderBubbleChartHtml(chart) {
 }
 function renderPointChartHtml(chart, options = {}) {
   const isBubble = options.type === "bubble";
+  const chartConfig = {
+    type: options.type || "scatter",
+    points: chart.points,
+    series: chart.series || chart.title || "Series 1",
+    title: chart.title || "",
+    xAxisLabel: chart.xAxisLabel || "X",
+    yAxisLabel: chart.yAxisLabel || "Y"
+  };
   const width = 760;
   const height = 350;
   const margin = { top: 28, right: 28, bottom: 58, left: 64 };
@@ -47918,14 +48101,21 @@ function renderPointChartHtml(chart, options = {}) {
   const ariaLabel = isBubble ? "Bubble chart" : "Scatter chart";
   return `<figure class="deck-chart ${chartClass}">
   ${chart.title ? `<figcaption>${escapeHtml(chart.title)}</figcaption>` : ""}
-  <svg class="${svgClass}" viewBox="0 0 ${width} ${height}" role="img" aria-label="${escapeAttr(chart.title || ariaLabel)}">
-    ${grid}
-    <line class="deck-chart-scatter-axis" x1="${margin.left}" y1="${margin.top + plotHeight}" x2="${margin.left + plotWidth}" y2="${margin.top + plotHeight}"></line>
-    <line class="deck-chart-scatter-axis" x1="${margin.left}" y1="${margin.top}" x2="${margin.left}" y2="${margin.top + plotHeight}"></line>
-    ${points}
-    <text class="deck-chart-scatter-axis-label" x="${margin.left + plotWidth / 2}" y="${height - 4}" text-anchor="middle">${escapeHtml(xAxisLabel)}</text>
-    <text class="deck-chart-scatter-axis-label" transform="translate(18 ${margin.top + plotHeight / 2}) rotate(-90)" text-anchor="middle">${escapeHtml(yAxisLabel)}</text>
-  </svg>
+  <div class="deck-chart-js" data-deck-chart-type="${escapeAttr(options.type || "scatter")}">
+    <div class="deck-chart-js-frame">
+      <canvas class="deck-chart-js-canvas" data-deck-chartjs="${escapeAttr(options.type || "scatter")}" data-deck-chart-config="${escapeAttr(JSON.stringify(chartConfig))}" role="img" aria-label="${escapeAttr(chart.title || ariaLabel)}"></canvas>
+    </div>
+    <div class="deck-chart-js-fallback">
+      <svg class="${svgClass}" viewBox="0 0 ${width} ${height}" role="img" aria-label="${escapeAttr(chart.title || ariaLabel)}">
+        ${grid}
+        <line class="deck-chart-scatter-axis" x1="${margin.left}" y1="${margin.top + plotHeight}" x2="${margin.left + plotWidth}" y2="${margin.top + plotHeight}"></line>
+        <line class="deck-chart-scatter-axis" x1="${margin.left}" y1="${margin.top}" x2="${margin.left}" y2="${margin.top + plotHeight}"></line>
+        ${points}
+        <text class="deck-chart-scatter-axis-label" x="${margin.left + plotWidth / 2}" y="${height - 4}" text-anchor="middle">${escapeHtml(xAxisLabel)}</text>
+        <text class="deck-chart-scatter-axis-label" transform="translate(18 ${margin.top + plotHeight / 2}) rotate(-90)" text-anchor="middle">${escapeHtml(yAxisLabel)}</text>
+      </svg>
+    </div>
+  </div>
 </figure>`;
 }
 function expandExtent(min, max) {
@@ -47942,6 +48132,13 @@ function tickValues(min, max) {
   return ticks;
 }
 function renderDoughnutChartHtml(chart) {
+  const chartConfig = {
+    type: "doughnut",
+    labels: chart.labels,
+    values: chart.values,
+    series: chart.series || chart.title || "Series 1",
+    title: chart.title || ""
+  };
   const total = chart.values.reduce((sum, value) => sum + value, 0);
   let cursor = 0;
   const stops = chart.values.map((value, index2) => {
@@ -47961,15 +48158,29 @@ function renderDoughnutChartHtml(chart) {
   }).join("\n");
   return `<figure class="deck-chart deck-chart-doughnut">
   ${chart.title ? `<figcaption>${escapeHtml(chart.title)}</figcaption>` : ""}
-  <div class="deck-chart-doughnut-layout">
-    <div class="deck-chart-doughnut-ring" style="background: conic-gradient(${stops.join(", ")})">
-      <span>Total<strong>${escapeHtml(formatNumber(total))}</strong></span>
+  <div class="deck-chart-js" data-deck-chart-type="doughnut">
+    <div class="deck-chart-js-frame">
+      <canvas class="deck-chart-js-canvas" data-deck-chartjs="doughnut" data-deck-chart-config="${escapeAttr(JSON.stringify(chartConfig))}" role="img" aria-label="${escapeAttr(chart.title || "Doughnut chart")}"></canvas>
     </div>
-    <div class="deck-chart-doughnut-legend">${rows}</div>
+    <div class="deck-chart-js-fallback">
+      <div class="deck-chart-doughnut-layout">
+        <div class="deck-chart-doughnut-ring" style="background: conic-gradient(${stops.join(", ")})">
+          <span>Total<strong>${escapeHtml(formatNumber(total))}</strong></span>
+        </div>
+        <div class="deck-chart-doughnut-legend">${rows}</div>
+      </div>
+    </div>
   </div>
 </figure>`;
 }
 function renderGroupedBarChartHtml(chart) {
+  const chartConfig = {
+    type: "grouped-bar",
+    labels: chart.labels,
+    seriesNames: chart.seriesNames,
+    matrix: chart.matrix,
+    title: chart.title || ""
+  };
   const values = chart.matrix.flat();
   const max = Math.max(...values, 1);
   const legend = chart.seriesNames.map(
@@ -47994,11 +48205,25 @@ function renderGroupedBarChartHtml(chart) {
   }).join("\n");
   return `<figure class="deck-chart deck-chart-grouped-bar">
   ${chart.title ? `<figcaption>${escapeHtml(chart.title)}</figcaption>` : ""}
-  <div class="deck-chart-legend">${legend}</div>
-  <div class="deck-chart-grouped-rows">${rows}</div>
+  <div class="deck-chart-js" data-deck-chart-type="grouped-bar">
+    <div class="deck-chart-js-frame">
+      <canvas class="deck-chart-js-canvas" data-deck-chartjs="grouped-bar" data-deck-chart-config="${escapeAttr(JSON.stringify(chartConfig))}" role="img" aria-label="${escapeAttr(chart.title || "Grouped bar chart")}"></canvas>
+    </div>
+    <div class="deck-chart-js-fallback">
+      <div class="deck-chart-legend">${legend}</div>
+      <div class="deck-chart-grouped-rows">${rows}</div>
+    </div>
+  </div>
 </figure>`;
 }
 function renderStackedBarChartHtml(chart) {
+  const chartConfig = {
+    type: "stacked-bar",
+    labels: chart.labels,
+    seriesNames: chart.seriesNames,
+    matrix: chart.matrix,
+    title: chart.title || ""
+  };
   const totals = chart.labels.map(
     (_, labelIndex) => chart.matrix.reduce((sum, row) => sum + (row[labelIndex] ?? 0), 0)
   );
@@ -48026,8 +48251,15 @@ function renderStackedBarChartHtml(chart) {
   }).join("\n");
   return `<figure class="deck-chart deck-chart-stacked-bar">
   ${chart.title ? `<figcaption>${escapeHtml(chart.title)}</figcaption>` : ""}
-  <div class="deck-chart-legend">${legend}</div>
-  <div class="deck-chart-stacked-rows">${rows}</div>
+  <div class="deck-chart-js" data-deck-chart-type="stacked-bar">
+    <div class="deck-chart-js-frame">
+      <canvas class="deck-chart-js-canvas" data-deck-chartjs="stacked-bar" data-deck-chart-config="${escapeAttr(JSON.stringify(chartConfig))}" role="img" aria-label="${escapeAttr(chart.title || "Stacked bar chart")}"></canvas>
+    </div>
+    <div class="deck-chart-js-fallback">
+      <div class="deck-chart-legend">${legend}</div>
+      <div class="deck-chart-stacked-rows">${rows}</div>
+    </div>
+  </div>
 </figure>`;
 }
 function renderMetricTrendHtml(metricTrend) {
@@ -48141,6 +48373,27 @@ function hashString(value) {
     hash = (hash << 5) - hash + value.charCodeAt(index2) | 0;
   }
   return Math.abs(hash).toString(36);
+}
+function compactNumber(value) {
+  if (!Number.isFinite(value)) return String(value);
+  const rounded = Math.round(value * 100) / 100;
+  return Number.isInteger(rounded) ? String(rounded) : rounded.toFixed(2).replace(/0+$/, "").replace(/\.$/, "");
+}
+function waterfallSteps(chart) {
+  const steps = [];
+  let running = 0;
+  chart.values.forEach((delta, index2) => {
+    const start = running;
+    const end2 = start + delta;
+    running = end2;
+    steps.push({
+      label: chart.labels[index2] || "",
+      delta,
+      start,
+      end: end2
+    });
+  });
+  return steps;
 }
 function renderMetricTrendSvg(metricTrend) {
   const width = 520;
@@ -48386,6 +48639,7 @@ var knownDeckTags = /* @__PURE__ */ new Set([
   "deck-logo-wall",
   "deck-metric-trend",
   "deck-next-steps",
+  "deck-orchestration",
   "deck-proof",
   "deck-row",
   "deck-signal-bars",
@@ -48427,6 +48681,7 @@ var deckComponentAttributeAllowList = /* @__PURE__ */ new Map([
   ["deck-logo-wall", ["title"]],
   ["deck-metric-trend", ["metric", "metric-label", "title", "labels", "values", "unit", "accent"]],
   ["deck-next-steps", []],
+  ["deck-orchestration", ["upstream-label", "channels-label", "upstream", "channels", "layer", "title", "logo", "brand-logo", "company-logo", "inline-logo", "tagline", "layer-tag", "capabilities", "caps", "tags", "downstream-label", "systems-label", "downstream", "systems", "caption", "body", "accent"]],
   ["deck-proof", ["bridge", "source", "logo", "logo-name", "customer"]],
   ["deck-row", ["label", "title", "left", "right"]],
   ["deck-signal-bars", ["metric", "metric-label", "title", "subtitle", "labels", "values", "unit", "accent"]],
@@ -48491,6 +48746,13 @@ function compileDeckComponents(source, options = {}) {
     validateSignalBars(model, context);
     components.push(model);
     signalBars.replaceWith(renderSignalBarsHtml(model));
+  });
+  root2("deck-orchestration").each((_, element) => {
+    const orchestration = root2(element);
+    const model = parseOrchestration(orchestration);
+    validateOrchestration(model, context);
+    components.push(model);
+    orchestration.replaceWith(renderOrchestrationHtml(model));
   });
   root2("deck-signal-board").each((_, element) => {
     const signalBoard = root2(element);
@@ -48864,7 +49126,7 @@ function unsupportedDeckAttributeMessage(tag, attribute, supportedAttributes = [
   return `Unsupported <${tag}> attribute "${attribute}". Use only documented attributes or ask the skill maker to add support. Supported attributes: ${supported}.`;
 }
 function validateChart(chart, context) {
-  const supportedTypes = ["bar", "line", "area", "waterfall", "bullet", "grouped-bar", "stacked-bar", "doughnut", "scatter", "bubble", "histogram", "boxplot", "pareto", "sankey"];
+  const supportedTypes = ["bar", "line", "area", "waterfall", "bullet", "grouped-bar", "stacked-bar", "doughnut", "scatter", "bubble", "histogram", "boxplot", "pareto", "radar", "sankey"];
   if (!supportedTypes.includes(chart.chartType)) {
     fail(
       `deck-chart type "${chart.chartType}" is not available. Supported types: ${supportedTypes.join(", ")}. Ask the skill maker to add the missing chart type.`,
@@ -48920,6 +49182,9 @@ function validateChart(chart, context) {
   if (chart.chartType === "bullet") {
     validateBulletChart(chart, context);
   }
+  if (chart.chartType === "radar") {
+    validateRadarChart(chart, context);
+  }
   if (chart.chartType === "doughnut") {
     if (chart.values.some((value) => value < 0)) {
       fail("deck-chart doughnut values must be zero or positive.", context);
@@ -48927,6 +49192,23 @@ function validateChart(chart, context) {
     if (chart.values.reduce((sum, value) => sum + value, 0) <= 0) {
       fail("deck-chart doughnut values must sum to more than zero.", context);
     }
+  }
+}
+function validateRadarChart(chart, context) {
+  if (chart.labels.length < 3) {
+    fail('deck-chart type="radar" requires at least three labels/values.', context);
+  }
+  if (chart.labels.length > 8) {
+    fail('deck-chart type="radar" supports up to 8 labels. Split denser profiles across slides.', context);
+  }
+  if (chart.values.some((value) => value < 0)) {
+    fail('deck-chart type="radar" values must be zero or positive.', context);
+  }
+  if (chart.values.reduce((sum, value) => sum + value, 0) <= 0) {
+    fail('deck-chart type="radar" values must include at least one value above zero.', context);
+  }
+  for (const [index2, label] of chart.labels.entries()) {
+    if (label.length > 18) fail(`deck-chart type="radar" label ${index2 + 1} must be 18 characters or fewer.`, context);
   }
 }
 function validateBulletChart(chart, context) {
@@ -49142,6 +49424,46 @@ function validateSignalBars(signalBars, context) {
   }
   if (signalBars.metricLabel.length > 180) {
     fail("deck-signal-bars metric-label must be 180 characters or fewer.", context);
+  }
+}
+function validateOrchestration(orchestration, context) {
+  if (!orchestration.layer) fail("deck-orchestration requires a layer or title attribute.", context);
+  if (orchestration.upstream.length === 0) {
+    fail("deck-orchestration requires upstream or channels entries.", context);
+  }
+  if (orchestration.downstream.length === 0) {
+    fail("deck-orchestration requires downstream or systems entries.", context);
+  }
+  if (orchestration.capabilities.length === 0) {
+    fail("deck-orchestration requires capabilities, caps, or tags entries.", context);
+  }
+  if (orchestration.upstream.length > 8) {
+    fail("deck-orchestration supports up to 8 upstream/channel nodes.", context);
+  }
+  if (orchestration.downstream.length > 8) {
+    fail("deck-orchestration supports up to 8 downstream/system nodes.", context);
+  }
+  if (orchestration.capabilities.length > 6) {
+    fail("deck-orchestration supports up to 6 capability chips.", context);
+  }
+  if (orchestration.layer.length > 48) {
+    fail("deck-orchestration layer must be 48 characters or fewer.", context);
+  }
+  if (orchestration.tagline.length > 72) {
+    fail("deck-orchestration tagline must be 72 characters or fewer.", context);
+  }
+  if (orchestration.caption.length > 220) {
+    fail("deck-orchestration caption/body must be 220 characters or fewer.", context);
+  }
+  for (const [index2, node] of [...orchestration.upstream, ...orchestration.downstream].entries()) {
+    if (node.length > 28) {
+      fail(`deck-orchestration node ${index2 + 1} must be 28 characters or fewer.`, context);
+    }
+  }
+  for (const [index2, capability] of orchestration.capabilities.entries()) {
+    if (capability.length > 36) {
+      fail(`deck-orchestration capability ${index2 + 1} must be 36 characters or fewer.`, context);
+    }
   }
 }
 function validateSignalBoard(signalBoard, context) {
@@ -49677,6 +49999,7 @@ function parseSlide(source, index2, originalSource = source, components = [], fr
     cards: firstComponent(components, "card-grid")?.cards || extractCards(source),
     chart: firstComponent(components, "chart"),
     signalBars: firstComponent(components, "signal-bars"),
+    orchestration: firstComponent(components, "orchestration"),
     signalBoard: firstComponent(components, "signal-board"),
     funnel: firstComponent(components, "funnel"),
     metricTrend: firstComponent(components, "metric-trend"),
@@ -49718,6 +50041,7 @@ function inferLayout(source, index2) {
   if (/<div[^>]+class=["'][^"']*card-grid/i.test(source)) return "cards";
   if (/<figure[^>]+class=["'][^"']*deck-chart/i.test(source)) return "chart";
   if (/<div[^>]+class=["'][^"']*deck-signal-bars/i.test(source)) return "signal-bars";
+  if (/<div[^>]+class=["'][^"']*deck-orchestration/i.test(source)) return "orchestration";
   if (/<div[^>]+class=["'][^"']*deck-signal-board/i.test(source)) return "signal-board";
   if (/<figure[^>]+class=["'][^"']*deck-funnel/i.test(source)) return "funnel";
   if (/<div[^>]+class=["'][^"']*deck-metric-trend/i.test(source)) return "metric-trend";
@@ -49755,6 +50079,7 @@ function inferComponentLayout(components) {
     ["exec-metrics", "exec-metrics"],
     ["divider", "divider"],
     ["close", "close"],
+    ["orchestration", "orchestration"],
     ["signal-board", "signal-board"],
     ["signal-bars", "signal-bars"],
     ["funnel", "funnel"],
@@ -49784,8 +50109,7 @@ function inferSurface(layout, directives = {}, frontmatter = {}, componentSurfac
     frontmatter.defaultSurface || frontmatter.deckSurface || frontmatter.surface || frontmatter.themeSurface
   );
   if (defaultSurface) return defaultSurface;
-  if (["cover", "divider", "close"].includes(layout)) return "dark";
-  return "light";
+  return "dark";
 }
 function normalizeSurface2(value = "") {
   const token = String(value || "").trim().toLowerCase();

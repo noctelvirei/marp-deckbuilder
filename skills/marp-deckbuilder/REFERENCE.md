@@ -7,8 +7,12 @@ For chart-only questions, use `references/charts.md` first. This file is the ful
 From the skill folder:
 
 ```bash
-node scripts/build-deck.mjs examples/example.md --out-dir output
+node scripts/build-deck.mjs examples/example.md --out-dir output --output both
 ```
+
+`--output` accepts `html`, `pptx`, or `both`. The wrapper defaults to `both`
+for backward compatibility, but deck authors should ask the user which output
+they want before building.
 
 Equivalent direct CLI call:
 
@@ -21,6 +25,14 @@ The skill runs the bundled renderer and does not install dependencies.
 The generated HTML uses vendored Marp CLI/Bespoke presenter assets from
 `tool/resources/templates/`, including the on-screen controls, overview mode,
 presenter view, keyboard/touch/wheel navigation, and fullscreen behavior.
+
+The renderer also injects Deckbuilder's HTML navigation chrome. Short decks show
+every slide dot at the bottom. Long decks keep one direct-jump button per slide
+in the DOM, but present them in a compact horizontally scrollable rail with fade
+edges and active-slide centering. This keeps large showcase decks navigable by
+click, touch, touchpad, wheel, keyboard, and tablet gestures without letting the
+footer dominate the slide design. Do not hand-author replacement navigation in
+deck Markdown.
 
 Visible slide numbers are off by default. Add `paginate: true` to deck
 frontmatter only when the user explicitly wants pagination on every slide.
@@ -146,14 +158,16 @@ CSS in `deck.md`.
 
 Surface is independent of layout. Choose it deliberately:
 
-- cover, divider, and close slides are dark;
-- content/component slides are light by default for backward compatibility;
+- dark is the default deck surface;
+- cover, divider, and close slides use dark header treatment and may use image backgrounds;
+- normal content/component slides default dark with renderer-owned gradient/glass backgrounds;
+- light slides are an explicit opt-in;
 - `defaultSurface: dark` or `defaultSurface: light` in frontmatter sets the deck-wide default for non-cover slides;
 - `<deck-slide surface="dark" />` and `<deck-slide surface="light" />` override one slide;
 - `surface="dark"` or `surface="light"` on an executive component controls that slide.
 
 Do not encode a rule such as "dark headers, white content." The executive style
-has both dark and light versions; use the surface that matches the deck.
+has both dark and light versions, but light should be chosen intentionally.
 
 The configured brand theme wins over any stale `theme:` value in deck
 frontmatter. Authors should usually omit `marp:` and `theme:` entirely.
@@ -250,9 +264,10 @@ Use only these structured components when you need native PPTX output:
 | `deck-stat-grid` | one or more direct `deck-stat` children | each stat can use `value`/`label` attributes or text children | 3-up KPI row |
 | `deck-card-grid` | one or more direct `deck-card` children | `columns="3"` or `columns="4"` | 3/4 card layout |
 | `deck-card` | title/body/media | `title`, `header`, `icon`, `icon-alt`, `image`, `src`, `image-alt`, `alt` | Card in grid |
-| `deck-chart` | matching `labels`/`values` attributes, `points` for area/scatter/bubble, raw numeric `values` for histogram, observation rows for boxplot, ranked values for pareto, or flow `links` for sankey | `title`, `series`, `targets`, `target-values`, `links`, `flows`, `edges`, `matrix`, `series-values`, `bins`, `buckets`, `bucket-count`, `type="bar"`, `type="line"`, `type="area"`, `type="waterfall"`, `type="bullet"`, `type="grouped-bar"`, `type="stacked-bar"`, `type="doughnut"`, `type="scatter"`, `type="bubble"`, `type="histogram"`, `type="boxplot"`, `type="pareto"`, `type="sankey"`, `x-axis`, `y-axis` | Editable PPTX chart where native support exists; renderer-owned SVG for waterfall/bullet/histogram/boxplot/pareto/sankey |
+| `deck-chart` | matching `labels`/`values` attributes, `points` for area/scatter/bubble, raw numeric `values` for histogram, observation rows for boxplot, ranked values for pareto, balance scores for radar, or flow `links` for sankey | `title`, `series`, `targets`, `target-values`, `links`, `flows`, `edges`, `matrix`, `series-values`, `bins`, `buckets`, `bucket-count`, `type="bar"`, `type="line"`, `type="area"`, `type="waterfall"`, `type="bullet"`, `type="grouped-bar"`, `type="stacked-bar"`, `type="doughnut"`, `type="scatter"`, `type="bubble"`, `type="histogram"`, `type="boxplot"`, `type="pareto"`, `type="radar"`, `type="sankey"`, `x-axis`, `y-axis` | Editable PPTX chart where native support exists; renderer-owned SVG fallback/export path for waterfall/bullet/histogram/boxplot/pareto/radar/sankey |
 | `deck-signal-bars` | `metric`, `metric-label`, matching `labels` and `values` attributes | `title`, `subtitle`, `unit`, `accent` | Headline metric plus contribution bars |
 | `deck-signal-board` | `title`, `body`, matching `labels` and `values` attributes | `tags`, `chart-title`, `unit`, `accent` | Two-panel narrative signal board with tag pills and bars |
+| `deck-orchestration` | `upstream`/`channels`, `layer`/`title`, `capabilities`/`caps`/`tags`, and `downstream`/`systems` attributes | `upstream-label`, `downstream-label`, `tagline`, `caption`, `body`, `logo="company"`, `accent` | Channel-to-orchestration-to-systems architecture slide with branded HTML layer |
 | `deck-funnel` | matching `labels` and `values` attributes | `title`, `unit`, `accent` | Conversion/completion funnel |
 | `deck-metric-trend` | `metric`, `metric-label`, matching `labels` and `values` attributes | `title`, `unit`, `accent` | Headline KPI plus short trend line |
 | `deck-heatmap` | `x-labels`, `y-labels`, and semicolon-separated numeric `values` rows | `title`, `unit`, `caption`, `accent` | Activity/intensity heatmap grid |
@@ -291,6 +306,7 @@ usable:
 - `deck-comparison`: first 6 rows.
 - `deck-signal-bars`: up to 5 rows; use it for concentration/contribution stories, not long datasets.
 - `deck-signal-board`: up to 5 rows and 5 tags; use it for a short narrative signal plus small contribution bars.
+- `deck-orchestration`: up to 8 upstream nodes, 8 downstream nodes, and 6 capability chips.
 - `deck-funnel`: up to 6 stages.
 - `deck-metric-trend`: up to 8 points.
 - `deck-heatmap`: up to 12 x-labels, 8 y-labels, and 80 cells.
@@ -404,6 +420,19 @@ HTML animations, such as chart draw-ins, impact radar fills, journey path
 drawing, and signal board fills, may remain intrinsic to those visual
 components. PPTX renders those intrinsic component animations as static final
 state visuals unless native PPTX behavior is added later.
+
+## Title Emphasis
+
+Use Markdown bold inside cover, divider, close, takeaway, and executive title
+headings when one phrase should carry the branded accent colour. Use `<br>` when
+that accent phrase should become its own title row:
+
+```md
+# Faster calls.<br>**Total compliance.**<br>No trade-off.
+```
+
+In HTML, the renderer applies the brand accent gradient to the bold phrase. PPTX
+keeps the title editable and static.
 
 ## Component Syntax
 
@@ -651,6 +680,21 @@ percentage line.
 ></deck-chart>
 ```
 
+For radar charts, provide 3 to 8 short labels and one zero-or-positive numeric
+value per label. At least one value must be above zero. HTML renders this as a
+live Chart.js radar with persistent point labels and an SVG fallback; PPTX embeds
+the renderer-owned SVG fallback.
+
+```md
+<deck-chart
+  type="radar"
+  title="Capability profile"
+  series="Score"
+  labels="Speed, Compliance, Reach, Resilience, Effort, Insight"
+  values="91, 88, 84, 72, 58, 79"
+></deck-chart>
+```
+
 For Sankey charts, provide comma-separated flow links. Each link uses
 `source>target:value`, `source->target:value`, or `source=>target:value`.
 Values must be numeric and greater than zero. Links cannot connect a node to
@@ -667,7 +711,7 @@ itself, and the flow graph must not contain cycles.
 
 Supported chart types: `bar`, `line`, `area`, `waterfall`, `bullet`,
 `grouped-bar`, `stacked-bar`, `doughnut`, `scatter`, `bubble`, `histogram`,
-`boxplot`, `pareto`, `sankey`. If a chart type is not
+`boxplot`, `pareto`, `radar`, `sankey`. If a chart type is not
 listed here, ask the skill maker to add it as a renderer-backed `deck-*`
 capability.
 
@@ -704,6 +748,29 @@ PPTX output is static editable shapes.
   labels="Speed, Control, Effort"
   values="82, 74, 63"
 ></deck-signal-board>
+```
+
+### Orchestration Layer
+
+Use `deck-orchestration` when the story is how customer channels, a branded
+orchestration layer, capabilities, and core systems connect. Set
+`logo="company"` when the layer title should be replaced by the configured
+company logo in the HTML deck.
+
+```md
+# We sit between your channels and your core systems
+
+<deck-orchestration
+  upstream-label="Customer channels"
+  upstream="Voice, Chat, Web, App, In-store"
+  layer="ExampleCo"
+  logo="company"
+  tagline="the AI orchestration layer"
+  capabilities="Identity & MFA, eSignatures, Document capture & IDP, Structured compliance steps"
+  downstream-label="Core systems"
+  downstream="CRM, Billing, Credit, CCaaS, Document store"
+  caption="One connected journey with compliance built into the flow."
+></deck-orchestration>
 ```
 
 ### Funnel
@@ -993,9 +1060,10 @@ The component compiler emits these stable CSS classes for theme authors:
 | --- | --- |
 | `deck-stat-grid` | `stat-grid`, `stat-card` |
 | `deck-card-grid` | `card-grid`, `three`, `four`, `deck-card-media`, `deck-card-icon`, `deck-card-image` |
-| `deck-chart` | `deck-chart`, `deck-chart-bar`, `deck-chart-line`, `deck-chart-line-svg`, `deck-chart-line-path`, `deck-chart-line-point`, `deck-chart-line-point-value`, `deck-chart-line-grid`, `deck-chart-line-axis`, `deck-chart-line-tick`, `deck-chart-area`, `deck-chart-area-svg`, `deck-chart-area-fill`, `deck-chart-area-path`, `deck-chart-area-point`, `deck-chart-area-point-value`, `deck-chart-area-grid`, `deck-chart-area-axis`, `deck-chart-area-tick`, `deck-chart-waterfall`, `deck-chart-waterfall-svg`, `deck-waterfall-step`, `deck-waterfall-bar`, `deck-waterfall-bar-positive`, `deck-waterfall-bar-negative`, `deck-waterfall-connector`, `deck-waterfall-label`, `deck-waterfall-value`, `deck-waterfall-tick`, `deck-waterfall-grid`, `deck-waterfall-axis`, `deck-chart-bullet`, `deck-chart-bullet-svg`, `deck-bullet-row`, `deck-bullet-track`, `deck-bullet-bar`, `deck-bullet-target`, `deck-bullet-label`, `deck-bullet-value`, `deck-bullet-tick`, `deck-bullet-grid`, `deck-bullet-axis`, `deck-chart-histogram`, `deck-chart-histogram-svg`, `deck-histogram-bin`, `deck-histogram-bar`, `deck-histogram-label`, `deck-histogram-count`, `deck-histogram-grid`, `deck-histogram-axis`, `deck-histogram-tick`, `deck-histogram-axis-label`, `deck-chart-boxplot`, `deck-chart-boxplot-svg`, `deck-boxplot-item`, `deck-boxplot-whisker`, `deck-boxplot-box`, `deck-boxplot-median`, `deck-boxplot-label`, `deck-boxplot-grid`, `deck-boxplot-axis`, `deck-boxplot-tick`, `deck-boxplot-axis-label`, `deck-chart-pareto`, `deck-chart-pareto-svg`, `deck-pareto-item`, `deck-pareto-bar`, `deck-pareto-line`, `deck-pareto-point`, `deck-pareto-label`, `deck-pareto-value`, `deck-pareto-grid`, `deck-pareto-axis`, `deck-pareto-tick`, `deck-pareto-percent-tick`, `deck-pareto-axis-label`, `deck-chart-sankey`, `deck-chart-sankey-svg`, `deck-sankey-links`, `deck-sankey-link`, `deck-sankey-nodes`, `deck-sankey-node`, `deck-sankey-node-rect`, `deck-sankey-label`, `deck-sankey-caption`, `deck-chart-grouped-bar`, `deck-chart-stacked-bar`, `deck-chart-doughnut`, `deck-chart-scatter`, `deck-chart-bubble`, `deck-chart-row`, `deck-chart-grouped-row`, `deck-chart-grouped-bar-row`, `deck-chart-stacked-row`, `deck-chart-stacked-track`, `deck-chart-stacked-segment`, `deck-chart-doughnut-ring`, `deck-chart-doughnut-row`, `deck-chart-scatter-svg`, `deck-chart-scatter-point`, `deck-chart-bubble-svg`, `deck-chart-bubble-point`, `deck-chart-legend`, `deck-chart-label`, `deck-chart-track`, `deck-chart-fill` |
+| `deck-chart` | `deck-chart`, `deck-chart-bar`, `deck-chart-line`, `deck-chart-line-svg`, `deck-chart-line-path`, `deck-chart-line-point`, `deck-chart-line-point-value`, `deck-chart-line-grid`, `deck-chart-line-axis`, `deck-chart-line-tick`, `deck-chart-area`, `deck-chart-area-svg`, `deck-chart-area-fill`, `deck-chart-area-path`, `deck-chart-area-point`, `deck-chart-area-point-value`, `deck-chart-area-grid`, `deck-chart-area-axis`, `deck-chart-area-tick`, `deck-chart-waterfall`, `deck-chart-waterfall-svg`, `deck-waterfall-step`, `deck-waterfall-bar`, `deck-waterfall-bar-positive`, `deck-waterfall-bar-negative`, `deck-waterfall-connector`, `deck-waterfall-label`, `deck-waterfall-value`, `deck-waterfall-tick`, `deck-waterfall-grid`, `deck-waterfall-axis`, `deck-chart-bullet`, `deck-chart-bullet-svg`, `deck-bullet-row`, `deck-bullet-track`, `deck-bullet-bar`, `deck-bullet-target`, `deck-bullet-label`, `deck-bullet-value`, `deck-bullet-tick`, `deck-bullet-grid`, `deck-bullet-axis`, `deck-chart-histogram`, `deck-chart-histogram-svg`, `deck-histogram-bin`, `deck-histogram-bar`, `deck-histogram-label`, `deck-histogram-count`, `deck-histogram-grid`, `deck-histogram-axis`, `deck-histogram-tick`, `deck-histogram-axis-label`, `deck-chart-boxplot`, `deck-chart-boxplot-svg`, `deck-boxplot-item`, `deck-boxplot-whisker`, `deck-boxplot-box`, `deck-boxplot-median`, `deck-boxplot-label`, `deck-boxplot-grid`, `deck-boxplot-axis`, `deck-boxplot-tick`, `deck-boxplot-axis-label`, `deck-chart-pareto`, `deck-chart-pareto-svg`, `deck-pareto-item`, `deck-pareto-bar`, `deck-pareto-line`, `deck-pareto-point`, `deck-pareto-label`, `deck-pareto-value`, `deck-pareto-grid`, `deck-pareto-axis`, `deck-pareto-tick`, `deck-pareto-percent-tick`, `deck-pareto-axis-label`, `deck-chart-radar`, `deck-chart-radar-svg`, `deck-radar-grid`, `deck-radar-shape`, `deck-radar-point`, `deck-radar-label`, `deck-radar-scale`, `deck-chart-sankey`, `deck-chart-sankey-svg`, `deck-sankey-links`, `deck-sankey-link`, `deck-sankey-nodes`, `deck-sankey-node`, `deck-sankey-node-rect`, `deck-sankey-label`, `deck-sankey-value`, `deck-sankey-caption`, `deck-chart-grouped-bar`, `deck-chart-stacked-bar`, `deck-chart-doughnut`, `deck-chart-scatter`, `deck-chart-bubble`, `deck-chart-row`, `deck-chart-grouped-row`, `deck-chart-grouped-bar-row`, `deck-chart-stacked-row`, `deck-chart-stacked-track`, `deck-chart-stacked-segment`, `deck-chart-doughnut-ring`, `deck-chart-doughnut-row`, `deck-chart-scatter-svg`, `deck-chart-scatter-point`, `deck-chart-bubble-svg`, `deck-chart-bubble-point`, `deck-chart-legend`, `deck-chart-label`, `deck-chart-track`, `deck-chart-fill` |
 | `deck-signal-bars` | `deck-signal-bars`, `deck-signal-summary`, `deck-signal-chart`, `deck-signal-row`, `deck-signal-track`, `deck-signal-fill` |
 | `deck-signal-board` | `deck-signal-board`, `deck-signal-board-panel`, `deck-signal-board-tags`, `deck-signal-board-tag`, `deck-signal-board-chart`, `deck-signal-row`, `deck-signal-track`, `deck-signal-fill` |
+| `deck-orchestration` | `deck-orchestration`, `deck-orchestration-tier`, `deck-orchestration-tier-label`, `deck-orchestration-nodes`, `deck-orchestration-node`, `deck-orchestration-layer`, `deck-orchestration-layer-brand`, `deck-orchestration-layer-tag`, `deck-orchestration-caps`, `deck-orchestration-cap`, `deck-orchestration-caption` |
 | `deck-funnel` | `deck-funnel`, `deck-funnel-svg`, `deck-funnel-stage`, `deck-funnel-segment`, `deck-funnel-stage-label`, `deck-funnel-stage-value`, `deck-funnel-stage-rate` |
 | `deck-metric-trend` | `deck-metric-trend`, `deck-metric-trend-summary`, `deck-metric-trend-chart`, `deck-metric-trend-line`, `deck-metric-trend-dot` |
 | `deck-heatmap` | `deck-heatmap`, `deck-heatmap-grid`, `deck-heatmap-cell`, `deck-heatmap-x-label`, `deck-heatmap-y-label`, `deck-heatmap-accent-<accent>` |
@@ -1046,6 +1114,7 @@ chart runtime, branding, and PPTX geometry.
 
 Use `deck-signal-bars` for headline metric plus contribution-bar slides. Use
 `deck-signal-board` for narrative dashboards with tag pills and bars. Use
+`deck-orchestration` for channel-to-platform-to-system architecture slides. Use
 `deck-impact-radar`, `deck-journey-path`, `deck-heatmap`, `deck-treemap`, or
 `deck-chart` for richer visuals. Use `deck-stat-grid`, `deck-card-grid`, or the
 other structured components when PowerPoint editability matters more than exact

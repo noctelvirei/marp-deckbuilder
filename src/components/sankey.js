@@ -44,11 +44,12 @@ export function renderSankeySvg(chart, options = {}) {
     .join('\n  ')
   const nodes = geometry.nodes
     .map((node) => {
-      const labelAnchor = node.depth === geometry.maxDepth ? 'end' : 'start'
-      const labelX = node.depth === geometry.maxDepth ? -8 : geometry.nodeWidth + 8
+      const label = nodeLabel(node, geometry)
+      const nodeValue = Math.max(node.incoming, node.outgoing)
       return `<g class="deck-sankey-node deck-sankey-node-${node.index % 6}" transform="translate(${round(node.x)} ${round(node.y)})">
     <rect class="deck-sankey-node-rect" width="${geometry.nodeWidth}" height="${round(node.height)}" rx="5" fill="${nodeColor(node.index)}"><title>${escapeHtml(node.label)}: in ${escapeHtml(formatNumber(node.incoming))}, out ${escapeHtml(formatNumber(node.outgoing))}</title></rect>
-    <text class="deck-sankey-label" x="${labelX}" y="${round(Math.max(12, node.height / 2))}" dy="0.35em" text-anchor="${labelAnchor}">${escapeHtml(truncateLabel(node.label))}</text>
+    <text class="deck-sankey-label" x="${label.x}" y="${label.y}" text-anchor="${label.anchor}">${escapeHtml(truncateLabel(node.label))}</text>
+    <text class="deck-sankey-value" x="${label.x}" y="${label.y + 15}" text-anchor="${label.anchor}">${escapeHtml(formatNumber(nodeValue))}</text>
   </g>`
     })
     .join('\n  ')
@@ -57,8 +58,9 @@ export function renderSankeySvg(chart, options = {}) {
   <style>
     .deck-sankey-link { fill: none; stroke-linecap: round; opacity: ${color('linkOpacity')}; }
     .deck-sankey-node-rect { stroke: ${color('grid')}; stroke-width: 1; }
-    .deck-sankey-label, .deck-sankey-caption { fill: ${color('text')}; font: 700 12px "Poppins", "Aptos", sans-serif; }
+    .deck-sankey-label, .deck-sankey-value, .deck-sankey-caption { fill: ${color('text')}; font: 700 12px "Poppins", "Aptos", sans-serif; }
     .deck-sankey-label { paint-order: stroke; stroke: ${color('label-halo')}; stroke-width: 5; stroke-linejoin: round; }
+    .deck-sankey-value { fill: ${color('muted')}; font-size: 10.5px; font-weight: 600; paint-order: stroke; stroke: ${color('label-halo')}; stroke-width: 4; stroke-linejoin: round; }
     .deck-sankey-caption { fill: ${color('muted')}; font-weight: 500; }
   </style>
   <g class="deck-sankey-links">
@@ -82,8 +84,8 @@ export function sankeyRows(chart) {
 function sankeyGeometry(chart) {
   const width = 760
   const height = 330
-  const nodeWidth = 18
-  const margin = { top: 24, right: 118, bottom: 24, left: 34 }
+  const nodeWidth = 16
+  const margin = { top: 48, right: 86, bottom: 34, left: 86 }
   const innerHeight = Math.max(120, height - margin.top - margin.bottom)
   const innerWidth = Math.max(220, width - margin.left - margin.right - nodeWidth)
   const nodeMap = new Map()
@@ -122,46 +124,33 @@ function sankeyGeometry(chart) {
   const nodes = Array.from(nodeMap.values())
   const maxDepth = Math.max(...nodes.map((node) => node.depth), 1)
   const columns = groupBy(nodes, (node) => node.depth)
-  columns.forEach((column) => {
-    column.sort((a, b) => Math.max(b.incoming, b.outgoing) - Math.max(a.incoming, a.outgoing))
-    const gap = column.length > 1 ? 12 : 0
-    const available = Math.max(24, innerHeight - gap * Math.max(0, column.length - 1))
-    const totalWeight = column.reduce((sum, node) => sum + Math.max(node.incoming, node.outgoing, 1), 0)
-    const minHeight = column.length * 16 <= available ? 16 : Math.max(6, available / Math.max(1, column.length))
-    let y = margin.top
-    column.forEach((node) => {
+  const maxNodeWeight = Math.max(...nodes.map((node) => Math.max(node.incoming, node.outgoing, 1)), 1)
+  columns.forEach((column, depth) => {
+    column.sort((a, b) => Math.max(b.incoming, b.outgoing) - Math.max(a.incoming, a.outgoing) || a.index - b.index)
+    const gap = column.length > 1 ? 44 : 0
+    const heights = column.map((node) => {
       const weight = Math.max(node.incoming, node.outgoing, 1)
-      node.x = margin.left + (node.depth / maxDepth) * innerWidth
+      return clamp(28 + Math.sqrt(weight / maxNodeWeight) * 42, 30, 72)
+    })
+    const totalHeight = heights.reduce((sum, value) => sum + value, 0) + gap * Math.max(0, column.length - 1)
+    let y = margin.top + Math.max(0, (innerHeight - totalHeight) / 2)
+    column.forEach((node) => {
+      node.x = margin.left + (depth / maxDepth) * innerWidth
       node.y = y
-      node.height = Math.max(minHeight, (weight / Math.max(totalWeight, 1)) * available)
+      node.height = heights[column.indexOf(node)]
       y += node.height + gap
     })
   })
 
-  const maxColumnWeight = Math.max(
-    ...Array.from(columns.values(), (column) =>
-      column.reduce((sum, node) => sum + Math.max(node.incoming, node.outgoing, 1), 0),
-    ),
-    1,
-  )
-  const linkScale = innerHeight / maxColumnWeight
+  const maxLinkValue = Math.max(...links.map((link) => link.value), 1)
   links.forEach((link) => {
-    const maxLinkWidth = Math.max(2, Math.min(link.source.height, link.target.height, innerHeight * 0.24))
-    link.width = Math.min(maxLinkWidth, Math.max(2, link.value * linkScale))
+    link.width = clamp(5 + Math.sqrt(link.value / maxLinkValue) * 33, 7, 38)
   })
   nodes.forEach((node) => {
     node.sourceLinks.sort((a, b) => a.target.y - b.target.y)
     node.targetLinks.sort((a, b) => a.source.y - b.source.y)
-    let sourceOffset = Math.max(0, (node.height - totalLinkWidth(node.sourceLinks)) / 2)
-    node.sourceLinks.forEach((link) => {
-      link.y0 = node.y + Math.min(node.height - link.width / 2, sourceOffset + link.width / 2)
-      sourceOffset += link.width
-    })
-    let targetOffset = Math.max(0, (node.height - totalLinkWidth(node.targetLinks)) / 2)
-    node.targetLinks.forEach((link) => {
-      link.y1 = node.y + Math.min(node.height - link.width / 2, targetOffset + link.width / 2)
-      targetOffset += link.width
-    })
+    spreadAnchors(node, node.sourceLinks, 'y0')
+    spreadAnchors(node, node.targetLinks, 'y1')
   })
 
   return {
@@ -178,12 +167,40 @@ function sankeyGeometry(chart) {
 function linkPath(link, nodeWidth) {
   const x0 = link.source.x + nodeWidth
   const x1 = link.target.x
-  const mid = x0 + (x1 - x0) * 0.5
+  const mid = x0 + (x1 - x0) * 0.46
   return `M${round(x0)},${round(link.y0)}C${round(mid)},${round(link.y0)} ${round(mid)},${round(link.y1)} ${round(x1)},${round(link.y1)}`
 }
 
-function totalLinkWidth(links) {
-  return links.reduce((sum, link) => sum + link.width, 0)
+function spreadAnchors(node, links, key) {
+  if (!links.length) return
+  const center = node.y + node.height / 2
+  const spacing = links.length > 1 ? Math.min(24, node.height / Math.max(1, links.length - 0.25)) : 0
+  const start = center - spacing * (links.length - 1) / 2
+  links.forEach((link, index) => {
+    link[key] = start + spacing * index
+  })
+}
+
+function nodeLabel(node, geometry) {
+  if (node.depth === 0) {
+    return {
+      x: -12,
+      y: round(node.height / 2 - 2),
+      anchor: 'end',
+    }
+  }
+  if (node.depth === geometry.maxDepth) {
+    return {
+      x: geometry.nodeWidth + 12,
+      y: round(node.height / 2 - 2),
+      anchor: 'start',
+    }
+  }
+  return {
+    x: round(geometry.nodeWidth / 2),
+    y: -10,
+    anchor: 'middle',
+  }
 }
 
 function groupBy(items, keyFor) {
@@ -199,6 +216,10 @@ function groupBy(items, keyFor) {
 function truncateLabel(label) {
   const value = String(label || '')
   return value.length > 18 ? `${value.slice(0, 16).trim()}...` : value
+}
+
+function clamp(value, min, max) {
+  return Math.max(min, Math.min(max, value))
 }
 
 function round(value) {

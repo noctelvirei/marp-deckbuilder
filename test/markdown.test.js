@@ -397,6 +397,36 @@ test('parses deck-signal-board as a structured narrative signal component', () =
   assert.doesNotMatch(deck.slides[0].source, /<deck-signal-board/i)
 })
 
+test('parses deck-orchestration as a structured channel-to-system component', () => {
+  const deck = parseDeckMarkdown(`# What we do
+
+<deck-orchestration
+  upstream-label="Customer channels"
+  upstream="Voice, Chat, Web"
+  layer="Lightico"
+  logo="company"
+  tagline="the AI orchestration layer"
+  capabilities="Identity & MFA, eSignatures, Compliance steps"
+  downstream-label="Core systems"
+  downstream="CRM, Billing, Document store"
+  caption="One connected journey with compliance built into the flow."
+></deck-orchestration>`)
+
+  assert.equal(deck.slides[0].layout, 'orchestration')
+  assert.equal(deck.slides[0].orchestration.layer, 'Lightico')
+  assert.equal(deck.slides[0].orchestration.logo, true)
+  assert.deepEqual(deck.slides[0].orchestration.upstream, ['Voice', 'Chat', 'Web'])
+  assert.deepEqual(deck.slides[0].orchestration.capabilities, [
+    'Identity & MFA',
+    'eSignatures',
+    'Compliance steps',
+  ])
+  assert.deepEqual(deck.slides[0].orchestration.downstream, ['CRM', 'Billing', 'Document store'])
+  assert.match(deck.slides[0].source, /class="deck-orchestration/)
+  assert.match(deck.slides[0].source, /class="deck-orchestration-layer-brand"/)
+  assert.doesNotMatch(deck.slides[0].source, /<deck-orchestration/i)
+})
+
 test('renderer-backed components do not emit nested deck section tags', () => {
   const deck = parseDeckMarkdown(`# Signal
 
@@ -633,6 +663,23 @@ Body copy`)
   assert.equal(deck.slides[1].customerLogo.alt, 'Inline customer')
 })
 
+test('defaults ordinary content slides to dark while allowing explicit light', () => {
+  const deck = parseDeckMarkdown(`# Default content
+
+Body copy
+
+---
+
+<deck-slide surface="light" />
+
+# Light option
+
+Body copy`)
+
+  assert.equal(deck.slides[0].surface, 'dark')
+  assert.equal(deck.slides[1].surface, 'light')
+})
+
 test('rejects deck-visual as a retired raw SVG escape hatch', () => {
   const source = `# Cover
 
@@ -743,9 +790,15 @@ test('fails loudly on invalid deck component Markdown', () => {
     () =>
       parseDeckMarkdown(`# Broken
 
-<deck-chart type="radar" title="Bad" labels="A,B" values="10,20"></deck-chart>`),
-    /deck-chart type "radar" is not available.*Supported types: bar, line, area, waterfall, bullet, grouped-bar, stacked-bar, doughnut, scatter, bubble, histogram, boxplot, pareto, sankey/,
+<deck-chart type="gauge" title="Bad" labels="A,B" values="10,20"></deck-chart>`),
+    /deck-chart type "gauge" is not available.*Supported types: bar, line, area, waterfall, bullet, grouped-bar, stacked-bar, doughnut, scatter, bubble, histogram, boxplot, pareto, radar, sankey/,
   )
+
+  const radarDeck = parseDeckMarkdown(`# Balance
+
+<deck-chart type="radar" title="Operating balance" labels="Speed,Control,Effort" values="84,76,68"></deck-chart>`)
+  assert.equal(radarDeck.slides[0].chart.chartType, 'radar')
+  assert.match(radarDeck.slides[0].source, /class="deck-chart deck-chart-radar"/)
 
   assert.throws(
     () =>

@@ -201,6 +201,26 @@ export function parseSignalBars(signalBars) {
   }
 }
 
+export function parseOrchestration(orchestration) {
+  return {
+    type: 'orchestration',
+    upstreamLabel: orchestration.attr('upstream-label') || orchestration.attr('channels-label') || 'Customer channels',
+    upstream: splitCsv(orchestration.attr('upstream') || orchestration.attr('channels')),
+    layer: orchestration.attr('layer') || orchestration.attr('title') || cleanText(orchestration.find('h2,h3,h4').first().text()),
+    logo: normalizeOrchestrationLogo(orchestration.attr('logo') || orchestration.attr('brand-logo') || orchestration.attr('company-logo') || orchestration.attr('inline-logo')),
+    tagline: orchestration.attr('tagline') || orchestration.attr('layer-tag') || 'the AI orchestration layer',
+    capabilities: splitCsv(orchestration.attr('capabilities') || orchestration.attr('caps') || orchestration.attr('tags')),
+    downstreamLabel: orchestration.attr('downstream-label') || orchestration.attr('systems-label') || 'Core systems',
+    downstream: splitCsv(orchestration.attr('downstream') || orchestration.attr('systems')),
+    caption: orchestration.attr('caption') || orchestration.attr('body') || cleanText(orchestration.find('p').first().text()),
+    accent: normalizeAccent(orchestration.attr('accent') || 'blue'),
+  }
+}
+
+function normalizeOrchestrationLogo(value = '') {
+  return ['company', 'brand', 'true', 'yes', 'on', '1'].includes(String(value || '').trim().toLowerCase())
+}
+
 export function parseSignalBoard(signalBoard) {
   return {
     type: 'signal-board',
@@ -598,6 +618,7 @@ function normalizeChartType(value) {
   if (token === 'boxplot' || token === 'box-plot') return 'boxplot'
   if (token === 'pareto' || token === 'pareto-chart') return 'pareto'
   if (token === 'sankey' || token === 'sankey-flow') return 'sankey'
+  if (token === 'radar' || token === 'radar-chart' || token === 'spider' || token === 'spider-chart') return 'radar'
   if (token === 'donut') return 'doughnut'
   if (token === 'scatterplot' || token === 'xy') return 'scatter'
   if (token === 'column') return 'bar'

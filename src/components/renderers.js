@@ -2,10 +2,11 @@ import { escapeAttr, escapeHtml, formatNumber } from './utils.js'
 import { renderBoxplotSvg } from './boxplot.js'
 import { renderBulletSvg } from './bullet.js'
 import { renderFunnelSvg } from './funnel.js'
-import { renderHistogramSvg } from './histogram.js'
+import { histogramBins, renderHistogramSvg } from './histogram.js'
 import { renderImpactRadarSvg } from './impact-radar.js'
 import { renderJourneyPathSvg } from './journey-path.js'
-import { renderParetoSvg } from './pareto.js'
+import { paretoRows, renderParetoSvg } from './pareto.js'
+import { renderRadarSvg } from './radar.js'
 import { renderSankeySvg } from './sankey.js'
 import { treemapRects } from './treemap.js'
 import { renderWaterfallSvg } from './waterfall.js'
@@ -23,10 +24,18 @@ export function renderChartHtml(chart) {
   if (chart.chartType === 'histogram') return renderHistogramChartHtml(chart)
   if (chart.chartType === 'boxplot') return renderBoxplotChartHtml(chart)
   if (chart.chartType === 'pareto') return renderParetoChartHtml(chart)
+  if (chart.chartType === 'radar') return renderRadarChartHtml(chart)
   if (chart.chartType === 'sankey') return renderSankeyChartHtml(chart)
   if (chart.chartType === 'waterfall') return renderWaterfallChartHtml(chart)
   if (chart.chartType === 'bullet') return renderBulletChartHtml(chart)
 
+  const chartConfig = {
+    type: 'bar',
+    labels: chart.labels,
+    values: chart.values,
+    series: chart.series || chart.title || 'Series 1',
+    title: chart.title || '',
+  }
   const max = Math.max(...chart.values, 1)
   const rows = chart.labels
     .map((label, index) => {
@@ -40,30 +49,81 @@ export function renderChartHtml(chart) {
     })
     .join('\n')
 
-  return `<figure class="deck-chart deck-chart-${chart.chartType}">
+  return `<figure class="deck-chart deck-chart-${chart.chartType} deck-chart-js" data-deck-chart-type="bar">
   ${chart.title ? `<figcaption>${escapeHtml(chart.title)}</figcaption>` : ''}
-  <div class="deck-chart-rows">${rows}</div>
+  <div class="deck-chart-js-frame">
+    <canvas class="deck-chart-js-canvas" data-deck-chartjs="bar" data-deck-chart-config="${escapeAttr(JSON.stringify(chartConfig))}" role="img" aria-label="${escapeAttr(chart.title || 'Bar chart')}"></canvas>
+  </div>
+  <div class="deck-chart-rows deck-chart-js-fallback">${rows}</div>
 </figure>`
 }
 
 function renderWaterfallChartHtml(chart) {
+  const steps = waterfallSteps(chart)
+  const chartConfig = {
+    type: 'waterfall',
+    labels: steps.map((step) => step.label),
+    ranges: steps.map((step) => [step.start, step.end]),
+    deltas: steps.map((step) => step.delta),
+    series: chart.series || chart.title || 'Change',
+    title: chart.title || '',
+  }
   return `<figure class="deck-chart deck-chart-waterfall">
   ${chart.title ? `<figcaption>${escapeHtml(chart.title)}</figcaption>` : ''}
-  ${renderWaterfallSvg(chart, { cssVariables: true })}
+  <div class="deck-chart-js" data-deck-chart-type="waterfall">
+    <div class="deck-chart-js-frame">
+      <canvas class="deck-chart-js-canvas" data-deck-chartjs="waterfall" data-deck-chart-config="${escapeAttr(JSON.stringify(chartConfig))}" role="img" aria-label="${escapeAttr(chart.title || 'Waterfall chart')}"></canvas>
+    </div>
+    <div class="deck-chart-js-fallback">
+      ${renderWaterfallSvg(chart, { cssVariables: true })}
+    </div>
+  </div>
 </figure>`
 }
 
 function renderBulletChartHtml(chart) {
+  const chartConfig = {
+    type: 'bullet',
+    labels: chart.labels,
+    values: chart.values,
+    targets: chart.targets,
+    series: chart.series || chart.title || 'Actual',
+    title: chart.title || '',
+  }
   return `<figure class="deck-chart deck-chart-bullet">
   ${chart.title ? `<figcaption>${escapeHtml(chart.title)}</figcaption>` : ''}
-  ${renderBulletSvg(chart, { cssVariables: true })}
+  <div class="deck-chart-js" data-deck-chart-type="bullet">
+    <div class="deck-chart-js-frame">
+      <canvas class="deck-chart-js-canvas" data-deck-chartjs="bullet" data-deck-chart-config="${escapeAttr(JSON.stringify(chartConfig))}" role="img" aria-label="${escapeAttr(chart.title || 'Bullet chart')}"></canvas>
+    </div>
+    <div class="deck-chart-js-fallback">
+      ${renderBulletSvg(chart, { cssVariables: true })}
+    </div>
+  </div>
 </figure>`
 }
 
 function renderHistogramChartHtml(chart) {
+  const bins = histogramBins(chart.values, chart.binCount)
+  const chartConfig = {
+    type: 'histogram',
+    labels: bins.map((bin) => `${compactNumber(bin.start)}-${compactNumber(bin.end)}`),
+    values: bins.map((bin) => bin.count),
+    series: chart.series || chart.title || 'Count',
+    title: chart.title || '',
+    xAxisLabel: chart.xAxisLabel || 'Range',
+    yAxisLabel: chart.yAxisLabel || 'Count',
+  }
   return `<figure class="deck-chart deck-chart-histogram">
   ${chart.title ? `<figcaption>${escapeHtml(chart.title)}</figcaption>` : ''}
-  ${renderHistogramSvg(chart, { cssVariables: true })}
+  <div class="deck-chart-js" data-deck-chart-type="histogram">
+    <div class="deck-chart-js-frame">
+      <canvas class="deck-chart-js-canvas" data-deck-chartjs="histogram" data-deck-chart-config="${escapeAttr(JSON.stringify(chartConfig))}" role="img" aria-label="${escapeAttr(chart.title || 'Histogram chart')}"></canvas>
+    </div>
+    <div class="deck-chart-js-fallback">
+      ${renderHistogramSvg(chart, { cssVariables: true })}
+    </div>
+  </div>
 </figure>`
 }
 
@@ -75,9 +135,53 @@ function renderBoxplotChartHtml(chart) {
 }
 
 function renderParetoChartHtml(chart) {
+  const rows = paretoRows(chart)
+  const total = rows.reduce((sum, row) => sum + row.value, 0)
+  let cumulative = 0
+  const cumulativePercent = rows.map((row) => {
+    cumulative += row.value
+    return total > 0 ? Math.round((cumulative / total) * 1000) / 10 : 0
+  })
+  const chartConfig = {
+    type: 'pareto',
+    labels: rows.map((row) => row.label),
+    values: rows.map((row) => row.value),
+    cumulativePercent,
+    series: chart.series || chart.title || 'Value',
+    title: chart.title || '',
+    yAxisLabel: chart.yAxisLabel || chart.series || 'Value',
+  }
   return `<figure class="deck-chart deck-chart-pareto">
   ${chart.title ? `<figcaption>${escapeHtml(chart.title)}</figcaption>` : ''}
-  ${renderParetoSvg(chart, { cssVariables: true })}
+  <div class="deck-chart-js" data-deck-chart-type="pareto">
+    <div class="deck-chart-js-frame">
+      <canvas class="deck-chart-js-canvas" data-deck-chartjs="pareto" data-deck-chart-config="${escapeAttr(JSON.stringify(chartConfig))}" role="img" aria-label="${escapeAttr(chart.title || 'Pareto chart')}"></canvas>
+    </div>
+    <div class="deck-chart-js-fallback">
+      ${renderParetoSvg(chart, { cssVariables: true })}
+    </div>
+  </div>
+</figure>`
+}
+
+function renderRadarChartHtml(chart) {
+  const chartConfig = {
+    type: 'radar',
+    labels: chart.labels,
+    values: chart.values,
+    series: chart.series || chart.title || 'Series 1',
+    title: chart.title || '',
+  }
+  return `<figure class="deck-chart deck-chart-radar">
+  ${chart.title ? `<figcaption>${escapeHtml(chart.title)}</figcaption>` : ''}
+  <div class="deck-chart-js" data-deck-chart-type="radar">
+    <div class="deck-chart-js-frame">
+      <canvas class="deck-chart-js-canvas" data-deck-chartjs="radar" data-deck-chart-config="${escapeAttr(JSON.stringify(chartConfig))}" role="img" aria-label="${escapeAttr(chart.title || 'Radar chart')}"></canvas>
+    </div>
+    <div class="deck-chart-js-fallback">
+      ${renderRadarSvg(chart, { cssVariables: true })}
+    </div>
+  </div>
 </figure>`
 }
 
@@ -89,6 +193,13 @@ function renderSankeyChartHtml(chart) {
 }
 
 function renderLineChartHtml(chart) {
+  const chartConfig = {
+    type: 'line',
+    labels: chart.labels,
+    values: chart.values,
+    series: chart.series || chart.title || 'Series 1',
+    title: chart.title || '',
+  }
   const geometry = categoricalSeriesGeometry(chart)
   const markers = geometry.points
     .map((point) => `<g transform="translate(${point.x.toFixed(2)} ${point.y.toFixed(2)})">
@@ -99,17 +210,31 @@ function renderLineChartHtml(chart) {
 
   return `<figure class="deck-chart deck-chart-line">
   ${chart.title ? `<figcaption>${escapeHtml(chart.title)}</figcaption>` : ''}
-  <svg class="deck-chart-line-svg" viewBox="0 0 ${geometry.width} ${geometry.height}" role="img" aria-label="${escapeAttr(chart.title || 'Line chart')}">
-    ${renderSeriesGrid(geometry, 'line')}
-    ${renderSeriesAxes(geometry, 'line')}
-    <path class="deck-chart-line-path" d="${linePath(geometry.points)}" fill="none" stroke="#0f82f5"></path>
-    ${markers}
-    ${renderSeriesXLabels(geometry, 'line')}
-  </svg>
+  <div class="deck-chart-js" data-deck-chart-type="line">
+    <div class="deck-chart-js-frame">
+      <canvas class="deck-chart-js-canvas" data-deck-chartjs="line" data-deck-chart-config="${escapeAttr(JSON.stringify(chartConfig))}" role="img" aria-label="${escapeAttr(chart.title || 'Line chart')}"></canvas>
+    </div>
+    <div class="deck-chart-js-fallback">
+      <svg class="deck-chart-line-svg" viewBox="0 0 ${geometry.width} ${geometry.height}" role="img" aria-label="${escapeAttr(chart.title || 'Line chart')}">
+        ${renderSeriesGrid(geometry, 'line')}
+        ${renderSeriesAxes(geometry, 'line')}
+        <path class="deck-chart-line-path" d="${linePath(geometry.points)}" fill="none" stroke="#0f82f5"></path>
+        ${markers}
+        ${renderSeriesXLabels(geometry, 'line')}
+      </svg>
+    </div>
+  </div>
 </figure>`
 }
 
 function renderAreaChartHtml(chart) {
+  const chartConfig = {
+    type: 'area',
+    labels: chart.labels,
+    values: chart.values,
+    series: chart.series || chart.title || 'Series 1',
+    title: chart.title || '',
+  }
   const minValue = Math.min(...chart.values)
   const maxValue = Math.max(...chart.values)
   const includeZero = minValue <= 0 && maxValue >= 0
@@ -130,14 +255,21 @@ function renderAreaChartHtml(chart) {
 
   return `<figure class="deck-chart deck-chart-area">
   ${chart.title ? `<figcaption>${escapeHtml(chart.title)}</figcaption>` : ''}
-  <svg class="deck-chart-area-svg" viewBox="0 0 ${geometry.width} ${geometry.height}" role="img" aria-label="${escapeAttr(chart.title || 'Area chart')}">
-    ${renderSeriesGrid(geometry, 'area')}
-    ${renderSeriesAxes(geometry, 'area')}
-    <path class="deck-chart-area-fill" d="${areaPath}" fill="rgba(15, 130, 245, .22)"></path>
-    <path class="deck-chart-area-path" d="${linePath(geometry.points)}" fill="none" stroke="#0f82f5"></path>
-    ${markers}
-    ${renderSeriesXLabels(geometry, 'area')}
-  </svg>
+  <div class="deck-chart-js" data-deck-chart-type="area">
+    <div class="deck-chart-js-frame">
+      <canvas class="deck-chart-js-canvas" data-deck-chartjs="area" data-deck-chart-config="${escapeAttr(JSON.stringify(chartConfig))}" role="img" aria-label="${escapeAttr(chart.title || 'Area chart')}"></canvas>
+    </div>
+    <div class="deck-chart-js-fallback">
+      <svg class="deck-chart-area-svg" viewBox="0 0 ${geometry.width} ${geometry.height}" role="img" aria-label="${escapeAttr(chart.title || 'Area chart')}">
+        ${renderSeriesGrid(geometry, 'area')}
+        ${renderSeriesAxes(geometry, 'area')}
+        <path class="deck-chart-area-fill" d="${areaPath}" fill="rgba(15, 130, 245, .22)"></path>
+        <path class="deck-chart-area-path" d="${linePath(geometry.points)}" fill="none" stroke="#0f82f5"></path>
+        ${markers}
+        ${renderSeriesXLabels(geometry, 'area')}
+      </svg>
+    </div>
+  </div>
 </figure>`
 }
 
@@ -229,6 +361,37 @@ export function renderSignalBarsHtml(signalBars) {
 </div>`
 }
 
+export function renderOrchestrationHtml(orchestration) {
+  const upstreamNodes = orchestration.upstream
+    .map((node) => `<span class="deck-orchestration-node">${escapeHtml(node)}</span>`)
+    .join('')
+  const downstreamNodes = orchestration.downstream
+    .map((node) => `<span class="deck-orchestration-node">${escapeHtml(node)}</span>`)
+    .join('')
+  const capabilities = orchestration.capabilities
+    .map((capability) => `<span class="deck-orchestration-cap"><b></b>${escapeHtml(capability)}</span>`)
+    .join('')
+
+  return `<div class="deck-orchestration deck-orchestration-accent-${escapeAttr(orchestration.accent)}">
+  <div class="deck-orchestration-tier">
+    <div class="deck-orchestration-tier-label">${escapeHtml(orchestration.upstreamLabel)}</div>
+    <div class="deck-orchestration-nodes">${upstreamNodes}</div>
+  </div>
+  <article class="deck-orchestration-layer">
+    <div class="deck-orchestration-layer-head">
+      <strong class="deck-orchestration-layer-brand"${orchestration.logo ? ' data-deck-inline-logo="company"' : ''}>${escapeHtml(orchestration.layer)}</strong>
+      <span class="deck-orchestration-layer-tag">${escapeHtml(orchestration.tagline)}</span>
+    </div>
+    <div class="deck-orchestration-caps">${capabilities}</div>
+  </article>
+  <div class="deck-orchestration-tier">
+    <div class="deck-orchestration-tier-label">${escapeHtml(orchestration.downstreamLabel)}</div>
+    <div class="deck-orchestration-nodes">${downstreamNodes}</div>
+  </div>
+  ${orchestration.caption ? `<p class="deck-orchestration-caption">${escapeHtml(orchestration.caption)}</p>` : ''}
+</div>`
+}
+
 export function renderSignalBoardHtml(signalBoard) {
   const max = Math.max(...signalBoard.values, 1)
   const tags = signalBoard.tags
@@ -277,6 +440,14 @@ function renderBubbleChartHtml(chart) {
 
 function renderPointChartHtml(chart, options = {}) {
   const isBubble = options.type === 'bubble'
+  const chartConfig = {
+    type: options.type || 'scatter',
+    points: chart.points,
+    series: chart.series || chart.title || 'Series 1',
+    title: chart.title || '',
+    xAxisLabel: chart.xAxisLabel || 'X',
+    yAxisLabel: chart.yAxisLabel || 'Y',
+  }
   const width = 760
   const height = 350
   const margin = { top: 28, right: 28, bottom: 58, left: 64 }
@@ -331,14 +502,21 @@ function renderPointChartHtml(chart, options = {}) {
 
   return `<figure class="deck-chart ${chartClass}">
   ${chart.title ? `<figcaption>${escapeHtml(chart.title)}</figcaption>` : ''}
-  <svg class="${svgClass}" viewBox="0 0 ${width} ${height}" role="img" aria-label="${escapeAttr(chart.title || ariaLabel)}">
-    ${grid}
-    <line class="deck-chart-scatter-axis" x1="${margin.left}" y1="${margin.top + plotHeight}" x2="${margin.left + plotWidth}" y2="${margin.top + plotHeight}"></line>
-    <line class="deck-chart-scatter-axis" x1="${margin.left}" y1="${margin.top}" x2="${margin.left}" y2="${margin.top + plotHeight}"></line>
-    ${points}
-    <text class="deck-chart-scatter-axis-label" x="${margin.left + plotWidth / 2}" y="${height - 4}" text-anchor="middle">${escapeHtml(xAxisLabel)}</text>
-    <text class="deck-chart-scatter-axis-label" transform="translate(18 ${margin.top + plotHeight / 2}) rotate(-90)" text-anchor="middle">${escapeHtml(yAxisLabel)}</text>
-  </svg>
+  <div class="deck-chart-js" data-deck-chart-type="${escapeAttr(options.type || 'scatter')}">
+    <div class="deck-chart-js-frame">
+      <canvas class="deck-chart-js-canvas" data-deck-chartjs="${escapeAttr(options.type || 'scatter')}" data-deck-chart-config="${escapeAttr(JSON.stringify(chartConfig))}" role="img" aria-label="${escapeAttr(chart.title || ariaLabel)}"></canvas>
+    </div>
+    <div class="deck-chart-js-fallback">
+      <svg class="${svgClass}" viewBox="0 0 ${width} ${height}" role="img" aria-label="${escapeAttr(chart.title || ariaLabel)}">
+        ${grid}
+        <line class="deck-chart-scatter-axis" x1="${margin.left}" y1="${margin.top + plotHeight}" x2="${margin.left + plotWidth}" y2="${margin.top + plotHeight}"></line>
+        <line class="deck-chart-scatter-axis" x1="${margin.left}" y1="${margin.top}" x2="${margin.left}" y2="${margin.top + plotHeight}"></line>
+        ${points}
+        <text class="deck-chart-scatter-axis-label" x="${margin.left + plotWidth / 2}" y="${height - 4}" text-anchor="middle">${escapeHtml(xAxisLabel)}</text>
+        <text class="deck-chart-scatter-axis-label" transform="translate(18 ${margin.top + plotHeight / 2}) rotate(-90)" text-anchor="middle">${escapeHtml(yAxisLabel)}</text>
+      </svg>
+    </div>
+  </div>
 </figure>`
 }
 
@@ -358,6 +536,13 @@ function tickValues(min, max) {
 }
 
 function renderDoughnutChartHtml(chart) {
+  const chartConfig = {
+    type: 'doughnut',
+    labels: chart.labels,
+    values: chart.values,
+    series: chart.series || chart.title || 'Series 1',
+    title: chart.title || '',
+  }
   const total = chart.values.reduce((sum, value) => sum + value, 0)
   let cursor = 0
   const stops = chart.values.map((value, index) => {
@@ -380,16 +565,30 @@ function renderDoughnutChartHtml(chart) {
 
   return `<figure class="deck-chart deck-chart-doughnut">
   ${chart.title ? `<figcaption>${escapeHtml(chart.title)}</figcaption>` : ''}
-  <div class="deck-chart-doughnut-layout">
-    <div class="deck-chart-doughnut-ring" style="background: conic-gradient(${stops.join(', ')})">
-      <span>Total<strong>${escapeHtml(formatNumber(total))}</strong></span>
+  <div class="deck-chart-js" data-deck-chart-type="doughnut">
+    <div class="deck-chart-js-frame">
+      <canvas class="deck-chart-js-canvas" data-deck-chartjs="doughnut" data-deck-chart-config="${escapeAttr(JSON.stringify(chartConfig))}" role="img" aria-label="${escapeAttr(chart.title || 'Doughnut chart')}"></canvas>
     </div>
-    <div class="deck-chart-doughnut-legend">${rows}</div>
+    <div class="deck-chart-js-fallback">
+      <div class="deck-chart-doughnut-layout">
+        <div class="deck-chart-doughnut-ring" style="background: conic-gradient(${stops.join(', ')})">
+          <span>Total<strong>${escapeHtml(formatNumber(total))}</strong></span>
+        </div>
+        <div class="deck-chart-doughnut-legend">${rows}</div>
+      </div>
+    </div>
   </div>
 </figure>`
 }
 
 function renderGroupedBarChartHtml(chart) {
+  const chartConfig = {
+    type: 'grouped-bar',
+    labels: chart.labels,
+    seriesNames: chart.seriesNames,
+    matrix: chart.matrix,
+    title: chart.title || '',
+  }
   const values = chart.matrix.flat()
   const max = Math.max(...values, 1)
   const legend = chart.seriesNames
@@ -422,12 +621,26 @@ function renderGroupedBarChartHtml(chart) {
 
   return `<figure class="deck-chart deck-chart-grouped-bar">
   ${chart.title ? `<figcaption>${escapeHtml(chart.title)}</figcaption>` : ''}
-  <div class="deck-chart-legend">${legend}</div>
-  <div class="deck-chart-grouped-rows">${rows}</div>
+  <div class="deck-chart-js" data-deck-chart-type="grouped-bar">
+    <div class="deck-chart-js-frame">
+      <canvas class="deck-chart-js-canvas" data-deck-chartjs="grouped-bar" data-deck-chart-config="${escapeAttr(JSON.stringify(chartConfig))}" role="img" aria-label="${escapeAttr(chart.title || 'Grouped bar chart')}"></canvas>
+    </div>
+    <div class="deck-chart-js-fallback">
+      <div class="deck-chart-legend">${legend}</div>
+      <div class="deck-chart-grouped-rows">${rows}</div>
+    </div>
+  </div>
 </figure>`
 }
 
 function renderStackedBarChartHtml(chart) {
+  const chartConfig = {
+    type: 'stacked-bar',
+    labels: chart.labels,
+    seriesNames: chart.seriesNames,
+    matrix: chart.matrix,
+    title: chart.title || '',
+  }
   const totals = chart.labels.map((_, labelIndex) =>
     chart.matrix.reduce((sum, row) => sum + (row[labelIndex] ?? 0), 0),
   )
@@ -463,8 +676,15 @@ function renderStackedBarChartHtml(chart) {
 
   return `<figure class="deck-chart deck-chart-stacked-bar">
   ${chart.title ? `<figcaption>${escapeHtml(chart.title)}</figcaption>` : ''}
-  <div class="deck-chart-legend">${legend}</div>
-  <div class="deck-chart-stacked-rows">${rows}</div>
+  <div class="deck-chart-js" data-deck-chart-type="stacked-bar">
+    <div class="deck-chart-js-frame">
+      <canvas class="deck-chart-js-canvas" data-deck-chartjs="stacked-bar" data-deck-chart-config="${escapeAttr(JSON.stringify(chartConfig))}" role="img" aria-label="${escapeAttr(chart.title || 'Stacked bar chart')}"></canvas>
+    </div>
+    <div class="deck-chart-js-fallback">
+      <div class="deck-chart-legend">${legend}</div>
+      <div class="deck-chart-stacked-rows">${rows}</div>
+    </div>
+  </div>
 </figure>`
 }
 
@@ -604,6 +824,29 @@ function hashString(value) {
     hash = ((hash << 5) - hash + value.charCodeAt(index)) | 0
   }
   return Math.abs(hash).toString(36)
+}
+
+function compactNumber(value) {
+  if (!Number.isFinite(value)) return String(value)
+  const rounded = Math.round(value * 100) / 100
+  return Number.isInteger(rounded) ? String(rounded) : rounded.toFixed(2).replace(/0+$/, '').replace(/\.$/, '')
+}
+
+function waterfallSteps(chart) {
+  const steps = []
+  let running = 0
+  chart.values.forEach((delta, index) => {
+    const start = running
+    const end = start + delta
+    running = end
+    steps.push({
+      label: chart.labels[index] || '',
+      delta,
+      start,
+      end,
+    })
+  })
+  return steps
 }
 
 function renderMetricTrendSvg(metricTrend) {

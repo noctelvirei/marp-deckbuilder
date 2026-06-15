@@ -18,6 +18,7 @@ import {
   parseLogoWall,
   parseMetricTrend,
   parseNextSteps,
+  parseOrchestration,
   parseProof,
   parseSignalBars,
   parseSignalBoard,
@@ -43,6 +44,7 @@ import {
   renderLogoWallHtml,
   renderMetricTrendHtml,
   renderNextStepsHtml,
+  renderOrchestrationHtml,
   renderProofHtml,
   renderSignalBarsHtml,
   renderSignalBoardHtml,
@@ -81,6 +83,7 @@ const knownDeckTags = new Set([
   'deck-logo-wall',
   'deck-metric-trend',
   'deck-next-steps',
+  'deck-orchestration',
   'deck-proof',
   'deck-row',
   'deck-signal-bars',
@@ -123,6 +126,7 @@ const deckComponentAttributeAllowList = new Map([
   ['deck-logo-wall', ['title']],
   ['deck-metric-trend', ['metric', 'metric-label', 'title', 'labels', 'values', 'unit', 'accent']],
   ['deck-next-steps', []],
+  ['deck-orchestration', ['upstream-label', 'channels-label', 'upstream', 'channels', 'layer', 'title', 'logo', 'brand-logo', 'company-logo', 'inline-logo', 'tagline', 'layer-tag', 'capabilities', 'caps', 'tags', 'downstream-label', 'systems-label', 'downstream', 'systems', 'caption', 'body', 'accent']],
   ['deck-proof', ['bridge', 'source', 'logo', 'logo-name', 'customer']],
   ['deck-row', ['label', 'title', 'left', 'right']],
   ['deck-signal-bars', ['metric', 'metric-label', 'title', 'subtitle', 'labels', 'values', 'unit', 'accent']],
@@ -175,6 +179,7 @@ export {
   parseLogoWall,
   parseMetricTrend,
   parseNextSteps,
+  parseOrchestration,
   parseProof,
   parseSignalBars,
   parseSignalBoard,
@@ -198,6 +203,7 @@ export {
   renderLogoWallHtml,
   renderMetricTrendHtml,
   renderNextStepsHtml,
+  renderOrchestrationHtml,
   renderProofHtml,
   renderSignalBarsHtml,
   renderSignalBoardHtml,
@@ -235,6 +241,13 @@ export function compileDeckComponents(source, options = {}) {
     validateSignalBars(model, context)
     components.push(model)
     signalBars.replaceWith(renderSignalBarsHtml(model))
+  })
+  root('deck-orchestration').each((_, element) => {
+    const orchestration = root(element)
+    const model = parseOrchestration(orchestration)
+    validateOrchestration(model, context)
+    components.push(model)
+    orchestration.replaceWith(renderOrchestrationHtml(model))
   })
   root('deck-signal-board').each((_, element) => {
     const signalBoard = root(element)
@@ -644,7 +657,7 @@ function unsupportedDeckAttributeMessage(tag, attribute, supportedAttributes = [
 }
 
 function validateChart(chart, context) {
-  const supportedTypes = ['bar', 'line', 'area', 'waterfall', 'bullet', 'grouped-bar', 'stacked-bar', 'doughnut', 'scatter', 'bubble', 'histogram', 'boxplot', 'pareto', 'sankey']
+  const supportedTypes = ['bar', 'line', 'area', 'waterfall', 'bullet', 'grouped-bar', 'stacked-bar', 'doughnut', 'scatter', 'bubble', 'histogram', 'boxplot', 'pareto', 'radar', 'sankey']
   if (!supportedTypes.includes(chart.chartType)) {
     fail(
       `deck-chart type "${chart.chartType}" is not available. Supported types: ${supportedTypes.join(', ')}. Ask the skill maker to add the missing chart type.`,
@@ -700,6 +713,9 @@ function validateChart(chart, context) {
   if (chart.chartType === 'bullet') {
     validateBulletChart(chart, context)
   }
+  if (chart.chartType === 'radar') {
+    validateRadarChart(chart, context)
+  }
   if (chart.chartType === 'doughnut') {
     if (chart.values.some((value) => value < 0)) {
       fail('deck-chart doughnut values must be zero or positive.', context)
@@ -707,6 +723,24 @@ function validateChart(chart, context) {
     if (chart.values.reduce((sum, value) => sum + value, 0) <= 0) {
       fail('deck-chart doughnut values must sum to more than zero.', context)
     }
+  }
+}
+
+function validateRadarChart(chart, context) {
+  if (chart.labels.length < 3) {
+    fail('deck-chart type="radar" requires at least three labels/values.', context)
+  }
+  if (chart.labels.length > 8) {
+    fail('deck-chart type="radar" supports up to 8 labels. Split denser profiles across slides.', context)
+  }
+  if (chart.values.some((value) => value < 0)) {
+    fail('deck-chart type="radar" values must be zero or positive.', context)
+  }
+  if (chart.values.reduce((sum, value) => sum + value, 0) <= 0) {
+    fail('deck-chart type="radar" values must include at least one value above zero.', context)
+  }
+  for (const [index, label] of chart.labels.entries()) {
+    if (label.length > 18) fail(`deck-chart type="radar" label ${index + 1} must be 18 characters or fewer.`, context)
   }
 }
 
@@ -932,6 +966,47 @@ function validateSignalBars(signalBars, context) {
   }
   if (signalBars.metricLabel.length > 180) {
     fail('deck-signal-bars metric-label must be 180 characters or fewer.', context)
+  }
+}
+
+function validateOrchestration(orchestration, context) {
+  if (!orchestration.layer) fail('deck-orchestration requires a layer or title attribute.', context)
+  if (orchestration.upstream.length === 0) {
+    fail('deck-orchestration requires upstream or channels entries.', context)
+  }
+  if (orchestration.downstream.length === 0) {
+    fail('deck-orchestration requires downstream or systems entries.', context)
+  }
+  if (orchestration.capabilities.length === 0) {
+    fail('deck-orchestration requires capabilities, caps, or tags entries.', context)
+  }
+  if (orchestration.upstream.length > 8) {
+    fail('deck-orchestration supports up to 8 upstream/channel nodes.', context)
+  }
+  if (orchestration.downstream.length > 8) {
+    fail('deck-orchestration supports up to 8 downstream/system nodes.', context)
+  }
+  if (orchestration.capabilities.length > 6) {
+    fail('deck-orchestration supports up to 6 capability chips.', context)
+  }
+  if (orchestration.layer.length > 48) {
+    fail('deck-orchestration layer must be 48 characters or fewer.', context)
+  }
+  if (orchestration.tagline.length > 72) {
+    fail('deck-orchestration tagline must be 72 characters or fewer.', context)
+  }
+  if (orchestration.caption.length > 220) {
+    fail('deck-orchestration caption/body must be 220 characters or fewer.', context)
+  }
+  for (const [index, node] of [...orchestration.upstream, ...orchestration.downstream].entries()) {
+    if (node.length > 28) {
+      fail(`deck-orchestration node ${index + 1} must be 28 characters or fewer.`, context)
+    }
+  }
+  for (const [index, capability] of orchestration.capabilities.entries()) {
+    if (capability.length > 36) {
+      fail(`deck-orchestration capability ${index + 1} must be 36 characters or fewer.`, context)
+    }
   }
 }
 

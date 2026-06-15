@@ -53,10 +53,8 @@ export function renderImpactRadarSvg(impactRadar, options = {}) {
     .deck-impact-radar-track { fill: ${color('track')}; }
     .deck-impact-radar-grid { fill: none; stroke: ${color('radarGrid')}; }
     .deck-impact-radar-shape { fill: ${color('radarFill')}; stroke: ${color('radarStroke')}; stroke-width: 5; }
-    .deck-impact-radar-bar-fill { transform-box: fill-box; transform-origin: left center; animation: deck-impact-radar-fill-in 800ms ease-out both; }
-    .deck-impact-radar-shape-animated { opacity: 0; animation: deck-impact-radar-fade-in 800ms ease-out 240ms both; }
-    @keyframes deck-impact-radar-fill-in { from { transform: scaleX(0); } to { transform: scaleX(1); } }
-    @keyframes deck-impact-radar-fade-in { from { opacity: 0; } to { opacity: 1; } }
+    .deck-impact-radar-bar-fill { transform-box: fill-box; transform-origin: left center; }
+    .deck-impact-radar-shape-animated { transform-box: fill-box; transform-origin: center; }
   </style>
   <rect class="deck-impact-radar-surface" x="0" y="0" width="920" height="360" rx="0"></rect>
   <rect class="deck-impact-radar-panel" x="18" y="18" width="884" height="324"></rect>

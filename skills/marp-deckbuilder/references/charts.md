@@ -55,6 +55,7 @@ Separator rules:
 | `histogram` | Raw numeric distribution | Raw numeric `values` | Renderer computes bins; do not pre-bin with labels. |
 | `boxplot` | Spread, median, and outlier context | `labels`, observation rows in `values` | One row per label; each row needs at least five numeric observations. |
 | `pareto` | Ranked drivers plus cumulative share | `labels`, `values` | Values must be zero or positive and sum above zero; renderer sorts by value. |
+| `radar` | Capability balance across 3 to 8 dimensions | `labels`, `values` | Values must be zero or positive and include at least one value above zero; labels should stay short. |
 | `sankey` | Acyclic flow diagram | `links` | Values must be above zero; self-links and cycles are rejected. |
 
 ## Examples
@@ -165,5 +166,17 @@ Separator rules:
   title="Journey flow"
   series="Cases"
   links="Opened>Started:4400, Started>Completed:3800, Started>Exception:380, Exception>Recovered:220"
+></deck-chart>
+```
+
+### Radar
+
+```md
+<deck-chart
+  type="radar"
+  title="Capability profile"
+  series="Score"
+  labels="Speed, Compliance, Reach, Resilience, Effort, Insight"
+  values="91, 88, 84, 72, 58, 79"
 ></deck-chart>
 ```

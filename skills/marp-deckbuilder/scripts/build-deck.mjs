@@ -13,9 +13,10 @@ const args = process.argv.slice(2)
 const input = args.find((arg) => !arg.startsWith('-'))
 const outDir = readOption(args, '--out-dir') || 'output'
 const mode = readOption(args, '--mode') || 'native'
+const output = normalizeOutput(readOption(args, '--output') || 'both')
 
 if (!input) {
-  console.error('Usage: node scripts/build-deck.mjs deck.md --out-dir output [--mode native]')
+  console.error('Usage: node scripts/build-deck.mjs deck.md --out-dir output [--output html|pptx|both] [--mode native]')
   process.exit(1)
 }
 
@@ -31,26 +32,27 @@ if (!existsSync(bundledCli)) {
 const base = basename(inputPath, extname(inputPath))
 const htmlPath = join(outputDir, `${base}.html`)
 const pptxPath = join(outputDir, `${base}.pptx`)
+const wantsHtml = output === 'html' || output === 'both'
+const wantsPptx = output === 'pptx' || output === 'both'
 
-await run(process.execPath, [
+const buildArgs = [
   bundledCli,
   'build',
   inputPath,
-  '--html',
-  htmlPath,
-  '--pptx',
-  pptxPath,
-  '--mode',
-  mode,
   '--resources',
   join(toolRoot, 'resources'),
-])
+]
 
-await injectVendorScripts(htmlPath)
+if (wantsHtml) buildArgs.push('--html', htmlPath)
+if (wantsPptx) buildArgs.push('--pptx', pptxPath, '--mode', mode)
+
+await run(process.execPath, buildArgs)
+
+if (wantsHtml) await injectVendorScripts(htmlPath)
 
 console.log(`Markdown: ${inputPath}`)
-console.log(`HTML:     ${htmlPath}`)
-console.log(`PPTX:     ${pptxPath}`)
+if (wantsHtml) console.log(`HTML:     ${htmlPath}`)
+if (wantsPptx) console.log(`PPTX:     ${pptxPath}`)
 
 async function injectVendorScripts(htmlFile) {
   if (!existsSync(htmlFile)) return
@@ -121,4 +123,13 @@ async function run(command, commandArgs, options = {}) {
 function readOption(argv, name) {
   const index = argv.indexOf(name)
   return index >= 0 ? argv[index + 1] : ''
+}
+
+function normalizeOutput(value) {
+  const normalized = String(value || '').trim().toLowerCase()
+  if (normalized === 'powerpoint') return 'pptx'
+  if (normalized === 'ppt') return 'pptx'
+  if (['html', 'pptx', 'both'].includes(normalized)) return normalized
+  console.error(`Unsupported --output "${value}". Use html, pptx, or both.`)
+  process.exit(1)
 }
