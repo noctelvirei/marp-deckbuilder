@@ -8,7 +8,7 @@ import {
   buildMarpMarkdown,
   getAnimation,
   load
-} from "./chunk-QR24H3QU.mjs";
+} from "./chunk-IQUYC52X.mjs";
 import {
   require_node
 } from "./chunk-MGQWBMZO.mjs";
@@ -136483,12 +136483,23 @@ section.light {
   background-color: ${lightBackground};
 }
 
+section.dark .deck-swimlane {
+  --deck-swimlane-step-title-color: ${darkHeading};
+  --deck-swimlane-step-body-color: ${darkText};
+}
+
+section.light .deck-swimlane {
+  --deck-swimlane-step-title-color: ${lightHeading};
+  --deck-swimlane-step-body-color: ${lightText};
+}
+
 section.dark h1,
 section.dark h2,
 section.dark h3,
 section.dark .card-grid h2,
 section.dark .deck-lane h2,
 section.dark .deck-lane-steps h3,
+section.dark .deck-lane-step-title,
 section.dark .deck-chart figcaption,
 section.dark .deck-funnel figcaption,
 section.dark .deck-heatmap figcaption,
@@ -136501,6 +136512,7 @@ section.dark p,
 section.dark li,
 section.dark .card-grid p,
 section.dark .deck-lane-steps p,
+section.dark .deck-lane-step-body,
 section.dark .deck-chart-label,
 section.dark .deck-chart-legend-item,
 section.dark .deck-chart-series-label,
@@ -136666,6 +136678,7 @@ section.light h3,
 section.light .card-grid h2,
 section.light .deck-lane h2,
 section.light .deck-lane-steps h3,
+section.light .deck-lane-step-title,
 section.light .deck-chart figcaption,
 section.light .deck-funnel figcaption,
 section.light .deck-heatmap figcaption,
@@ -136678,6 +136691,7 @@ section.light p,
 section.light li,
 section.light .card-grid p,
 section.light .deck-lane-steps p,
+section.light .deck-lane-step-body,
 section.light .deck-chart-label,
 section.light .deck-chart-legend-item,
 section.light .deck-chart-series-label,
@@ -137257,12 +137271,13 @@ function inlineDarkImageHeadingColors(html, slides = [], brand = {}) {
     decodeEntities: false,
     lowerCaseAttributeNames: false
   });
-  const headingColor = cssColor(brand, "blue", "0F82F5");
   root("section").each((index, section) => {
     const slide = slides[index];
     if (!headingLayouts.has(slide?.layout)) return;
     const heading = root(section).find("h1, marp-h1").first();
     if (!heading.length) return;
+    const titleColor = brand.layouts?.[slide.layout]?.title?.color || "blue";
+    const headingColor = cssColor(brand, titleColor, "0F82F5");
     mergeInlineStyle(heading, "color", headingColor);
   });
   return root("root").html() || html;

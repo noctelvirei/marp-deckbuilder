@@ -1605,6 +1605,14 @@ section.deck-takeaway-slide.light {
 }
 
 .deck-swimlane {
+  --deck-swimlane-step-title-color: #090909;
+  --deck-swimlane-step-body-color: #444444;
+  --deck-swimlane-step-title-size: 14px;
+  --deck-swimlane-step-body-size: 11px;
+  --deck-swimlane-step-title-margin: 6px;
+  --deck-swimlane-step-title-line-height: 1.18;
+  --deck-swimlane-step-body-line-height: 1.25;
+  --deck-swimlane-step-body-max-height: 42px;
   display: grid;
   gap: 18px;
   grid-auto-rows: minmax(120px, 1fr);
@@ -1614,6 +1622,12 @@ section.deck-takeaway-slide.light {
 }
 
 .deck-swimlane-3 {
+  --deck-swimlane-step-title-size: 12px;
+  --deck-swimlane-step-body-size: 10px;
+  --deck-swimlane-step-title-margin: 4px;
+  --deck-swimlane-step-title-line-height: 1.16;
+  --deck-swimlane-step-body-line-height: 1.22;
+  --deck-swimlane-step-body-max-height: 36px;
   gap: 10px;
   grid-auto-rows: minmax(108px, 1fr);
   max-height: calc(100% - 92px);
@@ -1687,19 +1701,32 @@ section.deck-takeaway-slide.light {
   background: #fff8df;
 }
 
-.deck-lane-steps h3 {
+.deck-lane-steps h3,
+.deck-lane-step-title {
+  display: block;
+  visibility: visible;
+  opacity: 1;
+  position: relative;
+  z-index: 1;
   margin: 0 0 6px;
   font-size: 14px;
+  line-height: 1.18;
+  color: var(--deck-swimlane-step-title-color, #090909);
 }
 
-.deck-lane-steps p {
+.deck-lane-steps p,
+.deck-lane-step-body {
+  display: block;
+  visibility: visible;
+  opacity: 1;
+  position: relative;
+  z-index: 1;
   margin: 0;
   font-size: 11px;
   line-height: 1.25;
+  max-height: 42px;
   overflow: hidden;
-  display: -webkit-box;
-  -webkit-line-clamp: 3;
-  -webkit-box-orient: vertical;
+  color: var(--deck-swimlane-step-body-color, #444444);
 }
 
 .deck-swimlane-3 .deck-lane {
@@ -1716,15 +1743,18 @@ section.deck-takeaway-slide.light {
   padding: 8px 10px;
 }
 
-.deck-swimlane-3 .deck-lane-steps h3 {
+.deck-swimlane-3 .deck-lane-steps h3,
+.deck-swimlane-3 .deck-lane-step-title {
   margin-bottom: 4px;
   font-size: 12px;
+  line-height: 1.16;
 }
 
-.deck-swimlane-3 .deck-lane-steps p {
+.deck-swimlane-3 .deck-lane-steps p,
+.deck-swimlane-3 .deck-lane-step-body {
   font-size: 10px;
   line-height: 1.22;
-  -webkit-line-clamp: 3;
+  max-height: 36px;
 }
 
 .deck-arrow {

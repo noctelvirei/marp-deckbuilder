@@ -1305,7 +1305,7 @@ test('HTML component chrome constrains structured components and swimlanes insid
   assert.match(rendered.document, /\.deck-lane-steps\s*\{[^}]*grid-template-columns:\s*repeat\(auto-fit/)
   assert.match(rendered.document, /\.deck-lane-steps article\s*\{[^}]*min-height:\s*48px/)
   assert.match(rendered.document, /section > p > img:not\(\.deck-brand-logo\)/)
-  assert.match(rendered.document, /-webkit-line-clamp:\s*3/)
+  assert.match(rendered.document, /--deck-swimlane-step-body-max-height:\s*42px/)
 })
 
 test('HTML swimlane keeps multi-step lane card content visible', async () => {
@@ -1333,10 +1333,15 @@ test('HTML swimlane keeps multi-step lane card content visible', async () => {
   assert.match(rendered.document, /Week 8/)
   assert.match(rendered.document, /Journey mapping and brand setup\./)
   assert.match(rendered.document, /Full rollout and hypercare/)
+  assert.match(rendered.html, /<h3 class="deck-lane-step-title" style="[^"]*font-size:var\(--deck-swimlane-step-title-size/)
+  assert.match(rendered.html, /<p class="deck-lane-step-body" style="[^"]*max-height:var\(--deck-swimlane-step-body-max-height/)
+  assert.doesNotMatch(rendered.html, /<pre><code[\s\S]*deck-lane-step/)
   assert.match(rendered.css, /\.deck-swimlane\s*\{[^}]*max-height:\s*calc\(100% - 96px\)/)
+  assert.match(rendered.css, /\.deck-swimlane\s*\{[^}]*--deck-swimlane-step-title-size:\s*14px/)
   assert.match(rendered.css, /\.deck-swimlane-3\s*\{[^}]*grid-auto-rows:\s*minmax\(108px, 1fr\)/)
+  assert.match(rendered.css, /\.deck-swimlane-3\s*\{[^}]*--deck-swimlane-step-body-max-height:\s*36px/)
   assert.match(rendered.css, /\.deck-swimlane-3 \.deck-lane-steps article\s*\{[^}]*min-height:\s*58px/)
-  assert.match(rendered.css, /\.deck-swimlane-3 \.deck-lane-steps p\s*\{[^}]*-webkit-line-clamp:\s*3/)
+  assert.match(rendered.css, /section\.light \.deck-swimlane\s*\{[^}]*--deck-swimlane-step-title-color:\s*#090909/)
 })
 
 test('resolves resource URLs inside brand theme CSS', async () => {
@@ -1680,7 +1685,7 @@ test('HTML divider and close slides use full dark surfaces without brand backgro
   assert.doesNotMatch(rendered.css, /\.deck-divider,\s*[^,{]*\.deck-close\{[^}]*background:#090909/)
 })
 
-test('HTML dark image slide headings inline brand blue over Marp presenter defaults', async () => {
+test('HTML dark image slide headings inline per-layout brand colours over Marp presenter defaults', async () => {
   const baseDefinitions = await loadDefinitions(new URL('../resources/definitions', import.meta.url))
   const definitions = {
     ...baseDefinitions,
@@ -1689,6 +1694,24 @@ test('HTML dark image slide headings inline brand blue over Marp presenter defau
       colors: {
         ...baseDefinitions.brand.colors,
         blue: '2468AC',
+        white: 'F8FAFF',
+        titleGold: 'FBC546',
+        closeRed: 'FC5161',
+      },
+      layouts: {
+        ...baseDefinitions.brand.layouts,
+        cover: {
+          ...baseDefinitions.brand.layouts.cover,
+          title: { ...baseDefinitions.brand.layouts.cover.title, color: 'white' },
+        },
+        divider: {
+          ...baseDefinitions.brand.layouts.divider,
+          title: { ...baseDefinitions.brand.layouts.divider.title, color: 'titleGold' },
+        },
+        close: {
+          ...baseDefinitions.brand.layouts.close,
+          title: { ...baseDefinitions.brand.layouts.close.title, color: 'closeRed' },
+        },
       },
     },
   }
@@ -1707,9 +1730,9 @@ test('HTML dark image slide headings inline brand blue over Marp presenter defau
 # Content title`)
   const rendered = renderDeckHtml(deck, { resourcesDir: 'resources', definitions })
 
-  assert.match(rendered.html, /<h1[^>]*style="color: #2468AC"[^>]*>Cover title<\/h1>/)
-  assert.match(rendered.html, /<h1[^>]*style="color: #2468AC"[^>]*>Divider title<\/h1>/)
-  assert.match(rendered.html, /<h1[^>]*style="color: #2468AC"[^>]*>Close title<\/h1>/)
+  assert.match(rendered.html, /<h1[^>]*style="color: #F8FAFF"[^>]*>Cover title<\/h1>/)
+  assert.match(rendered.html, /<h1[^>]*style="color: #FBC546"[^>]*>Divider title<\/h1>/)
+  assert.match(rendered.html, /<h1[^>]*style="color: #FC5161"[^>]*>Close title<\/h1>/)
   assert.match(rendered.html, /<h1 id="content-title">Content title<\/h1>/)
 })
 
