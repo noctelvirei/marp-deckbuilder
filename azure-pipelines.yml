@@ -1,0 +1,62 @@
+# marp-deckbuilder engine-propagation pipeline (Phase 2).
+#
+# On a renderer source change, a hosted Windows agent rebuilds the engine
+# (native esbuild) and propagates tool/dist into the four claude-custom-skills
+# forks via an AUTO-COMPLETING pull request, gated by safety-net builds
+# (a deck fork and a report fork must render with the new engine). The merge
+# then triggers the plugin build pipeline.
+
+trigger:
+  branches:
+    include: [main]
+  paths:
+    include:
+      - src/**
+      - scripts/bundle-skill.mjs
+      - scripts/ci-propagate.ps1
+      - package.json
+      - package-lock.json
+
+resources:
+  repositories:
+    - repository: forks
+      type: git
+      name: DBA/claude-custom-skills
+      ref: refs/heads/main
+
+pool:
+  vmImage: windows-latest
+
+steps:
+  - checkout: self          # -> $(Build.SourcesDirectory)/marp-deckbuilder
+  - checkout: forks         # -> $(Build.SourcesDirectory)/claude-custom-skills
+    persistCredentials: true   # needed so the engine PR can be pushed
+
+  - task: NodeTool@0
+    displayName: Use Node 20
+    inputs:
+      versionSpec: '20.x'
+
+  - task: PowerShell@2
+    displayName: Build renderer engine (esbuild)
+    inputs:
+      targetType: inline
+      pwsh: true
+      workingDirectory: '$(Build.SourcesDirectory)/marp-deckbuilder'
+      script: |
+        npm ci
+        if ($LASTEXITCODE -ne 0) { throw "npm ci failed" }
+        npm run bundle:skill
+        if ($LASTEXITCODE -ne 0) { throw "bundle:skill failed" }
+
+  - task: PowerShell@2
+    displayName: Propagate engine to forks + verify + auto-complete PR
+    inputs:
+      targetType: filePath
+      filePath: '$(Build.SourcesDirectory)/marp-deckbuilder/scripts/ci-propagate.ps1'
+      arguments: >-
+        -ForksRepo "$(Build.SourcesDirectory)/claude-custom-skills"
+        -EngineDist "$(Build.SourcesDirectory)/marp-deckbuilder/skills/marp-deckbuilder/tool/dist"
+      pwsh: true
+    env:
+      SYSTEM_ACCESSTOKEN: $(System.AccessToken)
