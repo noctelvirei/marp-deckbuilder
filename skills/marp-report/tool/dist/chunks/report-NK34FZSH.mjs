@@ -7,7 +7,7 @@ const __dirname = __deckbuilderDirname(__filename);
 import {
   require_punycode,
   resolveResourceUrls
-} from "./chunk-6NTEZSBR.mjs";
+} from "./chunk-U5UC7AA3.mjs";
 import {
   decodeHTML,
   expandSelfClosingComponentTags,

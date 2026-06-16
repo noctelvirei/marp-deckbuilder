@@ -1570,6 +1570,7 @@ function htmlDeckShellCss(brand = {}) {
   return `@media screen {
   :root {
     --deckbuilder-bg: ${background};
+    --deckbuilder-surface-dark: linear-gradient(180deg, #0b1d37 0%, #081428 48%, ${background} 100%);
     --deckbuilder-surface: ${surface};
     --deckbuilder-blue: ${blue};
     --deckbuilder-cyan: ${cyan};
@@ -1608,29 +1609,7 @@ function htmlDeckShellCss(brand = {}) {
     inset: 0;
     z-index: 0;
     pointer-events: none;
-    background:
-      radial-gradient(120% 90% at 12% 8%, #0c2143 0%, rgba(12, 33, 67, 0) 55%),
-      radial-gradient(90% 80% at 100% 100%, #0a1c3a 0%, rgba(10, 28, 58, 0) 50%),
-      var(--deckbuilder-bg);
-  }
-
-  body::after {
-    content: "";
-    position: fixed;
-    width: 60vw;
-    height: 60vw;
-    left: 55%;
-    top: -15%;
-    z-index: 0;
-    pointer-events: none;
-    background: radial-gradient(closest-side, ${cssRgba(cyan, 0.1)}, transparent 70%);
-    filter: blur(10px);
-    animation: deckbuilder-float 16s var(--deckbuilder-ease) infinite alternate;
-  }
-
-  @keyframes deckbuilder-float {
-    from { transform: translate(0, 0); }
-    to { transform: translate(-6%, 8%); }
+    background: var(--deckbuilder-surface-dark);
   }
 
   [id=":$p"] {
@@ -1689,10 +1668,7 @@ function htmlDeckShellCss(brand = {}) {
   }
 
   section.dark {
-    background:
-      radial-gradient(120% 90% at 12% 8%, #0c2143 0%, rgba(12, 33, 67, 0) 55%),
-      radial-gradient(90% 80% at 100% 100%, #0a1c3a 0%, rgba(10, 28, 58, 0) 50%),
-      var(--deckbuilder-bg) !important;
+    background: var(--deckbuilder-surface-dark) !important;
   }
 
   section.cover,
@@ -1702,12 +1678,10 @@ function htmlDeckShellCss(brand = {}) {
   section:has(.deck-close) {
     background:
       var(--deckbuilder-title-bg-image, none),
-      radial-gradient(120% 90% at 12% 8%, #0c2143 0%, rgba(12, 33, 67, 0) 55%),
-      radial-gradient(90% 80% at 100% 100%, #0a1c3a 0%, rgba(10, 28, 58, 0) 50%),
-      var(--deckbuilder-bg) !important;
-    background-position: center, center, center, center !important;
-    background-repeat: no-repeat, no-repeat, no-repeat, no-repeat !important;
-    background-size: cover, auto, auto, auto !important;
+      var(--deckbuilder-surface-dark) !important;
+    background-position: center, center !important;
+    background-repeat: no-repeat, no-repeat !important;
+    background-size: cover, cover !important;
     color: var(--deckbuilder-white) !important;
   }
 
