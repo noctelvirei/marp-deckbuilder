@@ -1310,7 +1310,7 @@ function customerLogoHtml(src, alt, surface = 'light') {
 
 function rewriteSurfaceLogoImages(source, resourcesDir, surface) {
   return String(source || '').replace(
-    /(<div\b[^>]*\bclass=["'][^"']*\bdeck-logo-tile\b[^"']*["'][^>]*>\s*<img\b[^>]*\bsrc=)(["'])([^"']+)\2/gi,
+    /(<div\b[^>]*\bclass=["'][^"']*\b(?:deck-logo-tile|deck-proof-logo)\b[^"']*["'][^>]*>\s*<img\b[^>]*\bsrc=)(["'])([^"']+)\2/gi,
     (match, prefix, quote, src) => `${prefix}${quote}${surfaceResourceReference(src, resourcesDir, surface)}${quote}`,
   )
 }
@@ -1570,6 +1570,7 @@ function htmlDeckShellCss(brand = {}) {
   return `@media screen {
   :root {
     --deckbuilder-bg: ${background};
+    --deckbuilder-surface-dark: linear-gradient(180deg, #0b1d37 0%, #081428 48%, ${background} 100%);
     --deckbuilder-surface: ${surface};
     --deckbuilder-blue: ${blue};
     --deckbuilder-cyan: ${cyan};
@@ -1608,29 +1609,18 @@ function htmlDeckShellCss(brand = {}) {
     inset: 0;
     z-index: 0;
     pointer-events: none;
-    background:
-      radial-gradient(120% 90% at 12% 8%, #0c2143 0%, rgba(12, 33, 67, 0) 55%),
-      radial-gradient(90% 80% at 100% 100%, #0a1c3a 0%, rgba(10, 28, 58, 0) 50%),
-      var(--deckbuilder-bg);
+    background: var(--deckbuilder-surface-dark);
   }
 
-  body::after {
-    content: "";
+  .deckbuilder-backdrop {
     position: fixed;
-    width: 60vw;
-    height: 60vw;
-    left: 55%;
-    top: -15%;
+    inset: 0;
     z-index: 0;
     pointer-events: none;
-    background: radial-gradient(closest-side, ${cssRgba(cyan, 0.1)}, transparent 70%);
-    filter: blur(10px);
-    animation: deckbuilder-float 16s var(--deckbuilder-ease) infinite alternate;
-  }
-
-  @keyframes deckbuilder-float {
-    from { transform: translate(0, 0); }
-    to { transform: translate(-6%, 8%); }
+    background-position: center;
+    background-repeat: no-repeat;
+    background-size: cover;
+    background-image: none;
   }
 
   [id=":$p"] {
@@ -1689,25 +1679,19 @@ function htmlDeckShellCss(brand = {}) {
   }
 
   section.dark {
-    background:
-      radial-gradient(120% 90% at 12% 8%, #0c2143 0%, rgba(12, 33, 67, 0) 55%),
-      radial-gradient(90% 80% at 100% 100%, #0a1c3a 0%, rgba(10, 28, 58, 0) 50%),
-      var(--deckbuilder-bg) !important;
+    background: var(--deckbuilder-surface-dark) !important;
   }
 
+  /* Image-backed slides are transparent so the full-viewport .deckbuilder-backdrop
+     layer (painted by JS from this slide's --deckbuilder-title-bg-image) shows through.
+     The backdrop covers the whole window at screen aspect ratio; the slide content
+     itself stays contained (letterboxed) so nothing is cropped or stretched. */
   section.cover,
   section.deck-divider-slide,
   section.deck-close-slide,
   section:has(.deck-divider),
   section:has(.deck-close) {
-    background:
-      var(--deckbuilder-title-bg-image, none),
-      radial-gradient(120% 90% at 12% 8%, #0c2143 0%, rgba(12, 33, 67, 0) 55%),
-      radial-gradient(90% 80% at 100% 100%, #0a1c3a 0%, rgba(10, 28, 58, 0) 50%),
-      var(--deckbuilder-bg) !important;
-    background-position: center, center, center, center !important;
-    background-repeat: no-repeat, no-repeat, no-repeat, no-repeat !important;
-    background-size: cover, auto, auto, auto !important;
+    background: transparent !important;
     color: var(--deckbuilder-white) !important;
   }
 
@@ -1978,6 +1962,14 @@ function htmlDeckShellCss(brand = {}) {
     border-color: ${cssRgba(cyan, 0.16)} !important;
   }
 
+  /* Marp core's default theme paints a light background on every table row
+     (var(--bgColor-default) / --bgColor-muted). The comparison cells only set a
+     translucent background, so that light row colour bleeds through and washes the
+     cells out. Reset the row background; the cells own their own appearance. */
+  .deck-comparison tr {
+    background: transparent !important;
+  }
+
   section.dark .deck-comparison th {
     background: linear-gradient(180deg, ${cssRgba(blue, 0.18)}, ${cssRgba(cyan, 0.07)}) !important;
     color: var(--deckbuilder-white) !important;
@@ -2023,8 +2015,7 @@ function htmlDeckShellCss(brand = {}) {
 
   section.dark .deck-logo-tile img,
   section.dark .deck-proof-logo img {
-    filter: brightness(0) invert(1) grayscale(1) contrast(1.08) !important;
-    opacity: .92;
+    opacity: .95;
   }
 
   section.dark .deck-chart-row strong {
@@ -2150,8 +2141,7 @@ function htmlDeckShellCss(brand = {}) {
 
   section.dark .deck-logo-wall .deck-logo-tile img,
   section.dark .deck-proof .deck-proof-logo img {
-    filter: brightness(0) invert(1) grayscale(1) contrast(1.08) !important;
-    opacity: .92;
+    opacity: .95;
   }
 
   .deck-signal-board-panel,
@@ -2872,6 +2862,18 @@ function htmlDeckNavigationScript() {
   const next = document.querySelector('[data-deckbuilder-next]')
   if (!slides.length || !prev || !next) return
 
+  // Full-viewport backdrop: paints the active slide's brand background image
+  // (--deckbuilder-title-bg-image) across the whole window at screen aspect ratio
+  // (cover, no stretch). Slide content stays contained, so only the image scales.
+  const backdrop = document.createElement('div')
+  backdrop.className = 'deckbuilder-backdrop'
+  document.body.insertBefore(backdrop, document.body.firstChild)
+  function updateBackdrop() {
+    const section = slides[index] && slides[index].querySelector('foreignObject > section')
+    const img = section ? getComputedStyle(section).getPropertyValue('--deckbuilder-title-bg-image').trim() : ''
+    backdrop.style.backgroundImage = (img && img !== 'none') ? img : 'none'
+  }
+
   // ponytail: one tiny navigator beats owning a second presenter framework.
   let index = 0
   let wheelX = 0
@@ -2941,6 +2943,7 @@ function htmlDeckNavigationScript() {
     prev.disabled = index === 0
     next.disabled = index === slides.length - 1
     centerActiveDot()
+    updateBackdrop()
   }
 
   function toggleFullscreen() {
