@@ -8,7 +8,7 @@ import {
   buildMarpMarkdown,
   getAnimation,
   load
-} from "./chunk-TVSEVEJV.mjs";
+} from "./chunk-KSE5JK4F.mjs";
 import {
   require_node,
   svgChartCss
@@ -22,7 +22,7 @@ import {
   resolveResourceFile,
   resolveSurfaceResourceFile,
   resourceToDataUri
-} from "./chunk-2CDAPONW.mjs";
+} from "./chunk-EC3BA3LQ.mjs";
 import {
   __commonJS,
   __require,

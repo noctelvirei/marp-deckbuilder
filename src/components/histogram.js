@@ -48,7 +48,7 @@ export function renderHistogramSvg(chart, options = {}) {
     })
     .join('\n  ')
 
-  return `<svg class="deck-chart-histogram-svg" viewBox="0 0 ${geometry.width} ${geometry.height}" role="img" aria-label="${escapeAttr(chart.title || 'Histogram chart')}">
+  return `<svg class="dsvg deck-chart-histogram-svg" data-deck-svgchart="histogram" viewBox="0 0 ${geometry.width} ${geometry.height}" role="img" aria-label="${escapeAttr(chart.title || 'Histogram chart')}">
   <style>
     .deck-histogram-grid { stroke: ${color('grid')}; stroke-width: 1; }
     .deck-histogram-axis { stroke: ${color('axis')}; stroke-width: 1.4; }

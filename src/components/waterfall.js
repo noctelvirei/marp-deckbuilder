@@ -58,7 +58,7 @@ export function renderWaterfallSvg(chart, options = {}) {
     })
     .join('\n  ')
 
-  return `<svg class="deck-chart-waterfall-svg" viewBox="0 0 ${geometry.width} ${geometry.height}" role="img" aria-label="${escapeAttr(chart.title || 'Waterfall chart')}">
+  return `<svg class="dsvg deck-chart-waterfall-svg" data-deck-svgchart="waterfall" viewBox="0 0 ${geometry.width} ${geometry.height}" role="img" aria-label="${escapeAttr(chart.title || 'Waterfall chart')}">
   <style>
     .deck-waterfall-grid { stroke: ${color('grid')}; stroke-width: 1; }
     .deck-waterfall-axis { stroke: ${color('axis')}; stroke-width: 1.4; }

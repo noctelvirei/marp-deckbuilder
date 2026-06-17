@@ -65,7 +65,7 @@ export function renderParetoSvg(chart, options = {}) {
     .map((item) => `<circle class="deck-pareto-point" cx="${round(item.pointX)}" cy="${round(item.pointY)}" r="5"><title>${escapeHtml(item.label)} cumulative: ${round(item.cumulativePercent)}%</title></circle>`)
     .join('\n  ')
 
-  return `<svg class="deck-chart-pareto-svg" viewBox="0 0 ${geometry.width} ${geometry.height}" role="img" aria-label="${escapeAttr(chart.title || 'Pareto chart')}">
+  return `<svg class="dsvg deck-chart-pareto-svg" data-deck-svgchart="pareto" viewBox="0 0 ${geometry.width} ${geometry.height}" role="img" aria-label="${escapeAttr(chart.title || 'Pareto chart')}">
   <style>
     .deck-pareto-grid { stroke: ${color('grid')}; stroke-width: 1; }
     .deck-pareto-axis { stroke: ${color('axis')}; stroke-width: 1.4; }

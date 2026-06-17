@@ -782,7 +782,7 @@ function renderBulletSvg(chart, options = {}) {
     <line class="deck-bullet-target" x1="${round3(row.targetX)}" y1="${round3(row.center - row.trackH / 2 - 6)}" x2="${round3(row.targetX)}" y2="${round3(row.center + row.trackH / 2 + 6)}"></line>
     <text class="deck-bullet-value${row.valueInside ? " deck-bullet-value-inside" : ""}" x="${round3(row.valueX)}" y="${round3(row.center + 5)}" text-anchor="${row.valueAnchor}">${escapeHtml(formatNumber(row.value))}</text>
   </g>`).join("\n  ");
-  return `<svg class="deck-chart-bullet-svg" viewBox="0 0 ${geometry.width} ${geometry.height}" role="img" aria-label="${escapeAttr(chart.title || "Bullet chart")}">
+  return `<svg class="dsvg deck-chart-bullet-svg" data-deck-svgchart="bullet" viewBox="0 0 ${geometry.width} ${geometry.height}" role="img" aria-label="${escapeAttr(chart.title || "Bullet chart")}">
   <style>
     .deck-bullet-grid { stroke: ${color("grid")}; stroke-width: 1; }
     .deck-bullet-axis { stroke: ${color("axis")}; stroke-width: 1.4; }
@@ -1033,7 +1033,7 @@ function renderHistogramSvg(chart, options = {}) {
     return `<line class="deck-histogram-grid" x1="${geometry.margin.left}" y1="${round5(y)}" x2="${round5(geometry.width - geometry.margin.right)}" y2="${round5(y)}"></line>
   <text class="deck-histogram-tick" x="${geometry.margin.left - 14}" y="${round5(y + 5)}" text-anchor="end">${escapeHtml(formatNumber(tick))}</text>`;
   }).join("\n  ");
-  return `<svg class="deck-chart-histogram-svg" viewBox="0 0 ${geometry.width} ${geometry.height}" role="img" aria-label="${escapeAttr(chart.title || "Histogram chart")}">
+  return `<svg class="dsvg deck-chart-histogram-svg" data-deck-svgchart="histogram" viewBox="0 0 ${geometry.width} ${geometry.height}" role="img" aria-label="${escapeAttr(chart.title || "Histogram chart")}">
   <style>
     .deck-histogram-grid { stroke: ${color("grid")}; stroke-width: 1; }
     .deck-histogram-axis { stroke: ${color("axis")}; stroke-width: 1.4; }
@@ -1449,7 +1449,7 @@ function renderParetoSvg(chart, options = {}) {
   }).join("\n  ");
   const line = linePath(geometry.items.map((item) => ({ x: item.pointX, y: item.pointY })));
   const points = geometry.items.map((item) => `<circle class="deck-pareto-point" cx="${round8(item.pointX)}" cy="${round8(item.pointY)}" r="5"><title>${escapeHtml(item.label)} cumulative: ${round8(item.cumulativePercent)}%</title></circle>`).join("\n  ");
-  return `<svg class="deck-chart-pareto-svg" viewBox="0 0 ${geometry.width} ${geometry.height}" role="img" aria-label="${escapeAttr(chart.title || "Pareto chart")}">
+  return `<svg class="dsvg deck-chart-pareto-svg" data-deck-svgchart="pareto" viewBox="0 0 ${geometry.width} ${geometry.height}" role="img" aria-label="${escapeAttr(chart.title || "Pareto chart")}">
   <style>
     .deck-pareto-grid { stroke: ${color("grid")}; stroke-width: 1; }
     .deck-pareto-axis { stroke: ${color("axis")}; stroke-width: 1.4; }
@@ -1956,7 +1956,7 @@ function renderWaterfallSvg(chart, options = {}) {
     return `<line class="deck-waterfall-grid" x1="${geometry.margin.left}" y1="${round12(y)}" x2="${round12(geometry.width - geometry.margin.right)}" y2="${round12(y)}"></line>
   <text class="deck-waterfall-tick" x="${geometry.margin.left - 14}" y="${round12(y + 5)}" text-anchor="end">${escapeHtml(formatNumber(tick))}</text>`;
   }).join("\n  ");
-  return `<svg class="deck-chart-waterfall-svg" viewBox="0 0 ${geometry.width} ${geometry.height}" role="img" aria-label="${escapeAttr(chart.title || "Waterfall chart")}">
+  return `<svg class="dsvg deck-chart-waterfall-svg" data-deck-svgchart="waterfall" viewBox="0 0 ${geometry.width} ${geometry.height}" role="img" aria-label="${escapeAttr(chart.title || "Waterfall chart")}">
   <style>
     .deck-waterfall-grid { stroke: ${color("grid")}; stroke-width: 1; }
     .deck-waterfall-axis { stroke: ${color("axis")}; stroke-width: 1.4; }
@@ -2071,11 +2071,9 @@ export {
   funnelPalette,
   renderFunnelSvg,
   renderHistogramSvg,
-  histogramBins,
   renderImpactRadarSvg,
   renderJourneyPathSvg,
   renderParetoSvg,
-  paretoRows,
   renderRadarSvg,
   renderSankeySvg,
   treemapRects,

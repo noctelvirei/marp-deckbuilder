@@ -39,7 +39,7 @@ import {
   resolveResourceFile,
   resolveSurfaceResourceFile,
   treemapRects
-} from "./chunk-2CDAPONW.mjs";
+} from "./chunk-EC3BA3LQ.mjs";
 import {
   __commonJS,
   __require,

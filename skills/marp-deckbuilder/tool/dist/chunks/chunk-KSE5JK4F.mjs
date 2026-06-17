@@ -9,9 +9,7 @@ import {
   escapeAttr,
   escapeHtml,
   formatNumber,
-  histogramBins,
   normalizeResourceReference,
-  paretoRows,
   renderAreaChartSvg,
   renderBarChartSvg,
   renderBoxplotSvg,
@@ -32,7 +30,7 @@ import {
   renderWaterfallSvg,
   splitCsv,
   treemapRects
-} from "./chunk-2CDAPONW.mjs";
+} from "./chunk-EC3BA3LQ.mjs";
 import {
   __commonJS,
   __export,
@@ -47702,69 +47700,21 @@ function renderChartHtml(chart) {
 </figure>`;
 }
 function renderWaterfallChartHtml(chart) {
-  const steps = waterfallSteps(chart);
-  const chartConfig = {
-    type: "waterfall",
-    labels: steps.map((step) => step.label),
-    ranges: steps.map((step) => [step.start, step.end]),
-    deltas: steps.map((step) => step.delta),
-    series: chart.series || chart.title || "Change",
-    title: chart.title || ""
-  };
   return `<figure class="deck-chart deck-chart-waterfall">
   ${chart.title ? `<figcaption>${escapeHtml(chart.title)}</figcaption>` : ""}
-  <div class="deck-chart-js" data-deck-chart-type="waterfall">
-    <div class="deck-chart-js-frame">
-      <canvas class="deck-chart-js-canvas" data-deck-chartjs="waterfall" data-deck-chart-config="${escapeAttr(JSON.stringify(chartConfig))}" role="img" aria-label="${escapeAttr(chart.title || "Waterfall chart")}"></canvas>
-    </div>
-    <div class="deck-chart-js-fallback">
-      ${renderWaterfallSvg(chart, { cssVariables: true })}
-    </div>
-  </div>
+  ${renderWaterfallSvg(chart, { cssVariables: true })}
 </figure>`;
 }
 function renderBulletChartHtml(chart) {
-  const chartConfig = {
-    type: "bullet",
-    labels: chart.labels,
-    values: chart.values,
-    targets: chart.targets,
-    series: chart.series || chart.title || "Actual",
-    title: chart.title || ""
-  };
   return `<figure class="deck-chart deck-chart-bullet">
   ${chart.title ? `<figcaption>${escapeHtml(chart.title)}</figcaption>` : ""}
-  <div class="deck-chart-js" data-deck-chart-type="bullet">
-    <div class="deck-chart-js-frame">
-      <canvas class="deck-chart-js-canvas" data-deck-chartjs="bullet" data-deck-chart-config="${escapeAttr(JSON.stringify(chartConfig))}" role="img" aria-label="${escapeAttr(chart.title || "Bullet chart")}"></canvas>
-    </div>
-    <div class="deck-chart-js-fallback">
-      ${renderBulletSvg(chart, { cssVariables: true })}
-    </div>
-  </div>
+  ${renderBulletSvg(chart, { cssVariables: true })}
 </figure>`;
 }
 function renderHistogramChartHtml(chart) {
-  const bins = histogramBins(chart.values, chart.binCount);
-  const chartConfig = {
-    type: "histogram",
-    labels: bins.map((bin) => `${compactNumber(bin.start)}-${compactNumber(bin.end)}`),
-    values: bins.map((bin) => bin.count),
-    series: chart.series || chart.title || "Count",
-    title: chart.title || "",
-    xAxisLabel: chart.xAxisLabel || "Range",
-    yAxisLabel: chart.yAxisLabel || "Count"
-  };
   return `<figure class="deck-chart deck-chart-histogram">
   ${chart.title ? `<figcaption>${escapeHtml(chart.title)}</figcaption>` : ""}
-  <div class="deck-chart-js" data-deck-chart-type="histogram">
-    <div class="deck-chart-js-frame">
-      <canvas class="deck-chart-js-canvas" data-deck-chartjs="histogram" data-deck-chart-config="${escapeAttr(JSON.stringify(chartConfig))}" role="img" aria-label="${escapeAttr(chart.title || "Histogram chart")}"></canvas>
-    </div>
-    <div class="deck-chart-js-fallback">
-      ${renderHistogramSvg(chart, { cssVariables: true })}
-    </div>
-  </div>
+  ${renderHistogramSvg(chart, { cssVariables: true })}
 </figure>`;
 }
 function renderBoxplotChartHtml(chart) {
@@ -47774,32 +47724,9 @@ function renderBoxplotChartHtml(chart) {
 </figure>`;
 }
 function renderParetoChartHtml(chart) {
-  const rows = paretoRows(chart);
-  const total = rows.reduce((sum, row) => sum + row.value, 0);
-  let cumulative = 0;
-  const cumulativePercent = rows.map((row) => {
-    cumulative += row.value;
-    return total > 0 ? Math.round(cumulative / total * 1e3) / 10 : 0;
-  });
-  const chartConfig = {
-    type: "pareto",
-    labels: rows.map((row) => row.label),
-    values: rows.map((row) => row.value),
-    cumulativePercent,
-    series: chart.series || chart.title || "Value",
-    title: chart.title || "",
-    yAxisLabel: chart.yAxisLabel || chart.series || "Value"
-  };
   return `<figure class="deck-chart deck-chart-pareto">
   ${chart.title ? `<figcaption>${escapeHtml(chart.title)}</figcaption>` : ""}
-  <div class="deck-chart-js" data-deck-chart-type="pareto">
-    <div class="deck-chart-js-frame">
-      <canvas class="deck-chart-js-canvas" data-deck-chartjs="pareto" data-deck-chart-config="${escapeAttr(JSON.stringify(chartConfig))}" role="img" aria-label="${escapeAttr(chart.title || "Pareto chart")}"></canvas>
-    </div>
-    <div class="deck-chart-js-fallback">
-      ${renderParetoSvg(chart, { cssVariables: true })}
-    </div>
-  </div>
+  ${renderParetoSvg(chart, { cssVariables: true })}
 </figure>`;
 }
 function renderRadarChartHtml(chart) {
@@ -48044,27 +47971,6 @@ function hashString(value) {
     hash = (hash << 5) - hash + value.charCodeAt(index2) | 0;
   }
   return Math.abs(hash).toString(36);
-}
-function compactNumber(value) {
-  if (!Number.isFinite(value)) return String(value);
-  const rounded = Math.round(value * 100) / 100;
-  return Number.isInteger(rounded) ? String(rounded) : rounded.toFixed(2).replace(/0+$/, "").replace(/\.$/, "");
-}
-function waterfallSteps(chart) {
-  const steps = [];
-  let running = 0;
-  chart.values.forEach((delta, index2) => {
-    const start = running;
-    const end2 = start + delta;
-    running = end2;
-    steps.push({
-      label: chart.labels[index2] || "",
-      delta,
-      start,
-      end: end2
-    });
-  });
-  return steps;
 }
 function renderMetricTrendSvg(metricTrend) {
   const width = 520;
