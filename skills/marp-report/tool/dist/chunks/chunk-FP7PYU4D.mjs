@@ -8,7 +8,7 @@ import {
   buildMarpMarkdown,
   getAnimation,
   load
-} from "./chunk-SGWKGEWZ.mjs";
+} from "./chunk-TEH33OGP.mjs";
 import {
   require_node
 } from "./chunk-MGQWBMZO.mjs";
@@ -136397,6 +136397,10 @@ function svgChartCss() {
   .dsvg-dot { fill: #fff; stroke-width: 2.5; transition: r .12s ease; }
   .dsvg-hit { fill: transparent; }
   .dsvg-val { font-size: 11.5px; font-weight: 600; }
+  .dsvg-legend { font-size: 12.5px; font-weight: 600; dominant-baseline: middle; }
+  .dsvg-bar { cursor: default; }
+  .dsvg-bar > path, .dsvg-bar { transition: opacity .12s ease; }
+  .dsvg-bar:hover { opacity: 0.82; }
   .dsvg-marker { cursor: default; }
   .dsvg-marker:hover .dsvg-halo { opacity: 0.4; r: 11; }
   .dsvg-marker:hover .dsvg-dot { r: 6; }

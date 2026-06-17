@@ -47769,6 +47769,164 @@ function chartId(prefix = "svgc") {
   return `${prefix}-${__idSeq}`;
 }
 
+// src/charts-svg/bar.js
+var W = 760;
+var H = 380;
+function setup(options, hasLegend) {
+  const mode = options.mode === "light" ? "light" : "dark";
+  const theme = DEFAULT_THEME[mode];
+  const useVars = options.cssVariables !== false;
+  const tc = (name, fallback) => useVars ? `var(--deck-chart-${name}, ${fallback})` : fallback;
+  const palette = resolvePalette(options.brand, options.palette);
+  const margin = { top: hasLegend ? 40 : 22, right: 28, bottom: 46, left: 58 };
+  return { theme, tc, palette, margin };
+}
+function axes({ ticks, yFor, labels, bandCenter, margin, plotW, tc, theme, unit }) {
+  const grid = ticks.map((t) => {
+    const y = yFor(t);
+    return `<line class="dsvg-grid" x1="${round(margin.left)}" y1="${round(y)}" x2="${round(margin.left + plotW)}" y2="${round(y)}" style="stroke:${tc("grid", theme.grid)}"/>
+    <text class="dsvg-ytick" x="${round(margin.left - 12)}" y="${round(y + 4)}" text-anchor="end" style="fill:${tc("muted", theme.muted)}">${escapeHtml(formatNumber(t))}${escapeHtml(unit || "")}</text>`;
+  }).join("\n  ");
+  const xlabels = labels.map(
+    (label, i) => `<text class="dsvg-xtick" x="${round(bandCenter(i))}" y="${H - 18}" text-anchor="middle" style="fill:${tc("muted", theme.muted)}">${escapeHtml(label)}</text>`
+  ).join("\n  ");
+  return { grid, xlabels };
+}
+function legendRow(seriesNames, palette, margin) {
+  let x = margin.left;
+  const y = 18;
+  return seriesNames.map((name, i) => {
+    const swatch = `<rect x="${round(x)}" y="${y - 10}" width="12" height="12" rx="3" style="fill:${palette[i % palette.length]}"/>`;
+    const text3 = `<text class="dsvg-legend" x="${round(x + 17)}" y="${y}" style="fill:${"var(--deck-chart-heading, #fff)"}">${escapeHtml(name)}</text>`;
+    x += 17 + Math.max(48, name.length * 8.2) + 18;
+    return `${swatch}${text3}`;
+  }).join("\n  ");
+}
+function barRect(x, y, w, h, fill, tip) {
+  const r = Math.min(5, w / 2, h);
+  return `<g class="dsvg-bar" data-deck-tip="${escapeAttr(tip)}">
+      <path d="M ${round(x)} ${round(y + h)} L ${round(x)} ${round(y + r)} Q ${round(x)} ${round(y)} ${round(x + r)} ${round(y)} L ${round(x + w - r)} ${round(y)} Q ${round(x + w)} ${round(y)} ${round(x + w)} ${round(y + r)} L ${round(x + w)} ${round(y + h)} Z" style="fill:${fill}"/>
+    </g>`;
+}
+function svgWrap(kind, label, inner) {
+  return `<svg class="dsvg dsvg-bar" data-deck-svgchart="${kind}" viewBox="0 0 ${W} ${H}" preserveAspectRatio="xMidYMid meet" role="img" aria-label="${escapeAttr(label || "Bar chart")}">
+  ${inner}
+</svg>`;
+}
+function renderBarChartSvg(chart, options = {}) {
+  const { theme, tc, palette, margin } = setup(options, false);
+  const labels = chart.labels || [];
+  const values = (chart.values || []).map((v) => Number(v) || 0);
+  const [, hi] = niceExtent(0, Math.max(...values, 0), { includeZero: true, pad: 0.16 });
+  const plotW = W - margin.left - margin.right;
+  const plotH = H - margin.top - margin.bottom;
+  const baseY = margin.top + plotH;
+  const yFor = (v) => baseY - v / hi * plotH;
+  const band = plotW / Math.max(1, labels.length);
+  const barW = band * 0.6;
+  const bandCenter = (i) => margin.left + band * i + band / 2;
+  const ticks = niceTicks(0, hi, 5);
+  const accent = normHex(options.accentColor, palette[0] || SVG_PALETTE[0]);
+  const bars = values.map((v, i) => {
+    const x = bandCenter(i) - barW / 2;
+    const y = yFor(v);
+    const h = baseY - y;
+    const tip = `${labels[i] || ""}: ${formatNumber(v)}${chart.unit || ""}`;
+    const rect = barRect(x, y, barW, h, accent, tip);
+    const valLabel = `<text class="dsvg-val" x="${round(bandCenter(i))}" y="${round(y - 8)}" text-anchor="middle" style="fill:${tc("value", theme.valueLabel)}">${escapeHtml(formatNumber(v))}${escapeHtml(chart.unit || "")}</text>`;
+    return rect + "\n  " + valLabel;
+  }).join("\n  ");
+  const { grid, xlabels } = axes({ ticks, yFor, labels, bandCenter, margin, plotW, tc, theme, unit: chart.unit });
+  return svgWrap(
+    "bar",
+    chart.title || "Bar chart",
+    `${grid}
+  <line class="dsvg-axis" x1="${round(margin.left)}" y1="${round(baseY)}" x2="${round(margin.left + plotW)}" y2="${round(baseY)}" style="stroke:${tc("axis", theme.axis)}"/>
+  ${bars}
+  ${xlabels}`
+  );
+}
+function renderGroupedBarChartSvg(chart, options = {}) {
+  const { theme, tc, palette, margin } = setup(options, true);
+  const labels = chart.labels || [];
+  const seriesNames = chart.seriesNames || [];
+  const matrix = chart.matrix || [];
+  const allVals = matrix.flat().map((v) => Number(v) || 0);
+  const [, hi] = niceExtent(0, Math.max(...allVals, 0), { includeZero: true, pad: 0.16 });
+  const plotW = W - margin.left - margin.right;
+  const plotH = H - margin.top - margin.bottom;
+  const baseY = margin.top + plotH;
+  const yFor = (v) => baseY - v / hi * plotH;
+  const band = plotW / Math.max(1, labels.length);
+  const bandCenter = (i) => margin.left + band * i + band / 2;
+  const groupW = band * 0.74;
+  const n = Math.max(1, seriesNames.length);
+  const barW = groupW / n;
+  const ticks = niceTicks(0, hi, 5);
+  const bars = labels.map((label, li) => {
+    const x0 = bandCenter(li) - groupW / 2;
+    return seriesNames.map((name, si) => {
+      const v = Number(matrix[si]?.[li]) || 0;
+      const x = x0 + si * barW;
+      const y = yFor(v);
+      const h = baseY - y;
+      const tip = `${name} \xB7 ${label}: ${formatNumber(v)}${chart.unit || ""}`;
+      return barRect(x + barW * 0.08, y, barW * 0.84, h, palette[si % palette.length], tip);
+    }).join("\n  ");
+  }).join("\n  ");
+  const { grid, xlabels } = axes({ ticks, yFor, labels, bandCenter, margin, plotW, tc, theme, unit: chart.unit });
+  return svgWrap(
+    "grouped-bar",
+    chart.title || "Grouped bar chart",
+    `${legendRow(seriesNames, palette, margin)}
+  ${grid}
+  <line class="dsvg-axis" x1="${round(margin.left)}" y1="${round(baseY)}" x2="${round(margin.left + plotW)}" y2="${round(baseY)}" style="stroke:${tc("axis", theme.axis)}"/>
+  ${bars}
+  ${xlabels}`
+  );
+}
+function renderStackedBarChartSvg(chart, options = {}) {
+  const { theme, tc, palette, margin } = setup(options, true);
+  const labels = chart.labels || [];
+  const seriesNames = chart.seriesNames || [];
+  const matrix = chart.matrix || [];
+  const totals = labels.map((_, li) => seriesNames.reduce((s, _n, si) => s + (Number(matrix[si]?.[li]) || 0), 0));
+  const [, hi] = niceExtent(0, Math.max(...totals, 0), { includeZero: true, pad: 0.16 });
+  const plotW = W - margin.left - margin.right;
+  const plotH = H - margin.top - margin.bottom;
+  const baseY = margin.top + plotH;
+  const yFor = (v) => baseY - v / hi * plotH;
+  const band = plotW / Math.max(1, labels.length);
+  const bandCenter = (i) => margin.left + band * i + band / 2;
+  const barW = band * 0.6;
+  const ticks = niceTicks(0, hi, 5);
+  const bars = labels.map((label, li) => {
+    const x = bandCenter(li) - barW / 2;
+    let cursor = 0;
+    const segs = seriesNames.map((name, si) => {
+      const v = Number(matrix[si]?.[li]) || 0;
+      if (v <= 0) return "";
+      const yTop = yFor(cursor + v);
+      const yBottom = yFor(cursor);
+      cursor += v;
+      const tip = `${name} \xB7 ${label}: ${formatNumber(v)}${chart.unit || ""}`;
+      return `<rect class="dsvg-bar" data-deck-tip="${escapeAttr(tip)}" x="${round(x)}" y="${round(yTop)}" width="${round(barW)}" height="${round(yBottom - yTop)}" style="fill:${palette[si % palette.length]}"/>`;
+    }).join("\n  ");
+    const totalLabel = `<text class="dsvg-val" x="${round(bandCenter(li))}" y="${round(yFor(totals[li]) - 8)}" text-anchor="middle" style="fill:${tc("value", theme.valueLabel)}">${escapeHtml(formatNumber(totals[li]))}${escapeHtml(chart.unit || "")}</text>`;
+    return segs + "\n  " + totalLabel;
+  }).join("\n  ");
+  const { grid, xlabels } = axes({ ticks, yFor, labels, bandCenter, margin, plotW, tc, theme, unit: chart.unit });
+  return svgWrap(
+    "stacked-bar",
+    chart.title || "Stacked bar chart",
+    `${legendRow(seriesNames, palette, margin)}
+  ${grid}
+  <line class="dsvg-axis" x1="${round(margin.left)}" y1="${round(baseY)}" x2="${round(margin.left + plotW)}" y2="${round(baseY)}" style="stroke:${tc("axis", theme.axis)}"/>
+  ${bars}
+  ${xlabels}`
+  );
+}
+
 // src/charts-svg/line.js
 function renderLineChartSvg(chart, options = {}) {
   const mode = options.mode === "light" ? "light" : "dark";
@@ -47851,29 +48009,9 @@ function renderChartHtml(chart) {
   if (chart.chartType === "sankey") return renderSankeyChartHtml(chart);
   if (chart.chartType === "waterfall") return renderWaterfallChartHtml(chart);
   if (chart.chartType === "bullet") return renderBulletChartHtml(chart);
-  const chartConfig = {
-    type: "bar",
-    labels: chart.labels,
-    values: chart.values,
-    series: chart.series || chart.title || "Series 1",
-    title: chart.title || ""
-  };
-  const max = Math.max(...chart.values, 1);
-  const rows = chart.labels.map((label, index2) => {
-    const value = chart.values[index2] ?? 0;
-    const width = Math.max(3, Math.round(value / max * 100));
-    return `<div class="deck-chart-row">
-  <span class="deck-chart-label">${escapeHtml(label)}</span>
-  <span class="deck-chart-track"><span class="deck-chart-fill" style="width:${width}%"></span></span>
-  <strong>${escapeHtml(formatNumber(value))}</strong>
-</div>`;
-  }).join("\n");
-  return `<figure class="deck-chart deck-chart-${chart.chartType} deck-chart-js" data-deck-chart-type="bar">
+  return `<figure class="deck-chart deck-chart-${escapeAttr(chart.chartType)}">
   ${chart.title ? `<figcaption>${escapeHtml(chart.title)}</figcaption>` : ""}
-  <div class="deck-chart-js-frame">
-    <canvas class="deck-chart-js-canvas" data-deck-chartjs="bar" data-deck-chart-config="${escapeAttr(JSON.stringify(chartConfig))}" role="img" aria-label="${escapeAttr(chart.title || "Bar chart")}"></canvas>
-  </div>
-  <div class="deck-chart-rows deck-chart-js-fallback">${rows}</div>
+  ${renderBarChartSvg({ ...chart, title: "" }, { cssVariables: true })}
 </figure>`;
 }
 function renderWaterfallChartHtml(chart) {
@@ -48226,92 +48364,15 @@ function renderDoughnutChartHtml(chart) {
 </figure>`;
 }
 function renderGroupedBarChartHtml(chart) {
-  const chartConfig = {
-    type: "grouped-bar",
-    labels: chart.labels,
-    seriesNames: chart.seriesNames,
-    matrix: chart.matrix,
-    title: chart.title || ""
-  };
-  const values = chart.matrix.flat();
-  const max = Math.max(...values, 1);
-  const legend = chart.seriesNames.map(
-    (series, index2) => `<span class="deck-chart-legend-item deck-chart-series-${index2 % 6}">
-  <span class="deck-chart-legend-swatch"></span>${escapeHtml(series)}
-</span>`
-  ).join("\n");
-  const rows = chart.labels.map((label, labelIndex) => {
-    const bars = chart.seriesNames.map((series, seriesIndex) => {
-      const value = chart.matrix[seriesIndex][labelIndex] ?? 0;
-      const width = Math.max(3, Math.round(value / max * 100));
-      return `<div class="deck-chart-grouped-bar-row deck-chart-series-${seriesIndex % 6}">
-  <span class="deck-chart-series-label">${escapeHtml(series)}</span>
-  <span class="deck-chart-track"><span class="deck-chart-fill" style="width:${width}%"></span></span>
-  <strong>${escapeHtml(formatNumber(value))}</strong>
-</div>`;
-    }).join("\n");
-    return `<div class="deck-chart-grouped-row">
-  <span class="deck-chart-label">${escapeHtml(label)}</span>
-  <div class="deck-chart-grouped-bars">${bars}</div>
-</div>`;
-  }).join("\n");
   return `<figure class="deck-chart deck-chart-grouped-bar">
   ${chart.title ? `<figcaption>${escapeHtml(chart.title)}</figcaption>` : ""}
-  <div class="deck-chart-js" data-deck-chart-type="grouped-bar">
-    <div class="deck-chart-js-frame">
-      <canvas class="deck-chart-js-canvas" data-deck-chartjs="grouped-bar" data-deck-chart-config="${escapeAttr(JSON.stringify(chartConfig))}" role="img" aria-label="${escapeAttr(chart.title || "Grouped bar chart")}"></canvas>
-    </div>
-    <div class="deck-chart-js-fallback">
-      <div class="deck-chart-legend">${legend}</div>
-      <div class="deck-chart-grouped-rows">${rows}</div>
-    </div>
-  </div>
+  ${renderGroupedBarChartSvg({ ...chart, title: "" }, { cssVariables: true })}
 </figure>`;
 }
 function renderStackedBarChartHtml(chart) {
-  const chartConfig = {
-    type: "stacked-bar",
-    labels: chart.labels,
-    seriesNames: chart.seriesNames,
-    matrix: chart.matrix,
-    title: chart.title || ""
-  };
-  const totals = chart.labels.map(
-    (_, labelIndex) => chart.matrix.reduce((sum, row) => sum + (row[labelIndex] ?? 0), 0)
-  );
-  const max = Math.max(...totals, 1);
-  const legend = chart.seriesNames.map(
-    (series, index2) => `<span class="deck-chart-legend-item deck-chart-series-${index2 % 6}">
-  <span class="deck-chart-legend-swatch"></span>${escapeHtml(series)}
-</span>`
-  ).join("\n");
-  const rows = chart.labels.map((label, labelIndex) => {
-    const total = totals[labelIndex];
-    const stackWidth = Math.max(3, Math.round(total / max * 100));
-    const segments = chart.seriesNames.map((_, seriesIndex) => {
-      const value = chart.matrix[seriesIndex][labelIndex] ?? 0;
-      const width = total > 0 ? Math.max(0, value / total * 100) : 0;
-      return `<span class="deck-chart-stacked-segment deck-chart-series-${seriesIndex % 6}" style="width:${width}%"></span>`;
-    }).join("");
-    return `<div class="deck-chart-stacked-row">
-  <span class="deck-chart-label">${escapeHtml(label)}</span>
-  <span class="deck-chart-stacked-track">
-    <span class="deck-chart-stacked-fill" style="width:${stackWidth}%">${segments}</span>
-  </span>
-  <strong>${escapeHtml(formatNumber(total))}</strong>
-</div>`;
-  }).join("\n");
   return `<figure class="deck-chart deck-chart-stacked-bar">
   ${chart.title ? `<figcaption>${escapeHtml(chart.title)}</figcaption>` : ""}
-  <div class="deck-chart-js" data-deck-chart-type="stacked-bar">
-    <div class="deck-chart-js-frame">
-      <canvas class="deck-chart-js-canvas" data-deck-chartjs="stacked-bar" data-deck-chart-config="${escapeAttr(JSON.stringify(chartConfig))}" role="img" aria-label="${escapeAttr(chart.title || "Stacked bar chart")}"></canvas>
-    </div>
-    <div class="deck-chart-js-fallback">
-      <div class="deck-chart-legend">${legend}</div>
-      <div class="deck-chart-stacked-rows">${rows}</div>
-    </div>
-  </div>
+  ${renderStackedBarChartSvg({ ...chart, title: "" }, { cssVariables: true })}
 </figure>`;
 }
 function renderMetricTrendHtml(metricTrend) {

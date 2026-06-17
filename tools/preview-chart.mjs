@@ -6,6 +6,7 @@
 //
 import { writeFileSync } from 'node:fs'
 import { renderLineChartSvg, renderAreaChartSvg } from '../src/charts-svg/line.js'
+import { renderBarChartSvg, renderGroupedBarChartSvg, renderStackedBarChartSvg } from '../src/charts-svg/bar.js'
 import { svgChartCss } from '../src/charts-svg/styles.js'
 import { svgChartHoverScript } from '../src/charts-svg/hover.js'
 
@@ -21,10 +22,17 @@ function tile(title, svg) {
   return `<div class="tile"><h3>${title}</h3><div class="card">${svg}</div></div>`
 }
 
+const channels = { title: 'Completion time by channel', labels: ['Digital', 'Branch', 'Contact centre', 'Paper'], values: [2.1, 3.8, 4.6, 5.2], unit: 'd' }
+const grouped = { title: 'Channel mix by quarter', labels: ['Q1', 'Q2', 'Q3', 'Q4'], seriesNames: ['Digital', 'Branch', 'Paper'], matrix: [[40, 46, 52, 58], [30, 28, 26, 24], [30, 26, 22, 18]] }
+const stacked = { title: 'Volume by channel', labels: ['Q1', 'Q2', 'Q3', 'Q4'], seriesNames: ['Digital', 'Branch', 'Paper'], matrix: [[120, 160, 190, 240], [80, 70, 65, 60], [40, 35, 30, 25]] }
+
 const darkTiles = [
   tile('line — dark', renderLineChartSvg(completion, { mode: 'dark' })),
   tile('area — dark', renderAreaChartSvg(volume, { mode: 'dark' })),
   tile('area w/ negatives — dark', renderAreaChartSvg(swing, { mode: 'dark' })),
+  tile('bar — dark', renderBarChartSvg(channels, { mode: 'dark' })),
+  tile('grouped-bar — dark', renderGroupedBarChartSvg(grouped, { mode: 'dark' })),
+  tile('stacked-bar — dark', renderStackedBarChartSvg(stacked, { mode: 'dark' })),
 ].join('\n')
 
 const lightTiles = [

@@ -1,4 +1,5 @@
 import { escapeAttr, escapeHtml, formatNumber } from './utils.js'
+import { renderBarChartSvg, renderGroupedBarChartSvg, renderStackedBarChartSvg } from '../charts-svg/bar.js'
 import { renderAreaChartSvg, renderLineChartSvg } from '../charts-svg/line.js'
 import { renderBoxplotSvg } from './boxplot.js'
 import { renderBulletSvg } from './bullet.js'
@@ -30,32 +31,9 @@ export function renderChartHtml(chart) {
   if (chart.chartType === 'waterfall') return renderWaterfallChartHtml(chart)
   if (chart.chartType === 'bullet') return renderBulletChartHtml(chart)
 
-  const chartConfig = {
-    type: 'bar',
-    labels: chart.labels,
-    values: chart.values,
-    series: chart.series || chart.title || 'Series 1',
-    title: chart.title || '',
-  }
-  const max = Math.max(...chart.values, 1)
-  const rows = chart.labels
-    .map((label, index) => {
-      const value = chart.values[index] ?? 0
-      const width = Math.max(3, Math.round((value / max) * 100))
-      return `<div class="deck-chart-row">
-  <span class="deck-chart-label">${escapeHtml(label)}</span>
-  <span class="deck-chart-track"><span class="deck-chart-fill" style="width:${width}%"></span></span>
-  <strong>${escapeHtml(formatNumber(value))}</strong>
-</div>`
-    })
-    .join('\n')
-
-  return `<figure class="deck-chart deck-chart-${chart.chartType} deck-chart-js" data-deck-chart-type="bar">
+  return `<figure class="deck-chart deck-chart-${escapeAttr(chart.chartType)}">
   ${chart.title ? `<figcaption>${escapeHtml(chart.title)}</figcaption>` : ''}
-  <div class="deck-chart-js-frame">
-    <canvas class="deck-chart-js-canvas" data-deck-chartjs="bar" data-deck-chart-config="${escapeAttr(JSON.stringify(chartConfig))}" role="img" aria-label="${escapeAttr(chart.title || 'Bar chart')}"></canvas>
-  </div>
-  <div class="deck-chart-rows deck-chart-js-fallback">${rows}</div>
+  ${renderBarChartSvg({ ...chart, title: '' }, { cssVariables: true })}
 </figure>`
 }
 
@@ -458,109 +436,16 @@ function renderDoughnutChartHtml(chart) {
 }
 
 function renderGroupedBarChartHtml(chart) {
-  const chartConfig = {
-    type: 'grouped-bar',
-    labels: chart.labels,
-    seriesNames: chart.seriesNames,
-    matrix: chart.matrix,
-    title: chart.title || '',
-  }
-  const values = chart.matrix.flat()
-  const max = Math.max(...values, 1)
-  const legend = chart.seriesNames
-    .map(
-      (series, index) => `<span class="deck-chart-legend-item deck-chart-series-${index % 6}">
-  <span class="deck-chart-legend-swatch"></span>${escapeHtml(series)}
-</span>`,
-    )
-    .join('\n')
-  const rows = chart.labels
-    .map((label, labelIndex) => {
-      const bars = chart.seriesNames
-        .map((series, seriesIndex) => {
-          const value = chart.matrix[seriesIndex][labelIndex] ?? 0
-          const width = Math.max(3, Math.round((value / max) * 100))
-          return `<div class="deck-chart-grouped-bar-row deck-chart-series-${seriesIndex % 6}">
-  <span class="deck-chart-series-label">${escapeHtml(series)}</span>
-  <span class="deck-chart-track"><span class="deck-chart-fill" style="width:${width}%"></span></span>
-  <strong>${escapeHtml(formatNumber(value))}</strong>
-</div>`
-        })
-        .join('\n')
-
-      return `<div class="deck-chart-grouped-row">
-  <span class="deck-chart-label">${escapeHtml(label)}</span>
-  <div class="deck-chart-grouped-bars">${bars}</div>
-</div>`
-    })
-    .join('\n')
-
   return `<figure class="deck-chart deck-chart-grouped-bar">
   ${chart.title ? `<figcaption>${escapeHtml(chart.title)}</figcaption>` : ''}
-  <div class="deck-chart-js" data-deck-chart-type="grouped-bar">
-    <div class="deck-chart-js-frame">
-      <canvas class="deck-chart-js-canvas" data-deck-chartjs="grouped-bar" data-deck-chart-config="${escapeAttr(JSON.stringify(chartConfig))}" role="img" aria-label="${escapeAttr(chart.title || 'Grouped bar chart')}"></canvas>
-    </div>
-    <div class="deck-chart-js-fallback">
-      <div class="deck-chart-legend">${legend}</div>
-      <div class="deck-chart-grouped-rows">${rows}</div>
-    </div>
-  </div>
+  ${renderGroupedBarChartSvg({ ...chart, title: '' }, { cssVariables: true })}
 </figure>`
 }
 
 function renderStackedBarChartHtml(chart) {
-  const chartConfig = {
-    type: 'stacked-bar',
-    labels: chart.labels,
-    seriesNames: chart.seriesNames,
-    matrix: chart.matrix,
-    title: chart.title || '',
-  }
-  const totals = chart.labels.map((_, labelIndex) =>
-    chart.matrix.reduce((sum, row) => sum + (row[labelIndex] ?? 0), 0),
-  )
-  const max = Math.max(...totals, 1)
-  const legend = chart.seriesNames
-    .map(
-      (series, index) => `<span class="deck-chart-legend-item deck-chart-series-${index % 6}">
-  <span class="deck-chart-legend-swatch"></span>${escapeHtml(series)}
-</span>`,
-    )
-    .join('\n')
-  const rows = chart.labels
-    .map((label, labelIndex) => {
-      const total = totals[labelIndex]
-      const stackWidth = Math.max(3, Math.round((total / max) * 100))
-      const segments = chart.seriesNames
-        .map((_, seriesIndex) => {
-          const value = chart.matrix[seriesIndex][labelIndex] ?? 0
-          const width = total > 0 ? Math.max(0, (value / total) * 100) : 0
-          return `<span class="deck-chart-stacked-segment deck-chart-series-${seriesIndex % 6}" style="width:${width}%"></span>`
-        })
-        .join('')
-
-      return `<div class="deck-chart-stacked-row">
-  <span class="deck-chart-label">${escapeHtml(label)}</span>
-  <span class="deck-chart-stacked-track">
-    <span class="deck-chart-stacked-fill" style="width:${stackWidth}%">${segments}</span>
-  </span>
-  <strong>${escapeHtml(formatNumber(total))}</strong>
-</div>`
-    })
-    .join('\n')
-
   return `<figure class="deck-chart deck-chart-stacked-bar">
   ${chart.title ? `<figcaption>${escapeHtml(chart.title)}</figcaption>` : ''}
-  <div class="deck-chart-js" data-deck-chart-type="stacked-bar">
-    <div class="deck-chart-js-frame">
-      <canvas class="deck-chart-js-canvas" data-deck-chartjs="stacked-bar" data-deck-chart-config="${escapeAttr(JSON.stringify(chartConfig))}" role="img" aria-label="${escapeAttr(chart.title || 'Stacked bar chart')}"></canvas>
-    </div>
-    <div class="deck-chart-js-fallback">
-      <div class="deck-chart-legend">${legend}</div>
-      <div class="deck-chart-stacked-rows">${rows}</div>
-    </div>
-  </div>
+  ${renderStackedBarChartSvg({ ...chart, title: '' }, { cssVariables: true })}
 </figure>`
 }
 
