@@ -47992,6 +47992,72 @@ function renderAreaChartSvg(chart, options = {}) {
   return renderLineChartSvg(chart, { ...options, area: true });
 }
 
+// src/charts-svg/point.js
+var W2 = 760;
+var H2 = 350;
+function renderPointSvg(chart, options = {}) {
+  const bubble = options.bubble === true;
+  const mode = options.mode === "light" ? "light" : "dark";
+  const theme = DEFAULT_THEME[mode];
+  const useVars = options.cssVariables !== false;
+  const tc = (name, fallback) => useVars ? `var(--deck-chart-${name}, ${fallback})` : fallback;
+  const palette = resolvePalette(options.brand, options.palette);
+  const margin = { top: 26, right: 28, bottom: 56, left: 64 };
+  const pts = (chart.points || []).filter((p) => Number.isFinite(Number(p.x)) && Number.isFinite(Number(p.y)));
+  const xs = pts.map((p) => Number(p.x));
+  const ys = pts.map((p) => Number(p.y));
+  const [minX, maxX] = niceExtent(Math.min(...xs, 0), Math.max(...xs, 1), { pad: 0.1 });
+  const [minY, maxY] = niceExtent(Math.min(...ys, 0), Math.max(...ys, 1), { pad: 0.1 });
+  const plotW = W2 - margin.left - margin.right;
+  const plotH = H2 - margin.top - margin.bottom;
+  const xFor = (v) => margin.left + (v - minX) / (maxX - minX) * plotW;
+  const yFor = (v) => margin.top + plotH - (v - minY) / (maxY - minY) * plotH;
+  const maxR = Math.max(...pts.map((p) => Number(p.r) || 0), 1);
+  const xTicks = niceTicks(minX, maxX, 5);
+  const yTicks = niceTicks(minY, maxY, 5);
+  const grid = [
+    ...xTicks.map((t) => {
+      const x = xFor(t);
+      return `<line class="dsvg-grid" x1="${round(x)}" y1="${margin.top}" x2="${round(x)}" y2="${round(margin.top + plotH)}" style="stroke:${tc("grid", theme.grid)}"/>
+    <text class="dsvg-xtick" x="${round(x)}" y="${H2 - 30}" text-anchor="middle" style="fill:${tc("muted", theme.muted)}">${escapeHtml(formatNumber(t))}</text>`;
+    }),
+    ...yTicks.map((t) => {
+      const y = yFor(t);
+      return `<line class="dsvg-grid" x1="${margin.left}" y1="${round(y)}" x2="${round(margin.left + plotW)}" y2="${round(y)}" style="stroke:${tc("grid", theme.grid)}"/>
+    <text class="dsvg-ytick" x="${round(margin.left - 12)}" y="${round(y + 4)}" text-anchor="end" style="fill:${tc("muted", theme.muted)}">${escapeHtml(formatNumber(t))}</text>`;
+    })
+  ].join("\n  ");
+  const dots = pts.map((p, i) => {
+    const x = xFor(Number(p.x));
+    const y = yFor(Number(p.y));
+    const color = normHex(palette[i % palette.length], SVG_PALETTE[i % SVG_PALETTE.length]);
+    const r = bubble ? Math.max(6, Math.min(26, 6 + (Number(p.r) || 0) / maxR * 20)) : 7;
+    const label = p.label || `${formatNumber(p.x)}, ${formatNumber(p.y)}`;
+    const tip = bubble ? `${label}: ${formatNumber(p.x)}, ${formatNumber(p.y)} \xB7 size ${formatNumber(p.r)}` : `${label}: ${formatNumber(p.x)}, ${formatNumber(p.y)}`;
+    const text3 = !bubble && p.label ? `<text class="dsvg-point-label" x="${round(x + r + 4)}" y="${round(y - r - 2)}" style="fill:${tc("value", theme.valueLabel)}">${escapeHtml(p.label)}</text>` : "";
+    return `<g class="dsvg-point" data-deck-tip="${escapeAttr(tip)}">
+      <circle cx="${round(x)}" cy="${round(y)}" r="${round(r)}" style="fill:${color}${bubble ? "cc" : "ee"};stroke:${color}"/>
+      ${text3}
+    </g>`;
+  }).join("\n  ");
+  const xAxisLabel = chart.xAxisLabel || "X";
+  const yAxisLabel = chart.yAxisLabel || "Y";
+  return `<svg class="dsvg dsvg-point" data-deck-svgchart="${bubble ? "bubble" : "scatter"}" viewBox="0 0 ${W2} ${H2}" preserveAspectRatio="xMidYMid meet" role="img" aria-label="${escapeAttr(chart.title || (bubble ? "Bubble chart" : "Scatter chart"))}">
+  ${grid}
+  <line class="dsvg-axis" x1="${margin.left}" y1="${round(margin.top + plotH)}" x2="${round(margin.left + plotW)}" y2="${round(margin.top + plotH)}" style="stroke:${tc("axis", theme.axis)}"/>
+  <line class="dsvg-axis" x1="${margin.left}" y1="${margin.top}" x2="${margin.left}" y2="${round(margin.top + plotH)}" style="stroke:${tc("axis", theme.axis)}"/>
+  ${dots}
+  <text class="dsvg-axislabel" x="${round(margin.left + plotW / 2)}" y="${H2 - 6}" text-anchor="middle" style="fill:${tc("muted", theme.muted)}">${escapeHtml(xAxisLabel)}</text>
+  <text class="dsvg-axislabel" transform="translate(16 ${round(margin.top + plotH / 2)}) rotate(-90)" text-anchor="middle" style="fill:${tc("muted", theme.muted)}">${escapeHtml(yAxisLabel)}</text>
+</svg>`;
+}
+function renderScatterChartSvg(chart, options = {}) {
+  return renderPointSvg(chart, { ...options, bubble: false });
+}
+function renderBubbleChartSvg(chart, options = {}) {
+  return renderPointSvg(chart, { ...options, bubble: true });
+}
+
 // src/components/renderers.js
 var chartPalette = ["#0f82f5", "#4cc9f0", "#5d4ee8", "#ff9f51", "#2fc27d", "#ff5c7a"];
 function renderChartHtml(chart) {
@@ -48231,95 +48297,16 @@ function renderFunnelHtml(funnel) {
 </figure>`;
 }
 function renderScatterChartHtml(chart) {
-  return renderPointChartHtml(chart, { type: "scatter" });
-}
-function renderBubbleChartHtml(chart) {
-  return renderPointChartHtml(chart, { type: "bubble" });
-}
-function renderPointChartHtml(chart, options = {}) {
-  const isBubble = options.type === "bubble";
-  const chartConfig = {
-    type: options.type || "scatter",
-    points: chart.points,
-    series: chart.series || chart.title || "Series 1",
-    title: chart.title || "",
-    xAxisLabel: chart.xAxisLabel || "X",
-    yAxisLabel: chart.yAxisLabel || "Y"
-  };
-  const width = 760;
-  const height = 350;
-  const margin = { top: 28, right: 28, bottom: 58, left: 64 };
-  const xs = chart.points.map((point) => point.x);
-  const ys = chart.points.map((point) => point.y);
-  const [minX, maxX] = expandExtent(Math.min(...xs), Math.max(...xs));
-  const [minY, maxY] = expandExtent(Math.min(...ys), Math.max(...ys));
-  const plotWidth = width - margin.left - margin.right;
-  const plotHeight = height - margin.top - margin.bottom;
-  const xFor = (value) => margin.left + (value - minX) / (maxX - minX) * plotWidth;
-  const yFor = (value) => margin.top + plotHeight - (value - minY) / (maxY - minY) * plotHeight;
-  const xTicks = tickValues(minX, maxX);
-  const yTicks = tickValues(minY, maxY);
-  const maxRadius = Math.max(...chart.points.map((point) => point.r || 0), 1);
-  const grid = [
-    ...xTicks.map((tick) => {
-      const x = xFor(tick);
-      return `<line class="deck-chart-scatter-grid" x1="${x.toFixed(2)}" y1="${margin.top}" x2="${x.toFixed(2)}" y2="${margin.top + plotHeight}"></line>
-<text class="deck-chart-scatter-tick" x="${x.toFixed(2)}" y="${height - 28}" text-anchor="middle">${escapeHtml(formatNumber(tick))}</text>`;
-    }),
-    ...yTicks.map((tick) => {
-      const y = yFor(tick);
-      return `<line class="deck-chart-scatter-grid" x1="${margin.left}" y1="${y.toFixed(2)}" x2="${margin.left + plotWidth}" y2="${y.toFixed(2)}"></line>
-<text class="deck-chart-scatter-tick" x="${margin.left - 14}" y="${(y + 5).toFixed(2)}" text-anchor="end">${escapeHtml(formatNumber(tick))}</text>`;
-    })
-  ].join("\n");
-  const points = chart.points.map((point, index2) => {
-    const x = xFor(point.x);
-    const y = yFor(point.y);
-    const label = point.label || `${formatNumber(point.x)}, ${formatNumber(point.y)}`;
-    const radius = isBubble ? Math.max(6, Math.min(25, 6 + (point.r || 0) / maxRadius * 19)) : 8;
-    const pointClass = isBubble ? "deck-chart-bubble-point" : "deck-chart-scatter-point";
-    const title = isBubble ? `${label}: ${formatNumber(point.x)}, ${formatNumber(point.y)}, size ${formatNumber(point.r)}` : `${label}: ${formatNumber(point.x)}, ${formatNumber(point.y)}`;
-    return `<g class="${pointClass} deck-chart-series-${index2 % 6}" transform="translate(${x.toFixed(2)} ${y.toFixed(2)})">
-  <circle r="${radius.toFixed(2)}"><title>${escapeHtml(title)}</title></circle>
-  ${point.label ? `<text x="12" y="-10">${escapeHtml(point.label)}</text>` : ""}
-</g>`;
-  }).join("\n");
-  const xAxisLabel = chart.xAxisLabel || "X";
-  const yAxisLabel = chart.yAxisLabel || "Y";
-  const chartClass = isBubble ? "deck-chart-bubble" : "deck-chart-scatter";
-  const svgClass = isBubble ? "deck-chart-bubble-svg" : "deck-chart-scatter-svg";
-  const ariaLabel = isBubble ? "Bubble chart" : "Scatter chart";
-  return `<figure class="deck-chart ${chartClass}">
+  return `<figure class="deck-chart deck-chart-scatter">
   ${chart.title ? `<figcaption>${escapeHtml(chart.title)}</figcaption>` : ""}
-  <div class="deck-chart-js" data-deck-chart-type="${escapeAttr(options.type || "scatter")}">
-    <div class="deck-chart-js-frame">
-      <canvas class="deck-chart-js-canvas" data-deck-chartjs="${escapeAttr(options.type || "scatter")}" data-deck-chart-config="${escapeAttr(JSON.stringify(chartConfig))}" role="img" aria-label="${escapeAttr(chart.title || ariaLabel)}"></canvas>
-    </div>
-    <div class="deck-chart-js-fallback">
-      <svg class="${svgClass}" viewBox="0 0 ${width} ${height}" role="img" aria-label="${escapeAttr(chart.title || ariaLabel)}">
-        ${grid}
-        <line class="deck-chart-scatter-axis" x1="${margin.left}" y1="${margin.top + plotHeight}" x2="${margin.left + plotWidth}" y2="${margin.top + plotHeight}"></line>
-        <line class="deck-chart-scatter-axis" x1="${margin.left}" y1="${margin.top}" x2="${margin.left}" y2="${margin.top + plotHeight}"></line>
-        ${points}
-        <text class="deck-chart-scatter-axis-label" x="${margin.left + plotWidth / 2}" y="${height - 4}" text-anchor="middle">${escapeHtml(xAxisLabel)}</text>
-        <text class="deck-chart-scatter-axis-label" transform="translate(18 ${margin.top + plotHeight / 2}) rotate(-90)" text-anchor="middle">${escapeHtml(yAxisLabel)}</text>
-      </svg>
-    </div>
-  </div>
+  ${renderScatterChartSvg({ ...chart, title: "" }, { cssVariables: true })}
 </figure>`;
 }
-function expandExtent(min, max) {
-  if (min === max) return [min - 1, max + 1];
-  const padding = (max - min) * 0.12;
-  return [min - padding, max + padding];
-}
-function tickValues(min, max) {
-  const ticks = [];
-  const count = 4;
-  for (let index2 = 0; index2 <= count; index2 += 1) {
-    ticks.push(min + (max - min) / count * index2);
-  }
-  return ticks;
+function renderBubbleChartHtml(chart) {
+  return `<figure class="deck-chart deck-chart-bubble">
+  ${chart.title ? `<figcaption>${escapeHtml(chart.title)}</figcaption>` : ""}
+  ${renderBubbleChartSvg({ ...chart, title: "" }, { cssVariables: true })}
+</figure>`;
 }
 function renderDoughnutChartHtml(chart) {
   const chartConfig = {

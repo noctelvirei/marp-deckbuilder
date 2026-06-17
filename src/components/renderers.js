@@ -1,6 +1,7 @@
 import { escapeAttr, escapeHtml, formatNumber } from './utils.js'
 import { renderBarChartSvg, renderGroupedBarChartSvg, renderStackedBarChartSvg } from '../charts-svg/bar.js'
 import { renderAreaChartSvg, renderLineChartSvg } from '../charts-svg/line.js'
+import { renderBubbleChartSvg, renderScatterChartSvg } from '../charts-svg/point.js'
 import { renderBoxplotSvg } from './boxplot.js'
 import { renderBulletSvg } from './bullet.js'
 import { renderFunnelSvg } from './funnel.js'
@@ -285,108 +286,17 @@ export function renderFunnelHtml(funnel) {
 }
 
 function renderScatterChartHtml(chart) {
-  return renderPointChartHtml(chart, { type: 'scatter' })
-}
-
-function renderBubbleChartHtml(chart) {
-  return renderPointChartHtml(chart, { type: 'bubble' })
-}
-
-function renderPointChartHtml(chart, options = {}) {
-  const isBubble = options.type === 'bubble'
-  const chartConfig = {
-    type: options.type || 'scatter',
-    points: chart.points,
-    series: chart.series || chart.title || 'Series 1',
-    title: chart.title || '',
-    xAxisLabel: chart.xAxisLabel || 'X',
-    yAxisLabel: chart.yAxisLabel || 'Y',
-  }
-  const width = 760
-  const height = 350
-  const margin = { top: 28, right: 28, bottom: 58, left: 64 }
-  const xs = chart.points.map((point) => point.x)
-  const ys = chart.points.map((point) => point.y)
-  const [minX, maxX] = expandExtent(Math.min(...xs), Math.max(...xs))
-  const [minY, maxY] = expandExtent(Math.min(...ys), Math.max(...ys))
-  const plotWidth = width - margin.left - margin.right
-  const plotHeight = height - margin.top - margin.bottom
-  const xFor = (value) => margin.left + ((value - minX) / (maxX - minX)) * plotWidth
-  const yFor = (value) => margin.top + plotHeight - ((value - minY) / (maxY - minY)) * plotHeight
-  const xTicks = tickValues(minX, maxX)
-  const yTicks = tickValues(minY, maxY)
-  const maxRadius = Math.max(...chart.points.map((point) => point.r || 0), 1)
-
-  const grid = [
-    ...xTicks.map((tick) => {
-      const x = xFor(tick)
-      return `<line class="deck-chart-scatter-grid" x1="${x.toFixed(2)}" y1="${margin.top}" x2="${x.toFixed(2)}" y2="${margin.top + plotHeight}"></line>
-<text class="deck-chart-scatter-tick" x="${x.toFixed(2)}" y="${height - 28}" text-anchor="middle">${escapeHtml(formatNumber(tick))}</text>`
-    }),
-    ...yTicks.map((tick) => {
-      const y = yFor(tick)
-      return `<line class="deck-chart-scatter-grid" x1="${margin.left}" y1="${y.toFixed(2)}" x2="${margin.left + plotWidth}" y2="${y.toFixed(2)}"></line>
-<text class="deck-chart-scatter-tick" x="${margin.left - 14}" y="${(y + 5).toFixed(2)}" text-anchor="end">${escapeHtml(formatNumber(tick))}</text>`
-    }),
-  ].join('\n')
-
-  const points = chart.points
-    .map((point, index) => {
-      const x = xFor(point.x)
-      const y = yFor(point.y)
-      const label = point.label || `${formatNumber(point.x)}, ${formatNumber(point.y)}`
-      const radius = isBubble ? Math.max(6, Math.min(25, 6 + ((point.r || 0) / maxRadius) * 19)) : 8
-      const pointClass = isBubble ? 'deck-chart-bubble-point' : 'deck-chart-scatter-point'
-      const title = isBubble
-        ? `${label}: ${formatNumber(point.x)}, ${formatNumber(point.y)}, size ${formatNumber(point.r)}`
-        : `${label}: ${formatNumber(point.x)}, ${formatNumber(point.y)}`
-      return `<g class="${pointClass} deck-chart-series-${index % 6}" transform="translate(${x.toFixed(2)} ${y.toFixed(2)})">
-  <circle r="${radius.toFixed(2)}"><title>${escapeHtml(title)}</title></circle>
-  ${point.label ? `<text x="12" y="-10">${escapeHtml(point.label)}</text>` : ''}
-</g>`
-    })
-    .join('\n')
-
-  const xAxisLabel = chart.xAxisLabel || 'X'
-  const yAxisLabel = chart.yAxisLabel || 'Y'
-
-  const chartClass = isBubble ? 'deck-chart-bubble' : 'deck-chart-scatter'
-  const svgClass = isBubble ? 'deck-chart-bubble-svg' : 'deck-chart-scatter-svg'
-  const ariaLabel = isBubble ? 'Bubble chart' : 'Scatter chart'
-
-  return `<figure class="deck-chart ${chartClass}">
+  return `<figure class="deck-chart deck-chart-scatter">
   ${chart.title ? `<figcaption>${escapeHtml(chart.title)}</figcaption>` : ''}
-  <div class="deck-chart-js" data-deck-chart-type="${escapeAttr(options.type || 'scatter')}">
-    <div class="deck-chart-js-frame">
-      <canvas class="deck-chart-js-canvas" data-deck-chartjs="${escapeAttr(options.type || 'scatter')}" data-deck-chart-config="${escapeAttr(JSON.stringify(chartConfig))}" role="img" aria-label="${escapeAttr(chart.title || ariaLabel)}"></canvas>
-    </div>
-    <div class="deck-chart-js-fallback">
-      <svg class="${svgClass}" viewBox="0 0 ${width} ${height}" role="img" aria-label="${escapeAttr(chart.title || ariaLabel)}">
-        ${grid}
-        <line class="deck-chart-scatter-axis" x1="${margin.left}" y1="${margin.top + plotHeight}" x2="${margin.left + plotWidth}" y2="${margin.top + plotHeight}"></line>
-        <line class="deck-chart-scatter-axis" x1="${margin.left}" y1="${margin.top}" x2="${margin.left}" y2="${margin.top + plotHeight}"></line>
-        ${points}
-        <text class="deck-chart-scatter-axis-label" x="${margin.left + plotWidth / 2}" y="${height - 4}" text-anchor="middle">${escapeHtml(xAxisLabel)}</text>
-        <text class="deck-chart-scatter-axis-label" transform="translate(18 ${margin.top + plotHeight / 2}) rotate(-90)" text-anchor="middle">${escapeHtml(yAxisLabel)}</text>
-      </svg>
-    </div>
-  </div>
+  ${renderScatterChartSvg({ ...chart, title: '' }, { cssVariables: true })}
 </figure>`
 }
 
-function expandExtent(min, max) {
-  if (min === max) return [min - 1, max + 1]
-  const padding = (max - min) * 0.12
-  return [min - padding, max + padding]
-}
-
-function tickValues(min, max) {
-  const ticks = []
-  const count = 4
-  for (let index = 0; index <= count; index += 1) {
-    ticks.push(min + ((max - min) / count) * index)
-  }
-  return ticks
+function renderBubbleChartHtml(chart) {
+  return `<figure class="deck-chart deck-chart-bubble">
+  ${chart.title ? `<figcaption>${escapeHtml(chart.title)}</figcaption>` : ''}
+  ${renderBubbleChartSvg({ ...chart, title: '' }, { cssVariables: true })}
+</figure>`
 }
 
 function renderDoughnutChartHtml(chart) {
