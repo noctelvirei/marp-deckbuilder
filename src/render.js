@@ -878,6 +878,7 @@ section.light .deck-chart-radar {
   --deck-radar-fill: rgba(15, 130, 245, .18);
   --deck-radar-stroke: ${cssColor(brand, 'blue', '0F82F5')};
   --deck-radar-point: ${cssColor(brand, 'lightBlue', '59D6FD')};
+  --deck-radar-halo: ${lightBackground};
 }
 
 section.dark .deck-chart-radar {
@@ -887,6 +888,7 @@ section.dark .deck-chart-radar {
   --deck-radar-fill: rgba(89, 214, 253, .20);
   --deck-radar-stroke: ${cssColor(brand, 'lightBlue', '59D6FD')};
   --deck-radar-point: ${cssColor(brand, 'blue', '0F82F5')};
+  --deck-radar-halo: ${darkBackground};
 }
 
 section.light .deck-impact-radar {

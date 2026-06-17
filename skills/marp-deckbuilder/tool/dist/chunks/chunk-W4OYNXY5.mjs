@@ -1093,7 +1093,8 @@ var DEFAULT_COLORS7 = {
     muted: "#666666",
     fill: "rgba(15, 130, 245, .18)",
     stroke: "#0f82f5",
-    point: "#59d6fd"
+    point: "#59d6fd",
+    halo: "#ffffff"
   },
   dark: {
     grid: "#31557e",
@@ -1101,7 +1102,8 @@ var DEFAULT_COLORS7 = {
     muted: "#c8d8f0",
     fill: "rgba(89, 214, 253, .20)",
     stroke: "#59d6fd",
-    point: "#0f82f5"
+    point: "#0f82f5",
+    halo: "#0d1d36"
   }
 };
 function renderRadarSvg(chart, options = {}) {
@@ -1114,7 +1116,8 @@ function renderRadarSvg(chart, options = {}) {
     muted: options.mutedColor || DEFAULT_COLORS7[mode].muted,
     fill: options.fillColor || DEFAULT_COLORS7[mode].fill,
     stroke: options.strokeColor || DEFAULT_COLORS7[mode].stroke,
-    point: options.pointColor || DEFAULT_COLORS7[mode].point
+    point: options.pointColor || DEFAULT_COLORS7[mode].point,
+    halo: options.haloColor || DEFAULT_COLORS7[mode].halo
   };
   const color = (name) => useVariables ? `var(--deck-radar-${name}, ${colors[name]})` : colors[name];
   const geometry = radarGeometry(chart);
@@ -1137,7 +1140,7 @@ function renderRadarSvg(chart, options = {}) {
     .deck-radar-grid { fill: none; stroke: ${color("grid")}; stroke-width: 1.4; }
     .deck-radar-shape { fill: ${color("fill")}; stroke: ${color("stroke")}; stroke-width: 4; stroke-linejoin: round; }
     .deck-radar-point circle { fill: ${color("point")}; stroke: ${color("stroke")}; stroke-width: 2; }
-    .deck-radar-point text, .deck-radar-label, .deck-radar-scale { fill: ${color("text")}; font: 600 12px "Poppins", "Aptos", sans-serif; }
+    .deck-radar-point text, .deck-radar-label, .deck-radar-scale { fill: ${color("text")}; font: 600 12px "Poppins", "Aptos", sans-serif; paint-order: stroke; stroke: ${color("halo")}; stroke-width: 3.5px; stroke-linejoin: round; }
     .deck-radar-scale { fill: ${color("muted")}; font-weight: 500; }
   </style>
   <text class="deck-radar-scale" x="${geometry.center.x + 10}" y="${geometry.center.y - geometry.radius - 8}">${escapeHtml(formatNumber(geometry.maxValue))}</text>
@@ -1151,8 +1154,8 @@ function renderRadarSvg(chart, options = {}) {
 function radarGeometry(chart) {
   const width = 760;
   const height = 350;
-  const center = { x: 380, y: 176 };
-  const radius = 116;
+  const center = { x: 380, y: 180 };
+  const radius = 132;
   const maxValue = niceCeiling4(Math.max(1, ...chart.values));
   return { width, height, center, radius, maxValue };
 }
