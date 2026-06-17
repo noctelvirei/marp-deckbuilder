@@ -98,9 +98,9 @@ export function renderFunnelSvg(funnel, options = {}) {
   return `<svg class="deck-funnel-svg" viewBox="0 0 ${width} ${height}" role="img" aria-label="${escapeAttr(funnel.title || 'Funnel chart')}">
   <defs>
     <linearGradient id="deck-funnel-sheen-grad" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0%" stop-color="#ffffff" stop-opacity="0.18"></stop>
-      <stop offset="46%" stop-color="#ffffff" stop-opacity="0"></stop>
-      <stop offset="100%" stop-color="#000000" stop-opacity="0.12"></stop>
+      <stop offset="0%" stop-color="#ffffff" stop-opacity="0.12"/>
+      <stop offset="55%" stop-color="#ffffff" stop-opacity="0"/>
+      <stop offset="100%" stop-color="#000000" stop-opacity="0.05"/>
     </linearGradient>
   </defs>
   <style>

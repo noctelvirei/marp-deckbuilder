@@ -53,7 +53,7 @@ export function renderBulletSvg(chart, options = {}) {
   </g>`)
     .join('\n  ')
 
-  return `<svg class="deck-chart-bullet-svg" viewBox="0 0 ${geometry.width} ${geometry.height}" role="img" aria-label="${escapeAttr(chart.title || 'Bullet chart')}">
+  return `<svg class="dsvg deck-chart-bullet-svg" data-deck-svgchart="bullet" viewBox="0 0 ${geometry.width} ${geometry.height}" role="img" aria-label="${escapeAttr(chart.title || 'Bullet chart')}">
   <style>
     .deck-bullet-grid { stroke: ${color('grid')}; stroke-width: 1; }
     .deck-bullet-axis { stroke: ${color('axis')}; stroke-width: 1.4; }

@@ -9,6 +9,8 @@ import {
   presentationAnimationScript,
 } from './animations/html.js'
 import { hasSlideBackgroundAsset, slideBackgroundAsset } from './brand.js'
+import { svgChartHoverScript } from './charts-svg/hover.js'
+import { svgChartCss } from './charts-svg/styles.js'
 import { buildMarpMarkdown } from './markdown.js'
 import {
   normalizeResourceReference,
@@ -72,6 +74,7 @@ export function renderDeckHtml(deck, options = {}) {
     htmlDeckEnhancementScript(definitions.brand),
     htmlDeckNavigationScript(),
     htmlDeckChartScript(),
+    svgChartHoverScript(),
   ].filter(Boolean).join('\n')
 
   return {
@@ -396,6 +399,32 @@ section.dark .deck-funnel {
   --deck-funnel-border: ${darkBorder};
   --deck-funnel-heading: ${darkHeading};
   --deck-funnel-muted: ${darkMuted};
+}
+
+.deck-chart {
+  --deck-chart-accent: ${cssColor(brand, 'blue', '0F82F5')};
+  --deck-chart-accent2: ${cssColor(brand, 'cyan', '59D6FD')};
+}
+section.dark .deck-chart {
+  --deck-chart-heading: ${darkHeading};
+  --deck-chart-muted: ${darkMuted};
+  --deck-chart-grid: #27395a;
+  --deck-chart-axis: #3a4f6f;
+  --deck-chart-value: #cfe5ff;
+}
+section.light .deck-chart {
+  --deck-chart-heading: #0b1b33;
+  --deck-chart-muted: #5a6b82;
+  --deck-chart-grid: #e3e9f1;
+  --deck-chart-axis: #c2cddd;
+  --deck-chart-value: #234a7a;
+}
+${svgChartCss()}
+/* Cap SSR-SVG charts to the same box the old canvas frame used so they sit
+   between header and nav instead of overflowing (preserveAspectRatio letterboxes). */
+.deck-chart .dsvg {
+  width: 100%;
+  height: min(38vh, 340px);
 }
 
 section.light h1,
@@ -849,6 +878,7 @@ section.light .deck-chart-radar {
   --deck-radar-fill: rgba(15, 130, 245, .18);
   --deck-radar-stroke: ${cssColor(brand, 'blue', '0F82F5')};
   --deck-radar-point: ${cssColor(brand, 'lightBlue', '59D6FD')};
+  --deck-radar-halo: ${lightBackground};
 }
 
 section.dark .deck-chart-radar {
@@ -858,6 +888,7 @@ section.dark .deck-chart-radar {
   --deck-radar-fill: rgba(89, 214, 253, .20);
   --deck-radar-stroke: ${cssColor(brand, 'lightBlue', '59D6FD')};
   --deck-radar-point: ${cssColor(brand, 'blue', '0F82F5')};
+  --deck-radar-halo: ${darkBackground};
 }
 
 section.light .deck-impact-radar {
@@ -1215,6 +1246,14 @@ function prepareHtmlDeckShell(html) {
   const root = cheerio.load(`<root>${html}</root>`, {
     decodeEntities: false,
     lowerCaseAttributeNames: false,
+  })
+
+  // marp-core splits every explicit-close SVG child (<stop></stop>) into an
+  // extra empty twin (<stop/>). An attribute-less <stop> defaults to opaque
+  // black, which poisons gradients (funnel sheen, chart area fills). Drop these
+  // artifacts; a legitimate stop always carries an `offset`.
+  root('stop').each((index, stop) => {
+    if (!root(stop).attr('offset')) root(stop).remove()
   })
 
   root('svg[data-marpit-svg]').each((index, svg) => {

@@ -1,9 +1,11 @@
 import MarkdownIt from 'markdown-it'
 
 import { splitFrontmatter } from './markdown.js'
+import { svgChartCss } from './charts-svg/styles.js'
 import { compileReportComponents } from './report-components.js'
 import { escapeAttr as escapeHtmlAttr, escapeHtml } from './report-components/utils.js'
 import {
+  normalizeReportTheme,
   prepareReportPresentation,
   reportArticleClass,
   reportBodyClass,
@@ -32,7 +34,9 @@ export function renderReportHtml(source, options = {}) {
   const subtitle = frontmatter.subtitle || ''
   const metadata = reportMetadata(frontmatter)
   const prepared = normalizeReportImageReferences(body)
-  const compiled = compileReportComponents(prepared, { brand, reportName: title })
+  // Resolve theme up front so server-rendered SVG charts pick the right mode.
+  const reportTheme = normalizeReportTheme(frontmatter.reportTheme || frontmatter.themeSurface)
+  const compiled = compileReportComponents(prepared, { brand, reportName: title, theme: reportTheme })
   const presentation = prepareReportPresentation(markdown.render(compiled.source), frontmatter)
   const content = resolveResourceUrls(presentation.content, options.resourcesDir, resolverOptions)
   const css = resolveResourceUrls(reportCss(brand, presentation.theme), options.resourcesDir, resolverOptions)
@@ -1208,6 +1212,17 @@ body {
   height: 100%;
   overflow: hidden;
 }
+
+.report-chart-figure {
+  width: 100%;
+}
+
+.report-chart-figure .dsvg {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+${svgChartCss()}
 
 .report-chart-floating-tooltip {
   position: absolute;

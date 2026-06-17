@@ -5,8 +5,9 @@ const require = __deckbuilderCreateRequire(import.meta.url);
 const __filename = __deckbuilderFileURLToPath(import.meta.url);
 const __dirname = __deckbuilderDirname(__filename);
 import {
-  require_node
-} from "./chunk-MGQWBMZO.mjs";
+  require_node,
+  selfContainedSvg
+} from "./chunk-DF3F57GZ.mjs";
 import {
   color,
   font,
@@ -15,21 +16,30 @@ import {
   slideBackgroundAsset
 } from "./chunk-RQ4ZKSEQ.mjs";
 import {
+  DEFAULT_THEME,
   funnelPalette,
+  renderAreaChartSvg,
+  renderBarChartSvg,
   renderBoxplotSvg,
+  renderBubbleChartSvg,
   renderBulletSvg,
+  renderDoughnutChartSvg,
   renderFunnelSvg,
+  renderGroupedBarChartSvg,
   renderHistogramSvg,
   renderImpactRadarSvg,
   renderJourneyPathSvg,
+  renderLineChartSvg,
   renderParetoSvg,
   renderRadarSvg,
   renderSankeySvg,
+  renderScatterChartSvg,
+  renderStackedBarChartSvg,
   renderWaterfallSvg,
   resolveResourceFile,
   resolveSurfaceResourceFile,
   treemapRects
-} from "./chunk-RSWQC3HO.mjs";
+} from "./chunk-LVCUFFJZ.mjs";
 import {
   __commonJS,
   __require,
@@ -15376,6 +15386,9 @@ function intrinsicImageSize(imagePath) {
   }
   return null;
 }
+function svgIntrinsicSize(svg) {
+  return svgSize(svg);
+}
 function svgSize(svg) {
   const viewBox = svg.match(/\bviewBox\s*=\s*["']\s*([+-]?\d*\.?\d+)\s+([+-]?\d*\.?\d+)\s+([+-]?\d*\.?\d+)\s+([+-]?\d*\.?\d+)\s*["']/i);
   if (viewBox) {
@@ -15666,8 +15679,26 @@ function addChartSlide(pptx, slide, model, brand, resourcesDir) {
   const isPareto = model.chart.chartType === "pareto";
   const isRadar = model.chart.chartType === "radar";
   const isSankey = model.chart.chartType === "sankey";
-  if (isWaterfall || isBullet || isHistogram || isBoxplot || isPareto || isRadar || isSankey) {
-    addSvgChartImage(slide, model, brand, layout, chartBox, model.chart.chartType);
+  const svgChartTypes = /* @__PURE__ */ new Set([
+    "line",
+    "area",
+    "bar",
+    "grouped-bar",
+    "stacked-bar",
+    "scatter",
+    "bubble",
+    "doughnut",
+    "waterfall",
+    "bullet",
+    "histogram",
+    "boxplot",
+    "pareto",
+    "radar",
+    "sankey"
+  ]);
+  const svgType = model.chart.chartType || "bar";
+  if (svgChartTypes.has(svgType)) {
+    addSvgChartImage(slide, model, brand, layout, chartBox, svgType);
     addTakeaway(slide, model, brand);
     return;
   }
@@ -15763,8 +15794,21 @@ function addChartSlide(pptx, slide, model, brand, resourcesDir) {
   }
   addTakeaway(slide, model, brand);
 }
+var NEW_SVG_CHART_TYPES = /* @__PURE__ */ new Set([
+  "line",
+  "area",
+  "bar",
+  "grouped-bar",
+  "stacked-bar",
+  "scatter",
+  "bubble",
+  "doughnut"
+]);
 function addSvgChartImage(slide, model, brand, layout, chartBox, type) {
-  const fill = surfaceFill(brand, model, layout.chartAreaFill || "cardLight");
+  const isNew = NEW_SVG_CHART_TYPES.has(type);
+  const light = isLightSurface(model);
+  const mode = light ? "light" : "dark";
+  const fill = isNew ? DEFAULT_THEME[mode].surface.replace("#", "") : surfaceFill(brand, model, layout.chartAreaFill || "cardLight");
   const line = surfaceLine(brand, model, layout.chartAreaBorder || "border");
   addRect(slide, brand, chartBox.x, chartBox.y, chartBox.w, chartBox.h, fill, line, 0.5);
   const titleH = model.chart.title ? 28 : 0;
@@ -15776,7 +15820,7 @@ function addSvgChartImage(slide, model, brand, layout, chartBox, type) {
       h: titleH,
       font: layout.title.font,
       size: layout.title.size,
-      color: layout.title.color,
+      color: isNew && !light ? "white" : layout.title.color,
       margin: 0,
       fit: "shrink"
     });
@@ -15784,22 +15828,51 @@ function addSvgChartImage(slide, model, brand, layout, chartBox, type) {
   const svgTop = chartBox.y + (model.chart.title ? 58 : 18);
   const sharedOptions = {
     cssVariables: false,
-    mode: isLightSurface(model) ? "light" : "dark",
+    mode,
     gridColor: svgColor(surfaceLine(brand, model, layout.gridLineColor || "border")),
     axisColor: svgColor(surfaceTextColor(brand, model, layout.valueAxis.color, "muted")),
     textColor: svgColor(surfaceTextColor(brand, model, layout.valueAxis.color, "muted"))
   };
   const svg = renderSvgChartByType(type, model.chart, brand, model, layout, sharedOptions);
+  const availW = chartBox.w - 36;
+  const availH = Math.max(150, chartBox.y + chartBox.h - svgTop - 18);
+  let drawX = chartBox.x + 18;
+  let drawY = svgTop;
+  let drawW = availW;
+  let drawH = availH;
+  if (isNew) {
+    const size = svgIntrinsicSize(svg);
+    const aspect = size && size.width && size.height ? size.width / size.height : availW / availH;
+    drawW = availW;
+    drawH = availW / aspect;
+    if (drawH > availH) {
+      drawH = availH;
+      drawW = availH * aspect;
+    }
+    drawX = chartBox.x + 18 + (availW - drawW) / 2;
+    drawY = svgTop + (availH - drawH) / 2;
+  }
   slide.addImage({
     data: svgToDataUri(svg),
-    x: ptToIn(chartBox.x + 18),
-    y: ptToIn(svgTop),
-    w: ptToIn(chartBox.w - 36),
-    h: ptToIn(Math.max(150, chartBox.y + chartBox.h - svgTop - 18)),
+    x: ptToIn(drawX),
+    y: ptToIn(drawY),
+    w: ptToIn(drawW),
+    h: ptToIn(drawH),
     altText: model.chart.title || model.title
   });
 }
 function renderSvgChartByType(type, chart, brand, model, layout, sharedOptions) {
+  const mode = sharedOptions.mode;
+  const noTitle = { ...chart, title: "" };
+  const opts = { cssVariables: false, mode, brand, background: true };
+  if (type === "line") return selfContainedSvg(renderLineChartSvg(noTitle, opts));
+  if (type === "area") return selfContainedSvg(renderAreaChartSvg(noTitle, opts));
+  if (type === "bar") return selfContainedSvg(renderBarChartSvg(noTitle, opts));
+  if (type === "grouped-bar") return selfContainedSvg(renderGroupedBarChartSvg(noTitle, opts));
+  if (type === "stacked-bar") return selfContainedSvg(renderStackedBarChartSvg(noTitle, opts));
+  if (type === "scatter") return selfContainedSvg(renderScatterChartSvg(noTitle, opts));
+  if (type === "bubble") return selfContainedSvg(renderBubbleChartSvg(noTitle, opts));
+  if (type === "doughnut") return selfContainedSvg(renderDoughnutChartSvg(noTitle, opts));
   if (type === "waterfall") {
     return renderWaterfallSvg(chart, {
       ...sharedOptions,

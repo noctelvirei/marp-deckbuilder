@@ -8,10 +8,11 @@ import {
   buildMarpMarkdown,
   getAnimation,
   load
-} from "./chunk-5XDT37I2.mjs";
+} from "./chunk-USPIXUYR.mjs";
 import {
-  require_node
-} from "./chunk-MGQWBMZO.mjs";
+  require_node,
+  svgChartCss
+} from "./chunk-DF3F57GZ.mjs";
 import {
   hasSlideBackgroundAsset,
   slideBackgroundAsset
@@ -21,7 +22,7 @@ import {
   resolveResourceFile,
   resolveSurfaceResourceFile,
   resourceToDataUri
-} from "./chunk-RSWQC3HO.mjs";
+} from "./chunk-LVCUFFJZ.mjs";
 import {
   __commonJS,
   __require,
@@ -136345,6 +136346,45 @@ function slideAnimationVariables(slide) {
 }`;
 }
 
+// src/charts-svg/hover.js
+function svgChartHoverScript() {
+  return `(() => {
+  if (window.__deckSvgHover) return; window.__deckSvgHover = true;
+  let tip;
+  function ensureTip() {
+    if (tip) return tip;
+    tip = document.createElement('div');
+    tip.className = 'dsvg-tip';
+    document.body.appendChild(tip);
+    return tip;
+  }
+  function show(el, evt) {
+    const text = el.getAttribute('data-deck-tip');
+    if (!text) return;
+    const t = ensureTip();
+    t.textContent = text;
+    t.style.left = evt.clientX + 'px';
+    t.style.top = evt.clientY + 'px';
+    t.classList.add('is-on');
+  }
+  function move(evt) {
+    if (!tip || !tip.classList.contains('is-on')) return;
+    tip.style.left = evt.clientX + 'px';
+    tip.style.top = evt.clientY + 'px';
+  }
+  function hide() { if (tip) tip.classList.remove('is-on'); }
+  document.addEventListener('pointerover', (e) => {
+    const el = e.target.closest && e.target.closest('[data-deck-tip]');
+    if (el && el.closest('svg[data-deck-svgchart]')) show(el, e);
+  });
+  document.addEventListener('pointermove', move);
+  document.addEventListener('pointerout', (e) => {
+    const el = e.target.closest && e.target.closest('[data-deck-tip]');
+    if (el) hide();
+  });
+})();`;
+}
+
 // src/render.js
 function renderDeckHtml(deck, options = {}) {
   const definitions = options.definitions;
@@ -136395,7 +136435,8 @@ function renderDeckHtml(deck, options = {}) {
     presentationAnimationScript(htmlDeck.slides),
     htmlDeckEnhancementScript(definitions.brand),
     htmlDeckNavigationScript(),
-    htmlDeckChartScript()
+    htmlDeckChartScript(),
+    svgChartHoverScript()
   ].filter(Boolean).join("\n");
   return {
     html: htmlWithDeckShell,
@@ -136712,6 +136753,32 @@ section.dark .deck-funnel {
   --deck-funnel-border: ${darkBorder};
   --deck-funnel-heading: ${darkHeading};
   --deck-funnel-muted: ${darkMuted};
+}
+
+.deck-chart {
+  --deck-chart-accent: ${cssColor(brand, "blue", "0F82F5")};
+  --deck-chart-accent2: ${cssColor(brand, "cyan", "59D6FD")};
+}
+section.dark .deck-chart {
+  --deck-chart-heading: ${darkHeading};
+  --deck-chart-muted: ${darkMuted};
+  --deck-chart-grid: #27395a;
+  --deck-chart-axis: #3a4f6f;
+  --deck-chart-value: #cfe5ff;
+}
+section.light .deck-chart {
+  --deck-chart-heading: #0b1b33;
+  --deck-chart-muted: #5a6b82;
+  --deck-chart-grid: #e3e9f1;
+  --deck-chart-axis: #c2cddd;
+  --deck-chart-value: #234a7a;
+}
+${svgChartCss()}
+/* Cap SSR-SVG charts to the same box the old canvas frame used so they sit
+   between header and nav instead of overflowing (preserveAspectRatio letterboxes). */
+.deck-chart .dsvg {
+  width: 100%;
+  height: min(38vh, 340px);
 }
 
 section.light h1,
@@ -137165,6 +137232,7 @@ section.light .deck-chart-radar {
   --deck-radar-fill: rgba(15, 130, 245, .18);
   --deck-radar-stroke: ${cssColor(brand, "blue", "0F82F5")};
   --deck-radar-point: ${cssColor(brand, "lightBlue", "59D6FD")};
+  --deck-radar-halo: ${lightBackground};
 }
 
 section.dark .deck-chart-radar {
@@ -137174,6 +137242,7 @@ section.dark .deck-chart-radar {
   --deck-radar-fill: rgba(89, 214, 253, .20);
   --deck-radar-stroke: ${cssColor(brand, "lightBlue", "59D6FD")};
   --deck-radar-point: ${cssColor(brand, "blue", "0F82F5")};
+  --deck-radar-halo: ${darkBackground};
 }
 
 section.light .deck-impact-radar {
@@ -137522,6 +137591,9 @@ function prepareHtmlDeckShell(html) {
   const root = load(`<root>${html}</root>`, {
     decodeEntities: false,
     lowerCaseAttributeNames: false
+  });
+  root("stop").each((index, stop) => {
+    if (!root(stop).attr("offset")) root(stop).remove();
   });
   root("svg[data-marpit-svg]").each((index, svg) => {
     const slide = root(svg);
@@ -140753,6 +140825,7 @@ function escapeHtml(value) {
 
 export {
   require_punycode,
+  svgChartHoverScript,
   renderDeckHtml,
   brandBackgroundCss,
   brandLogoCss,
