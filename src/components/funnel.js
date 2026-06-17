@@ -30,13 +30,16 @@ export function renderFunnelSvg(funnel, options = {}) {
     onAccent: cssColor(options.onAccentColor, DEFAULT_COLORS[mode].onAccent),
   }
   const color = (name) => useVariables ? `var(--deck-funnel-${name}, ${colors[name]})` : colors[name]
-  const stages = funnelStages(funnel)
   const width = 760
   const height = 318
-  const centerX = 380
-  const topY = 24
+  const keyWidth = 230
+  const funnelWidth = width - keyWidth
+  const centerX = funnelWidth / 2
+  const topY = 20
   const gap = 7
-  const stageH = (height - topY - 24 - gap * Math.max(0, stages.length - 1)) / Math.max(1, stages.length)
+  const stages = funnelStages(funnel, { maxWidth: funnelWidth - 56, minWidth: 84 })
+  const stageH = (height - topY - 20 - gap * Math.max(0, stages.length - 1)) / Math.max(1, stages.length)
+  const keyX = funnelWidth + 14
 
   const segments = stages
     .map((stage, index) => {
@@ -50,32 +53,41 @@ export function renderFunnelSvg(funnel, options = {}) {
         `${round(centerX + bottomW / 2)},${round(y2)}`,
         `${round(centerX - bottomW / 2)},${round(y2)}`,
       ].join(' ')
-      const textY = y1 + stageH / 2
+      const mid = y1 + stageH / 2
       const opacity = STAGE_OPACITY[index] ?? STAGE_OPACITY.at(-1)
       return `<g class="deck-funnel-stage deck-funnel-stage-${index % 6}">
     <polygon class="deck-funnel-segment" points="${points}" style="opacity:${opacity}"></polygon>
-    <text class="deck-funnel-stage-label" x="${centerX}" y="${round(textY - 6)}" text-anchor="middle">${escapeHtml(stage.label)}</text>
-    <text class="deck-funnel-stage-value" x="${centerX}" y="${round(textY + 20)}" text-anchor="middle">${escapeHtml(`${formatNumber(stage.value)}${funnel.unit}`)}</text>
-    <text class="deck-funnel-stage-rate" x="${round(centerX + topW / 2 + 24)}" y="${round(textY + 5)}">${escapeHtml(stage.rate)}</text>
+    <polygon class="deck-funnel-sheen" points="${points}"></polygon>
+    <rect class="deck-funnel-key-swatch" x="${keyX}" y="${round(mid - 7)}" width="13" height="13" rx="3" style="opacity:${opacity}"></rect>
+    <text class="deck-funnel-key-name" x="${keyX + 22}" y="${round(mid - 1)}">${escapeHtml(stage.label)}</text>
+    <text class="deck-funnel-key-value" x="${keyX + 22}" y="${round(mid + 15)}">${escapeHtml(`${formatNumber(stage.value)}${funnel.unit} · ${stage.rate}`)}</text>
   </g>`
     })
     .join('\n  ')
 
   return `<svg class="deck-funnel-svg" viewBox="0 0 ${width} ${height}" role="img" aria-label="${escapeAttr(funnel.title || 'Funnel chart')}">
+  <defs>
+    <linearGradient id="deck-funnel-sheen-grad" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#ffffff" stop-opacity="0.18"></stop>
+      <stop offset="46%" stop-color="#ffffff" stop-opacity="0"></stop>
+      <stop offset="100%" stop-color="#000000" stop-opacity="0.12"></stop>
+    </linearGradient>
+  </defs>
   <style>
     .deck-funnel-segment { fill: ${color('accent')}; stroke: ${color('surface')}; stroke-width: 2; }
-    .deck-funnel-stage-label { fill: ${color('onAccent')}; font: 600 17px "Poppins", "Aptos", sans-serif; }
-    .deck-funnel-stage-value { fill: ${color('onAccent')}; font: 500 14px "Poppins", "Aptos", sans-serif; opacity: .9; }
-    .deck-funnel-stage-rate { fill: ${color('muted')}; font: 500 13px "Poppins", "Aptos", sans-serif; }
+    .deck-funnel-sheen { fill: url(#deck-funnel-sheen-grad); pointer-events: none; }
+    .deck-funnel-key-swatch { fill: ${color('accent')}; }
+    .deck-funnel-key-name { fill: ${color('heading')}; font: 600 14px "Poppins", "Aptos", sans-serif; }
+    .deck-funnel-key-value { fill: ${color('muted')}; font: 500 12.5px "Poppins", "Aptos", sans-serif; }
   </style>
   ${segments}
 </svg>`
 }
 
-function funnelStages(funnel) {
+function funnelStages(funnel, options = {}) {
   const maxValue = Math.max(...funnel.values, 1)
-  const maxWidth = 610
-  const minWidth = 126
+  const maxWidth = options.maxWidth ?? 610
+  const minWidth = options.minWidth ?? 126
   const widths = funnel.values.map((value) => {
     if (value <= 0) return minWidth
     return Math.max(minWidth, (value / maxValue) * maxWidth)

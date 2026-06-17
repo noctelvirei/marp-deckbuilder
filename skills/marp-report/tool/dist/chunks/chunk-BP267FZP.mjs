@@ -8,7 +8,7 @@ import {
   buildMarpMarkdown,
   getAnimation,
   load
-} from "./chunk-AS4FZMNO.mjs";
+} from "./chunk-SMJP7NZJ.mjs";
 import {
   require_node
 } from "./chunk-MGQWBMZO.mjs";
@@ -21,7 +21,7 @@ import {
   resolveResourceFile,
   resolveSurfaceResourceFile,
   resourceToDataUri
-} from "./chunk-L7PI37Q7.mjs";
+} from "./chunk-CWGSXCI6.mjs";
 import {
   __commonJS,
   __require,
