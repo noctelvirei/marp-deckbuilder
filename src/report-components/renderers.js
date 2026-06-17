@@ -1439,9 +1439,9 @@ ${chartBoilerplate(chart, 'target')}
     segments.forEach((segment, index) => {
       const grad = defs.append("linearGradient").attr("id", uid + "-g" + index)
         .attr("x1", 0).attr("y1", 0).attr("x2", 0).attr("y2", 1);
-      grad.append("stop").attr("offset", "0%").attr("stop-color", shade(segment.color, 0.16, true));
+      grad.append("stop").attr("offset", "0%").attr("stop-color", shade(segment.color, 0.12, true));
       grad.append("stop").attr("offset", "58%").attr("stop-color", segment.color);
-      grad.append("stop").attr("offset", "100%").attr("stop-color", shade(segment.color, 0.12, false));
+      grad.append("stop").attr("offset", "100%").attr("stop-color", shade(segment.color, 0.05, false));
     });
 
     const cell = svg.append("g").selectAll("g").data(segments).join("g").attr("class", "report-funnel-segment");
