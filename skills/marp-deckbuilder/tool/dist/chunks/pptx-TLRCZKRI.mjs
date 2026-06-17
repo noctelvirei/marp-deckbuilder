@@ -29,7 +29,7 @@ import {
   resolveResourceFile,
   resolveSurfaceResourceFile,
   treemapRects
-} from "./chunk-OQTZ2PXJ.mjs";
+} from "./chunk-RSWQC3HO.mjs";
 import {
   __commonJS,
   __require,
@@ -16280,12 +16280,17 @@ function addFunnel(slide, model, brand, resourcesDir) {
   }
   const svgY = y + layout.pad + titleH + (funnel.title ? 10 : 0);
   const svgH = Math.max(150, y + layout.h - svgY - layout.pad);
+  const cardColorValue = cardFill && typeof cardFill === "object" ? cardFill.color : cardFill;
+  const cardIsLight = isLightColor(cardColorValue);
   const svg = renderFunnelSvg(funnel, {
     cssVariables: false,
     mode: lightSurface ? "light" : "dark",
     accentColor: accent,
     onAccentColor: isLightColor(accent) ? color(brand, "dark") : color(brand, "white"),
-    palette: funnelPalette(brand)
+    palette: funnelPalette(brand),
+    // key labels render on the card surface: contrast against the actual card fill
+    headingColor: cardIsLight ? color(brand, "dark") : color(brand, "white"),
+    mutedColor: cardIsLight ? "6B7A90" : "8A95A8"
   });
   slide.addImage({
     data: svgToDataUri(svg),
