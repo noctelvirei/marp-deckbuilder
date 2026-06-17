@@ -15687,9 +15687,15 @@ function addChartSlide(pptx, slide, model, brand, resourcesDir) {
       sizes: model.chart.points.map((point) => point.r)
     }
   ] : isScatter ? [
+    // pptxgenjs scatter: first series supplies the shared X values, the
+    // next series the Y values (same shape as bubble above). A single
+    // series with `labels` leaves no X data -> a blank/white chart.
+    {
+      name: model.chart.xAxisLabel || "X",
+      values: model.chart.points.map((point) => point.x)
+    },
     {
       name: model.chart.series || model.chart.title || "Series 1",
-      labels: model.chart.points.map((point) => point.x),
       values: model.chart.points.map((point) => point.y)
     }
   ] : [
