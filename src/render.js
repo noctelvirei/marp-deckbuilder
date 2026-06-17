@@ -382,6 +382,15 @@ section.dark .deck-logo-tile {
   border-color: ${darkBorder};
 }
 
+.deck-funnel {
+  --deck-funnel-stage-0: ${cssColor(brand, 'blue', '0F82F5')};
+  --deck-funnel-stage-1: ${cssColor(brand, 'cyan', '59D6FD')};
+  --deck-funnel-stage-2: ${cssColor(brand, 'purple', '5143D5')};
+  --deck-funnel-stage-3: ${cssColor(brand, 'orange', 'F9935B')};
+  --deck-funnel-stage-4: ${cssColor(brand, 'green', '66CC8E')};
+  --deck-funnel-stage-5: ${cssColor(brand, 'red', 'FC5161')};
+}
+
 section.dark .deck-funnel {
   --deck-funnel-surface: ${darkPanel};
   --deck-funnel-border: ${darkBorder};

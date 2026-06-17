@@ -15,6 +15,7 @@ import {
   slideBackgroundAsset
 } from "./chunk-RQ4ZKSEQ.mjs";
 import {
+  funnelPalette,
   renderBoxplotSvg,
   renderBulletSvg,
   renderFunnelSvg,
@@ -28,7 +29,7 @@ import {
   resolveResourceFile,
   resolveSurfaceResourceFile,
   treemapRects
-} from "./chunk-CWGSXCI6.mjs";
+} from "./chunk-OQTZ2PXJ.mjs";
 import {
   __commonJS,
   __require,
@@ -16283,7 +16284,8 @@ function addFunnel(slide, model, brand, resourcesDir) {
     cssVariables: false,
     mode: lightSurface ? "light" : "dark",
     accentColor: accent,
-    onAccentColor: isLightColor(accent) ? color(brand, "dark") : color(brand, "white")
+    onAccentColor: isLightColor(accent) ? color(brand, "dark") : color(brand, "white"),
+    palette: funnelPalette(brand)
   });
   slide.addImage({
     data: svgToDataUri(svg),
