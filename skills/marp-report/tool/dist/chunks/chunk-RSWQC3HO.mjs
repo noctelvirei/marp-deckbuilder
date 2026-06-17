@@ -442,7 +442,11 @@ function renderFunnelSvg(funnel, options = {}) {
   const colors = {
     ...DEFAULT_COLORS3[mode],
     accent: cssColor(options.accentColor, DEFAULT_COLORS3[mode].accent),
-    onAccent: cssColor(options.onAccentColor, DEFAULT_COLORS3[mode].onAccent)
+    onAccent: cssColor(options.onAccentColor, DEFAULT_COLORS3[mode].onAccent),
+    // key text sits on the card surface; callers (PPTX) can pass colours that
+    // contrast with the actual card so the stage name is never invisible.
+    heading: cssColor(options.headingColor, DEFAULT_COLORS3[mode].heading),
+    muted: cssColor(options.mutedColor, DEFAULT_COLORS3[mode].muted)
   };
   const color = (name) => useVariables ? `var(--deck-funnel-${name}, ${colors[name]})` : colors[name];
   const palette = Array.isArray(options.palette) && options.palette.length ? options.palette : STAGE_PALETTE;
