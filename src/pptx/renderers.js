@@ -1,7 +1,7 @@
 import { color, font, hasSlideBackgroundAsset, ptToIn, slideBackgroundAsset } from '../brand.js'
 import { renderBoxplotSvg } from '../components/boxplot.js'
 import { renderBulletSvg } from '../components/bullet.js'
-import { renderFunnelSvg } from '../components/funnel.js'
+import { renderFunnelSvg, funnelPalette } from '../components/funnel.js'
 import { renderHistogramSvg } from '../components/histogram.js'
 import { renderImpactRadarSvg } from '../components/impact-radar.js'
 import { renderJourneyPathSvg } from '../components/journey-path.js'
@@ -964,6 +964,7 @@ export function addFunnel(slide, model, brand, resourcesDir) {
     mode: lightSurface ? 'light' : 'dark',
     accentColor: accent,
     onAccentColor: isLightColor(accent) ? color(brand, 'dark') : color(brand, 'white'),
+    palette: funnelPalette(brand),
   })
   slide.addImage({
     data: svgToDataUri(svg),

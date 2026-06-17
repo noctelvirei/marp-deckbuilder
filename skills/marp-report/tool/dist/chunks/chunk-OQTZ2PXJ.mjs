@@ -420,7 +420,22 @@ var DEFAULT_COLORS3 = {
     onAccent: "#ffffff"
   }
 };
-var STAGE_OPACITY = [1, 0.86, 0.72, 0.6, 0.5, 0.42];
+var STAGE_PALETTE = ["#0F82F5", "#59D6FD", "#5143D5", "#F9935B", "#66CC8E", "#FC5161"];
+function funnelPalette(brand = {}) {
+  const c = brand.colors || {};
+  const pick = (value, fallback) => {
+    const raw = String(value || fallback).trim();
+    return /^#/.test(raw) ? raw : `#${raw}`;
+  };
+  return [
+    pick(c.blue, "0F82F5"),
+    pick(c.cyan || c.lightBlue, "59D6FD"),
+    pick(c.purple, "5143D5"),
+    pick(c.orange, "F9935B"),
+    pick(c.green, "66CC8E"),
+    pick(c.red, "FC5161")
+  ];
+}
 function renderFunnelSvg(funnel, options = {}) {
   const useVariables = options.cssVariables !== false;
   const mode = options.mode === "dark" ? "dark" : "light";
@@ -430,6 +445,11 @@ function renderFunnelSvg(funnel, options = {}) {
     onAccent: cssColor(options.onAccentColor, DEFAULT_COLORS3[mode].onAccent)
   };
   const color = (name) => useVariables ? `var(--deck-funnel-${name}, ${colors[name]})` : colors[name];
+  const palette = Array.isArray(options.palette) && options.palette.length ? options.palette : STAGE_PALETTE;
+  const stageColor = (index) => {
+    const k = index % STAGE_PALETTE.length;
+    return useVariables ? `var(--deck-funnel-stage-${k}, ${STAGE_PALETTE[k]})` : palette[k] || STAGE_PALETTE[k];
+  };
   const width = 760;
   const height = 318;
   const keyWidth = 230;
@@ -452,11 +472,11 @@ function renderFunnelSvg(funnel, options = {}) {
       `${round3(centerX - bottomW / 2)},${round3(y2)}`
     ].join(" ");
     const mid = y1 + stageH / 2;
-    const opacity = STAGE_OPACITY[index] ?? STAGE_OPACITY.at(-1);
+    const fill = stageColor(index);
     return `<g class="deck-funnel-stage deck-funnel-stage-${index % 6}">
-    <polygon class="deck-funnel-segment" points="${points}" style="opacity:${opacity}"></polygon>
+    <polygon class="deck-funnel-segment" points="${points}" style="fill:${fill}"></polygon>
     <polygon class="deck-funnel-sheen" points="${points}"></polygon>
-    <rect class="deck-funnel-key-swatch" x="${keyX}" y="${round3(mid - 7)}" width="13" height="13" rx="3" style="opacity:${opacity}"></rect>
+    <rect class="deck-funnel-key-swatch" x="${keyX}" y="${round3(mid - 7)}" width="13" height="13" rx="3" style="fill:${fill}"></rect>
     <text class="deck-funnel-key-name" x="${keyX + 22}" y="${round3(mid - 1)}">${escapeHtml(stage.label)}</text>
     <text class="deck-funnel-key-value" x="${keyX + 22}" y="${round3(mid + 15)}">${escapeHtml(`${formatNumber(stage.value)}${funnel.unit} \xB7 ${stage.rate}`)}</text>
   </g>`;
@@ -470,9 +490,8 @@ function renderFunnelSvg(funnel, options = {}) {
     </linearGradient>
   </defs>
   <style>
-    .deck-funnel-segment { fill: ${color("accent")}; stroke: ${color("surface")}; stroke-width: 2; }
+    .deck-funnel-segment { stroke: ${color("surface")}; stroke-width: 2; }
     .deck-funnel-sheen { fill: url(#deck-funnel-sheen-grad); pointer-events: none; }
-    .deck-funnel-key-swatch { fill: ${color("accent")}; }
     .deck-funnel-key-name { fill: ${color("heading")}; font: 600 14px "Poppins", "Aptos", sans-serif; }
     .deck-funnel-key-value { fill: ${color("muted")}; font: 500 12.5px "Poppins", "Aptos", sans-serif; }
   </style>
@@ -1576,6 +1595,7 @@ export {
   formatNumber,
   renderBoxplotSvg,
   renderBulletSvg,
+  funnelPalette,
   renderFunnelSvg,
   renderHistogramSvg,
   histogramBins,
