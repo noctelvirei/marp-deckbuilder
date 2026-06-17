@@ -9,6 +9,8 @@ import {
   presentationAnimationScript,
 } from './animations/html.js'
 import { hasSlideBackgroundAsset, slideBackgroundAsset } from './brand.js'
+import { svgChartHoverScript } from './charts-svg/hover.js'
+import { svgChartCss } from './charts-svg/styles.js'
 import { buildMarpMarkdown } from './markdown.js'
 import {
   normalizeResourceReference,
@@ -72,6 +74,7 @@ export function renderDeckHtml(deck, options = {}) {
     htmlDeckEnhancementScript(definitions.brand),
     htmlDeckNavigationScript(),
     htmlDeckChartScript(),
+    svgChartHoverScript(),
   ].filter(Boolean).join('\n')
 
   return {
@@ -397,6 +400,26 @@ section.dark .deck-funnel {
   --deck-funnel-heading: ${darkHeading};
   --deck-funnel-muted: ${darkMuted};
 }
+
+.deck-chart {
+  --deck-chart-accent: ${cssColor(brand, 'blue', '0F82F5')};
+  --deck-chart-accent2: ${cssColor(brand, 'cyan', '59D6FD')};
+}
+section.dark .deck-chart {
+  --deck-chart-heading: ${darkHeading};
+  --deck-chart-muted: ${darkMuted};
+  --deck-chart-grid: #27395a;
+  --deck-chart-axis: #3a4f6f;
+  --deck-chart-value: #cfe5ff;
+}
+section.light .deck-chart {
+  --deck-chart-heading: #0b1b33;
+  --deck-chart-muted: #5a6b82;
+  --deck-chart-grid: #e3e9f1;
+  --deck-chart-axis: #c2cddd;
+  --deck-chart-value: #234a7a;
+}
+${svgChartCss()}
 
 section.light h1,
 section.light h2,

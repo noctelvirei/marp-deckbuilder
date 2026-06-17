@@ -8,7 +8,7 @@ import {
   buildMarpMarkdown,
   getAnimation,
   load
-} from "./chunk-5XDT37I2.mjs";
+} from "./chunk-XLAEZD4M.mjs";
 import {
   require_node
 } from "./chunk-MGQWBMZO.mjs";
@@ -136345,6 +136345,70 @@ function slideAnimationVariables(slide) {
 }`;
 }
 
+// src/charts-svg/hover.js
+function svgChartHoverScript() {
+  return `(() => {
+  if (window.__deckSvgHover) return; window.__deckSvgHover = true;
+  let tip;
+  function ensureTip() {
+    if (tip) return tip;
+    tip = document.createElement('div');
+    tip.className = 'dsvg-tip';
+    document.body.appendChild(tip);
+    return tip;
+  }
+  function show(el, evt) {
+    const text = el.getAttribute('data-deck-tip');
+    if (!text) return;
+    const t = ensureTip();
+    t.textContent = text;
+    t.style.left = evt.clientX + 'px';
+    t.style.top = evt.clientY + 'px';
+    t.classList.add('is-on');
+  }
+  function move(evt) {
+    if (!tip || !tip.classList.contains('is-on')) return;
+    tip.style.left = evt.clientX + 'px';
+    tip.style.top = evt.clientY + 'px';
+  }
+  function hide() { if (tip) tip.classList.remove('is-on'); }
+  document.addEventListener('pointerover', (e) => {
+    const el = e.target.closest && e.target.closest('[data-deck-tip]');
+    if (el && el.closest('svg[data-deck-svgchart]')) show(el, e);
+  });
+  document.addEventListener('pointermove', move);
+  document.addEventListener('pointerout', (e) => {
+    const el = e.target.closest && e.target.closest('[data-deck-tip]');
+    if (el) hide();
+  });
+})();`;
+}
+
+// src/charts-svg/styles.js
+function svgChartCss() {
+  return `
+  .dsvg { width: 100%; height: auto; display: block; font-family: "Poppins", "Aptos", system-ui, sans-serif; overflow: visible; }
+  .dsvg-title { font-size: 19px; font-weight: 600; }
+  .dsvg-grid { stroke-width: 1; }
+  .dsvg-axis { stroke-width: 1.4; }
+  .dsvg-ytick, .dsvg-xtick { font-size: 12.5px; font-weight: 500; }
+  .dsvg-linepath { fill: none; stroke-width: 3; stroke-linecap: round; stroke-linejoin: round; }
+  .dsvg-halo { opacity: 0.22; transition: opacity .12s ease, r .12s ease; }
+  .dsvg-dot { fill: #fff; stroke-width: 2.5; transition: r .12s ease; }
+  .dsvg-hit { fill: transparent; }
+  .dsvg-val { font-size: 11.5px; font-weight: 600; }
+  .dsvg-marker { cursor: default; }
+  .dsvg-marker:hover .dsvg-halo { opacity: 0.4; r: 11; }
+  .dsvg-marker:hover .dsvg-dot { r: 6; }
+  /* tooltip injected by the hover runtime */
+  .dsvg-tip { position: fixed; z-index: 9999; pointer-events: none; transform: translate(-50%, -120%);
+    background: rgba(9,21,38,.96); color: #eaf2ff; border: 1px solid #27406b; border-radius: 8px;
+    padding: 6px 10px; font: 600 12.5px "Poppins","Aptos",sans-serif; white-space: nowrap;
+    box-shadow: 0 6px 20px rgba(0,0,0,.35); opacity: 0; transition: opacity .1s ease; }
+  .dsvg-tip.is-on { opacity: 1; }
+`;
+}
+
 // src/render.js
 function renderDeckHtml(deck, options = {}) {
   const definitions = options.definitions;
@@ -136395,7 +136459,8 @@ function renderDeckHtml(deck, options = {}) {
     presentationAnimationScript(htmlDeck.slides),
     htmlDeckEnhancementScript(definitions.brand),
     htmlDeckNavigationScript(),
-    htmlDeckChartScript()
+    htmlDeckChartScript(),
+    svgChartHoverScript()
   ].filter(Boolean).join("\n");
   return {
     html: htmlWithDeckShell,
@@ -136713,6 +136778,26 @@ section.dark .deck-funnel {
   --deck-funnel-heading: ${darkHeading};
   --deck-funnel-muted: ${darkMuted};
 }
+
+.deck-chart {
+  --deck-chart-accent: ${cssColor(brand, "blue", "0F82F5")};
+  --deck-chart-accent2: ${cssColor(brand, "cyan", "59D6FD")};
+}
+section.dark .deck-chart {
+  --deck-chart-heading: ${darkHeading};
+  --deck-chart-muted: ${darkMuted};
+  --deck-chart-grid: #27395a;
+  --deck-chart-axis: #3a4f6f;
+  --deck-chart-value: #cfe5ff;
+}
+section.light .deck-chart {
+  --deck-chart-heading: #0b1b33;
+  --deck-chart-muted: #5a6b82;
+  --deck-chart-grid: #e3e9f1;
+  --deck-chart-axis: #c2cddd;
+  --deck-chart-value: #234a7a;
+}
+${svgChartCss()}
 
 section.light h1,
 section.light h2,

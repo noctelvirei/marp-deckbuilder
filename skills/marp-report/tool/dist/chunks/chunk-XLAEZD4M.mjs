@@ -47671,6 +47671,169 @@ function normalizeChartType(value) {
   return token || "bar";
 }
 
+// src/charts-svg/core.js
+var SVG_PALETTE = ["#0f82f5", "#59d6fd", "#5143d5", "#f9935b", "#66cc8e", "#fc5161"];
+var DEFAULT_THEME = {
+  dark: { heading: "#ffffff", muted: "#8a95a8", grid: "#27395a", axis: "#3a4f6f", surface: "#0d1d36", valueLabel: "#cfe5ff" },
+  light: { heading: "#0b1b33", muted: "#5a6b82", grid: "#e3e9f1", axis: "#c2cddd", surface: "#ffffff", valueLabel: "#234" }
+};
+function normHex(value, fallback) {
+  const raw = String(value ?? "").trim();
+  if (/^#[0-9a-f]{3,8}$/i.test(raw)) return raw;
+  if (/^[0-9a-f]{6}$/i.test(raw)) return `#${raw}`;
+  return fallback;
+}
+function resolvePalette(brand = {}, override) {
+  if (Array.isArray(override) && override.length) return override.map((c2, i) => normHex(c2, SVG_PALETTE[i % SVG_PALETTE.length]));
+  const c = brand && brand.colors || {};
+  return [
+    normHex(c.blue, SVG_PALETTE[0]),
+    normHex(c.cyan || c.lightBlue, SVG_PALETTE[1]),
+    normHex(c.purple, SVG_PALETTE[2]),
+    normHex(c.orange, SVG_PALETTE[3]),
+    normHex(c.green, SVG_PALETTE[4]),
+    normHex(c.red, SVG_PALETTE[5])
+  ];
+}
+function round(n) {
+  return Math.round(n * 100) / 100;
+}
+function niceExtent(min, max, { includeZero = false, pad = 0.12 } = {}) {
+  let lo = includeZero ? Math.min(0, min) : min;
+  let hi = includeZero ? Math.max(0, max) : max;
+  if (lo === hi) {
+    hi = lo + 1;
+    lo = lo - 1;
+  }
+  const span = hi - lo;
+  lo -= span * pad;
+  hi += span * pad;
+  if (includeZero) {
+    if (min >= 0) lo = 0;
+    if (max <= 0) hi = 0;
+  }
+  return [lo, hi];
+}
+function niceTicks(lo, hi, count = 5) {
+  const span = hi - lo;
+  if (span <= 0) return [lo];
+  const raw = span / count;
+  const mag = Math.pow(10, Math.floor(Math.log10(raw)));
+  const norm = raw / mag;
+  const step = (norm >= 7.5 ? 10 : norm >= 3 ? 5 : norm >= 1.5 ? 2 : 1) * mag;
+  const start = Math.ceil(lo / step) * step;
+  const ticks = [];
+  for (let v = start; v <= hi + step * 1e-6; v += step) ticks.push(round(v));
+  return ticks;
+}
+function smoothPath(points) {
+  if (points.length < 2) return points.length ? `M ${round(points[0].x)} ${round(points[0].y)}` : "";
+  let d = `M ${round(points[0].x)} ${round(points[0].y)}`;
+  for (let i = 0; i < points.length - 1; i++) {
+    const p0 = points[i - 1] || points[i];
+    const p1 = points[i];
+    const p2 = points[i + 1];
+    const p3 = points[i + 2] || p2;
+    const t = 0.5 / 3;
+    const c1x = p1.x + (p2.x - p0.x) * t;
+    const c1y = p1.y + (p2.y - p0.y) * t;
+    const c2x = p2.x - (p3.x - p1.x) * t;
+    const c2y = p2.y - (p3.y - p1.y) * t;
+    d += ` C ${round(c1x)} ${round(c1y)}, ${round(c2x)} ${round(c2y)}, ${round(p2.x)} ${round(p2.y)}`;
+  }
+  return d;
+}
+function straightPath(points) {
+  return points.map((p, i) => `${i === 0 ? "M" : "L"} ${round(p.x)} ${round(p.y)}`).join(" ");
+}
+function chartDefs(id, accent, accent2) {
+  const a2 = accent2 || accent;
+  return `<defs>
+    <linearGradient id="${id}-area" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" style="stop-color:${accent};stop-opacity:0.42"></stop>
+      <stop offset="100%" style="stop-color:${accent};stop-opacity:0"></stop>
+    </linearGradient>
+    <linearGradient id="${id}-line" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%" style="stop-color:${a2}"></stop>
+      <stop offset="100%" style="stop-color:${accent}"></stop>
+    </linearGradient>
+    <filter id="${id}-glow" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="2.4" result="b"></feGaussianBlur>
+      <feMerge><feMergeNode in="b"></feMergeNode><feMergeNode in="SourceGraphic"></feMergeNode></feMerge>
+    </filter>
+  </defs>`;
+}
+var __idSeq = 0;
+function chartId(prefix = "svgc") {
+  __idSeq += 1;
+  return `${prefix}-${__idSeq}`;
+}
+
+// src/charts-svg/line.js
+function renderLineChartSvg(chart, options = {}) {
+  const mode = options.mode === "light" ? "light" : "dark";
+  const theme = DEFAULT_THEME[mode];
+  const useVars = options.cssVariables !== false;
+  const area = options.area === true;
+  const smooth = options.smooth !== false;
+  const width = options.width || 760;
+  const height = options.height || 380;
+  const margin = { top: chart.title ? 54 : 28, right: 34, bottom: 46, left: 56 };
+  const palette = resolvePalette(options.brand, options.palette);
+  const accentHex = normHex(options.accentColor, palette[0] || SVG_PALETTE[0]);
+  const accent2Hex = normHex(options.accent2Color, palette[1] || accentHex);
+  const tc = (name, fallback) => useVars ? `var(--deck-chart-${name}, ${fallback})` : fallback;
+  const accent = useVars ? `var(--deck-chart-accent, ${accentHex})` : accentHex;
+  const accent2 = useVars ? `var(--deck-chart-accent2, ${accent2Hex})` : accent2Hex;
+  const labels = chart.labels || [];
+  const values = (chart.values || []).map((v) => Number(v) || 0);
+  const minV = Math.min(...values);
+  const maxV = Math.max(...values);
+  const [lo, hi] = niceExtent(minV, maxV, { includeZero: area });
+  const plotW = width - margin.left - margin.right;
+  const plotH = height - margin.top - margin.bottom;
+  const xFor = (i) => values.length > 1 ? margin.left + i / (values.length - 1) * plotW : margin.left + plotW / 2;
+  const yFor = (v) => margin.top + plotH - (v - lo) / (hi - lo) * plotH;
+  const baselineY = margin.top + plotH;
+  const points = values.map((v, i) => ({ x: xFor(i), y: yFor(v), v, label: labels[i] || "" }));
+  const id = chartId("line");
+  const ticks = niceTicks(lo, hi, 5);
+  const grid = ticks.map((t) => {
+    const y = yFor(t);
+    return `<line class="dsvg-grid" x1="${round(margin.left)}" y1="${round(y)}" x2="${round(margin.left + plotW)}" y2="${round(y)}" style="stroke:${tc("grid", theme.grid)}"></line>
+    <text class="dsvg-ytick" x="${round(margin.left - 12)}" y="${round(y + 4)}" text-anchor="end" style="fill:${tc("muted", theme.muted)}">${escapeHtml(formatNumber(t))}${escapeHtml(chart.unit || "")}</text>`;
+  }).join("\n  ");
+  const lastIndex = points.length - 1;
+  const xlabels = points.map((p, i) => {
+    const anchor = i === 0 ? "start" : i === lastIndex ? "end" : "middle";
+    return `<text class="dsvg-xtick" x="${round(p.x)}" y="${height - 18}" text-anchor="${anchor}" style="fill:${tc("muted", theme.muted)}">${escapeHtml(p.label)}</text>`;
+  }).join("\n  ");
+  const linePathD = smooth ? smoothPath(points) : straightPath(points);
+  const areaPathD = area ? `${linePathD} L ${round(points[lastIndex].x)} ${round(baselineY)} L ${round(points[0].x)} ${round(baselineY)} Z` : "";
+  const markers = points.map((p) => {
+    const tip = `${p.label}: ${formatNumber(p.v)}${chart.unit || ""}`;
+    return `<g class="dsvg-marker" data-deck-tip="${escapeAttr(tip)}" data-deck-x="${round(p.x)}" data-deck-y="${round(p.y)}">
+      <circle class="dsvg-hit" cx="${round(p.x)}" cy="${round(p.y)}" r="14"></circle>
+      <circle class="dsvg-halo" cx="${round(p.x)}" cy="${round(p.y)}" r="9" style="fill:${accent}"></circle>
+      <circle class="dsvg-dot" cx="${round(p.x)}" cy="${round(p.y)}" r="4.5" style="stroke:${accent}"></circle>
+      <text class="dsvg-val" x="${round(p.x)}" y="${round(p.y - 14)}" text-anchor="middle" style="fill:${tc("value", theme.valueLabel)}">${escapeHtml(formatNumber(p.v))}${escapeHtml(chart.unit || "")}</text>
+    </g>`;
+  }).join("\n  ");
+  return `<svg class="dsvg dsvg-line" data-deck-svgchart="${area ? "area" : "line"}" viewBox="0 0 ${width} ${height}" preserveAspectRatio="xMidYMid meet" role="img" aria-label="${escapeAttr(chart.title || (area ? "Area chart" : "Line chart"))}">
+  ${chartDefs(id, accent, accent2)}
+  ${chart.title ? `<text class="dsvg-title" x="${margin.left}" y="30" style="fill:${tc("heading", theme.heading)}">${escapeHtml(chart.title)}</text>` : ""}
+  ${grid}
+  <line class="dsvg-axis" x1="${round(margin.left)}" y1="${round(baselineY)}" x2="${round(margin.left + plotW)}" y2="${round(baselineY)}" style="stroke:${tc("axis", theme.axis)}"></line>
+  ${area ? `<path class="dsvg-areafill" d="${areaPathD}" style="fill:url(#${id}-area)"></path>` : ""}
+  <path class="dsvg-linepath" d="${linePathD}" style="stroke:url(#${id}-line);filter:url(#${id}-glow)"></path>
+  ${markers}
+  ${xlabels}
+</svg>`;
+}
+function renderAreaChartSvg(chart, options = {}) {
+  return renderLineChartSvg(chart, { ...options, area: true });
+}
+
 // src/components/renderers.js
 var chartPalette = ["#0f82f5", "#4cc9f0", "#5d4ee8", "#ff9f51", "#2fc27d", "#ff5c7a"];
 function renderChartHtml(chart) {
@@ -47841,127 +48004,16 @@ function renderSankeyChartHtml(chart) {
 </figure>`;
 }
 function renderLineChartHtml(chart) {
-  const chartConfig = {
-    type: "line",
-    labels: chart.labels,
-    values: chart.values,
-    series: chart.series || chart.title || "Series 1",
-    title: chart.title || ""
-  };
-  const geometry = categoricalSeriesGeometry(chart);
-  const markers = geometry.points.map((point) => `<g transform="translate(${point.x.toFixed(2)} ${point.y.toFixed(2)})">
-  <circle class="deck-chart-line-point" r="6" fill="#0f82f5" stroke="#ffffff"><title>${escapeHtml(point.label)}: ${escapeHtml(formatNumber(point.value))}</title></circle>
-  <text class="deck-chart-line-point-value" x="0" y="-13" text-anchor="middle">${escapeHtml(formatNumber(point.value))}</text>
-</g>`).join("\n");
   return `<figure class="deck-chart deck-chart-line">
   ${chart.title ? `<figcaption>${escapeHtml(chart.title)}</figcaption>` : ""}
-  <div class="deck-chart-js" data-deck-chart-type="line">
-    <div class="deck-chart-js-frame">
-      <canvas class="deck-chart-js-canvas" data-deck-chartjs="line" data-deck-chart-config="${escapeAttr(JSON.stringify(chartConfig))}" role="img" aria-label="${escapeAttr(chart.title || "Line chart")}"></canvas>
-    </div>
-    <div class="deck-chart-js-fallback">
-      <svg class="deck-chart-line-svg" viewBox="0 0 ${geometry.width} ${geometry.height}" role="img" aria-label="${escapeAttr(chart.title || "Line chart")}">
-        ${renderSeriesGrid(geometry, "line")}
-        ${renderSeriesAxes(geometry, "line")}
-        <path class="deck-chart-line-path" d="${linePath(geometry.points)}" fill="none" stroke="#0f82f5"></path>
-        ${markers}
-        ${renderSeriesXLabels(geometry, "line")}
-      </svg>
-    </div>
-  </div>
+  ${renderLineChartSvg({ ...chart, title: "" }, { cssVariables: true })}
 </figure>`;
 }
 function renderAreaChartHtml(chart) {
-  const chartConfig = {
-    type: "area",
-    labels: chart.labels,
-    values: chart.values,
-    series: chart.series || chart.title || "Series 1",
-    title: chart.title || ""
-  };
-  const minValue = Math.min(...chart.values);
-  const maxValue = Math.max(...chart.values);
-  const includeZero = minValue <= 0 && maxValue >= 0;
-  const geometry = categoricalSeriesGeometry(chart, { includeZero });
-  const baseline = geometry.yFor(includeZero ? 0 : geometry.minY);
-  const areaPath = [
-    `M ${geometry.points[0].x.toFixed(2)} ${baseline.toFixed(2)}`,
-    ...geometry.points.map((point) => `L ${point.x.toFixed(2)} ${point.y.toFixed(2)}`),
-    `L ${geometry.points.at(-1).x.toFixed(2)} ${baseline.toFixed(2)}`,
-    "Z"
-  ].join(" ");
-  const markers = geometry.points.map((point) => `<g transform="translate(${point.x.toFixed(2)} ${point.y.toFixed(2)})">
-  <circle class="deck-chart-area-point" r="5" fill="#0f82f5" stroke="#ffffff"><title>${escapeHtml(point.label)}: ${escapeHtml(formatNumber(point.value))}</title></circle>
-  <text class="deck-chart-area-point-value" x="0" y="-12" text-anchor="middle">${escapeHtml(formatNumber(point.value))}</text>
-</g>`).join("\n");
   return `<figure class="deck-chart deck-chart-area">
   ${chart.title ? `<figcaption>${escapeHtml(chart.title)}</figcaption>` : ""}
-  <div class="deck-chart-js" data-deck-chart-type="area">
-    <div class="deck-chart-js-frame">
-      <canvas class="deck-chart-js-canvas" data-deck-chartjs="area" data-deck-chart-config="${escapeAttr(JSON.stringify(chartConfig))}" role="img" aria-label="${escapeAttr(chart.title || "Area chart")}"></canvas>
-    </div>
-    <div class="deck-chart-js-fallback">
-      <svg class="deck-chart-area-svg" viewBox="0 0 ${geometry.width} ${geometry.height}" role="img" aria-label="${escapeAttr(chart.title || "Area chart")}">
-        ${renderSeriesGrid(geometry, "area")}
-        ${renderSeriesAxes(geometry, "area")}
-        <path class="deck-chart-area-fill" d="${areaPath}" fill="rgba(15, 130, 245, .22)"></path>
-        <path class="deck-chart-area-path" d="${linePath(geometry.points)}" fill="none" stroke="#0f82f5"></path>
-        ${markers}
-        ${renderSeriesXLabels(geometry, "area")}
-      </svg>
-    </div>
-  </div>
+  ${renderAreaChartSvg({ ...chart, title: "" }, { cssVariables: true })}
 </figure>`;
-}
-function categoricalSeriesGeometry(chart, options = {}) {
-  const width = 760;
-  const height = 342;
-  const margin = { top: 30, right: 44, bottom: 54, left: 70 };
-  const values = chart.values;
-  const minValue = Math.min(...values);
-  const maxValue = Math.max(...values);
-  let [minY, maxY] = expandExtent(
-    options.includeZero ? Math.min(0, minValue) : minValue,
-    options.includeZero ? Math.max(0, maxValue) : maxValue
-  );
-  if (options.includeZero && minValue >= 0) minY = 0;
-  if (options.includeZero && maxValue <= 0) maxY = 0;
-  if (minY === maxY) maxY = minY + 1;
-  const plotWidth = width - margin.left - margin.right;
-  const plotHeight = height - margin.top - margin.bottom;
-  const xFor = (index2) => values.length > 1 ? margin.left + index2 / (values.length - 1) * plotWidth : margin.left + plotWidth / 2;
-  const yFor = (value) => margin.top + plotHeight - (value - minY) / (maxY - minY) * plotHeight;
-  const points = values.map((value, index2) => ({
-    x: xFor(index2),
-    y: yFor(value),
-    value,
-    label: chart.labels[index2] || ""
-  }));
-  return { width, height, margin, plotWidth, plotHeight, minY, maxY, yFor, points };
-}
-function renderSeriesGrid(geometry, prefix) {
-  return tickValues(geometry.minY, geometry.maxY).map((tick) => {
-    const y = geometry.yFor(tick);
-    return `<line class="deck-chart-${prefix}-grid" x1="${geometry.margin.left}" y1="${y.toFixed(2)}" x2="${geometry.margin.left + geometry.plotWidth}" y2="${y.toFixed(2)}"></line>
-<text class="deck-chart-${prefix}-tick" x="${geometry.margin.left - 14}" y="${(y + 5).toFixed(2)}" text-anchor="end">${escapeHtml(formatNumber(tick))}</text>`;
-  }).join("\n");
-}
-function renderSeriesAxes(geometry, prefix) {
-  return `<line class="deck-chart-${prefix}-axis" x1="${geometry.margin.left}" y1="${geometry.margin.top + geometry.plotHeight}" x2="${geometry.margin.left + geometry.plotWidth}" y2="${geometry.margin.top + geometry.plotHeight}"></line>
-    <line class="deck-chart-${prefix}-axis" x1="${geometry.margin.left}" y1="${geometry.margin.top}" x2="${geometry.margin.left}" y2="${geometry.margin.top + geometry.plotHeight}"></line>`;
-}
-function renderSeriesXLabels(geometry, prefix) {
-  const lastIndex = geometry.points.length - 1;
-  return geometry.points.map((point, index2) => {
-    const isFirst = index2 === 0;
-    const isLast = index2 === lastIndex;
-    const anchor = isFirst ? "start" : isLast ? "end" : "middle";
-    const x = point.x + (isFirst ? 2 : isLast ? -2 : 0);
-    return `<text class="deck-chart-${prefix}-tick" x="${x.toFixed(2)}" y="${geometry.height - 24}" text-anchor="${anchor}">${escapeHtml(point.label)}</text>`;
-  }).join("\n");
-}
-function linePath(points) {
-  return points.map((point, index2) => `${index2 === 0 ? "M" : "L"} ${point.x.toFixed(2)} ${point.y.toFixed(2)}`).join(" ");
 }
 function renderSignalBarsHtml(signalBars) {
   const max = Math.max(...signalBars.values, 1);

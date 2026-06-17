@@ -17,9 +17,11 @@ export function renderLineChartSvg(chart, options = {}) {
 
   // theme colour: CSS var (HTML, brand-overridable) or explicit (static/PPTX)
   const palette = resolvePalette(options.brand, options.palette)
-  const accent = normHex(options.accentColor, palette[0] || SVG_PALETTE[0])
-  const accent2 = normHex(options.accent2Color, palette[1] || accent)
+  const accentHex = normHex(options.accentColor, palette[0] || SVG_PALETTE[0])
+  const accent2Hex = normHex(options.accent2Color, palette[1] || accentHex)
   const tc = (name, fallback) => useVars ? `var(--deck-chart-${name}, ${fallback})` : fallback
+  const accent = useVars ? `var(--deck-chart-accent, ${accentHex})` : accentHex
+  const accent2 = useVars ? `var(--deck-chart-accent2, ${accent2Hex})` : accent2Hex
 
   const labels = chart.labels || []
   const values = (chart.values || []).map((v) => Number(v) || 0)

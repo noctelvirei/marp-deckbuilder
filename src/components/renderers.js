@@ -1,4 +1,5 @@
 import { escapeAttr, escapeHtml, formatNumber } from './utils.js'
+import { renderAreaChartSvg, renderLineChartSvg } from '../charts-svg/line.js'
 import { renderBoxplotSvg } from './boxplot.js'
 import { renderBulletSvg } from './bullet.js'
 import { renderFunnelSvg } from './funnel.js'
@@ -193,145 +194,20 @@ function renderSankeyChartHtml(chart) {
 }
 
 function renderLineChartHtml(chart) {
-  const chartConfig = {
-    type: 'line',
-    labels: chart.labels,
-    values: chart.values,
-    series: chart.series || chart.title || 'Series 1',
-    title: chart.title || '',
-  }
-  const geometry = categoricalSeriesGeometry(chart)
-  const markers = geometry.points
-    .map((point) => `<g transform="translate(${point.x.toFixed(2)} ${point.y.toFixed(2)})">
-  <circle class="deck-chart-line-point" r="6" fill="#0f82f5" stroke="#ffffff"><title>${escapeHtml(point.label)}: ${escapeHtml(formatNumber(point.value))}</title></circle>
-  <text class="deck-chart-line-point-value" x="0" y="-13" text-anchor="middle">${escapeHtml(formatNumber(point.value))}</text>
-</g>`)
-    .join('\n')
-
+  // SSR-SVG (vector, crisp at any scale) + thin hover runtime. No canvas, no
+  // `deck-chart-js` class, so the chart.js enhancer skips it. Title lives in the
+  // figcaption (consistent with other charts), so the SVG's own title is off.
   return `<figure class="deck-chart deck-chart-line">
   ${chart.title ? `<figcaption>${escapeHtml(chart.title)}</figcaption>` : ''}
-  <div class="deck-chart-js" data-deck-chart-type="line">
-    <div class="deck-chart-js-frame">
-      <canvas class="deck-chart-js-canvas" data-deck-chartjs="line" data-deck-chart-config="${escapeAttr(JSON.stringify(chartConfig))}" role="img" aria-label="${escapeAttr(chart.title || 'Line chart')}"></canvas>
-    </div>
-    <div class="deck-chart-js-fallback">
-      <svg class="deck-chart-line-svg" viewBox="0 0 ${geometry.width} ${geometry.height}" role="img" aria-label="${escapeAttr(chart.title || 'Line chart')}">
-        ${renderSeriesGrid(geometry, 'line')}
-        ${renderSeriesAxes(geometry, 'line')}
-        <path class="deck-chart-line-path" d="${linePath(geometry.points)}" fill="none" stroke="#0f82f5"></path>
-        ${markers}
-        ${renderSeriesXLabels(geometry, 'line')}
-      </svg>
-    </div>
-  </div>
+  ${renderLineChartSvg({ ...chart, title: '' }, { cssVariables: true })}
 </figure>`
 }
 
 function renderAreaChartHtml(chart) {
-  const chartConfig = {
-    type: 'area',
-    labels: chart.labels,
-    values: chart.values,
-    series: chart.series || chart.title || 'Series 1',
-    title: chart.title || '',
-  }
-  const minValue = Math.min(...chart.values)
-  const maxValue = Math.max(...chart.values)
-  const includeZero = minValue <= 0 && maxValue >= 0
-  const geometry = categoricalSeriesGeometry(chart, { includeZero })
-  const baseline = geometry.yFor(includeZero ? 0 : geometry.minY)
-  const areaPath = [
-    `M ${geometry.points[0].x.toFixed(2)} ${baseline.toFixed(2)}`,
-    ...geometry.points.map((point) => `L ${point.x.toFixed(2)} ${point.y.toFixed(2)}`),
-    `L ${geometry.points.at(-1).x.toFixed(2)} ${baseline.toFixed(2)}`,
-    'Z',
-  ].join(' ')
-  const markers = geometry.points
-    .map((point) => `<g transform="translate(${point.x.toFixed(2)} ${point.y.toFixed(2)})">
-  <circle class="deck-chart-area-point" r="5" fill="#0f82f5" stroke="#ffffff"><title>${escapeHtml(point.label)}: ${escapeHtml(formatNumber(point.value))}</title></circle>
-  <text class="deck-chart-area-point-value" x="0" y="-12" text-anchor="middle">${escapeHtml(formatNumber(point.value))}</text>
-</g>`)
-    .join('\n')
-
   return `<figure class="deck-chart deck-chart-area">
   ${chart.title ? `<figcaption>${escapeHtml(chart.title)}</figcaption>` : ''}
-  <div class="deck-chart-js" data-deck-chart-type="area">
-    <div class="deck-chart-js-frame">
-      <canvas class="deck-chart-js-canvas" data-deck-chartjs="area" data-deck-chart-config="${escapeAttr(JSON.stringify(chartConfig))}" role="img" aria-label="${escapeAttr(chart.title || 'Area chart')}"></canvas>
-    </div>
-    <div class="deck-chart-js-fallback">
-      <svg class="deck-chart-area-svg" viewBox="0 0 ${geometry.width} ${geometry.height}" role="img" aria-label="${escapeAttr(chart.title || 'Area chart')}">
-        ${renderSeriesGrid(geometry, 'area')}
-        ${renderSeriesAxes(geometry, 'area')}
-        <path class="deck-chart-area-fill" d="${areaPath}" fill="rgba(15, 130, 245, .22)"></path>
-        <path class="deck-chart-area-path" d="${linePath(geometry.points)}" fill="none" stroke="#0f82f5"></path>
-        ${markers}
-        ${renderSeriesXLabels(geometry, 'area')}
-      </svg>
-    </div>
-  </div>
+  ${renderAreaChartSvg({ ...chart, title: '' }, { cssVariables: true })}
 </figure>`
-}
-
-function categoricalSeriesGeometry(chart, options = {}) {
-  const width = 760
-  const height = 342
-  const margin = { top: 30, right: 44, bottom: 54, left: 70 }
-  const values = chart.values
-  const minValue = Math.min(...values)
-  const maxValue = Math.max(...values)
-  let [minY, maxY] = expandExtent(
-    options.includeZero ? Math.min(0, minValue) : minValue,
-    options.includeZero ? Math.max(0, maxValue) : maxValue,
-  )
-  if (options.includeZero && minValue >= 0) minY = 0
-  if (options.includeZero && maxValue <= 0) maxY = 0
-  if (minY === maxY) maxY = minY + 1
-  const plotWidth = width - margin.left - margin.right
-  const plotHeight = height - margin.top - margin.bottom
-  const xFor = (index) => values.length > 1
-    ? margin.left + (index / (values.length - 1)) * plotWidth
-    : margin.left + plotWidth / 2
-  const yFor = (value) => margin.top + plotHeight - ((value - minY) / (maxY - minY)) * plotHeight
-  const points = values.map((value, index) => ({
-    x: xFor(index),
-    y: yFor(value),
-    value,
-    label: chart.labels[index] || '',
-  }))
-  return { width, height, margin, plotWidth, plotHeight, minY, maxY, yFor, points }
-}
-
-function renderSeriesGrid(geometry, prefix) {
-  return tickValues(geometry.minY, geometry.maxY)
-    .map((tick) => {
-      const y = geometry.yFor(tick)
-      return `<line class="deck-chart-${prefix}-grid" x1="${geometry.margin.left}" y1="${y.toFixed(2)}" x2="${geometry.margin.left + geometry.plotWidth}" y2="${y.toFixed(2)}"></line>
-<text class="deck-chart-${prefix}-tick" x="${geometry.margin.left - 14}" y="${(y + 5).toFixed(2)}" text-anchor="end">${escapeHtml(formatNumber(tick))}</text>`
-    })
-    .join('\n')
-}
-
-function renderSeriesAxes(geometry, prefix) {
-  return `<line class="deck-chart-${prefix}-axis" x1="${geometry.margin.left}" y1="${geometry.margin.top + geometry.plotHeight}" x2="${geometry.margin.left + geometry.plotWidth}" y2="${geometry.margin.top + geometry.plotHeight}"></line>
-    <line class="deck-chart-${prefix}-axis" x1="${geometry.margin.left}" y1="${geometry.margin.top}" x2="${geometry.margin.left}" y2="${geometry.margin.top + geometry.plotHeight}"></line>`
-}
-
-function renderSeriesXLabels(geometry, prefix) {
-  const lastIndex = geometry.points.length - 1
-  return geometry.points
-    .map((point, index) => {
-      const isFirst = index === 0
-      const isLast = index === lastIndex
-      const anchor = isFirst ? 'start' : isLast ? 'end' : 'middle'
-      const x = point.x + (isFirst ? 2 : isLast ? -2 : 0)
-      return `<text class="deck-chart-${prefix}-tick" x="${x.toFixed(2)}" y="${geometry.height - 24}" text-anchor="${anchor}">${escapeHtml(point.label)}</text>`
-    })
-    .join('\n')
-}
-
-function linePath(points) {
-  return points.map((point, index) => `${index === 0 ? 'M' : 'L'} ${point.x.toFixed(2)} ${point.y.toFixed(2)}`).join(' ')
 }
 
 export function renderSignalBarsHtml(signalBars) {
