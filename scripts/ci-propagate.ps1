@@ -35,9 +35,12 @@ foreach ($f in $forks) {
   if (Test-Path $dst) { Remove-Item $dst -Recurse -Force }
   Copy-Item $EngineDist $dst -Recurse -Force
 }
+# explicit per-fork dist paths (a git glob pathspec like skills/*/tool/dist does
+# not match reliably on the agent)
+$distRel = $forks | ForEach-Object { "skills/$_/tool/dist" }
 
 # --- bail early if nothing actually changed ----------------------------------
-git -C $ForksRepo add -- 'skills/*/tool/dist' | Out-Null
+git -C $ForksRepo add -- @distRel | Out-Null
 git -C $ForksRepo diff --cached --quiet
 if ($LASTEXITCODE -eq 0) { Write-Host "Engine unchanged in forks; nothing to propagate."; exit 0 }
 
@@ -63,7 +66,7 @@ $branch = "auto/engine-$(Get-Date -Format 'yyyyMMdd-HHmmss')"
 git -C $ForksRepo config user.email 'build@vizolution.local'
 git -C $ForksRepo config user.name  'Engine Propagation (pipeline)'
 git -C $ForksRepo checkout -b $branch
-git -C $ForksRepo add -- 'skills/*/tool/dist'
+git -C $ForksRepo add -- @distRel
 git -C $ForksRepo commit -m "Auto: propagate renderer engine to all forks" | Out-Host
 git -C $ForksRepo push origin $branch
 if ($LASTEXITCODE -ne 0) { throw "git push failed (build service needs Contribute on $Repo)" }
