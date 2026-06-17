@@ -66,6 +66,7 @@ export function renderLineChartSvg(chart, options = {}) {
   }).join('\n  ')
 
   return `<svg class="dsvg dsvg-line" data-deck-svgchart="${area ? 'area' : 'line'}" viewBox="0 0 ${width} ${height}" preserveAspectRatio="xMidYMid meet" role="img" aria-label="${escapeAttr(chart.title || (area ? 'Area chart' : 'Line chart'))}">
+  ${options.background ? `<rect x="0" y="0" width="${width}" height="${height}" fill="${theme.surface}"/>` : ''}
   ${chartDefs(id, accent, accent2)}
   ${chart.title ? `<text class="dsvg-title" x="${margin.left}" y="30" style="fill:${tc('heading', theme.heading)}">${escapeHtml(chart.title)}</text>` : ''}
   ${grid}

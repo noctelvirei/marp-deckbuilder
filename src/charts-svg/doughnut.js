@@ -63,6 +63,7 @@ export function renderDoughnutChartSvg(chart, options = {}) {
   }).join('\n  ')
 
   return `<svg class="dsvg dsvg-doughnut" data-deck-svgchart="doughnut" viewBox="0 0 ${W} ${H}" preserveAspectRatio="xMidYMid meet" role="img" aria-label="${escapeAttr(chart.title || 'Doughnut chart')}">
+  ${options.background ? `<rect x="0" y="0" width="${W}" height="${H}" fill="${theme.surface}"/>` : ''}
   ${slices}
   <text class="dsvg-doughnut-cap" x="${cx}" y="${cy - 8}" text-anchor="middle" style="fill:${tc('muted', theme.muted)}">Total</text>
   <text class="dsvg-doughnut-total" x="${cx}" y="${cy + 20}" text-anchor="middle" style="fill:${tc('heading', theme.heading)}">${escapeHtml(formatNumber(total))}</text>

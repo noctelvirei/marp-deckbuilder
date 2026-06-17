@@ -51,10 +51,15 @@ function barRect(x, y, w, h, fill, tip) {
     </g>`
 }
 
-function svgWrap(kind, label, inner) {
+function svgWrap(kind, label, inner, bg = '') {
   return `<svg class="dsvg dsvg-bar" data-deck-svgchart="${kind}" viewBox="0 0 ${W} ${H}" preserveAspectRatio="xMidYMid meet" role="img" aria-label="${escapeAttr(label || 'Bar chart')}">
+  ${bg}
   ${inner}
 </svg>`
+}
+
+function bgRect(options, theme) {
+  return options.background ? `<rect x="0" y="0" width="${W}" height="${H}" fill="${theme.surface}"/>` : ''
 }
 
 export function renderBarChartSvg(chart, options = {}) {
@@ -84,7 +89,7 @@ export function renderBarChartSvg(chart, options = {}) {
 
   const { grid, xlabels } = axes({ ticks, yFor, labels, bandCenter, margin, plotW, tc, theme, unit: chart.unit })
   return svgWrap('bar', chart.title || 'Bar chart',
-    `${grid}\n  <line class="dsvg-axis" x1="${round(margin.left)}" y1="${round(baseY)}" x2="${round(margin.left + plotW)}" y2="${round(baseY)}" style="stroke:${tc('axis', theme.axis)}"/>\n  ${bars}\n  ${xlabels}`)
+    `${grid}\n  <line class="dsvg-axis" x1="${round(margin.left)}" y1="${round(baseY)}" x2="${round(margin.left + plotW)}" y2="${round(baseY)}" style="stroke:${tc('axis', theme.axis)}"/>\n  ${bars}\n  ${xlabels}`, bgRect(options, theme))
 }
 
 export function renderGroupedBarChartSvg(chart, options = {}) {
@@ -119,7 +124,7 @@ export function renderGroupedBarChartSvg(chart, options = {}) {
 
   const { grid, xlabels } = axes({ ticks, yFor, labels, bandCenter, margin, plotW, tc, theme, unit: chart.unit })
   return svgWrap('grouped-bar', chart.title || 'Grouped bar chart',
-    `${legendRow(seriesNames, palette, margin, tc('heading', theme.heading))}\n  ${grid}\n  <line class="dsvg-axis" x1="${round(margin.left)}" y1="${round(baseY)}" x2="${round(margin.left + plotW)}" y2="${round(baseY)}" style="stroke:${tc('axis', theme.axis)}"/>\n  ${bars}\n  ${xlabels}`)
+    `${legendRow(seriesNames, palette, margin, tc('heading', theme.heading))}\n  ${grid}\n  <line class="dsvg-axis" x1="${round(margin.left)}" y1="${round(baseY)}" x2="${round(margin.left + plotW)}" y2="${round(baseY)}" style="stroke:${tc('axis', theme.axis)}"/>\n  ${bars}\n  ${xlabels}`, bgRect(options, theme))
 }
 
 export function renderStackedBarChartSvg(chart, options = {}) {
@@ -156,5 +161,5 @@ export function renderStackedBarChartSvg(chart, options = {}) {
 
   const { grid, xlabels } = axes({ ticks, yFor, labels, bandCenter, margin, plotW, tc, theme, unit: chart.unit })
   return svgWrap('stacked-bar', chart.title || 'Stacked bar chart',
-    `${legendRow(seriesNames, palette, margin, tc('heading', theme.heading))}\n  ${grid}\n  <line class="dsvg-axis" x1="${round(margin.left)}" y1="${round(baseY)}" x2="${round(margin.left + plotW)}" y2="${round(baseY)}" style="stroke:${tc('axis', theme.axis)}"/>\n  ${bars}\n  ${xlabels}`)
+    `${legendRow(seriesNames, palette, margin, tc('heading', theme.heading))}\n  ${grid}\n  <line class="dsvg-axis" x1="${round(margin.left)}" y1="${round(baseY)}" x2="${round(margin.left + plotW)}" y2="${round(baseY)}" style="stroke:${tc('axis', theme.axis)}"/>\n  ${bars}\n  ${xlabels}`, bgRect(options, theme))
 }

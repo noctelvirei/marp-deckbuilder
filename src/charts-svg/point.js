@@ -65,6 +65,7 @@ function renderPointSvg(chart, options = {}) {
   const xAxisLabel = chart.xAxisLabel || 'X'
   const yAxisLabel = chart.yAxisLabel || 'Y'
   return `<svg class="dsvg dsvg-point" data-deck-svgchart="${bubble ? 'bubble' : 'scatter'}" viewBox="0 0 ${W} ${H}" preserveAspectRatio="xMidYMid meet" role="img" aria-label="${escapeAttr(chart.title || (bubble ? 'Bubble chart' : 'Scatter chart'))}">
+  ${options.background ? `<rect x="0" y="0" width="${W}" height="${H}" fill="${theme.surface}"/>` : ''}
   ${grid}
   <line class="dsvg-axis" x1="${margin.left}" y1="${round(margin.top + plotH)}" x2="${round(margin.left + plotW)}" y2="${round(margin.top + plotH)}" style="stroke:${tc('axis', theme.axis)}"/>
   <line class="dsvg-axis" x1="${margin.left}" y1="${margin.top}" x2="${margin.left}" y2="${round(margin.top + plotH)}" style="stroke:${tc('axis', theme.axis)}"/>

@@ -272,10 +272,14 @@ function barRect(x, y, w, h, fill, tip) {
       <path d="M ${round(x)} ${round(y + h)} L ${round(x)} ${round(y + r)} Q ${round(x)} ${round(y)} ${round(x + r)} ${round(y)} L ${round(x + w - r)} ${round(y)} Q ${round(x + w)} ${round(y)} ${round(x + w)} ${round(y + r)} L ${round(x + w)} ${round(y + h)} Z" style="fill:${fill}"/>
     </g>`;
 }
-function svgWrap(kind, label, inner) {
+function svgWrap(kind, label, inner, bg = "") {
   return `<svg class="dsvg dsvg-bar" data-deck-svgchart="${kind}" viewBox="0 0 ${W} ${H}" preserveAspectRatio="xMidYMid meet" role="img" aria-label="${escapeAttr(label || "Bar chart")}">
+  ${bg}
   ${inner}
 </svg>`;
+}
+function bgRect(options, theme) {
+  return options.background ? `<rect x="0" y="0" width="${W}" height="${H}" fill="${theme.surface}"/>` : "";
 }
 function renderBarChartSvg(chart, options = {}) {
   const { theme, tc, palette, margin } = setup(options, false);
@@ -307,7 +311,8 @@ function renderBarChartSvg(chart, options = {}) {
     `${grid}
   <line class="dsvg-axis" x1="${round(margin.left)}" y1="${round(baseY)}" x2="${round(margin.left + plotW)}" y2="${round(baseY)}" style="stroke:${tc("axis", theme.axis)}"/>
   ${bars}
-  ${xlabels}`
+  ${xlabels}`,
+    bgRect(options, theme)
   );
 }
 function renderGroupedBarChartSvg(chart, options = {}) {
@@ -346,7 +351,8 @@ function renderGroupedBarChartSvg(chart, options = {}) {
   ${grid}
   <line class="dsvg-axis" x1="${round(margin.left)}" y1="${round(baseY)}" x2="${round(margin.left + plotW)}" y2="${round(baseY)}" style="stroke:${tc("axis", theme.axis)}"/>
   ${bars}
-  ${xlabels}`
+  ${xlabels}`,
+    bgRect(options, theme)
   );
 }
 function renderStackedBarChartSvg(chart, options = {}) {
@@ -387,7 +393,8 @@ function renderStackedBarChartSvg(chart, options = {}) {
   ${grid}
   <line class="dsvg-axis" x1="${round(margin.left)}" y1="${round(baseY)}" x2="${round(margin.left + plotW)}" y2="${round(baseY)}" style="stroke:${tc("axis", theme.axis)}"/>
   ${bars}
-  ${xlabels}`
+  ${xlabels}`,
+    bgRect(options, theme)
   );
 }
 
@@ -444,6 +451,7 @@ function renderDoughnutChartSvg(chart, options = {}) {
     </g>`;
   }).join("\n  ");
   return `<svg class="dsvg dsvg-doughnut" data-deck-svgchart="doughnut" viewBox="0 0 ${W2} ${H2}" preserveAspectRatio="xMidYMid meet" role="img" aria-label="${escapeAttr(chart.title || "Doughnut chart")}">
+  ${options.background ? `<rect x="0" y="0" width="${W2}" height="${H2}" fill="${theme.surface}"/>` : ""}
   ${slices}
   <text class="dsvg-doughnut-cap" x="${cx}" y="${cy - 8}" text-anchor="middle" style="fill:${tc("muted", theme.muted)}">Total</text>
   <text class="dsvg-doughnut-total" x="${cx}" y="${cy + 20}" text-anchor="middle" style="fill:${tc("heading", theme.heading)}">${escapeHtml(formatNumber(total))}</text>
@@ -502,6 +510,7 @@ function renderLineChartSvg(chart, options = {}) {
     </g>`;
   }).join("\n  ");
   return `<svg class="dsvg dsvg-line" data-deck-svgchart="${area ? "area" : "line"}" viewBox="0 0 ${width} ${height}" preserveAspectRatio="xMidYMid meet" role="img" aria-label="${escapeAttr(chart.title || (area ? "Area chart" : "Line chart"))}">
+  ${options.background ? `<rect x="0" y="0" width="${width}" height="${height}" fill="${theme.surface}"/>` : ""}
   ${chartDefs(id, accent, accent2)}
   ${chart.title ? `<text class="dsvg-title" x="${margin.left}" y="30" style="fill:${tc("heading", theme.heading)}">${escapeHtml(chart.title)}</text>` : ""}
   ${grid}
@@ -567,6 +576,7 @@ function renderPointSvg(chart, options = {}) {
   const xAxisLabel = chart.xAxisLabel || "X";
   const yAxisLabel = chart.yAxisLabel || "Y";
   return `<svg class="dsvg dsvg-point" data-deck-svgchart="${bubble ? "bubble" : "scatter"}" viewBox="0 0 ${W3} ${H3}" preserveAspectRatio="xMidYMid meet" role="img" aria-label="${escapeAttr(chart.title || (bubble ? "Bubble chart" : "Scatter chart"))}">
+  ${options.background ? `<rect x="0" y="0" width="${W3}" height="${H3}" fill="${theme.surface}"/>` : ""}
   ${grid}
   <line class="dsvg-axis" x1="${margin.left}" y1="${round(margin.top + plotH)}" x2="${round(margin.left + plotW)}" y2="${round(margin.top + plotH)}" style="stroke:${tc("axis", theme.axis)}"/>
   <line class="dsvg-axis" x1="${margin.left}" y1="${margin.top}" x2="${margin.left}" y2="${round(margin.top + plotH)}" style="stroke:${tc("axis", theme.axis)}"/>
@@ -2047,6 +2057,7 @@ export {
   escapeHtml,
   escapeAttr,
   formatNumber,
+  DEFAULT_THEME,
   renderBarChartSvg,
   renderGroupedBarChartSvg,
   renderStackedBarChartSvg,
