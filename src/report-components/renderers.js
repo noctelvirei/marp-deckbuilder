@@ -17,15 +17,16 @@ import { renderBoxplotSvg } from '../components/boxplot.js'
 import { renderBulletSvg } from '../components/bullet.js'
 import { renderHistogramSvg } from '../components/histogram.js'
 import { renderParetoSvg } from '../components/pareto.js'
+import { renderSankeySvg } from '../components/sankey.js'
 import { renderWaterfallSvg } from '../components/waterfall.js'
 
-// Report chart types now rendered server-side as SVG (was chart.js canvas).
+// Report chart types now rendered server-side as SVG (was chart.js canvas / D3).
 const REPORT_SVG_TYPES = new Set([
   'bar', 'line', 'area', 'doughnut', 'scatter', 'bubble', 'grouped-bar', 'stacked-bar',
-  'histogram', 'pareto', 'waterfall', 'bullet', 'boxplot',
+  'histogram', 'pareto', 'waterfall', 'bullet', 'boxplot', 'sankey',
 ])
 // Types still rendered client-side via D3/Observable Plot.
-const REPORT_D3_TYPES = new Set(['treemap', 'funnel', 'heatmap', 'sankey'])
+const REPORT_D3_TYPES = new Set(['treemap', 'funnel', 'heatmap'])
 
 // Map a report chart to the shared SSR-SVG renderers (explicit colours so the
 // SVG is self-contained, theme via mode). valueSuffix -> unit for value labels.
@@ -67,6 +68,7 @@ function renderReportChartSvgInner(chart, brand, mode) {
     case 'waterfall': return renderWaterfallSvg(c, { ...base, positiveColor: pal[4], negativeColor: pal[5] })
     case 'bullet': return renderBulletSvg(c, { ...base, barColor: pal[0], targetColor: pal[3] })
     case 'boxplot': return renderBoxplotSvg(c, { ...base, boxColor: pal[0], medianColor: pal[3] })
+    case 'sankey': return renderSankeySvg(c, { ...base, palette: pal })
     default: return null
   }
 }

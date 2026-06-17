@@ -10,6 +10,7 @@ import { renderBarChartSvg, renderGroupedBarChartSvg, renderStackedBarChartSvg }
 import { renderScatterChartSvg, renderBubbleChartSvg } from '../src/charts-svg/point.js'
 import { renderDoughnutChartSvg } from '../src/charts-svg/doughnut.js'
 import { renderRadarSvg } from '../src/components/radar.js'
+import { renderSankeySvg } from '../src/components/sankey.js'
 import { svgChartCss } from '../src/charts-svg/styles.js'
 import { svgChartHoverScript } from '../src/charts-svg/hover.js'
 
@@ -32,6 +33,7 @@ const scatterData = { title: 'Impact vs effort', xAxisLabel: 'Effort', yAxisLabe
 const bubbleData = { title: 'Impact by effort (size = reach)', xAxisLabel: 'Effort', yAxisLabel: 'Impact', points: [{ x: 2, y: 8, r: 40, label: 'Auto-verify' }, { x: 5, y: 9, r: 80, label: 'E-sign' }, { x: 7, y: 4, r: 25, label: 'Legacy' }, { x: 3, y: 6, r: 55, label: 'SMS' }, { x: 8, y: 7, r: 70, label: 'Co-browse' }] }
 const doughnutData = { title: 'Case mix by channel', labels: ['Digital', 'Branch', 'Contact centre', 'Paper'], values: [5200, 2100, 1400, 800] }
 const radarData = { title: 'Capability coverage', labels: ['Speed', 'Accuracy', 'Coverage', 'Cost', 'CSAT'], values: [8, 6, 7, 5, 9] }
+const sankeyData = { title: 'Journey flow', series: 'Cases', links: [{ source: 'Opened', target: 'Started', value: 4400 }, { source: 'Started', target: 'Completed', value: 3800 }, { source: 'Started', target: 'Exception', value: 380 }, { source: 'Exception', target: 'Recovered', value: 220 }] }
 
 const darkTiles = [
   tile('line — dark', renderLineChartSvg(completion, { mode: 'dark' })),
@@ -44,6 +46,7 @@ const darkTiles = [
   tile('bubble — dark', renderBubbleChartSvg(bubbleData, { mode: 'dark' })),
   tile('doughnut — dark', renderDoughnutChartSvg(doughnutData, { mode: 'dark' })),
   tile('radar — dark', renderRadarSvg(radarData, { mode: 'dark', cssVariables: false })),
+  tile('sankey — dark', renderSankeySvg(sankeyData, { mode: 'dark', cssVariables: false })),
 ].join('\n')
 
 const lightTiles = [

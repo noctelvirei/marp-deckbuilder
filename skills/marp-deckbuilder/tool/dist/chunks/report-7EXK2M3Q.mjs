@@ -8,13 +8,13 @@ import {
   require_punycode,
   resolveResourceUrls,
   svgChartHoverScript
-} from "./chunk-DWFOHJVP.mjs";
+} from "./chunk-ST4HT4KB.mjs";
 import {
   decodeHTML,
   expandSelfClosingComponentTags,
   load,
   splitFrontmatter
-} from "./chunk-KSE5JK4F.mjs";
+} from "./chunk-USPIXUYR.mjs";
 import {
   svgChartCss
 } from "./chunk-DF3F57GZ.mjs";
@@ -31,11 +31,12 @@ import {
   renderHistogramSvg,
   renderLineChartSvg,
   renderParetoSvg,
+  renderSankeySvg,
   renderScatterChartSvg,
   renderStackedBarChartSvg,
   renderWaterfallSvg,
   resolveSurfaceResourceFile
-} from "./chunk-EC3BA3LQ.mjs";
+} from "./chunk-LVCUFFJZ.mjs";
 import {
   __export,
   __toESM
@@ -5238,9 +5239,10 @@ var REPORT_SVG_TYPES = /* @__PURE__ */ new Set([
   "pareto",
   "waterfall",
   "bullet",
-  "boxplot"
+  "boxplot",
+  "sankey"
 ]);
-var REPORT_D3_TYPES = /* @__PURE__ */ new Set(["treemap", "funnel", "heatmap", "sankey"]);
+var REPORT_D3_TYPES = /* @__PURE__ */ new Set(["treemap", "funnel", "heatmap"]);
 function renderReportChartSvg(chart, brand, mode) {
   try {
     return renderReportChartSvgInner(chart, brand, mode);
@@ -5288,6 +5290,8 @@ function renderReportChartSvgInner(chart, brand, mode) {
       return renderBulletSvg(c, { ...base, barColor: pal[0], targetColor: pal[3] });
     case "boxplot":
       return renderBoxplotSvg(c, { ...base, boxColor: pal[0], medianColor: pal[3] });
+    case "sankey":
+      return renderSankeySvg(c, { ...base, palette: pal });
     default:
       return null;
   }

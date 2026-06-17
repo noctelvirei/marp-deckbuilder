@@ -1,12 +1,14 @@
 import { escapeAttr, escapeHtml, formatNumber } from './utils.js'
 
+let sankeySeq = 0
+
 const DEFAULT_COLORS = {
   light: {
     grid: '#d8e2f0',
     text: '#333333',
     muted: '#666666',
     'label-halo': '#fdfdfd',
-    linkOpacity: '0.36',
+    linkOpacity: '0.55',
     nodes: ['#0f82f5', '#4cc9f0', '#5d4ee8', '#ff9f51', '#2fc27d', '#ff5c7a'],
   },
   dark: {
@@ -14,7 +16,7 @@ const DEFAULT_COLORS = {
     text: '#f4f8ff',
     muted: '#c8d8f0',
     'label-halo': '#1d1e29',
-    linkOpacity: '0.48',
+    linkOpacity: '0.6',
     nodes: ['#59d6fd', '#0f82f5', '#8b7cff', '#ff9f51', '#66cc8e', '#ff5c7a'],
   },
 }
@@ -37,8 +39,20 @@ export function renderSankeySvg(chart, options = {}) {
     return useVariables ? `var(--deck-sankey-node-${index % 6}, ${fallback})` : fallback
   }
   const geometry = sankeyGeometry(chart)
+  const uid = `sankey-${(sankeySeq += 1)}`
+  // Per-link gradient: source-node colour flows into target-node colour.
+  const linkDefs = geometry.links
+    .map((link, i) => {
+      const x0 = link.source.x + geometry.nodeWidth
+      const x1 = link.target.x
+      return `<linearGradient id="${uid}-l${i}" gradientUnits="userSpaceOnUse" x1="${round(x0)}" y1="0" x2="${round(x1)}" y2="0">
+      <stop offset="0" style="stop-color:${nodeColor(link.source.index)}"/>
+      <stop offset="1" style="stop-color:${nodeColor(link.target.index)}"/>
+    </linearGradient>`
+    })
+    .join('\n    ')
   const links = geometry.links
-    .map((link) => `<path class="deck-sankey-link deck-sankey-link-${link.source.index % 6}" d="${linkPath(link, geometry.nodeWidth)}" stroke="${nodeColor(link.source.index)}" stroke-width="${round(link.width)}">
+    .map((link, i) => `<path class="deck-sankey-link deck-sankey-link-${link.source.index % 6}" d="${linkPath(link, geometry.nodeWidth)}" stroke="url(#${uid}-l${i})" stroke-width="${round(link.width)}">
     <title>${escapeHtml(link.source.label)} to ${escapeHtml(link.target.label)}: ${escapeHtml(formatNumber(link.value))}</title>
   </path>`)
     .join('\n  ')
@@ -56,13 +70,16 @@ export function renderSankeySvg(chart, options = {}) {
 
   return `<svg class="deck-chart-sankey-svg" viewBox="0 0 ${geometry.width} ${geometry.height}" role="img" aria-label="${escapeAttr(chart.title || 'Sankey chart')}">
   <style>
-    .deck-sankey-link { fill: none; stroke-linecap: round; opacity: ${color('linkOpacity')}; }
+    .deck-sankey-link { fill: none; stroke-linecap: butt; opacity: ${color('linkOpacity')}; }
     .deck-sankey-node-rect { stroke: ${color('grid')}; stroke-width: 1; }
     .deck-sankey-label, .deck-sankey-value, .deck-sankey-caption { fill: ${color('text')}; font: 700 12px "Poppins", "Aptos", sans-serif; }
     .deck-sankey-label { paint-order: stroke; stroke: ${color('label-halo')}; stroke-width: 5; stroke-linejoin: round; }
     .deck-sankey-value { fill: ${color('muted')}; font-size: 10.5px; font-weight: 600; paint-order: stroke; stroke: ${color('label-halo')}; stroke-width: 4; stroke-linejoin: round; }
     .deck-sankey-caption { fill: ${color('muted')}; font-weight: 500; }
   </style>
+  <defs>
+    ${linkDefs}
+  </defs>
   <g class="deck-sankey-links">
   ${links}
   </g>
