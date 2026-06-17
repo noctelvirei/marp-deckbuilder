@@ -1,13 +1,26 @@
-// Structural CSS for SSR-SVG charts. Colours are applied inline (theme/brand
-// aware) by the renderers; this only carries geometry, type and interaction
-// states so the deck, report and preview harness stay visually identical.
-// Inline the structural CSS into a chart SVG so it stands alone (PPTX embed,
-// where there is no external stylesheet). PowerPoint reads the inline <style>.
-export function selfContainedSvg(svg) {
-  return svg.replace(/(<svg\b[^>]*>)/, `$1<style>${svgChartCss()}</style>`)
-}
+import { createRequire as __deckbuilderCreateRequire } from "node:module";
+import { fileURLToPath as __deckbuilderFileURLToPath } from "node:url";
+import { dirname as __deckbuilderDirname } from "node:path";
+const require = __deckbuilderCreateRequire(import.meta.url);
+const __filename = __deckbuilderFileURLToPath(import.meta.url);
+const __dirname = __deckbuilderDirname(__filename);
+import {
+  __commonJS,
+  __require
+} from "./chunk-FUPIT6VP.mjs";
 
-export function svgChartCss() {
+// node_modules/util-deprecate/node.js
+var require_node = __commonJS({
+  "node_modules/util-deprecate/node.js"(exports, module) {
+    module.exports = __require("util").deprecate;
+  }
+});
+
+// src/charts-svg/styles.js
+function selfContainedSvg(svg) {
+  return svg.replace(/(<svg\b[^>]*>)/, `$1<style>${svgChartCss()}</style>`);
+}
+function svgChartCss() {
   return `
   .dsvg { width: 100%; height: auto; display: block; font-family: "Poppins", "Aptos", system-ui, sans-serif; overflow: visible; }
   .dsvg-title { font-size: 19px; font-weight: 600; }
@@ -43,5 +56,11 @@ export function svgChartCss() {
     padding: 6px 10px; font: 600 12.5px "Poppins","Aptos",sans-serif; white-space: nowrap;
     box-shadow: 0 6px 20px rgba(0,0,0,.35); opacity: 0; transition: opacity .1s ease; }
   .dsvg-tip.is-on { opacity: 1; }
-`
+`;
 }
+
+export {
+  require_node,
+  selfContainedSvg,
+  svgChartCss
+};

@@ -5,8 +5,9 @@ const require = __deckbuilderCreateRequire(import.meta.url);
 const __filename = __deckbuilderFileURLToPath(import.meta.url);
 const __dirname = __deckbuilderDirname(__filename);
 import {
-  require_node
-} from "./chunk-MGQWBMZO.mjs";
+  require_node,
+  selfContainedSvg
+} from "./chunk-DF3F57GZ.mjs";
 import {
   color,
   font,
@@ -16,20 +17,28 @@ import {
 } from "./chunk-RQ4ZKSEQ.mjs";
 import {
   funnelPalette,
+  renderAreaChartSvg,
+  renderBarChartSvg,
   renderBoxplotSvg,
+  renderBubbleChartSvg,
   renderBulletSvg,
+  renderDoughnutChartSvg,
   renderFunnelSvg,
+  renderGroupedBarChartSvg,
   renderHistogramSvg,
   renderImpactRadarSvg,
   renderJourneyPathSvg,
+  renderLineChartSvg,
   renderParetoSvg,
   renderRadarSvg,
   renderSankeySvg,
+  renderScatterChartSvg,
+  renderStackedBarChartSvg,
   renderWaterfallSvg,
   resolveResourceFile,
   resolveSurfaceResourceFile,
   treemapRects
-} from "./chunk-W4OYNXY5.mjs";
+} from "./chunk-SAAI6ECT.mjs";
 import {
   __commonJS,
   __require,
@@ -15666,8 +15675,26 @@ function addChartSlide(pptx, slide, model, brand, resourcesDir) {
   const isPareto = model.chart.chartType === "pareto";
   const isRadar = model.chart.chartType === "radar";
   const isSankey = model.chart.chartType === "sankey";
-  if (isWaterfall || isBullet || isHistogram || isBoxplot || isPareto || isRadar || isSankey) {
-    addSvgChartImage(slide, model, brand, layout, chartBox, model.chart.chartType);
+  const svgChartTypes = /* @__PURE__ */ new Set([
+    "line",
+    "area",
+    "bar",
+    "grouped-bar",
+    "stacked-bar",
+    "scatter",
+    "bubble",
+    "doughnut",
+    "waterfall",
+    "bullet",
+    "histogram",
+    "boxplot",
+    "pareto",
+    "radar",
+    "sankey"
+  ]);
+  const svgType = model.chart.chartType || "bar";
+  if (svgChartTypes.has(svgType)) {
+    addSvgChartImage(slide, model, brand, layout, chartBox, svgType);
     addTakeaway(slide, model, brand);
     return;
   }
@@ -15800,6 +15827,17 @@ function addSvgChartImage(slide, model, brand, layout, chartBox, type) {
   });
 }
 function renderSvgChartByType(type, chart, brand, model, layout, sharedOptions) {
+  const mode = sharedOptions.mode;
+  const noTitle = { ...chart, title: "" };
+  const opts = { cssVariables: false, mode, brand };
+  if (type === "line") return selfContainedSvg(renderLineChartSvg(noTitle, opts));
+  if (type === "area") return selfContainedSvg(renderAreaChartSvg(noTitle, opts));
+  if (type === "bar") return selfContainedSvg(renderBarChartSvg(noTitle, opts));
+  if (type === "grouped-bar") return selfContainedSvg(renderGroupedBarChartSvg(noTitle, opts));
+  if (type === "stacked-bar") return selfContainedSvg(renderStackedBarChartSvg(noTitle, opts));
+  if (type === "scatter") return selfContainedSvg(renderScatterChartSvg(noTitle, opts));
+  if (type === "bubble") return selfContainedSvg(renderBubbleChartSvg(noTitle, opts));
+  if (type === "doughnut") return selfContainedSvg(renderDoughnutChartSvg(noTitle, opts));
   if (type === "waterfall") {
     return renderWaterfallSvg(chart, {
       ...sharedOptions,

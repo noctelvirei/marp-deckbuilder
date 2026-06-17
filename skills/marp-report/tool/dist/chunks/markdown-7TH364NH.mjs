@@ -5,17 +5,20 @@ const require = __deckbuilderCreateRequire(import.meta.url);
 const __filename = __deckbuilderFileURLToPath(import.meta.url);
 const __dirname = __deckbuilderDirname(__filename);
 import {
-  __commonJS,
-  __require
-} from "./chunk-FUPIT6VP.mjs";
-
-// node_modules/util-deprecate/node.js
-var require_node = __commonJS({
-  "node_modules/util-deprecate/node.js"(exports, module) {
-    module.exports = __require("util").deprecate;
-  }
-});
-
+  buildMarpMarkdown,
+  extractDirectives,
+  parseDeckMarkdown,
+  parseSlide,
+  splitFrontmatter,
+  splitSlides
+} from "./chunk-XIDNJNUN.mjs";
+import "./chunk-SAAI6ECT.mjs";
+import "./chunk-FUPIT6VP.mjs";
 export {
-  require_node
+  buildMarpMarkdown,
+  extractDirectives,
+  parseDeckMarkdown,
+  parseSlide,
+  splitFrontmatter,
+  splitSlides
 };

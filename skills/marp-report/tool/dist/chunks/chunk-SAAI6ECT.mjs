@@ -135,6 +135,453 @@ function formatNumber(value) {
   return Number.isInteger(value) ? value.toLocaleString("en-GB") : value.toLocaleString("en-GB", { maximumFractionDigits: 2 });
 }
 
+// src/charts-svg/core.js
+var SVG_PALETTE = ["#0f82f5", "#59d6fd", "#5143d5", "#f9935b", "#66cc8e", "#fc5161"];
+var DEFAULT_THEME = {
+  dark: { heading: "#ffffff", muted: "#8a95a8", grid: "#27395a", axis: "#3a4f6f", surface: "#0d1d36", valueLabel: "#cfe5ff" },
+  light: { heading: "#0b1b33", muted: "#5a6b82", grid: "#e3e9f1", axis: "#c2cddd", surface: "#ffffff", valueLabel: "#234" }
+};
+function normHex(value, fallback) {
+  const raw = String(value ?? "").trim();
+  if (/^#[0-9a-f]{3,8}$/i.test(raw)) return raw;
+  if (/^[0-9a-f]{6}$/i.test(raw)) return `#${raw}`;
+  return fallback;
+}
+function resolvePalette(brand = {}, override) {
+  if (Array.isArray(override) && override.length) return override.map((c2, i) => normHex(c2, SVG_PALETTE[i % SVG_PALETTE.length]));
+  const c = brand && brand.colors || {};
+  return [
+    normHex(c.blue, SVG_PALETTE[0]),
+    normHex(c.cyan || c.lightBlue, SVG_PALETTE[1]),
+    normHex(c.purple, SVG_PALETTE[2]),
+    normHex(c.orange, SVG_PALETTE[3]),
+    normHex(c.green, SVG_PALETTE[4]),
+    normHex(c.red, SVG_PALETTE[5])
+  ];
+}
+function round(n) {
+  return Math.round(n * 100) / 100;
+}
+function niceExtent(min, max, { includeZero = false, pad = 0.12 } = {}) {
+  let lo = includeZero ? Math.min(0, min) : min;
+  let hi = includeZero ? Math.max(0, max) : max;
+  if (lo === hi) {
+    hi = lo + 1;
+    lo = lo - 1;
+  }
+  const span = hi - lo;
+  lo -= span * pad;
+  hi += span * pad;
+  if (includeZero) {
+    if (min >= 0) lo = 0;
+    if (max <= 0) hi = 0;
+  }
+  return [lo, hi];
+}
+function niceTicks(lo, hi, count = 5) {
+  const span = hi - lo;
+  if (span <= 0) return [lo];
+  const raw = span / count;
+  const mag = Math.pow(10, Math.floor(Math.log10(raw)));
+  const norm = raw / mag;
+  const step = (norm >= 7.5 ? 10 : norm >= 3 ? 5 : norm >= 1.5 ? 2 : 1) * mag;
+  const start = Math.ceil(lo / step) * step;
+  const ticks = [];
+  for (let v = start; v <= hi + step * 1e-6; v += step) ticks.push(round(v));
+  return ticks;
+}
+function smoothPath(points) {
+  if (points.length < 2) return points.length ? `M ${round(points[0].x)} ${round(points[0].y)}` : "";
+  let d = `M ${round(points[0].x)} ${round(points[0].y)}`;
+  for (let i = 0; i < points.length - 1; i++) {
+    const p0 = points[i - 1] || points[i];
+    const p1 = points[i];
+    const p2 = points[i + 1];
+    const p3 = points[i + 2] || p2;
+    const t = 0.5 / 3;
+    const c1x = p1.x + (p2.x - p0.x) * t;
+    const c1y = p1.y + (p2.y - p0.y) * t;
+    const c2x = p2.x - (p3.x - p1.x) * t;
+    const c2y = p2.y - (p3.y - p1.y) * t;
+    d += ` C ${round(c1x)} ${round(c1y)}, ${round(c2x)} ${round(c2y)}, ${round(p2.x)} ${round(p2.y)}`;
+  }
+  return d;
+}
+function straightPath(points) {
+  return points.map((p, i) => `${i === 0 ? "M" : "L"} ${round(p.x)} ${round(p.y)}`).join(" ");
+}
+function chartDefs(id, accent, accent2) {
+  const a2 = accent2 || accent;
+  return `<defs>
+    <linearGradient id="${id}-area" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" style="stop-color:${accent};stop-opacity:0.42"/>
+      <stop offset="100%" style="stop-color:${accent};stop-opacity:0"/>
+    </linearGradient>
+    <linearGradient id="${id}-line" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%" style="stop-color:${a2}"/>
+      <stop offset="100%" style="stop-color:${accent}"/>
+    </linearGradient>
+    <filter id="${id}-glow" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="2.4" result="b"/>
+      <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+  </defs>`;
+}
+var __idSeq = 0;
+function chartId(prefix = "svgc") {
+  __idSeq += 1;
+  return `${prefix}-${__idSeq}`;
+}
+
+// src/charts-svg/bar.js
+var W = 760;
+var H = 380;
+function setup(options, hasLegend) {
+  const mode = options.mode === "light" ? "light" : "dark";
+  const theme = DEFAULT_THEME[mode];
+  const useVars = options.cssVariables !== false;
+  const tc = (name, fallback) => useVars ? `var(--deck-chart-${name}, ${fallback})` : fallback;
+  const palette = resolvePalette(options.brand, options.palette);
+  const margin = { top: hasLegend ? 40 : 22, right: 28, bottom: 46, left: 58 };
+  return { theme, tc, palette, margin };
+}
+function axes({ ticks, yFor, labels, bandCenter, margin, plotW, tc, theme, unit }) {
+  const grid = ticks.map((t) => {
+    const y = yFor(t);
+    return `<line class="dsvg-grid" x1="${round(margin.left)}" y1="${round(y)}" x2="${round(margin.left + plotW)}" y2="${round(y)}" style="stroke:${tc("grid", theme.grid)}"/>
+    <text class="dsvg-ytick" x="${round(margin.left - 12)}" y="${round(y + 4)}" text-anchor="end" style="fill:${tc("muted", theme.muted)}">${escapeHtml(formatNumber(t))}${escapeHtml(unit || "")}</text>`;
+  }).join("\n  ");
+  const xlabels = labels.map(
+    (label, i) => `<text class="dsvg-xtick" x="${round(bandCenter(i))}" y="${H - 18}" text-anchor="middle" style="fill:${tc("muted", theme.muted)}">${escapeHtml(label)}</text>`
+  ).join("\n  ");
+  return { grid, xlabels };
+}
+function legendRow(seriesNames, palette, margin, headingColor) {
+  let x = margin.left;
+  const y = 18;
+  return seriesNames.map((name, i) => {
+    const swatch = `<rect x="${round(x)}" y="${y - 10}" width="12" height="12" rx="3" style="fill:${palette[i % palette.length]}"/>`;
+    const text = `<text class="dsvg-legend" x="${round(x + 17)}" y="${y}" style="fill:${headingColor}">${escapeHtml(name)}</text>`;
+    x += 17 + Math.max(48, name.length * 8.2) + 18;
+    return `${swatch}${text}`;
+  }).join("\n  ");
+}
+function barRect(x, y, w, h, fill, tip) {
+  const r = Math.min(5, w / 2, h);
+  return `<g class="dsvg-bar" data-deck-tip="${escapeAttr(tip)}">
+      <path d="M ${round(x)} ${round(y + h)} L ${round(x)} ${round(y + r)} Q ${round(x)} ${round(y)} ${round(x + r)} ${round(y)} L ${round(x + w - r)} ${round(y)} Q ${round(x + w)} ${round(y)} ${round(x + w)} ${round(y + r)} L ${round(x + w)} ${round(y + h)} Z" style="fill:${fill}"/>
+    </g>`;
+}
+function svgWrap(kind, label, inner) {
+  return `<svg class="dsvg dsvg-bar" data-deck-svgchart="${kind}" viewBox="0 0 ${W} ${H}" preserveAspectRatio="xMidYMid meet" role="img" aria-label="${escapeAttr(label || "Bar chart")}">
+  ${inner}
+</svg>`;
+}
+function renderBarChartSvg(chart, options = {}) {
+  const { theme, tc, palette, margin } = setup(options, false);
+  const labels = chart.labels || [];
+  const values = (chart.values || []).map((v) => Number(v) || 0);
+  const [, hi] = niceExtent(0, Math.max(...values, 0), { includeZero: true, pad: 0.16 });
+  const plotW = W - margin.left - margin.right;
+  const plotH = H - margin.top - margin.bottom;
+  const baseY = margin.top + plotH;
+  const yFor = (v) => baseY - v / hi * plotH;
+  const band = plotW / Math.max(1, labels.length);
+  const barW = band * 0.6;
+  const bandCenter = (i) => margin.left + band * i + band / 2;
+  const ticks = niceTicks(0, hi, 5);
+  const accent = normHex(options.accentColor, palette[0] || SVG_PALETTE[0]);
+  const bars = values.map((v, i) => {
+    const x = bandCenter(i) - barW / 2;
+    const y = yFor(v);
+    const h = baseY - y;
+    const tip = `${labels[i] || ""}: ${formatNumber(v)}${chart.unit || ""}`;
+    const rect = barRect(x, y, barW, h, accent, tip);
+    const valLabel = `<text class="dsvg-val" x="${round(bandCenter(i))}" y="${round(y - 8)}" text-anchor="middle" style="fill:${tc("value", theme.valueLabel)}">${escapeHtml(formatNumber(v))}${escapeHtml(chart.unit || "")}</text>`;
+    return rect + "\n  " + valLabel;
+  }).join("\n  ");
+  const { grid, xlabels } = axes({ ticks, yFor, labels, bandCenter, margin, plotW, tc, theme, unit: chart.unit });
+  return svgWrap(
+    "bar",
+    chart.title || "Bar chart",
+    `${grid}
+  <line class="dsvg-axis" x1="${round(margin.left)}" y1="${round(baseY)}" x2="${round(margin.left + plotW)}" y2="${round(baseY)}" style="stroke:${tc("axis", theme.axis)}"/>
+  ${bars}
+  ${xlabels}`
+  );
+}
+function renderGroupedBarChartSvg(chart, options = {}) {
+  const { theme, tc, palette, margin } = setup(options, true);
+  const labels = chart.labels || [];
+  const seriesNames = chart.seriesNames || [];
+  const matrix = chart.matrix || [];
+  const allVals = matrix.flat().map((v) => Number(v) || 0);
+  const [, hi] = niceExtent(0, Math.max(...allVals, 0), { includeZero: true, pad: 0.16 });
+  const plotW = W - margin.left - margin.right;
+  const plotH = H - margin.top - margin.bottom;
+  const baseY = margin.top + plotH;
+  const yFor = (v) => baseY - v / hi * plotH;
+  const band = plotW / Math.max(1, labels.length);
+  const bandCenter = (i) => margin.left + band * i + band / 2;
+  const groupW = band * 0.74;
+  const n = Math.max(1, seriesNames.length);
+  const barW = groupW / n;
+  const ticks = niceTicks(0, hi, 5);
+  const bars = labels.map((label, li) => {
+    const x0 = bandCenter(li) - groupW / 2;
+    return seriesNames.map((name, si) => {
+      const v = Number(matrix[si]?.[li]) || 0;
+      const x = x0 + si * barW;
+      const y = yFor(v);
+      const h = baseY - y;
+      const tip = `${name} \xB7 ${label}: ${formatNumber(v)}${chart.unit || ""}`;
+      return barRect(x + barW * 0.08, y, barW * 0.84, h, palette[si % palette.length], tip);
+    }).join("\n  ");
+  }).join("\n  ");
+  const { grid, xlabels } = axes({ ticks, yFor, labels, bandCenter, margin, plotW, tc, theme, unit: chart.unit });
+  return svgWrap(
+    "grouped-bar",
+    chart.title || "Grouped bar chart",
+    `${legendRow(seriesNames, palette, margin, tc("heading", theme.heading))}
+  ${grid}
+  <line class="dsvg-axis" x1="${round(margin.left)}" y1="${round(baseY)}" x2="${round(margin.left + plotW)}" y2="${round(baseY)}" style="stroke:${tc("axis", theme.axis)}"/>
+  ${bars}
+  ${xlabels}`
+  );
+}
+function renderStackedBarChartSvg(chart, options = {}) {
+  const { theme, tc, palette, margin } = setup(options, true);
+  const labels = chart.labels || [];
+  const seriesNames = chart.seriesNames || [];
+  const matrix = chart.matrix || [];
+  const totals = labels.map((_, li) => seriesNames.reduce((s, _n, si) => s + (Number(matrix[si]?.[li]) || 0), 0));
+  const [, hi] = niceExtent(0, Math.max(...totals, 0), { includeZero: true, pad: 0.16 });
+  const plotW = W - margin.left - margin.right;
+  const plotH = H - margin.top - margin.bottom;
+  const baseY = margin.top + plotH;
+  const yFor = (v) => baseY - v / hi * plotH;
+  const band = plotW / Math.max(1, labels.length);
+  const bandCenter = (i) => margin.left + band * i + band / 2;
+  const barW = band * 0.6;
+  const ticks = niceTicks(0, hi, 5);
+  const bars = labels.map((label, li) => {
+    const x = bandCenter(li) - barW / 2;
+    let cursor = 0;
+    const segs = seriesNames.map((name, si) => {
+      const v = Number(matrix[si]?.[li]) || 0;
+      if (v <= 0) return "";
+      const yTop = yFor(cursor + v);
+      const yBottom = yFor(cursor);
+      cursor += v;
+      const tip = `${name} \xB7 ${label}: ${formatNumber(v)}${chart.unit || ""}`;
+      return `<rect class="dsvg-bar" data-deck-tip="${escapeAttr(tip)}" x="${round(x)}" y="${round(yTop)}" width="${round(barW)}" height="${round(yBottom - yTop)}" style="fill:${palette[si % palette.length]}"/>`;
+    }).join("\n  ");
+    const totalLabel = `<text class="dsvg-val" x="${round(bandCenter(li))}" y="${round(yFor(totals[li]) - 8)}" text-anchor="middle" style="fill:${tc("value", theme.valueLabel)}">${escapeHtml(formatNumber(totals[li]))}${escapeHtml(chart.unit || "")}</text>`;
+    return segs + "\n  " + totalLabel;
+  }).join("\n  ");
+  const { grid, xlabels } = axes({ ticks, yFor, labels, bandCenter, margin, plotW, tc, theme, unit: chart.unit });
+  return svgWrap(
+    "stacked-bar",
+    chart.title || "Stacked bar chart",
+    `${legendRow(seriesNames, palette, margin, tc("heading", theme.heading))}
+  ${grid}
+  <line class="dsvg-axis" x1="${round(margin.left)}" y1="${round(baseY)}" x2="${round(margin.left + plotW)}" y2="${round(baseY)}" style="stroke:${tc("axis", theme.axis)}"/>
+  ${bars}
+  ${xlabels}`
+  );
+}
+
+// src/charts-svg/doughnut.js
+var W2 = 760;
+var H2 = 350;
+function arcPath(cx, cy, R, r, a0, a1) {
+  const large = a1 - a0 > Math.PI ? 1 : 0;
+  const p = (rad, a) => [round(cx + rad * Math.cos(a)), round(cy + rad * Math.sin(a))];
+  const [x0o, y0o] = p(R, a0);
+  const [x1o, y1o] = p(R, a1);
+  const [x1i, y1i] = p(r, a1);
+  const [x0i, y0i] = p(r, a0);
+  return `M ${x0o} ${y0o} A ${R} ${R} 0 ${large} 1 ${x1o} ${y1o} L ${x1i} ${y1i} A ${r} ${r} 0 ${large} 0 ${x0i} ${y0i} Z`;
+}
+function renderDoughnutChartSvg(chart, options = {}) {
+  const mode = options.mode === "light" ? "light" : "dark";
+  const theme = DEFAULT_THEME[mode];
+  const useVars = options.cssVariables !== false;
+  const tc = (name, fallback) => useVars ? `var(--deck-chart-${name}, ${fallback})` : fallback;
+  const palette = resolvePalette(options.brand, options.palette);
+  const labels = chart.labels || [];
+  const values = (chart.values || []).map((v) => Number(v) || 0);
+  const total = values.reduce((s, v) => s + v, 0);
+  const cx = 200;
+  const cy = 178;
+  const R = 132;
+  const r = 82;
+  const gap = 0.012;
+  let cursor = -Math.PI / 2;
+  const slices = values.map((v, i) => {
+    const frac = total > 0 ? v / total : 0;
+    const a0 = cursor + gap / 2;
+    const a1 = cursor + frac * Math.PI * 2 - gap / 2;
+    cursor += frac * Math.PI * 2;
+    const color = normHex(palette[i % palette.length], SVG_PALETTE[i % SVG_PALETTE.length]);
+    const pct = total > 0 ? Math.round(frac * 100) : 0;
+    const tip = `${labels[i] || ""}: ${formatNumber(v)} \xB7 ${pct}%`;
+    if (a1 <= a0) return "";
+    return `<path class="dsvg-slice" data-deck-tip="${escapeAttr(tip)}" d="${arcPath(cx, cy, R, r, a0, a1)}" style="fill:${color}"/>`;
+  }).join("\n  ");
+  const keyX = 410;
+  const rowH = Math.min(54, (H2 - 40) / Math.max(1, labels.length));
+  const startY = (H2 - rowH * labels.length) / 2 + rowH / 2;
+  const key = labels.map((label, i) => {
+    const v = values[i] || 0;
+    const pct = total > 0 ? Math.round(v / total * 100) : 0;
+    const color = normHex(palette[i % palette.length], SVG_PALETTE[i % SVG_PALETTE.length]);
+    const y = startY + i * rowH;
+    return `<g class="dsvg-slice" data-deck-tip="${escapeAttr(`${label}: ${formatNumber(v)} \xB7 ${pct}%`)}">
+      <rect x="${keyX}" y="${round(y - 7)}" width="13" height="13" rx="3" style="fill:${color}"/>
+      <text class="dsvg-key-name" x="${keyX + 22}" y="${round(y - 1)}" style="fill:${tc("heading", theme.heading)}">${escapeHtml(label)}</text>
+      <text class="dsvg-key-value" x="${keyX + 22}" y="${round(y + 15)}" style="fill:${tc("muted", theme.muted)}">${escapeHtml(formatNumber(v))} \xB7 ${pct}%</text>
+    </g>`;
+  }).join("\n  ");
+  return `<svg class="dsvg dsvg-doughnut" data-deck-svgchart="doughnut" viewBox="0 0 ${W2} ${H2}" preserveAspectRatio="xMidYMid meet" role="img" aria-label="${escapeAttr(chart.title || "Doughnut chart")}">
+  ${slices}
+  <text class="dsvg-doughnut-cap" x="${cx}" y="${cy - 8}" text-anchor="middle" style="fill:${tc("muted", theme.muted)}">Total</text>
+  <text class="dsvg-doughnut-total" x="${cx}" y="${cy + 20}" text-anchor="middle" style="fill:${tc("heading", theme.heading)}">${escapeHtml(formatNumber(total))}</text>
+  ${key}
+</svg>`;
+}
+
+// src/charts-svg/line.js
+function renderLineChartSvg(chart, options = {}) {
+  const mode = options.mode === "light" ? "light" : "dark";
+  const theme = DEFAULT_THEME[mode];
+  const useVars = options.cssVariables !== false;
+  const area = options.area === true;
+  const smooth = options.smooth !== false;
+  const width = options.width || 760;
+  const height = options.height || 380;
+  const margin = { top: chart.title ? 54 : 28, right: 34, bottom: 46, left: 56 };
+  const palette = resolvePalette(options.brand, options.palette);
+  const accentHex = normHex(options.accentColor, palette[0] || SVG_PALETTE[0]);
+  const accent2Hex = normHex(options.accent2Color, palette[1] || accentHex);
+  const tc = (name, fallback) => useVars ? `var(--deck-chart-${name}, ${fallback})` : fallback;
+  const accent = useVars ? `var(--deck-chart-accent, ${accentHex})` : accentHex;
+  const accent2 = useVars ? `var(--deck-chart-accent2, ${accent2Hex})` : accent2Hex;
+  const labels = chart.labels || [];
+  const values = (chart.values || []).map((v) => Number(v) || 0);
+  const minV = Math.min(...values);
+  const maxV = Math.max(...values);
+  const [lo, hi] = niceExtent(minV, maxV, { includeZero: area });
+  const plotW = width - margin.left - margin.right;
+  const plotH = height - margin.top - margin.bottom;
+  const xFor = (i) => values.length > 1 ? margin.left + i / (values.length - 1) * plotW : margin.left + plotW / 2;
+  const yFor = (v) => margin.top + plotH - (v - lo) / (hi - lo) * plotH;
+  const baselineY = margin.top + plotH;
+  const points = values.map((v, i) => ({ x: xFor(i), y: yFor(v), v, label: labels[i] || "" }));
+  const id = chartId("line");
+  const ticks = niceTicks(lo, hi, 5);
+  const grid = ticks.map((t) => {
+    const y = yFor(t);
+    return `<line class="dsvg-grid" x1="${round(margin.left)}" y1="${round(y)}" x2="${round(margin.left + plotW)}" y2="${round(y)}" style="stroke:${tc("grid", theme.grid)}"></line>
+    <text class="dsvg-ytick" x="${round(margin.left - 12)}" y="${round(y + 4)}" text-anchor="end" style="fill:${tc("muted", theme.muted)}">${escapeHtml(formatNumber(t))}${escapeHtml(chart.unit || "")}</text>`;
+  }).join("\n  ");
+  const lastIndex = points.length - 1;
+  const xlabels = points.map((p, i) => {
+    const anchor = i === 0 ? "start" : i === lastIndex ? "end" : "middle";
+    return `<text class="dsvg-xtick" x="${round(p.x)}" y="${height - 18}" text-anchor="${anchor}" style="fill:${tc("muted", theme.muted)}">${escapeHtml(p.label)}</text>`;
+  }).join("\n  ");
+  const linePathD = smooth ? smoothPath(points) : straightPath(points);
+  const areaPathD = area ? `${linePathD} L ${round(points[lastIndex].x)} ${round(baselineY)} L ${round(points[0].x)} ${round(baselineY)} Z` : "";
+  const markers = points.map((p) => {
+    const tip = `${p.label}: ${formatNumber(p.v)}${chart.unit || ""}`;
+    return `<g class="dsvg-marker" data-deck-tip="${escapeAttr(tip)}" data-deck-x="${round(p.x)}" data-deck-y="${round(p.y)}">
+      <circle class="dsvg-hit" cx="${round(p.x)}" cy="${round(p.y)}" r="14"></circle>
+      <circle class="dsvg-halo" cx="${round(p.x)}" cy="${round(p.y)}" r="9" style="fill:${accent}"></circle>
+      <circle class="dsvg-dot" cx="${round(p.x)}" cy="${round(p.y)}" r="4.5" style="stroke:${accent}"></circle>
+      <text class="dsvg-val" x="${round(p.x)}" y="${round(p.y - 14)}" text-anchor="middle" style="fill:${tc("value", theme.valueLabel)}">${escapeHtml(formatNumber(p.v))}${escapeHtml(chart.unit || "")}</text>
+    </g>`;
+  }).join("\n  ");
+  return `<svg class="dsvg dsvg-line" data-deck-svgchart="${area ? "area" : "line"}" viewBox="0 0 ${width} ${height}" preserveAspectRatio="xMidYMid meet" role="img" aria-label="${escapeAttr(chart.title || (area ? "Area chart" : "Line chart"))}">
+  ${chartDefs(id, accent, accent2)}
+  ${chart.title ? `<text class="dsvg-title" x="${margin.left}" y="30" style="fill:${tc("heading", theme.heading)}">${escapeHtml(chart.title)}</text>` : ""}
+  ${grid}
+  <line class="dsvg-axis" x1="${round(margin.left)}" y1="${round(baselineY)}" x2="${round(margin.left + plotW)}" y2="${round(baselineY)}" style="stroke:${tc("axis", theme.axis)}"></line>
+  ${area ? `<path class="dsvg-areafill" d="${areaPathD}" style="fill:url(#${id}-area)"></path>` : ""}
+  <path class="dsvg-linepath" d="${linePathD}" style="stroke:url(#${id}-line);filter:url(#${id}-glow)"></path>
+  ${markers}
+  ${xlabels}
+</svg>`;
+}
+function renderAreaChartSvg(chart, options = {}) {
+  return renderLineChartSvg(chart, { ...options, area: true });
+}
+
+// src/charts-svg/point.js
+var W3 = 760;
+var H3 = 350;
+function renderPointSvg(chart, options = {}) {
+  const bubble = options.bubble === true;
+  const mode = options.mode === "light" ? "light" : "dark";
+  const theme = DEFAULT_THEME[mode];
+  const useVars = options.cssVariables !== false;
+  const tc = (name, fallback) => useVars ? `var(--deck-chart-${name}, ${fallback})` : fallback;
+  const palette = resolvePalette(options.brand, options.palette);
+  const margin = { top: 26, right: 28, bottom: 56, left: 64 };
+  const pts = (chart.points || []).filter((p) => Number.isFinite(Number(p.x)) && Number.isFinite(Number(p.y)));
+  const xs = pts.map((p) => Number(p.x));
+  const ys = pts.map((p) => Number(p.y));
+  const [minX, maxX] = niceExtent(Math.min(...xs, 0), Math.max(...xs, 1), { pad: 0.1 });
+  const [minY, maxY] = niceExtent(Math.min(...ys, 0), Math.max(...ys, 1), { pad: 0.1 });
+  const plotW = W3 - margin.left - margin.right;
+  const plotH = H3 - margin.top - margin.bottom;
+  const xFor = (v) => margin.left + (v - minX) / (maxX - minX) * plotW;
+  const yFor = (v) => margin.top + plotH - (v - minY) / (maxY - minY) * plotH;
+  const maxR = Math.max(...pts.map((p) => Number(p.r) || 0), 1);
+  const xTicks = niceTicks(minX, maxX, 5);
+  const yTicks = niceTicks(minY, maxY, 5);
+  const grid = [
+    ...xTicks.map((t) => {
+      const x = xFor(t);
+      return `<line class="dsvg-grid" x1="${round(x)}" y1="${margin.top}" x2="${round(x)}" y2="${round(margin.top + plotH)}" style="stroke:${tc("grid", theme.grid)}"/>
+    <text class="dsvg-xtick" x="${round(x)}" y="${H3 - 30}" text-anchor="middle" style="fill:${tc("muted", theme.muted)}">${escapeHtml(formatNumber(t))}</text>`;
+    }),
+    ...yTicks.map((t) => {
+      const y = yFor(t);
+      return `<line class="dsvg-grid" x1="${margin.left}" y1="${round(y)}" x2="${round(margin.left + plotW)}" y2="${round(y)}" style="stroke:${tc("grid", theme.grid)}"/>
+    <text class="dsvg-ytick" x="${round(margin.left - 12)}" y="${round(y + 4)}" text-anchor="end" style="fill:${tc("muted", theme.muted)}">${escapeHtml(formatNumber(t))}</text>`;
+    })
+  ].join("\n  ");
+  const dots = pts.map((p, i) => {
+    const x = xFor(Number(p.x));
+    const y = yFor(Number(p.y));
+    const color = normHex(palette[i % palette.length], SVG_PALETTE[i % SVG_PALETTE.length]);
+    const r = bubble ? Math.max(6, Math.min(26, 6 + (Number(p.r) || 0) / maxR * 20)) : 7;
+    const label = p.label || `${formatNumber(p.x)}, ${formatNumber(p.y)}`;
+    const tip = bubble ? `${label}: ${formatNumber(p.x)}, ${formatNumber(p.y)} \xB7 size ${formatNumber(p.r)}` : `${label}: ${formatNumber(p.x)}, ${formatNumber(p.y)}`;
+    const text = !bubble && p.label ? `<text class="dsvg-point-label" x="${round(x + r + 4)}" y="${round(y - r - 2)}" style="fill:${tc("value", theme.valueLabel)}">${escapeHtml(p.label)}</text>` : "";
+    return `<g class="dsvg-point" data-deck-tip="${escapeAttr(tip)}">
+      <circle cx="${round(x)}" cy="${round(y)}" r="${round(r)}" style="fill:${color}${bubble ? "cc" : "ee"};stroke:${color}"/>
+      ${text}
+    </g>`;
+  }).join("\n  ");
+  const xAxisLabel = chart.xAxisLabel || "X";
+  const yAxisLabel = chart.yAxisLabel || "Y";
+  return `<svg class="dsvg dsvg-point" data-deck-svgchart="${bubble ? "bubble" : "scatter"}" viewBox="0 0 ${W3} ${H3}" preserveAspectRatio="xMidYMid meet" role="img" aria-label="${escapeAttr(chart.title || (bubble ? "Bubble chart" : "Scatter chart"))}">
+  ${grid}
+  <line class="dsvg-axis" x1="${margin.left}" y1="${round(margin.top + plotH)}" x2="${round(margin.left + plotW)}" y2="${round(margin.top + plotH)}" style="stroke:${tc("axis", theme.axis)}"/>
+  <line class="dsvg-axis" x1="${margin.left}" y1="${margin.top}" x2="${margin.left}" y2="${round(margin.top + plotH)}" style="stroke:${tc("axis", theme.axis)}"/>
+  ${dots}
+  <text class="dsvg-axislabel" x="${round(margin.left + plotW / 2)}" y="${H3 - 6}" text-anchor="middle" style="fill:${tc("muted", theme.muted)}">${escapeHtml(xAxisLabel)}</text>
+  <text class="dsvg-axislabel" transform="translate(16 ${round(margin.top + plotH / 2)}) rotate(-90)" text-anchor="middle" style="fill:${tc("muted", theme.muted)}">${escapeHtml(yAxisLabel)}</text>
+</svg>`;
+}
+function renderScatterChartSvg(chart, options = {}) {
+  return renderPointSvg(chart, { ...options, bubble: false });
+}
+function renderBubbleChartSvg(chart, options = {}) {
+  return renderPointSvg(chart, { ...options, bubble: true });
+}
+
 // src/components/boxplot.js
 var DEFAULT_COLORS = {
   light: {
@@ -170,15 +617,15 @@ function renderBoxplotSvg(chart, options = {}) {
   const geometry = boxplotGeometry(chart);
   const grid = geometry.ticks.map((tick) => {
     const y = geometry.yFor(tick);
-    return `<line class="deck-boxplot-grid" x1="${geometry.margin.left}" y1="${round(y)}" x2="${round(geometry.width - geometry.margin.right)}" y2="${round(y)}"></line>
-  <text class="deck-boxplot-tick" x="${geometry.margin.left - 14}" y="${round(y + 5)}" text-anchor="end">${escapeHtml(formatNumber(tick))}</text>`;
+    return `<line class="deck-boxplot-grid" x1="${geometry.margin.left}" y1="${round2(y)}" x2="${round2(geometry.width - geometry.margin.right)}" y2="${round2(y)}"></line>
+  <text class="deck-boxplot-tick" x="${geometry.margin.left - 14}" y="${round2(y + 5)}" text-anchor="end">${escapeHtml(formatNumber(tick))}</text>`;
   }).join("\n  ");
-  const boxes = geometry.items.map((item) => `<g class="deck-boxplot-item" transform="translate(${round(item.x)} 0)">
-    <line class="deck-boxplot-whisker" x1="0" y1="${round(item.minY)}" x2="0" y2="${round(item.maxY)}"></line>
-    <line class="deck-boxplot-whisker" x1="${round(-item.capW / 2)}" y1="${round(item.minY)}" x2="${round(item.capW / 2)}" y2="${round(item.minY)}"></line>
-    <line class="deck-boxplot-whisker" x1="${round(-item.capW / 2)}" y1="${round(item.maxY)}" x2="${round(item.capW / 2)}" y2="${round(item.maxY)}"></line>
-    <rect class="deck-boxplot-box" x="${round(-item.boxW / 2)}" y="${round(item.boxY)}" width="${round(item.boxW)}" height="${round(item.boxH)}" rx="5"><title>${escapeHtml(item.title)}</title></rect>
-    <line class="deck-boxplot-median" x1="${round(-item.boxW / 2)}" y1="${round(item.medianY)}" x2="${round(item.boxW / 2)}" y2="${round(item.medianY)}"></line>
+  const boxes = geometry.items.map((item) => `<g class="deck-boxplot-item" transform="translate(${round2(item.x)} 0)">
+    <line class="deck-boxplot-whisker" x1="0" y1="${round2(item.minY)}" x2="0" y2="${round2(item.maxY)}"></line>
+    <line class="deck-boxplot-whisker" x1="${round2(-item.capW / 2)}" y1="${round2(item.minY)}" x2="${round2(item.capW / 2)}" y2="${round2(item.minY)}"></line>
+    <line class="deck-boxplot-whisker" x1="${round2(-item.capW / 2)}" y1="${round2(item.maxY)}" x2="${round2(item.capW / 2)}" y2="${round2(item.maxY)}"></line>
+    <rect class="deck-boxplot-box" x="${round2(-item.boxW / 2)}" y="${round2(item.boxY)}" width="${round2(item.boxW)}" height="${round2(item.boxH)}" rx="5"><title>${escapeHtml(item.title)}</title></rect>
+    <line class="deck-boxplot-median" x1="${round2(-item.boxW / 2)}" y1="${round2(item.medianY)}" x2="${round2(item.boxW / 2)}" y2="${round2(item.medianY)}"></line>
     <text class="deck-boxplot-label" x="0" y="${geometry.height - 24}" text-anchor="middle">${escapeHtml(item.label)}</text>
   </g>`).join("\n  ");
   return `<svg class="deck-chart-boxplot-svg" viewBox="0 0 ${geometry.width} ${geometry.height}" role="img" aria-label="${escapeAttr(chart.title || "Boxplot chart")}">
@@ -191,10 +638,10 @@ function renderBoxplotSvg(chart, options = {}) {
     .deck-boxplot-label, .deck-boxplot-tick, .deck-boxplot-axis-label { fill: ${color("text")}; font: 500 12px "Poppins", "Aptos", sans-serif; }
   </style>
   ${grid}
-  <line class="deck-boxplot-axis" x1="${geometry.margin.left}" y1="${round(geometry.height - geometry.margin.bottom)}" x2="${round(geometry.width - geometry.margin.right)}" y2="${round(geometry.height - geometry.margin.bottom)}"></line>
-  <line class="deck-boxplot-axis" x1="${geometry.margin.left}" y1="${geometry.margin.top}" x2="${geometry.margin.left}" y2="${round(geometry.height - geometry.margin.bottom)}"></line>
+  <line class="deck-boxplot-axis" x1="${geometry.margin.left}" y1="${round2(geometry.height - geometry.margin.bottom)}" x2="${round2(geometry.width - geometry.margin.right)}" y2="${round2(geometry.height - geometry.margin.bottom)}"></line>
+  <line class="deck-boxplot-axis" x1="${geometry.margin.left}" y1="${geometry.margin.top}" x2="${geometry.margin.left}" y2="${round2(geometry.height - geometry.margin.bottom)}"></line>
   ${boxes}
-  <text class="deck-boxplot-axis-label" transform="translate(18 ${round(geometry.margin.top + geometry.plotHeight / 2)}) rotate(-90)" text-anchor="middle">${escapeHtml(chart.yAxisLabel || chart.series || "Value")}</text>
+  <text class="deck-boxplot-axis-label" transform="translate(18 ${round2(geometry.margin.top + geometry.plotHeight / 2)}) rotate(-90)" text-anchor="middle">${escapeHtml(chart.yAxisLabel || chart.series || "Value")}</text>
 </svg>`;
 }
 function boxplotStats(values) {
@@ -273,7 +720,7 @@ function tickValues(min, max) {
   }
   return ticks;
 }
-function round(value) {
+function round2(value) {
   return Math.round(value * 10) / 10;
 }
 
@@ -315,15 +762,15 @@ function renderBulletSvg(chart, options = {}) {
   const geometry = bulletGeometry(chart);
   const grid = geometry.ticks.map((tick) => {
     const x = geometry.xFor(tick);
-    return `<line class="deck-bullet-grid" x1="${round2(x)}" y1="${geometry.margin.top}" x2="${round2(x)}" y2="${round2(geometry.height - geometry.margin.bottom)}"></line>
-  <text class="deck-bullet-tick" x="${round2(x)}" y="${geometry.height - 12}" text-anchor="middle">${escapeHtml(formatNumber(tick))}</text>`;
+    return `<line class="deck-bullet-grid" x1="${round3(x)}" y1="${geometry.margin.top}" x2="${round3(x)}" y2="${round3(geometry.height - geometry.margin.bottom)}"></line>
+  <text class="deck-bullet-tick" x="${round3(x)}" y="${geometry.height - 12}" text-anchor="middle">${escapeHtml(formatNumber(tick))}</text>`;
   }).join("\n  ");
-  const rows = geometry.rows.map((row) => `<g class="deck-bullet-row" transform="translate(0 ${round2(row.y)})">
-    <text class="deck-bullet-label" x="${geometry.margin.left - 16}" y="${round2(row.center + 5)}" text-anchor="end">${escapeHtml(row.label)}</text>
-    <rect class="deck-bullet-track" x="${geometry.margin.left}" y="${round2(row.center - row.trackH / 2)}" width="${geometry.plotWidth}" height="${round2(row.trackH)}" rx="8"></rect>
-    <rect class="deck-bullet-bar" x="${geometry.margin.left}" y="${round2(row.center - row.barH / 2)}" width="${round2(row.barW)}" height="${round2(row.barH)}" rx="6"></rect>
-    <line class="deck-bullet-target" x1="${round2(row.targetX)}" y1="${round2(row.center - row.trackH / 2 - 6)}" x2="${round2(row.targetX)}" y2="${round2(row.center + row.trackH / 2 + 6)}"></line>
-    <text class="deck-bullet-value${row.valueInside ? " deck-bullet-value-inside" : ""}" x="${round2(row.valueX)}" y="${round2(row.center + 5)}" text-anchor="${row.valueAnchor}">${escapeHtml(formatNumber(row.value))}</text>
+  const rows = geometry.rows.map((row) => `<g class="deck-bullet-row" transform="translate(0 ${round3(row.y)})">
+    <text class="deck-bullet-label" x="${geometry.margin.left - 16}" y="${round3(row.center + 5)}" text-anchor="end">${escapeHtml(row.label)}</text>
+    <rect class="deck-bullet-track" x="${geometry.margin.left}" y="${round3(row.center - row.trackH / 2)}" width="${geometry.plotWidth}" height="${round3(row.trackH)}" rx="8"></rect>
+    <rect class="deck-bullet-bar" x="${geometry.margin.left}" y="${round3(row.center - row.barH / 2)}" width="${round3(row.barW)}" height="${round3(row.barH)}" rx="6"></rect>
+    <line class="deck-bullet-target" x1="${round3(row.targetX)}" y1="${round3(row.center - row.trackH / 2 - 6)}" x2="${round3(row.targetX)}" y2="${round3(row.center + row.trackH / 2 + 6)}"></line>
+    <text class="deck-bullet-value${row.valueInside ? " deck-bullet-value-inside" : ""}" x="${round3(row.valueX)}" y="${round3(row.center + 5)}" text-anchor="${row.valueAnchor}">${escapeHtml(formatNumber(row.value))}</text>
   </g>`).join("\n  ");
   return `<svg class="deck-chart-bullet-svg" viewBox="0 0 ${geometry.width} ${geometry.height}" role="img" aria-label="${escapeAttr(chart.title || "Bullet chart")}">
   <style>
@@ -337,7 +784,7 @@ function renderBulletSvg(chart, options = {}) {
     .deck-bullet-value-inside { fill: ${color("onBar")}; }
   </style>
   ${grid}
-  <line class="deck-bullet-axis" x1="${geometry.margin.left}" y1="${round2(geometry.height - geometry.margin.bottom)}" x2="${round2(geometry.width - geometry.margin.right)}" y2="${round2(geometry.height - geometry.margin.bottom)}"></line>
+  <line class="deck-bullet-axis" x1="${geometry.margin.left}" y1="${round3(geometry.height - geometry.margin.bottom)}" x2="${round3(geometry.width - geometry.margin.right)}" y2="${round3(geometry.height - geometry.margin.bottom)}"></line>
   ${rows}
 </svg>`;
 }
@@ -397,7 +844,7 @@ function niceCeiling(value) {
   const nice = normalized <= 1 ? 1 : normalized <= 2 ? 2 : normalized <= 2.5 ? 2.5 : normalized <= 5 ? 5 : 10;
   return nice * magnitude;
 }
-function round2(value) {
+function round3(value) {
   return Math.round(value * 10) / 10;
 }
 
@@ -470,19 +917,19 @@ function renderFunnelSvg(funnel, options = {}) {
     const topW = stage.topWidth;
     const bottomW = stage.bottomWidth;
     const points = [
-      `${round3(centerX - topW / 2)},${round3(y1)}`,
-      `${round3(centerX + topW / 2)},${round3(y1)}`,
-      `${round3(centerX + bottomW / 2)},${round3(y2)}`,
-      `${round3(centerX - bottomW / 2)},${round3(y2)}`
+      `${round4(centerX - topW / 2)},${round4(y1)}`,
+      `${round4(centerX + topW / 2)},${round4(y1)}`,
+      `${round4(centerX + bottomW / 2)},${round4(y2)}`,
+      `${round4(centerX - bottomW / 2)},${round4(y2)}`
     ].join(" ");
     const mid = y1 + stageH / 2;
     const fill = stageColor(index);
     return `<g class="deck-funnel-stage deck-funnel-stage-${index % 6}">
     <polygon class="deck-funnel-segment" points="${points}" style="fill:${fill}"></polygon>
     <polygon class="deck-funnel-sheen" points="${points}"></polygon>
-    <rect class="deck-funnel-key-swatch" x="${keyX}" y="${round3(mid - 7)}" width="13" height="13" rx="3" style="fill:${fill}"></rect>
-    <text class="deck-funnel-key-name" x="${keyX + 22}" y="${round3(mid - 1)}">${escapeHtml(stage.label)}</text>
-    <text class="deck-funnel-key-value" x="${keyX + 22}" y="${round3(mid + 15)}">${escapeHtml(`${formatNumber(stage.value)}${funnel.unit} \xB7 ${stage.rate}`)}</text>
+    <rect class="deck-funnel-key-swatch" x="${keyX}" y="${round4(mid - 7)}" width="13" height="13" rx="3" style="fill:${fill}"></rect>
+    <text class="deck-funnel-key-name" x="${keyX + 22}" y="${round4(mid - 1)}">${escapeHtml(stage.label)}</text>
+    <text class="deck-funnel-key-value" x="${keyX + 22}" y="${round4(mid + 15)}">${escapeHtml(`${formatNumber(stage.value)}${funnel.unit} \xB7 ${stage.rate}`)}</text>
   </g>`;
   }).join("\n  ");
   return `<svg class="deck-funnel-svg" viewBox="0 0 ${width} ${height}" role="img" aria-label="${escapeAttr(funnel.title || "Funnel chart")}">
@@ -523,7 +970,7 @@ function funnelStages(funnel, options = {}) {
     };
   });
 }
-function round3(value) {
+function round4(value) {
   return Math.round(value * 10) / 10;
 }
 function cssColor(value, fallback) {
@@ -565,16 +1012,16 @@ function renderHistogramSvg(chart, options = {}) {
   const geometry = histogramGeometry(chart);
   const bars = geometry.bins.map((bin, index) => {
     const label = `${formatBinLabel(bin.start)}-${formatBinLabel(bin.end)}`;
-    return `<g class="deck-histogram-bin" transform="translate(${round4(bin.x)} ${round4(bin.y)})">
-    <rect class="deck-histogram-bar" width="${round4(bin.w)}" height="${round4(bin.h)}" rx="4"><title>${escapeHtml(label)}: ${escapeHtml(formatNumber(bin.count))}</title></rect>
-    ${bin.count > 0 ? `<text class="deck-histogram-count" x="${round4(bin.w / 2)}" y="-8" text-anchor="middle">${escapeHtml(formatNumber(bin.count))}</text>` : ""}
-    ${index % geometry.labelStep === 0 ? `<text class="deck-histogram-label" x="${round4(bin.w / 2)}" y="${round4(geometry.axisLabelY - bin.y)}" text-anchor="middle">${escapeHtml(label)}</text>` : ""}
+    return `<g class="deck-histogram-bin" transform="translate(${round5(bin.x)} ${round5(bin.y)})">
+    <rect class="deck-histogram-bar" width="${round5(bin.w)}" height="${round5(bin.h)}" rx="4"><title>${escapeHtml(label)}: ${escapeHtml(formatNumber(bin.count))}</title></rect>
+    ${bin.count > 0 ? `<text class="deck-histogram-count" x="${round5(bin.w / 2)}" y="-8" text-anchor="middle">${escapeHtml(formatNumber(bin.count))}</text>` : ""}
+    ${index % geometry.labelStep === 0 ? `<text class="deck-histogram-label" x="${round5(bin.w / 2)}" y="${round5(geometry.axisLabelY - bin.y)}" text-anchor="middle">${escapeHtml(label)}</text>` : ""}
   </g>`;
   }).join("\n  ");
   const grid = geometry.ticks.map((tick) => {
     const y = geometry.yFor(tick);
-    return `<line class="deck-histogram-grid" x1="${geometry.margin.left}" y1="${round4(y)}" x2="${round4(geometry.width - geometry.margin.right)}" y2="${round4(y)}"></line>
-  <text class="deck-histogram-tick" x="${geometry.margin.left - 14}" y="${round4(y + 5)}" text-anchor="end">${escapeHtml(formatNumber(tick))}</text>`;
+    return `<line class="deck-histogram-grid" x1="${geometry.margin.left}" y1="${round5(y)}" x2="${round5(geometry.width - geometry.margin.right)}" y2="${round5(y)}"></line>
+  <text class="deck-histogram-tick" x="${geometry.margin.left - 14}" y="${round5(y + 5)}" text-anchor="end">${escapeHtml(formatNumber(tick))}</text>`;
   }).join("\n  ");
   return `<svg class="deck-chart-histogram-svg" viewBox="0 0 ${geometry.width} ${geometry.height}" role="img" aria-label="${escapeAttr(chart.title || "Histogram chart")}">
   <style>
@@ -585,11 +1032,11 @@ function renderHistogramSvg(chart, options = {}) {
     .deck-histogram-count { font-weight: 700; }
   </style>
   ${grid}
-  <line class="deck-histogram-axis" x1="${geometry.margin.left}" y1="${round4(geometry.height - geometry.margin.bottom)}" x2="${round4(geometry.width - geometry.margin.right)}" y2="${round4(geometry.height - geometry.margin.bottom)}"></line>
-  <line class="deck-histogram-axis" x1="${geometry.margin.left}" y1="${geometry.margin.top}" x2="${geometry.margin.left}" y2="${round4(geometry.height - geometry.margin.bottom)}"></line>
+  <line class="deck-histogram-axis" x1="${geometry.margin.left}" y1="${round5(geometry.height - geometry.margin.bottom)}" x2="${round5(geometry.width - geometry.margin.right)}" y2="${round5(geometry.height - geometry.margin.bottom)}"></line>
+  <line class="deck-histogram-axis" x1="${geometry.margin.left}" y1="${geometry.margin.top}" x2="${geometry.margin.left}" y2="${round5(geometry.height - geometry.margin.bottom)}"></line>
   ${bars}
-  <text class="deck-histogram-axis-label" x="${round4(geometry.margin.left + geometry.plotWidth / 2)}" y="${geometry.height - 8}" text-anchor="middle">${escapeHtml(chart.xAxisLabel || "Range")}</text>
-  <text class="deck-histogram-axis-label" transform="translate(18 ${round4(geometry.margin.top + geometry.plotHeight / 2)}) rotate(-90)" text-anchor="middle">${escapeHtml(chart.yAxisLabel || "Count")}</text>
+  <text class="deck-histogram-axis-label" x="${round5(geometry.margin.left + geometry.plotWidth / 2)}" y="${geometry.height - 8}" text-anchor="middle">${escapeHtml(chart.xAxisLabel || "Range")}</text>
+  <text class="deck-histogram-axis-label" transform="translate(18 ${round5(geometry.margin.top + geometry.plotHeight / 2)}) rotate(-90)" text-anchor="middle">${escapeHtml(chart.yAxisLabel || "Count")}</text>
 </svg>`;
 }
 function histogramBins(values, binCount) {
@@ -663,7 +1110,7 @@ function formatBinLabel(value) {
   const rounded = Math.round(value * 100) / 100;
   return Number.isInteger(rounded) ? String(rounded) : rounded.toFixed(2).replace(/0+$/, "").replace(/\.$/, "");
 }
-function round4(value) {
+function round5(value) {
   return Math.round(value * 10) / 10;
 }
 
@@ -746,7 +1193,7 @@ function renderRadar(impactRadar, animate) {
   const center = { x: 705, y: 198 };
   const radius = 96;
   const grid = [1, 2 / 3, 1 / 3].map((scale) => `<polygon class="deck-impact-radar-grid" points="${radarPoints(impactRadar.labels.length, center, radius * scale).join(" ")}"></polygon>`).join("\n    ");
-  const axes = radarPointObjects(impactRadar.labels.length, center, radius).map((point) => `<line class="deck-impact-radar-grid" x1="${center.x}" y1="${center.y}" x2="${point.x}" y2="${point.y}"></line>`).join("\n    ");
+  const axes2 = radarPointObjects(impactRadar.labels.length, center, radius).map((point) => `<line class="deck-impact-radar-grid" x1="${center.x}" y1="${center.y}" x2="${point.x}" y2="${point.y}"></line>`).join("\n    ");
   const labels = radarPointObjects(impactRadar.labels.length, center, radius + 28).map((point, index) => {
     const anchor = point.x < center.x - 12 ? "end" : point.x > center.x + 12 ? "start" : "middle";
     return `<text class="deck-impact-radar-label" x="${point.x}" y="${point.y + 5}" text-anchor="${anchor}">${escapeHtml(impactRadar.labels[index])}</text>`;
@@ -755,7 +1202,7 @@ function renderRadar(impactRadar, animate) {
   const animationClass = animate ? " deck-impact-radar-shape-animated" : "";
   return `<g>
     ${grid}
-    ${axes}
+    ${axes2}
     <polygon class="deck-impact-radar-shape${animationClass}" points="${shapePoints}"></polygon>
     ${labels}
   </g>`;
@@ -771,11 +1218,11 @@ function radarPointObjects(count, center, radius) {
 function radarPoint(index, count, center, radius) {
   const angle = -Math.PI / 2 + index / count * Math.PI * 2;
   return {
-    x: round5(center.x + Math.cos(angle) * radius),
-    y: round5(center.y + Math.sin(angle) * radius)
+    x: round6(center.x + Math.cos(angle) * radius),
+    y: round6(center.y + Math.sin(angle) * radius)
   };
 }
-function round5(value) {
+function round6(value) {
   return Math.round(value * 10) / 10;
 }
 
@@ -909,7 +1356,7 @@ function pathFromPoints(points) {
       x: point.x - dx * 0.42,
       y: point.y + 92 - index * 28
     };
-    return `${path2} C ${round6(control1.x)} ${round6(control1.y)}, ${round6(control2.x)} ${round6(control2.y)}, ${point.x} ${point.y}`;
+    return `${path2} C ${round7(control1.x)} ${round7(control1.y)}, ${round7(control2.x)} ${round7(control2.y)}, ${point.x} ${point.y}`;
   }, `M ${first.x} ${first.y}`);
 }
 function journeyPathColors(mode) {
@@ -932,7 +1379,7 @@ function journeyPathColors(mode) {
     surface: "#ffffff"
   };
 }
-function round6(value) {
+function round7(value) {
   return Math.round(value * 10) / 10;
 }
 
@@ -974,24 +1421,24 @@ function renderParetoSvg(chart, options = {}) {
   const geometry = paretoGeometry(chart);
   const grid = geometry.ticks.map((tick) => {
     const y = geometry.yForValue(tick);
-    return `<line class="deck-pareto-grid" x1="${geometry.margin.left}" y1="${round7(y)}" x2="${round7(geometry.width - geometry.margin.right)}" y2="${round7(y)}"></line>
-  <text class="deck-pareto-tick" x="${geometry.margin.left - 14}" y="${round7(y + 5)}" text-anchor="end">${escapeHtml(formatNumber(tick))}</text>`;
+    return `<line class="deck-pareto-grid" x1="${geometry.margin.left}" y1="${round8(y)}" x2="${round8(geometry.width - geometry.margin.right)}" y2="${round8(y)}"></line>
+  <text class="deck-pareto-tick" x="${geometry.margin.left - 14}" y="${round8(y + 5)}" text-anchor="end">${escapeHtml(formatNumber(tick))}</text>`;
   }).join("\n  ");
   const percentTicks = [0, 25, 50, 75, 100].map((tick) => {
     const y = geometry.yForPercent(tick);
-    return `<text class="deck-pareto-percent-tick" x="${geometry.width - geometry.margin.right + 14}" y="${round7(y + 5)}">${tick}%</text>`;
+    return `<text class="deck-pareto-percent-tick" x="${geometry.width - geometry.margin.right + 14}" y="${round8(y + 5)}">${tick}%</text>`;
   }).join("\n  ");
   const bars = geometry.items.map((item, index) => {
     const showLabel = index % geometry.labelStep === 0 || index === geometry.items.length - 1;
     const valueLabelY = Math.max(geometry.margin.top + 14, item.barY - 8);
-    return `<g class="deck-pareto-item" transform="translate(${round7(item.x)} 0)">
-    <rect class="deck-pareto-bar" x="0" y="${round7(item.barY)}" width="${round7(item.barW)}" height="${round7(item.barH)}" rx="5"><title>${escapeHtml(item.label)}: ${escapeHtml(formatNumber(item.value))}; cumulative ${round7(item.cumulativePercent)}%</title></rect>
-    ${item.value > 0 ? `<text class="deck-pareto-value" x="${round7(item.barW / 2)}" y="${round7(valueLabelY)}" text-anchor="middle">${escapeHtml(formatNumber(item.value))}</text>` : ""}
-    ${showLabel ? `<text class="deck-pareto-label" x="${round7(item.barW / 2)}" y="${geometry.height - 30}" text-anchor="middle">${escapeHtml(item.label)}</text>` : ""}
+    return `<g class="deck-pareto-item" transform="translate(${round8(item.x)} 0)">
+    <rect class="deck-pareto-bar" x="0" y="${round8(item.barY)}" width="${round8(item.barW)}" height="${round8(item.barH)}" rx="5"><title>${escapeHtml(item.label)}: ${escapeHtml(formatNumber(item.value))}; cumulative ${round8(item.cumulativePercent)}%</title></rect>
+    ${item.value > 0 ? `<text class="deck-pareto-value" x="${round8(item.barW / 2)}" y="${round8(valueLabelY)}" text-anchor="middle">${escapeHtml(formatNumber(item.value))}</text>` : ""}
+    ${showLabel ? `<text class="deck-pareto-label" x="${round8(item.barW / 2)}" y="${geometry.height - 30}" text-anchor="middle">${escapeHtml(item.label)}</text>` : ""}
   </g>`;
   }).join("\n  ");
   const line = linePath(geometry.items.map((item) => ({ x: item.pointX, y: item.pointY })));
-  const points = geometry.items.map((item) => `<circle class="deck-pareto-point" cx="${round7(item.pointX)}" cy="${round7(item.pointY)}" r="5"><title>${escapeHtml(item.label)} cumulative: ${round7(item.cumulativePercent)}%</title></circle>`).join("\n  ");
+  const points = geometry.items.map((item) => `<circle class="deck-pareto-point" cx="${round8(item.pointX)}" cy="${round8(item.pointY)}" r="5"><title>${escapeHtml(item.label)} cumulative: ${round8(item.cumulativePercent)}%</title></circle>`).join("\n  ");
   return `<svg class="deck-chart-pareto-svg" viewBox="0 0 ${geometry.width} ${geometry.height}" role="img" aria-label="${escapeAttr(chart.title || "Pareto chart")}">
   <style>
     .deck-pareto-grid { stroke: ${color("grid")}; stroke-width: 1; }
@@ -1004,14 +1451,14 @@ function renderParetoSvg(chart, options = {}) {
   </style>
   ${grid}
   ${percentTicks}
-  <line class="deck-pareto-axis" x1="${geometry.margin.left}" y1="${round7(geometry.height - geometry.margin.bottom)}" x2="${round7(geometry.width - geometry.margin.right)}" y2="${round7(geometry.height - geometry.margin.bottom)}"></line>
-  <line class="deck-pareto-axis" x1="${geometry.margin.left}" y1="${geometry.margin.top}" x2="${geometry.margin.left}" y2="${round7(geometry.height - geometry.margin.bottom)}"></line>
-  <line class="deck-pareto-axis" x1="${round7(geometry.width - geometry.margin.right)}" y1="${geometry.margin.top}" x2="${round7(geometry.width - geometry.margin.right)}" y2="${round7(geometry.height - geometry.margin.bottom)}"></line>
+  <line class="deck-pareto-axis" x1="${geometry.margin.left}" y1="${round8(geometry.height - geometry.margin.bottom)}" x2="${round8(geometry.width - geometry.margin.right)}" y2="${round8(geometry.height - geometry.margin.bottom)}"></line>
+  <line class="deck-pareto-axis" x1="${geometry.margin.left}" y1="${geometry.margin.top}" x2="${geometry.margin.left}" y2="${round8(geometry.height - geometry.margin.bottom)}"></line>
+  <line class="deck-pareto-axis" x1="${round8(geometry.width - geometry.margin.right)}" y1="${geometry.margin.top}" x2="${round8(geometry.width - geometry.margin.right)}" y2="${round8(geometry.height - geometry.margin.bottom)}"></line>
   ${bars}
   <path class="deck-pareto-line" d="${line}"></path>
   ${points}
-  <text class="deck-pareto-axis-label" transform="translate(18 ${round7(geometry.margin.top + geometry.plotHeight / 2)}) rotate(-90)" text-anchor="middle">${escapeHtml(chart.yAxisLabel || chart.series || "Value")}</text>
-  <text class="deck-pareto-axis-label" transform="translate(${geometry.width - 18} ${round7(geometry.margin.top + geometry.plotHeight / 2)}) rotate(90)" text-anchor="middle">Cumulative %</text>
+  <text class="deck-pareto-axis-label" transform="translate(18 ${round8(geometry.margin.top + geometry.plotHeight / 2)}) rotate(-90)" text-anchor="middle">${escapeHtml(chart.yAxisLabel || chart.series || "Value")}</text>
+  <text class="deck-pareto-axis-label" transform="translate(${geometry.width - 18} ${round8(geometry.margin.top + geometry.plotHeight / 2)}) rotate(90)" text-anchor="middle">Cumulative %</text>
 </svg>`;
 }
 function paretoRows(chart) {
@@ -1065,7 +1512,7 @@ function paretoGeometry(chart) {
   };
 }
 function linePath(points) {
-  return points.map((point, index) => `${index === 0 ? "M" : "L"} ${round7(point.x)} ${round7(point.y)}`).join(" ");
+  return points.map((point, index) => `${index === 0 ? "M" : "L"} ${round8(point.x)} ${round8(point.y)}`).join(" ");
 }
 function tickValues4(min, max) {
   const ticks = [];
@@ -1081,7 +1528,7 @@ function niceCeiling3(value) {
   const nice = normalized <= 1 ? 1 : normalized <= 2 ? 2 : normalized <= 2.5 ? 2.5 : normalized <= 5 ? 5 : 10;
   return nice * magnitude;
 }
-function round7(value) {
+function round8(value) {
   return Math.round(value * 10) / 10;
 }
 
@@ -1122,7 +1569,7 @@ function renderRadarSvg(chart, options = {}) {
   const color = (name) => useVariables ? `var(--deck-radar-${name}, ${colors[name]})` : colors[name];
   const geometry = radarGeometry(chart);
   const rings = [0.25, 0.5, 0.75, 1].map((scale) => `<polygon class="deck-radar-grid" points="${radarPoints2(chart.labels.length, geometry.center, geometry.radius * scale).join(" ")}"></polygon>`).join("\n  ");
-  const axes = radarPointObjects2(chart.labels.length, geometry.center, geometry.radius).map((point) => `<line class="deck-radar-grid" x1="${geometry.center.x}" y1="${geometry.center.y}" x2="${point.x}" y2="${point.y}"></line>`).join("\n  ");
+  const axes2 = radarPointObjects2(chart.labels.length, geometry.center, geometry.radius).map((point) => `<line class="deck-radar-grid" x1="${geometry.center.x}" y1="${geometry.center.y}" x2="${point.x}" y2="${point.y}"></line>`).join("\n  ");
   const labels = radarPointObjects2(chart.labels.length, geometry.center, geometry.radius + 34).map((point, index) => {
     const anchor = point.x < geometry.center.x - 8 ? "end" : point.x > geometry.center.x + 8 ? "start" : "middle";
     return `<text class="deck-radar-label" x="${point.x}" y="${point.y + 5}" text-anchor="${anchor}">${escapeHtml(chart.labels[index])}</text>`;
@@ -1145,7 +1592,7 @@ function renderRadarSvg(chart, options = {}) {
   </style>
   <text class="deck-radar-scale" x="${geometry.center.x + 10}" y="${geometry.center.y - geometry.radius - 8}">${escapeHtml(formatNumber(geometry.maxValue))}</text>
   ${rings}
-  ${axes}
+  ${axes2}
   <polygon class="deck-radar-shape" points="${shapePoints}"></polygon>
   ${dots}
   ${labels}
@@ -1168,8 +1615,8 @@ function radarPointObjects2(count, center, radius) {
 function radarPoint2(index, count, center, radius) {
   const angle = -Math.PI / 2 + index / count * Math.PI * 2;
   return {
-    x: round8(center.x + Math.cos(angle) * radius),
-    y: round8(center.y + Math.sin(angle) * radius)
+    x: round9(center.x + Math.cos(angle) * radius),
+    y: round9(center.y + Math.sin(angle) * radius)
   };
 }
 function niceCeiling4(value) {
@@ -1178,7 +1625,7 @@ function niceCeiling4(value) {
   const nice = normalized <= 1 ? 1 : normalized <= 2 ? 2 : normalized <= 2.5 ? 2.5 : normalized <= 5 ? 5 : 10;
   return nice * magnitude;
 }
-function round8(value) {
+function round9(value) {
   return Math.round(value * 10) / 10;
 }
 
@@ -1219,14 +1666,14 @@ function renderSankeySvg(chart, options = {}) {
     return useVariables ? `var(--deck-sankey-node-${index % 6}, ${fallback})` : fallback;
   };
   const geometry = sankeyGeometry(chart);
-  const links = geometry.links.map((link) => `<path class="deck-sankey-link deck-sankey-link-${link.source.index % 6}" d="${linkPath(link, geometry.nodeWidth)}" stroke="${nodeColor(link.source.index)}" stroke-width="${round9(link.width)}">
+  const links = geometry.links.map((link) => `<path class="deck-sankey-link deck-sankey-link-${link.source.index % 6}" d="${linkPath(link, geometry.nodeWidth)}" stroke="${nodeColor(link.source.index)}" stroke-width="${round10(link.width)}">
     <title>${escapeHtml(link.source.label)} to ${escapeHtml(link.target.label)}: ${escapeHtml(formatNumber(link.value))}</title>
   </path>`).join("\n  ");
   const nodes = geometry.nodes.map((node) => {
     const label = nodeLabel(node, geometry);
     const nodeValue = Math.max(node.incoming, node.outgoing);
-    return `<g class="deck-sankey-node deck-sankey-node-${node.index % 6}" transform="translate(${round9(node.x)} ${round9(node.y)})">
-    <rect class="deck-sankey-node-rect" width="${geometry.nodeWidth}" height="${round9(node.height)}" rx="5" fill="${nodeColor(node.index)}"><title>${escapeHtml(node.label)}: in ${escapeHtml(formatNumber(node.incoming))}, out ${escapeHtml(formatNumber(node.outgoing))}</title></rect>
+    return `<g class="deck-sankey-node deck-sankey-node-${node.index % 6}" transform="translate(${round10(node.x)} ${round10(node.y)})">
+    <rect class="deck-sankey-node-rect" width="${geometry.nodeWidth}" height="${round10(node.height)}" rx="5" fill="${nodeColor(node.index)}"><title>${escapeHtml(node.label)}: in ${escapeHtml(formatNumber(node.incoming))}, out ${escapeHtml(formatNumber(node.outgoing))}</title></rect>
     <text class="deck-sankey-label" x="${label.x}" y="${label.y}" text-anchor="${label.anchor}">${escapeHtml(truncateLabel(node.label))}</text>
     <text class="deck-sankey-value" x="${label.x}" y="${label.y + 15}" text-anchor="${label.anchor}">${escapeHtml(formatNumber(nodeValue))}</text>
   </g>`;
@@ -1337,7 +1784,7 @@ function linkPath(link, nodeWidth) {
   const x0 = link.source.x + nodeWidth;
   const x1 = link.target.x;
   const mid = x0 + (x1 - x0) * 0.46;
-  return `M${round9(x0)},${round9(link.y0)}C${round9(mid)},${round9(link.y0)} ${round9(mid)},${round9(link.y1)} ${round9(x1)},${round9(link.y1)}`;
+  return `M${round10(x0)},${round10(link.y0)}C${round10(mid)},${round10(link.y0)} ${round10(mid)},${round10(link.y1)} ${round10(x1)},${round10(link.y1)}`;
 }
 function spreadAnchors(node, links, key) {
   if (!links.length) return;
@@ -1352,19 +1799,19 @@ function nodeLabel(node, geometry) {
   if (node.depth === 0) {
     return {
       x: -12,
-      y: round9(node.height / 2 - 2),
+      y: round10(node.height / 2 - 2),
       anchor: "end"
     };
   }
   if (node.depth === geometry.maxDepth) {
     return {
       x: geometry.nodeWidth + 12,
-      y: round9(node.height / 2 - 2),
+      y: round10(node.height / 2 - 2),
       anchor: "start"
     };
   }
   return {
-    x: round9(geometry.nodeWidth / 2),
+    x: round10(geometry.nodeWidth / 2),
     y: -10,
     anchor: "middle"
   };
@@ -1385,7 +1832,7 @@ function truncateLabel(label) {
 function clamp(value, min, max) {
   return Math.max(min, Math.min(max, value));
 }
-function round9(value) {
+function round10(value) {
   return Math.round(value * 10) / 10;
 }
 
@@ -1439,13 +1886,13 @@ function sumValues(items) {
 }
 function insetBox(box, inset) {
   return {
-    x: round10(box.x + inset),
-    y: round10(box.y + inset),
-    w: round10(Math.max(0, box.w - inset * 2)),
-    h: round10(Math.max(0, box.h - inset * 2))
+    x: round11(box.x + inset),
+    y: round11(box.y + inset),
+    w: round11(Math.max(0, box.w - inset * 2)),
+    h: round11(Math.max(0, box.h - inset * 2))
   };
 }
-function round10(value) {
+function round11(value) {
   return Number(value.toFixed(2));
 }
 
@@ -1485,19 +1932,19 @@ function renderWaterfallSvg(chart, options = {}) {
   const bars = geometry.steps.map((step) => {
     const className = step.delta < 0 ? "negative" : "positive";
     return `<g class="deck-waterfall-step deck-waterfall-step-${className}">
-    <rect class="deck-waterfall-bar deck-waterfall-bar-${className}" x="${round11(step.x)}" y="${round11(step.y)}" width="${round11(step.w)}" height="${round11(step.h)}" rx="5"></rect>
-    <text class="deck-waterfall-value" x="${round11(step.x + step.w / 2)}" y="${round11(step.valueY)}" text-anchor="middle">${escapeHtml(formatDelta(step.delta))}</text>
-    <text class="deck-waterfall-label" x="${round11(step.x + step.w / 2)}" y="${geometry.height - 18}" text-anchor="middle">${escapeHtml(step.label)}</text>
+    <rect class="deck-waterfall-bar deck-waterfall-bar-${className}" x="${round12(step.x)}" y="${round12(step.y)}" width="${round12(step.w)}" height="${round12(step.h)}" rx="5"></rect>
+    <text class="deck-waterfall-value" x="${round12(step.x + step.w / 2)}" y="${round12(step.valueY)}" text-anchor="middle">${escapeHtml(formatDelta(step.delta))}</text>
+    <text class="deck-waterfall-label" x="${round12(step.x + step.w / 2)}" y="${geometry.height - 18}" text-anchor="middle">${escapeHtml(step.label)}</text>
   </g>`;
   }).join("\n  ");
   const connectors = geometry.steps.slice(0, -1).map((step, index) => {
     const next = geometry.steps[index + 1];
-    return `<line class="deck-waterfall-connector" x1="${round11(step.x + step.w)}" y1="${round11(step.endY)}" x2="${round11(next.x)}" y2="${round11(step.endY)}"></line>`;
+    return `<line class="deck-waterfall-connector" x1="${round12(step.x + step.w)}" y1="${round12(step.endY)}" x2="${round12(next.x)}" y2="${round12(step.endY)}"></line>`;
   }).join("\n  ");
   const grid = geometry.ticks.map((tick) => {
     const y = geometry.yFor(tick);
-    return `<line class="deck-waterfall-grid" x1="${geometry.margin.left}" y1="${round11(y)}" x2="${round11(geometry.width - geometry.margin.right)}" y2="${round11(y)}"></line>
-  <text class="deck-waterfall-tick" x="${geometry.margin.left - 14}" y="${round11(y + 5)}" text-anchor="end">${escapeHtml(formatNumber(tick))}</text>`;
+    return `<line class="deck-waterfall-grid" x1="${geometry.margin.left}" y1="${round12(y)}" x2="${round12(geometry.width - geometry.margin.right)}" y2="${round12(y)}"></line>
+  <text class="deck-waterfall-tick" x="${geometry.margin.left - 14}" y="${round12(y + 5)}" text-anchor="end">${escapeHtml(formatNumber(tick))}</text>`;
   }).join("\n  ");
   return `<svg class="deck-chart-waterfall-svg" viewBox="0 0 ${geometry.width} ${geometry.height}" role="img" aria-label="${escapeAttr(chart.title || "Waterfall chart")}">
   <style>
@@ -1510,8 +1957,8 @@ function renderWaterfallSvg(chart, options = {}) {
     .deck-waterfall-value { font-weight: 600; }
   </style>
   ${grid}
-  <line class="deck-waterfall-axis" x1="${geometry.margin.left}" y1="${round11(geometry.zeroY)}" x2="${round11(geometry.width - geometry.margin.right)}" y2="${round11(geometry.zeroY)}"></line>
-  <line class="deck-waterfall-axis" x1="${geometry.margin.left}" y1="${geometry.margin.top}" x2="${geometry.margin.left}" y2="${round11(geometry.height - geometry.margin.bottom)}"></line>
+  <line class="deck-waterfall-axis" x1="${geometry.margin.left}" y1="${round12(geometry.zeroY)}" x2="${round12(geometry.width - geometry.margin.right)}" y2="${round12(geometry.zeroY)}"></line>
+  <line class="deck-waterfall-axis" x1="${geometry.margin.left}" y1="${geometry.margin.top}" x2="${geometry.margin.left}" y2="${round12(geometry.height - geometry.margin.bottom)}"></line>
   ${connectors}
   ${bars}
 </svg>`;
@@ -1590,7 +2037,7 @@ function formatDelta(value) {
   if (value < 0) return `-${formatted}`;
   return formatted;
 }
-function round11(value) {
+function round12(value) {
   return Math.round(value * 10) / 10;
 }
 
@@ -1600,6 +2047,14 @@ export {
   escapeHtml,
   escapeAttr,
   formatNumber,
+  renderBarChartSvg,
+  renderGroupedBarChartSvg,
+  renderStackedBarChartSvg,
+  renderDoughnutChartSvg,
+  renderLineChartSvg,
+  renderAreaChartSvg,
+  renderScatterChartSvg,
+  renderBubbleChartSvg,
   renderBoxplotSvg,
   renderBulletSvg,
   funnelPalette,

@@ -1,4 +1,9 @@
 import { color, font, hasSlideBackgroundAsset, ptToIn, slideBackgroundAsset } from '../brand.js'
+import { renderBarChartSvg, renderGroupedBarChartSvg, renderStackedBarChartSvg } from '../charts-svg/bar.js'
+import { renderDoughnutChartSvg } from '../charts-svg/doughnut.js'
+import { renderAreaChartSvg, renderLineChartSvg } from '../charts-svg/line.js'
+import { renderBubbleChartSvg, renderScatterChartSvg } from '../charts-svg/point.js'
+import { selfContainedSvg } from '../charts-svg/styles.js'
 import { renderBoxplotSvg } from '../components/boxplot.js'
 import { renderBulletSvg } from '../components/bullet.js'
 import { renderFunnelSvg, funnelPalette } from '../components/funnel.js'
@@ -291,8 +296,16 @@ export function addChartSlide(pptx, slide, model, brand, resourcesDir) {
   const isPareto = model.chart.chartType === 'pareto'
   const isRadar = model.chart.chartType === 'radar'
   const isSankey = model.chart.chartType === 'sankey'
-  if (isWaterfall || isBullet || isHistogram || isBoxplot || isPareto || isRadar || isSankey) {
-    addSvgChartImage(slide, model, brand, layout, chartBox, model.chart.chartType)
+  // All chart types now render through the shared SSR-SVG renderers, embedded as
+  // native vector SVG (crisp at any scale, matches the HTML deck). The native
+  // pptxgenjs addChart path below remains only as a fallback for unknown types.
+  const svgChartTypes = new Set([
+    'line', 'area', 'bar', 'grouped-bar', 'stacked-bar', 'scatter', 'bubble', 'doughnut',
+    'waterfall', 'bullet', 'histogram', 'boxplot', 'pareto', 'radar', 'sankey',
+  ])
+  const svgType = model.chart.chartType || 'bar'
+  if (svgChartTypes.has(svgType)) {
+    addSvgChartImage(slide, model, brand, layout, chartBox, svgType)
     addTakeaway(slide, model, brand)
     return
   }
@@ -448,6 +461,20 @@ function addSvgChartImage(slide, model, brand, layout, chartBox, type) {
 }
 
 function renderSvgChartByType(type, chart, brand, model, layout, sharedOptions) {
+  // New shared SSR-SVG renderers: theme via mode + brand palette (matches the
+  // deck), title suppressed (addSvgChartImage draws the title box), and the
+  // structural CSS inlined so the SVG stands alone inside the PPTX.
+  const mode = sharedOptions.mode
+  const noTitle = { ...chart, title: '' }
+  const opts = { cssVariables: false, mode, brand }
+  if (type === 'line') return selfContainedSvg(renderLineChartSvg(noTitle, opts))
+  if (type === 'area') return selfContainedSvg(renderAreaChartSvg(noTitle, opts))
+  if (type === 'bar') return selfContainedSvg(renderBarChartSvg(noTitle, opts))
+  if (type === 'grouped-bar') return selfContainedSvg(renderGroupedBarChartSvg(noTitle, opts))
+  if (type === 'stacked-bar') return selfContainedSvg(renderStackedBarChartSvg(noTitle, opts))
+  if (type === 'scatter') return selfContainedSvg(renderScatterChartSvg(noTitle, opts))
+  if (type === 'bubble') return selfContainedSvg(renderBubbleChartSvg(noTitle, opts))
+  if (type === 'doughnut') return selfContainedSvg(renderDoughnutChartSvg(noTitle, opts))
   if (type === 'waterfall') {
     return renderWaterfallSvg(chart, {
       ...sharedOptions,

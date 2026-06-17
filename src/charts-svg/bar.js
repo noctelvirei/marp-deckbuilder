@@ -32,13 +32,13 @@ function axes({ ticks, yFor, labels, bandCenter, margin, plotW, tc, theme, unit 
   return { grid, xlabels }
 }
 
-function legendRow(seriesNames, palette, margin) {
+function legendRow(seriesNames, palette, margin, headingColor) {
   // simple horizontal legend across the top
   let x = margin.left
   const y = 18
   return seriesNames.map((name, i) => {
     const swatch = `<rect x="${round(x)}" y="${y - 10}" width="12" height="12" rx="3" style="fill:${palette[i % palette.length]}"/>`
-    const text = `<text class="dsvg-legend" x="${round(x + 17)}" y="${y}" style="fill:${'var(--deck-chart-heading, #fff)'}">${escapeHtml(name)}</text>`
+    const text = `<text class="dsvg-legend" x="${round(x + 17)}" y="${y}" style="fill:${headingColor}">${escapeHtml(name)}</text>`
     x += 17 + Math.max(48, name.length * 8.2) + 18
     return `${swatch}${text}`
   }).join('\n  ')
@@ -119,7 +119,7 @@ export function renderGroupedBarChartSvg(chart, options = {}) {
 
   const { grid, xlabels } = axes({ ticks, yFor, labels, bandCenter, margin, plotW, tc, theme, unit: chart.unit })
   return svgWrap('grouped-bar', chart.title || 'Grouped bar chart',
-    `${legendRow(seriesNames, palette, margin)}\n  ${grid}\n  <line class="dsvg-axis" x1="${round(margin.left)}" y1="${round(baseY)}" x2="${round(margin.left + plotW)}" y2="${round(baseY)}" style="stroke:${tc('axis', theme.axis)}"/>\n  ${bars}\n  ${xlabels}`)
+    `${legendRow(seriesNames, palette, margin, tc('heading', theme.heading))}\n  ${grid}\n  <line class="dsvg-axis" x1="${round(margin.left)}" y1="${round(baseY)}" x2="${round(margin.left + plotW)}" y2="${round(baseY)}" style="stroke:${tc('axis', theme.axis)}"/>\n  ${bars}\n  ${xlabels}`)
 }
 
 export function renderStackedBarChartSvg(chart, options = {}) {
@@ -156,5 +156,5 @@ export function renderStackedBarChartSvg(chart, options = {}) {
 
   const { grid, xlabels } = axes({ ticks, yFor, labels, bandCenter, margin, plotW, tc, theme, unit: chart.unit })
   return svgWrap('stacked-bar', chart.title || 'Stacked bar chart',
-    `${legendRow(seriesNames, palette, margin)}\n  ${grid}\n  <line class="dsvg-axis" x1="${round(margin.left)}" y1="${round(baseY)}" x2="${round(margin.left + plotW)}" y2="${round(baseY)}" style="stroke:${tc('axis', theme.axis)}"/>\n  ${bars}\n  ${xlabels}`)
+    `${legendRow(seriesNames, palette, margin, tc('heading', theme.heading))}\n  ${grid}\n  <line class="dsvg-axis" x1="${round(margin.left)}" y1="${round(baseY)}" x2="${round(margin.left + plotW)}" y2="${round(baseY)}" style="stroke:${tc('axis', theme.axis)}"/>\n  ${bars}\n  ${xlabels}`)
 }
