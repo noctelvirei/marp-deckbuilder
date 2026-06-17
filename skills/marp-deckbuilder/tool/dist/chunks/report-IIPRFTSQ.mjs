@@ -6487,103 +6487,133 @@ function renderReportFunnelChartScript(chart, context = {}) {
   }));
   return `(() => {
   const target = document.getElementById(${jsString(chart.id)});
+  if (!target) return;
 ${chartBoilerplate(chart, "target")}
   const data = ${jsValue(data)};
+  const uid = (${jsString(chart.id)} || "funnel").replace(/[^a-zA-Z0-9_-]/g, "");
   const maxValue = Math.max(...data.map((item) => item.value), 1);
-  const width = Math.max(320, target.clientWidth || 720);
   const height = ${chart.height};
-  const marginX = 28;
-  const segmentGap = 5;
-  const segmentHeight = Math.max(34, (height - segmentGap * (data.length - 1)) / Math.max(1, data.length));
-  const availableWidth = width - marginX * 2;
-  const widthFor = (value) => Math.max(34, (Number(value) / maxValue) * availableWidth);
-  target.textContent = "";
+
+  const clampByte = (v) => Math.max(0, Math.min(255, Math.round(v)));
+  const isHex = (c) => /^#[0-9a-fA-F]{6}$/.test(c);
+  const shade = (hex, amount, toWhite) => {
+    if (!isHex(hex)) return hex;
+    const r = parseInt(hex.slice(1, 3), 16), g = parseInt(hex.slice(3, 5), 16), b = parseInt(hex.slice(5, 7), 16);
+    const t = toWhite ? 255 : 0;
+    const m = (x) => clampByte(x + (t - x) * amount);
+    return "#" + [m(r), m(g), m(b)].map((x) => x.toString(16).padStart(2, "0")).join("");
+  };
+  const convText = (item) => item.conversion === null ? "Start" : (Math.round(item.conversion * 10) / 10).toString().replace(/\\.0$/, "") + "% from prior";
+
   const tooltip = document.createElement("div");
   tooltip.className = "report-chart-floating-tooltip";
   tooltip.hidden = true;
-  const svg = d3.create("svg")
-    .attr("viewBox", [0, 0, width, height].join(" "))
-    .attr("width", width)
-    .attr("height", height)
-    .attr("role", "img")
-    .attr("aria-label", ${jsString(chart.ariaLabel)})
-    .style("display", "block")
-    .style("width", "100%")
-    .style("height", "100%");
-  const segments = data.map((item, index) => {
-    const y0 = index * (segmentHeight + segmentGap);
-    const y1 = y0 + segmentHeight;
-    const topWidth = widthFor(item.value);
-    const next = data[index + 1];
-    const bottomWidth = widthFor(next ? next.value : item.value * 0.72);
-    const xTop = (width - topWidth) / 2;
-    const xBottom = (width - bottomWidth) / 2;
-    const previous = index === 0 ? null : data[index - 1];
-    const conversion = previous && previous.value > 0 ? (item.value / previous.value) * 100 : null;
-    return {
-      ...item,
-      index,
-      y0,
-      y1,
-      xTop,
-      xBottom,
-      topWidth,
-      bottomWidth,
-      conversion,
-      path: [
-        "M", xTop, y0,
-        "L", xTop + topWidth, y0,
-        "L", xBottom + bottomWidth, y1,
-        "L", xBottom, y1,
-        "Z"
-      ].join(" ")
-    };
-  });
-  const cell = svg.selectAll("g")
-    .data(segments)
-    .join("g")
-    .attr("class", "report-funnel-segment");
-  cell.append("path")
-    .attr("d", (segment) => segment.path)
-    .attr("fill", (segment) => segment.color)
-    .attr("fill-opacity", 0.9)
-    .attr("stroke", tooltipBg)
-    .attr("stroke-width", 1.5);
-  const printLabels = cell.append("text")
-    .attr("class", "report-funnel-print-label")
-    .attr("x", width / 2)
-    .attr("y", (segment) => (segment.y0 + segment.y1) / 2 - 7)
-    .attr("text-anchor", "middle")
-    .attr("dominant-baseline", "middle");
-  printLabels.append("tspan")
-    .attr("class", "report-funnel-print-label-name")
-    .text((segment) => segment.label);
-  printLabels.append("tspan")
-    .attr("class", "report-funnel-print-label-value")
-    .attr("x", width / 2)
-    .attr("dy", "1.25em")
-    .text((segment) => {
-      const conversion = segment.conversion === null ? "Start" : (Math.round(segment.conversion * 10) / 10).toString().replace(/\\.0$/, "") + "% from prior";
-      return formatTooltipValue(segment.value) + " \xB7 " + conversion;
+
+  function draw() {
+    target.querySelectorAll("svg").forEach((node) => node.remove());
+    // Render at the true on-screen size so it is crisp on large/high-DPI displays.
+    const width = Math.max(360, Math.round(target.clientWidth || 760));
+    const keyWidth = Math.min(300, Math.max(200, width * 0.34));
+    const funnelWidth = width - keyWidth;
+    const padTop = 16, padBottom = 16, gap = 6;
+    const n = data.length;
+    const segmentHeight = Math.max(28, (height - padTop - padBottom - gap * Math.max(0, n - 1)) / Math.max(1, n));
+    const marginX = 26;
+    const maxBand = Math.max(60, funnelWidth - marginX * 2);
+    const minBand = Math.max(46, maxBand * 0.18);
+    const bandFor = (value) => Math.max(minBand, (Number(value) / maxValue) * maxBand);
+    const cx = funnelWidth / 2;
+
+    const segments = data.map((item, index) => {
+      const y0 = padTop + index * (segmentHeight + gap);
+      const y1 = y0 + segmentHeight;
+      const topWidth = bandFor(item.value);
+      const next = data[index + 1];
+      const bottomWidth = bandFor(next ? next.value : item.value * 0.72);
+      const previous = index === 0 ? null : data[index - 1];
+      const conversion = previous && previous.value > 0 ? (item.value / previous.value) * 100 : null;
+      return Object.assign({}, item, {
+        index, y0, y1, mid: (y0 + y1) / 2, topWidth, conversion,
+        path: ["M", cx - topWidth / 2, y0, "L", cx + topWidth / 2, y0, "L", cx + bottomWidth / 2, y1, "L", cx - bottomWidth / 2, y1, "Z"].join(" ")
+      });
     });
-  cell.on("mousemove", (event, segment) => {
-    const rect = target.getBoundingClientRect();
-    const conversion = segment.conversion === null ? "Start" : (Math.round(segment.conversion * 10) / 10).toString().replace(/\\.0$/, "") + "% from prior";
-    tooltip.textContent = segment.label + ": " + formatTooltipValue(segment.value) + " \xB7 " + conversion;
-    tooltip.style.left = Math.min(rect.width - 8, Math.max(8, event.clientX - rect.left)) + "px";
-    tooltip.style.top = Math.min(rect.height - 8, Math.max(8, event.clientY - rect.top)) + "px";
-    tooltip.hidden = false;
-    d3.select(event.currentTarget).select("path").attr("stroke", gridColor).attr("fill-opacity", 1);
-  });
-  cell.on("mouseleave", (event) => {
-    tooltip.hidden = true;
-    d3.select(event.currentTarget).select("path").attr("stroke", tooltipBg).attr("fill-opacity", 0.9);
-  });
-  target.addEventListener("mouseleave", () => {
-    tooltip.hidden = true;
-  });
-  target.append(svg.node());
-  target.append(tooltip);
+
+    const svg = d3.create("svg")
+      .attr("viewBox", [0, 0, width, height].join(" "))
+      .attr("preserveAspectRatio", "xMidYMid meet")
+      .attr("role", "img")
+      .attr("aria-label", ${jsString(chart.ariaLabel)})
+      .attr("shape-rendering", "geometricPrecision")
+      .style("display", "block")
+      .style("width", "100%")
+      .style("height", "auto")
+      .style("overflow", "visible");
+
+    // theme-aware vertical sheen per segment (sharp vector, adds depth without blur)
+    const defs = svg.append("defs");
+    segments.forEach((segment, index) => {
+      const grad = defs.append("linearGradient").attr("id", uid + "-g" + index)
+        .attr("x1", 0).attr("y1", 0).attr("x2", 0).attr("y2", 1);
+      grad.append("stop").attr("offset", "0%").attr("stop-color", shade(segment.color, 0.16, true));
+      grad.append("stop").attr("offset", "58%").attr("stop-color", segment.color);
+      grad.append("stop").attr("offset", "100%").attr("stop-color", shade(segment.color, 0.12, false));
+    });
+
+    const cell = svg.append("g").selectAll("g").data(segments).join("g").attr("class", "report-funnel-segment");
+    cell.append("path")
+      .attr("d", (segment) => segment.path)
+      .attr("fill", (segment, index) => isHex(segment.color) ? "url(#" + uid + "-g" + index + ")" : segment.color)
+      .attr("stroke", tooltipBg)
+      .attr("stroke-width", 1.25)
+      .attr("stroke-linejoin", "round");
+    // crisp top-edge highlight for a polished, dimensional feel
+    cell.append("line")
+      .attr("x1", (segment) => cx - segment.topWidth / 2 + 1.5)
+      .attr("y1", (segment) => segment.y0 + 0.75)
+      .attr("x2", (segment) => cx + segment.topWidth / 2 - 1.5)
+      .attr("y2", (segment) => segment.y0 + 0.75)
+      .attr("stroke", (segment) => shade(segment.color, 0.45, true))
+      .attr("stroke-width", 1)
+      .attr("stroke-opacity", 0.5)
+      .attr("pointer-events", "none");
+
+    // always-visible key on the right (swatch + label + value/conversion)
+    const keyX = funnelWidth + 12;
+    const rows = svg.append("g").attr("class", "report-funnel-key").selectAll("g").data(segments).join("g")
+      .attr("transform", (segment) => "translate(" + keyX + "," + segment.mid + ")");
+    rows.append("rect").attr("x", 0).attr("y", -10).attr("width", 13).attr("height", 13).attr("rx", 3.5)
+      .attr("fill", (segment) => segment.color);
+    rows.append("text").attr("x", 22).attr("y", -1).attr("fill", textColor)
+      .attr("font-size", 13).attr("font-weight", 600).text((segment) => segment.label);
+    rows.append("text").attr("x", 22).attr("y", 15).attr("fill", mutedColor)
+      .attr("font-size", 12).attr("font-weight", 500).text((segment) => formatTooltipValue(segment.value) + " \xB7 " + convText(segment));
+
+    cell.style("cursor", "default")
+      .on("mousemove", (event, segment) => {
+        const rect = target.getBoundingClientRect();
+        tooltip.textContent = segment.label + ": " + formatTooltipValue(segment.value) + " \xB7 " + convText(segment);
+        tooltip.style.left = Math.min(rect.width - 8, Math.max(8, event.clientX - rect.left)) + "px";
+        tooltip.style.top = Math.min(rect.height - 8, Math.max(8, event.clientY - rect.top)) + "px";
+        tooltip.hidden = false;
+        d3.select(event.currentTarget).select("path").attr("stroke", gridColor);
+      })
+      .on("mouseleave", (event) => {
+        tooltip.hidden = true;
+        d3.select(event.currentTarget).select("path").attr("stroke", tooltipBg);
+      });
+
+    target.appendChild(svg.node());
+  }
+
+  target.textContent = "";
+  draw();
+  target.appendChild(tooltip);
+  target.addEventListener("mouseleave", () => { tooltip.hidden = true; });
+  if (typeof ResizeObserver !== "undefined") {
+    let raf = 0;
+    const ro = new ResizeObserver(() => { cancelAnimationFrame(raf); raf = requestAnimationFrame(draw); });
+    ro.observe(target);
+  }
 })();`;
 }
 function renderReportSankeyChartScript(chart, context = {}) {
