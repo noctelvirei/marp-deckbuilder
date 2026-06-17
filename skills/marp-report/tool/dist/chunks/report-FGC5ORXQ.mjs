@@ -7,19 +7,19 @@ const __dirname = __deckbuilderDirname(__filename);
 import {
   require_punycode,
   resolveResourceUrls
-} from "./chunk-HVCJBZKH.mjs";
+} from "./chunk-SEIRLF43.mjs";
 import {
   decodeHTML,
   expandSelfClosingComponentTags,
   load,
   splitFrontmatter
-} from "./chunk-XLAEZD4M.mjs";
+} from "./chunk-SGWKGEWZ.mjs";
 import "./chunk-MGQWBMZO.mjs";
 import "./chunk-RQ4ZKSEQ.mjs";
 import {
   normalizeResourceReference,
   resolveSurfaceResourceFile
-} from "./chunk-RSWQC3HO.mjs";
+} from "./chunk-N36IMZDM.mjs";
 import {
   __export,
   __toESM
@@ -6554,9 +6554,9 @@ ${chartBoilerplate(chart, "target")}
     segments.forEach((segment, index) => {
       const grad = defs.append("linearGradient").attr("id", uid + "-g" + index)
         .attr("x1", 0).attr("y1", 0).attr("x2", 0).attr("y2", 1);
-      grad.append("stop").attr("offset", "0%").attr("stop-color", shade(segment.color, 0.16, true));
+      grad.append("stop").attr("offset", "0%").attr("stop-color", shade(segment.color, 0.12, true));
       grad.append("stop").attr("offset", "58%").attr("stop-color", segment.color);
-      grad.append("stop").attr("offset", "100%").attr("stop-color", shade(segment.color, 0.12, false));
+      grad.append("stop").attr("offset", "100%").attr("stop-color", shade(segment.color, 0.05, false));
     });
 
     const cell = svg.append("g").selectAll("g").data(segments).join("g").attr("class", "report-funnel-segment");

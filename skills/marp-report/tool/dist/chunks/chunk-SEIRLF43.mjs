@@ -8,7 +8,7 @@ import {
   buildMarpMarkdown,
   getAnimation,
   load
-} from "./chunk-XLAEZD4M.mjs";
+} from "./chunk-SGWKGEWZ.mjs";
 import {
   require_node
 } from "./chunk-MGQWBMZO.mjs";
@@ -21,7 +21,7 @@ import {
   resolveResourceFile,
   resolveSurfaceResourceFile,
   resourceToDataUri
-} from "./chunk-RSWQC3HO.mjs";
+} from "./chunk-N36IMZDM.mjs";
 import {
   __commonJS,
   __require,
@@ -137607,6 +137607,9 @@ function prepareHtmlDeckShell(html) {
   const root = load(`<root>${html}</root>`, {
     decodeEntities: false,
     lowerCaseAttributeNames: false
+  });
+  root("stop").each((index, stop) => {
+    if (!root(stop).attr("offset")) root(stop).remove();
   });
   root("svg[data-marpit-svg]").each((index, svg) => {
     const slide = root(svg);

@@ -92,19 +92,24 @@ export function straightPath(points) {
 // soft glow. `id` namespaces them so multiple charts can coexist on one page.
 export function chartDefs(id, accent, accent2) {
   const a2 = accent2 || accent
-  // stop-color via style= so CSS var() resolves reliably inside SVG gradients
+  // NOTE: marp-core splits explicit-close SVG children (<stop></stop>) into an
+  // empty twin (<stop/>) that defaults to opaque black and poisons the gradient.
+  // cheerio re-serialization undoes self-closing here, so the actual fix is a
+  // post-marp strip of attribute-less <stop> in render.js (prepareHtmlDeckShell).
+  // Self-closing below is still the cleaner convention.
+  // stop-color via style= so CSS var() resolves reliably inside SVG gradients.
   return `<defs>
     <linearGradient id="${id}-area" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0%" style="stop-color:${accent};stop-opacity:0.42"></stop>
-      <stop offset="100%" style="stop-color:${accent};stop-opacity:0"></stop>
+      <stop offset="0%" style="stop-color:${accent};stop-opacity:0.42"/>
+      <stop offset="100%" style="stop-color:${accent};stop-opacity:0"/>
     </linearGradient>
     <linearGradient id="${id}-line" x1="0" y1="0" x2="1" y2="0">
-      <stop offset="0%" style="stop-color:${a2}"></stop>
-      <stop offset="100%" style="stop-color:${accent}"></stop>
+      <stop offset="0%" style="stop-color:${a2}"/>
+      <stop offset="100%" style="stop-color:${accent}"/>
     </linearGradient>
     <filter id="${id}-glow" x="-20%" y="-20%" width="140%" height="140%">
-      <feGaussianBlur stdDeviation="2.4" result="b"></feGaussianBlur>
-      <feMerge><feMergeNode in="b"></feMergeNode><feMergeNode in="SourceGraphic"></feMergeNode></feMerge>
+      <feGaussianBlur stdDeviation="2.4" result="b"/>
+      <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
     </filter>
   </defs>`
 }

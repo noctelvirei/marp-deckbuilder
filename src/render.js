@@ -1240,6 +1240,14 @@ function prepareHtmlDeckShell(html) {
     lowerCaseAttributeNames: false,
   })
 
+  // marp-core splits every explicit-close SVG child (<stop></stop>) into an
+  // extra empty twin (<stop/>). An attribute-less <stop> defaults to opaque
+  // black, which poisons gradients (funnel sheen, chart area fills). Drop these
+  // artifacts; a legitimate stop always carries an `offset`.
+  root('stop').each((index, stop) => {
+    if (!root(stop).attr('offset')) root(stop).remove()
+  })
+
   root('svg[data-marpit-svg]').each((index, svg) => {
     const slide = root(svg)
     slide.addClass('deckbuilder-slide')
