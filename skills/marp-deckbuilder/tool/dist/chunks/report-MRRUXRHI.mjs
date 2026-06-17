@@ -5297,9 +5297,10 @@ function renderReportChartHtml(chart, brand = {}, mode = "light") {
   if (REPORT_SVG_TYPES.has(chart.chartType)) {
     const svg = renderReportChartSvg(chart, brand, mode);
     if (svg) {
+      const compact = svg.replace(/>\s+</g, "><").trim();
       return `<div class="report-chart report-chart-${escapeAttr(chart.chartType)}">
   ${chart.title ? `<div class="report-chart-title">${escapeHtml2(chart.title)}</div>` : ""}
-  <div class="report-chart-figure">${svg}</div>
+  <div class="report-chart-figure">${compact}</div>
 </div>`;
     }
   }

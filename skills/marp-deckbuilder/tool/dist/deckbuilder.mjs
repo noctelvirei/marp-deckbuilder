@@ -87,7 +87,7 @@ async function reportCommand(argv) {
   }
   const [{ loadDefinitions }, { renderReportHtml }, { injectReportVendorScripts }] = await Promise.all([
     import("./chunks/brand-CMLFAISO.mjs"),
-    import("./chunks/report-N7KPWGTW.mjs"),
+    import("./chunks/report-MRRUXRHI.mjs"),
     import("./chunks/report-vendors-54ZQO4TB.mjs")
   ]);
   const inputPath = path.resolve(argv.input);

@@ -76,9 +76,13 @@ export function renderReportChartHtml(chart, brand = {}, mode = 'light') {
   if (REPORT_SVG_TYPES.has(chart.chartType)) {
     const svg = renderReportChartSvg(chart, brand, mode)
     if (svg) {
+      // Collapse inter-tag whitespace so the SVG carries no blank lines. markdown.render
+      // (markdown-it) would otherwise end the HTML block at a blank line and drop the
+      // chart's children, leaving an empty <svg></svg>.
+      const compact = svg.replace(/>\s+</g, '><').trim()
       return `<div class="report-chart report-chart-${escapeAttr(chart.chartType)}">
   ${chart.title ? `<div class="report-chart-title">${escapeHtml(chart.title)}</div>` : ''}
-  <div class="report-chart-figure">${svg}</div>
+  <div class="report-chart-figure">${compact}</div>
 </div>`
     }
   }
