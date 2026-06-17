@@ -68,7 +68,7 @@ function collectNavigationHeadings(root) {
   return root('root > h1').toArray()
 }
 
-function normalizeReportTheme(value = '') {
+export function normalizeReportTheme(value = '') {
   const token = String(value || '').trim().toLowerCase()
   if (token === 'dark' || token === 'navy' || token === 'black') return 'dark'
   return ''

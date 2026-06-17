@@ -140825,6 +140825,7 @@ function escapeHtml(value) {
 
 export {
   require_punycode,
+  svgChartHoverScript,
   renderDeckHtml,
   brandBackgroundCss,
   brandLogoCss,

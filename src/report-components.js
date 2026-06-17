@@ -42,6 +42,7 @@ import {
   renderReportTimelineHtml,
 } from './report-components/renderers.js'
 import { isKnownBadgeVariant, parseDataTableNumber } from './report-components/utils.js'
+import { svgChartHoverScript } from './charts-svg/hover.js'
 
 const dataRefChartTypes = ['bar', 'line', 'doughnut', 'waterfall', 'bullet', 'pareto', 'grouped-bar', 'stacked-bar']
 const dataRefChartTypeList = formatReportList(dataRefChartTypes)
@@ -310,15 +311,22 @@ export function compileReportComponents(source, options = {}) {
     badgeElement.replaceWith(renderReportBadgeHtml(badge))
   })
 
+  const chartMode = options.theme === 'dark' ? 'dark' : 'light'
+  let hasChart = false
   root('report-chart').each((index, element) => {
     const chartElement = root(element)
     const chart = parseReportChart(chartElement, index)
     resolveReportChartDataset(chart, datasetRegistry, context)
     chart.id = uniqueDomId(chart.id || chart.generatedId, usedIds, 'report-chart')
     validateReportChart(chart, context)
-    scripts.push(renderReportChartScript(chart, context))
-    chartElement.replaceWith(renderReportChartHtml(chart))
+    // SVG chart types return '' (server-rendered); only client charts push a script.
+    const script = renderReportChartScript(chart, { brand: options.brand })
+    if (script) scripts.push(script)
+    chartElement.replaceWith(renderReportChartHtml(chart, options.brand, chartMode))
+    hasChart = true
   })
+  // Inject the thin SVG hover-tooltip runtime once, for server-rendered charts.
+  if (hasChart) scripts.push(svgChartHoverScript())
 
   const compiledSource = root('root').html() || source
   return {

@@ -9,9 +9,80 @@ import {
   normalizeHexColor,
   parseDataTableNumber,
 } from './utils.js'
+import { renderBarChartSvg, renderGroupedBarChartSvg, renderStackedBarChartSvg } from '../charts-svg/bar.js'
+import { renderDoughnutChartSvg } from '../charts-svg/doughnut.js'
+import { renderAreaChartSvg, renderLineChartSvg } from '../charts-svg/line.js'
+import { renderBubbleChartSvg, renderScatterChartSvg } from '../charts-svg/point.js'
+import { renderBoxplotSvg } from '../components/boxplot.js'
+import { renderBulletSvg } from '../components/bullet.js'
+import { renderHistogramSvg } from '../components/histogram.js'
+import { renderParetoSvg } from '../components/pareto.js'
+import { renderWaterfallSvg } from '../components/waterfall.js'
 
-export function renderReportChartHtml(chart) {
-  if (['area', 'treemap', 'funnel', 'heatmap', 'sankey'].includes(chart.chartType)) return renderReportPlotChartHtml(chart)
+// Report chart types now rendered server-side as SVG (was chart.js canvas).
+const REPORT_SVG_TYPES = new Set([
+  'bar', 'line', 'area', 'doughnut', 'scatter', 'bubble', 'grouped-bar', 'stacked-bar',
+  'histogram', 'pareto', 'waterfall', 'bullet', 'boxplot',
+])
+// Types still rendered client-side via D3/Observable Plot.
+const REPORT_D3_TYPES = new Set(['treemap', 'funnel', 'heatmap', 'sankey'])
+
+// Map a report chart to the shared SSR-SVG renderers (explicit colours so the
+// SVG is self-contained, theme via mode). valueSuffix -> unit for value labels.
+function renderReportChartSvg(chart, brand, mode) {
+  try {
+    return renderReportChartSvgInner(chart, brand, mode)
+  } catch (error) {
+    throw new Error(`report chart "${chart.chartType}" (id ${chart.id}): ${error.message}`)
+  }
+}
+
+// Report line/area carry data as points [{x,y}] (x is a label/date); the shared
+// line/area renderer wants labels[]/values[]. Derive them when points exist.
+function pointsToSeries(chart) {
+  const pts = Array.isArray(chart.points) ? chart.points : []
+  if (!pts.length) return chart
+  return {
+    ...chart,
+    labels: pts.map((p) => String(p.x)),
+    values: pts.map((p) => Number(p.y) || 0),
+  }
+}
+
+function renderReportChartSvgInner(chart, brand, mode) {
+  const c = { ...chart, unit: chart.valueSuffix || chart.unit || '' }
+  const base = { cssVariables: false, mode, brand }
+  const pal = reportChartPalette(brand).map((x) => (String(x).startsWith('#') ? x : `#${x}`))
+  switch (chart.chartType) {
+    case 'bar': return renderBarChartSvg(c, base)
+    case 'line': return renderLineChartSvg(pointsToSeries(c), base)
+    case 'area': return renderAreaChartSvg(pointsToSeries(c), base)
+    case 'doughnut': return renderDoughnutChartSvg(c, base)
+    case 'scatter': return renderScatterChartSvg(c, base)
+    case 'bubble': return renderBubbleChartSvg(c, base)
+    case 'grouped-bar': return renderGroupedBarChartSvg(c, base)
+    case 'stacked-bar': return renderStackedBarChartSvg(c, base)
+    case 'histogram': return renderHistogramSvg(c, { ...base, barColor: pal[2], barBorderColor: pal[0] })
+    case 'pareto': return renderParetoSvg(c, { ...base, barColor: pal[0], barBorderColor: pal[1], lineColor: pal[3], pointColor: pal[3] })
+    case 'waterfall': return renderWaterfallSvg(c, { ...base, positiveColor: pal[4], negativeColor: pal[5] })
+    case 'bullet': return renderBulletSvg(c, { ...base, barColor: pal[0], targetColor: pal[3] })
+    case 'boxplot': return renderBoxplotSvg(c, { ...base, boxColor: pal[0], medianColor: pal[3] })
+    default: return null
+  }
+}
+
+export function renderReportChartHtml(chart, brand = {}, mode = 'light') {
+  if (REPORT_D3_TYPES.has(chart.chartType)) return renderReportPlotChartHtml(chart)
+  if (REPORT_SVG_TYPES.has(chart.chartType)) {
+    const svg = renderReportChartSvg(chart, brand, mode)
+    if (svg) {
+      return `<div class="report-chart report-chart-${escapeAttr(chart.chartType)}">
+  ${chart.title ? `<div class="report-chart-title">${escapeHtml(chart.title)}</div>` : ''}
+  <div class="report-chart-figure">${svg}</div>
+</div>`
+    }
+  }
+  // Fallback (unknown type): legacy canvas.
   return `<div class="report-chart report-chart-${escapeAttr(chart.chartType)}">
   ${chart.title ? `<div class="report-chart-title">${escapeHtml(chart.title)}</div>` : ''}
   <div class="report-chart-stage" style="height:${chart.height}px">
@@ -393,6 +464,8 @@ function chartBoilerplate(chart, targetName = 'canvas') {
 }
 
 export function renderReportChartScript(chart, context = {}) {
+  // SVG chart types are server-rendered; they need no client-side init script.
+  if (REPORT_SVG_TYPES.has(chart.chartType)) return ''
   if (chart.chartType === 'area') return renderReportAreaChartScript(chart, context)
   if (chart.chartType === 'treemap') return renderReportTreemapChartScript(chart, context)
   if (chart.chartType === 'funnel') return renderReportFunnelChartScript(chart, context)

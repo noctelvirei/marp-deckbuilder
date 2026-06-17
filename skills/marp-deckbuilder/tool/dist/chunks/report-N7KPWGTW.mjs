@@ -6,18 +6,34 @@ const __filename = __deckbuilderFileURLToPath(import.meta.url);
 const __dirname = __deckbuilderDirname(__filename);
 import {
   require_punycode,
-  resolveResourceUrls
-} from "./chunk-KBLT5D2F.mjs";
+  resolveResourceUrls,
+  svgChartHoverScript
+} from "./chunk-DWFOHJVP.mjs";
 import {
   decodeHTML,
   expandSelfClosingComponentTags,
   load,
   splitFrontmatter
 } from "./chunk-KSE5JK4F.mjs";
-import "./chunk-DF3F57GZ.mjs";
+import {
+  svgChartCss
+} from "./chunk-DF3F57GZ.mjs";
 import "./chunk-RQ4ZKSEQ.mjs";
 import {
   normalizeResourceReference,
+  renderAreaChartSvg,
+  renderBarChartSvg,
+  renderBoxplotSvg,
+  renderBubbleChartSvg,
+  renderBulletSvg,
+  renderDoughnutChartSvg,
+  renderGroupedBarChartSvg,
+  renderHistogramSvg,
+  renderLineChartSvg,
+  renderParetoSvg,
+  renderScatterChartSvg,
+  renderStackedBarChartSvg,
+  renderWaterfallSvg,
   resolveSurfaceResourceFile
 } from "./chunk-EC3BA3LQ.mjs";
 import {
@@ -5209,8 +5225,84 @@ function normalizeAccent(value = "") {
 }
 
 // src/report-components/renderers.js
-function renderReportChartHtml(chart) {
-  if (["area", "treemap", "funnel", "heatmap", "sankey"].includes(chart.chartType)) return renderReportPlotChartHtml(chart);
+var REPORT_SVG_TYPES = /* @__PURE__ */ new Set([
+  "bar",
+  "line",
+  "area",
+  "doughnut",
+  "scatter",
+  "bubble",
+  "grouped-bar",
+  "stacked-bar",
+  "histogram",
+  "pareto",
+  "waterfall",
+  "bullet",
+  "boxplot"
+]);
+var REPORT_D3_TYPES = /* @__PURE__ */ new Set(["treemap", "funnel", "heatmap", "sankey"]);
+function renderReportChartSvg(chart, brand, mode) {
+  try {
+    return renderReportChartSvgInner(chart, brand, mode);
+  } catch (error) {
+    throw new Error(`report chart "${chart.chartType}" (id ${chart.id}): ${error.message}`);
+  }
+}
+function pointsToSeries(chart) {
+  const pts = Array.isArray(chart.points) ? chart.points : [];
+  if (!pts.length) return chart;
+  return {
+    ...chart,
+    labels: pts.map((p) => String(p.x)),
+    values: pts.map((p) => Number(p.y) || 0)
+  };
+}
+function renderReportChartSvgInner(chart, brand, mode) {
+  const c = { ...chart, unit: chart.valueSuffix || chart.unit || "" };
+  const base = { cssVariables: false, mode, brand };
+  const pal = reportChartPalette(brand).map((x) => String(x).startsWith("#") ? x : `#${x}`);
+  switch (chart.chartType) {
+    case "bar":
+      return renderBarChartSvg(c, base);
+    case "line":
+      return renderLineChartSvg(pointsToSeries(c), base);
+    case "area":
+      return renderAreaChartSvg(pointsToSeries(c), base);
+    case "doughnut":
+      return renderDoughnutChartSvg(c, base);
+    case "scatter":
+      return renderScatterChartSvg(c, base);
+    case "bubble":
+      return renderBubbleChartSvg(c, base);
+    case "grouped-bar":
+      return renderGroupedBarChartSvg(c, base);
+    case "stacked-bar":
+      return renderStackedBarChartSvg(c, base);
+    case "histogram":
+      return renderHistogramSvg(c, { ...base, barColor: pal[2], barBorderColor: pal[0] });
+    case "pareto":
+      return renderParetoSvg(c, { ...base, barColor: pal[0], barBorderColor: pal[1], lineColor: pal[3], pointColor: pal[3] });
+    case "waterfall":
+      return renderWaterfallSvg(c, { ...base, positiveColor: pal[4], negativeColor: pal[5] });
+    case "bullet":
+      return renderBulletSvg(c, { ...base, barColor: pal[0], targetColor: pal[3] });
+    case "boxplot":
+      return renderBoxplotSvg(c, { ...base, boxColor: pal[0], medianColor: pal[3] });
+    default:
+      return null;
+  }
+}
+function renderReportChartHtml(chart, brand = {}, mode = "light") {
+  if (REPORT_D3_TYPES.has(chart.chartType)) return renderReportPlotChartHtml(chart);
+  if (REPORT_SVG_TYPES.has(chart.chartType)) {
+    const svg = renderReportChartSvg(chart, brand, mode);
+    if (svg) {
+      return `<div class="report-chart report-chart-${escapeAttr(chart.chartType)}">
+  ${chart.title ? `<div class="report-chart-title">${escapeHtml2(chart.title)}</div>` : ""}
+  <div class="report-chart-figure">${svg}</div>
+</div>`;
+    }
+  }
   return `<div class="report-chart report-chart-${escapeAttr(chart.chartType)}">
   ${chart.title ? `<div class="report-chart-title">${escapeHtml2(chart.title)}</div>` : ""}
   <div class="report-chart-stage" style="height:${chart.height}px">
@@ -5543,6 +5635,7 @@ function chartBoilerplate(chart, targetName = "canvas") {
   };`;
 }
 function renderReportChartScript(chart, context = {}) {
+  if (REPORT_SVG_TYPES.has(chart.chartType)) return "";
   if (chart.chartType === "area") return renderReportAreaChartScript(chart, context);
   if (chart.chartType === "treemap") return renderReportTreemapChartScript(chart, context);
   if (chart.chartType === "funnel") return renderReportFunnelChartScript(chart, context);
@@ -7270,15 +7363,20 @@ function compileReportComponents(source, options = {}) {
     validateReportBadge(badge, context);
     badgeElement.replaceWith(renderReportBadgeHtml(badge));
   });
+  const chartMode = options.theme === "dark" ? "dark" : "light";
+  let hasChart = false;
   root("report-chart").each((index, element) => {
     const chartElement = root(element);
     const chart = parseReportChart(chartElement, index);
     resolveReportChartDataset(chart, datasetRegistry, context);
     chart.id = uniqueDomId(chart.id || chart.generatedId, usedIds, "report-chart");
     validateReportChart(chart, context);
-    scripts.push(renderReportChartScript(chart, context));
-    chartElement.replaceWith(renderReportChartHtml(chart));
+    const script = renderReportChartScript(chart, { brand: options.brand });
+    if (script) scripts.push(script);
+    chartElement.replaceWith(renderReportChartHtml(chart, options.brand, chartMode));
+    hasChart = true;
   });
+  if (hasChart) scripts.push(svgChartHoverScript());
   const compiledSource = root("root").html() || source;
   return {
     source: appendReportComponentScripts(compiledSource, scripts),
@@ -8262,7 +8360,8 @@ function renderReportHtml(source, options = {}) {
   const subtitle = frontmatter.subtitle || "";
   const metadata = reportMetadata(frontmatter);
   const prepared = normalizeReportImageReferences(body);
-  const compiled = compileReportComponents(prepared, { brand, reportName: title });
+  const reportTheme = normalizeReportTheme(frontmatter.reportTheme || frontmatter.themeSurface);
+  const compiled = compileReportComponents(prepared, { brand, reportName: title, theme: reportTheme });
   const presentation = prepareReportPresentation(markdown.render(compiled.source), frontmatter);
   const content = resolveResourceUrls(presentation.content, options.resourcesDir, resolverOptions);
   const css = resolveResourceUrls(reportCss(brand, presentation.theme), options.resourcesDir, resolverOptions);
@@ -9387,6 +9486,17 @@ body {
   height: 100%;
   overflow: hidden;
 }
+
+.report-chart-figure {
+  width: 100%;
+}
+
+.report-chart-figure .dsvg {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+${svgChartCss()}
 
 .report-chart-floating-tooltip {
   position: absolute;

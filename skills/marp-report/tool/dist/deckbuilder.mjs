@@ -46,7 +46,7 @@ async function buildCommand(argv) {
   const htmlAssets = argv.htmlAssets || "inline";
   let rendered;
   if (wantsHtml) {
-    const { renderDeckHtml } = await import("./chunks/render-V4WMC2P5.mjs");
+    const { renderDeckHtml } = await import("./chunks/render-HLZ3AXYT.mjs");
     rendered = renderDeckHtml(deck, {
       resourcesDir,
       definitions,
@@ -87,7 +87,7 @@ async function reportCommand(argv) {
   }
   const [{ loadDefinitions }, { renderReportHtml }, { injectReportVendorScripts }] = await Promise.all([
     import("./chunks/brand-CMLFAISO.mjs"),
-    import("./chunks/report-G7Z72ECU.mjs"),
+    import("./chunks/report-N7KPWGTW.mjs"),
     import("./chunks/report-vendors-54ZQO4TB.mjs")
   ]);
   const inputPath = path.resolve(argv.input);
