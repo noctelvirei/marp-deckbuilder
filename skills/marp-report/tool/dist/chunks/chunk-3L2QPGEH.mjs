@@ -24,7 +24,7 @@ import {
   renderWaterfallSvg,
   splitCsv,
   treemapRects
-} from "./chunk-N36IMZDM.mjs";
+} from "./chunk-NMLKKXNX.mjs";
 import {
   __commonJS,
   __export,
@@ -47927,6 +47927,66 @@ function renderStackedBarChartSvg(chart, options = {}) {
   );
 }
 
+// src/charts-svg/doughnut.js
+var W2 = 760;
+var H2 = 350;
+function arcPath(cx, cy, R, r, a0, a1) {
+  const large = a1 - a0 > Math.PI ? 1 : 0;
+  const p = (rad, a) => [round(cx + rad * Math.cos(a)), round(cy + rad * Math.sin(a))];
+  const [x0o, y0o] = p(R, a0);
+  const [x1o, y1o] = p(R, a1);
+  const [x1i, y1i] = p(r, a1);
+  const [x0i, y0i] = p(r, a0);
+  return `M ${x0o} ${y0o} A ${R} ${R} 0 ${large} 1 ${x1o} ${y1o} L ${x1i} ${y1i} A ${r} ${r} 0 ${large} 0 ${x0i} ${y0i} Z`;
+}
+function renderDoughnutChartSvg(chart, options = {}) {
+  const mode = options.mode === "light" ? "light" : "dark";
+  const theme = DEFAULT_THEME[mode];
+  const useVars = options.cssVariables !== false;
+  const tc = (name, fallback) => useVars ? `var(--deck-chart-${name}, ${fallback})` : fallback;
+  const palette = resolvePalette(options.brand, options.palette);
+  const labels = chart.labels || [];
+  const values = (chart.values || []).map((v) => Number(v) || 0);
+  const total = values.reduce((s, v) => s + v, 0);
+  const cx = 200;
+  const cy = 178;
+  const R = 132;
+  const r = 82;
+  const gap = 0.012;
+  let cursor = -Math.PI / 2;
+  const slices = values.map((v, i) => {
+    const frac = total > 0 ? v / total : 0;
+    const a0 = cursor + gap / 2;
+    const a1 = cursor + frac * Math.PI * 2 - gap / 2;
+    cursor += frac * Math.PI * 2;
+    const color = normHex(palette[i % palette.length], SVG_PALETTE[i % SVG_PALETTE.length]);
+    const pct = total > 0 ? Math.round(frac * 100) : 0;
+    const tip = `${labels[i] || ""}: ${formatNumber(v)} \xB7 ${pct}%`;
+    if (a1 <= a0) return "";
+    return `<path class="dsvg-slice" data-deck-tip="${escapeAttr(tip)}" d="${arcPath(cx, cy, R, r, a0, a1)}" style="fill:${color}"/>`;
+  }).join("\n  ");
+  const keyX = 410;
+  const rowH = Math.min(54, (H2 - 40) / Math.max(1, labels.length));
+  const startY = (H2 - rowH * labels.length) / 2 + rowH / 2;
+  const key = labels.map((label, i) => {
+    const v = values[i] || 0;
+    const pct = total > 0 ? Math.round(v / total * 100) : 0;
+    const color = normHex(palette[i % palette.length], SVG_PALETTE[i % SVG_PALETTE.length]);
+    const y = startY + i * rowH;
+    return `<g class="dsvg-slice" data-deck-tip="${escapeAttr(`${label}: ${formatNumber(v)} \xB7 ${pct}%`)}">
+      <rect x="${keyX}" y="${round(y - 7)}" width="13" height="13" rx="3" style="fill:${color}"/>
+      <text class="dsvg-key-name" x="${keyX + 22}" y="${round(y - 1)}" style="fill:${tc("heading", theme.heading)}">${escapeHtml(label)}</text>
+      <text class="dsvg-key-value" x="${keyX + 22}" y="${round(y + 15)}" style="fill:${tc("muted", theme.muted)}">${escapeHtml(formatNumber(v))} \xB7 ${pct}%</text>
+    </g>`;
+  }).join("\n  ");
+  return `<svg class="dsvg dsvg-doughnut" data-deck-svgchart="doughnut" viewBox="0 0 ${W2} ${H2}" preserveAspectRatio="xMidYMid meet" role="img" aria-label="${escapeAttr(chart.title || "Doughnut chart")}">
+  ${slices}
+  <text class="dsvg-doughnut-cap" x="${cx}" y="${cy - 8}" text-anchor="middle" style="fill:${tc("muted", theme.muted)}">Total</text>
+  <text class="dsvg-doughnut-total" x="${cx}" y="${cy + 20}" text-anchor="middle" style="fill:${tc("heading", theme.heading)}">${escapeHtml(formatNumber(total))}</text>
+  ${key}
+</svg>`;
+}
+
 // src/charts-svg/line.js
 function renderLineChartSvg(chart, options = {}) {
   const mode = options.mode === "light" ? "light" : "dark";
@@ -47993,8 +48053,8 @@ function renderAreaChartSvg(chart, options = {}) {
 }
 
 // src/charts-svg/point.js
-var W2 = 760;
-var H2 = 350;
+var W3 = 760;
+var H3 = 350;
 function renderPointSvg(chart, options = {}) {
   const bubble = options.bubble === true;
   const mode = options.mode === "light" ? "light" : "dark";
@@ -48008,8 +48068,8 @@ function renderPointSvg(chart, options = {}) {
   const ys = pts.map((p) => Number(p.y));
   const [minX, maxX] = niceExtent(Math.min(...xs, 0), Math.max(...xs, 1), { pad: 0.1 });
   const [minY, maxY] = niceExtent(Math.min(...ys, 0), Math.max(...ys, 1), { pad: 0.1 });
-  const plotW = W2 - margin.left - margin.right;
-  const plotH = H2 - margin.top - margin.bottom;
+  const plotW = W3 - margin.left - margin.right;
+  const plotH = H3 - margin.top - margin.bottom;
   const xFor = (v) => margin.left + (v - minX) / (maxX - minX) * plotW;
   const yFor = (v) => margin.top + plotH - (v - minY) / (maxY - minY) * plotH;
   const maxR = Math.max(...pts.map((p) => Number(p.r) || 0), 1);
@@ -48019,7 +48079,7 @@ function renderPointSvg(chart, options = {}) {
     ...xTicks.map((t) => {
       const x = xFor(t);
       return `<line class="dsvg-grid" x1="${round(x)}" y1="${margin.top}" x2="${round(x)}" y2="${round(margin.top + plotH)}" style="stroke:${tc("grid", theme.grid)}"/>
-    <text class="dsvg-xtick" x="${round(x)}" y="${H2 - 30}" text-anchor="middle" style="fill:${tc("muted", theme.muted)}">${escapeHtml(formatNumber(t))}</text>`;
+    <text class="dsvg-xtick" x="${round(x)}" y="${H3 - 30}" text-anchor="middle" style="fill:${tc("muted", theme.muted)}">${escapeHtml(formatNumber(t))}</text>`;
     }),
     ...yTicks.map((t) => {
       const y = yFor(t);
@@ -48042,12 +48102,12 @@ function renderPointSvg(chart, options = {}) {
   }).join("\n  ");
   const xAxisLabel = chart.xAxisLabel || "X";
   const yAxisLabel = chart.yAxisLabel || "Y";
-  return `<svg class="dsvg dsvg-point" data-deck-svgchart="${bubble ? "bubble" : "scatter"}" viewBox="0 0 ${W2} ${H2}" preserveAspectRatio="xMidYMid meet" role="img" aria-label="${escapeAttr(chart.title || (bubble ? "Bubble chart" : "Scatter chart"))}">
+  return `<svg class="dsvg dsvg-point" data-deck-svgchart="${bubble ? "bubble" : "scatter"}" viewBox="0 0 ${W3} ${H3}" preserveAspectRatio="xMidYMid meet" role="img" aria-label="${escapeAttr(chart.title || (bubble ? "Bubble chart" : "Scatter chart"))}">
   ${grid}
   <line class="dsvg-axis" x1="${margin.left}" y1="${round(margin.top + plotH)}" x2="${round(margin.left + plotW)}" y2="${round(margin.top + plotH)}" style="stroke:${tc("axis", theme.axis)}"/>
   <line class="dsvg-axis" x1="${margin.left}" y1="${margin.top}" x2="${margin.left}" y2="${round(margin.top + plotH)}" style="stroke:${tc("axis", theme.axis)}"/>
   ${dots}
-  <text class="dsvg-axislabel" x="${round(margin.left + plotW / 2)}" y="${H2 - 6}" text-anchor="middle" style="fill:${tc("muted", theme.muted)}">${escapeHtml(xAxisLabel)}</text>
+  <text class="dsvg-axislabel" x="${round(margin.left + plotW / 2)}" y="${H3 - 6}" text-anchor="middle" style="fill:${tc("muted", theme.muted)}">${escapeHtml(xAxisLabel)}</text>
   <text class="dsvg-axislabel" transform="translate(16 ${round(margin.top + plotH / 2)}) rotate(-90)" text-anchor="middle" style="fill:${tc("muted", theme.muted)}">${escapeHtml(yAxisLabel)}</text>
 </svg>`;
 }
@@ -48182,23 +48242,9 @@ function renderParetoChartHtml(chart) {
 </figure>`;
 }
 function renderRadarChartHtml(chart) {
-  const chartConfig = {
-    type: "radar",
-    labels: chart.labels,
-    values: chart.values,
-    series: chart.series || chart.title || "Series 1",
-    title: chart.title || ""
-  };
   return `<figure class="deck-chart deck-chart-radar">
   ${chart.title ? `<figcaption>${escapeHtml(chart.title)}</figcaption>` : ""}
-  <div class="deck-chart-js" data-deck-chart-type="radar">
-    <div class="deck-chart-js-frame">
-      <canvas class="deck-chart-js-canvas" data-deck-chartjs="radar" data-deck-chart-config="${escapeAttr(JSON.stringify(chartConfig))}" role="img" aria-label="${escapeAttr(chart.title || "Radar chart")}"></canvas>
-    </div>
-    <div class="deck-chart-js-fallback">
-      ${renderRadarSvg(chart, { cssVariables: true })}
-    </div>
-  </div>
+  ${renderRadarSvg(chart, { cssVariables: true })}
 </figure>`;
 }
 function renderSankeyChartHtml(chart) {
@@ -48309,45 +48355,9 @@ function renderBubbleChartHtml(chart) {
 </figure>`;
 }
 function renderDoughnutChartHtml(chart) {
-  const chartConfig = {
-    type: "doughnut",
-    labels: chart.labels,
-    values: chart.values,
-    series: chart.series || chart.title || "Series 1",
-    title: chart.title || ""
-  };
-  const total = chart.values.reduce((sum, value) => sum + value, 0);
-  let cursor = 0;
-  const stops = chart.values.map((value, index2) => {
-    const start = cursor;
-    cursor += value / total * 100;
-    return `${chartPalette[index2 % chartPalette.length]} ${start.toFixed(3)}% ${cursor.toFixed(3)}%`;
-  });
-  const rows = chart.labels.map((label, index2) => {
-    const value = chart.values[index2] ?? 0;
-    const percent = total > 0 ? value / total * 100 : 0;
-    return `<div class="deck-chart-doughnut-row deck-chart-series-${index2 % 6}">
-  <span class="deck-chart-legend-swatch"></span>
-  <span class="deck-chart-label">${escapeHtml(label)}</span>
-  <strong>${escapeHtml(formatNumber(value))}</strong>
-  <span class="deck-chart-doughnut-percent">${escapeHtml(`${Math.round(percent)}%`)}</span>
-</div>`;
-  }).join("\n");
   return `<figure class="deck-chart deck-chart-doughnut">
   ${chart.title ? `<figcaption>${escapeHtml(chart.title)}</figcaption>` : ""}
-  <div class="deck-chart-js" data-deck-chart-type="doughnut">
-    <div class="deck-chart-js-frame">
-      <canvas class="deck-chart-js-canvas" data-deck-chartjs="doughnut" data-deck-chart-config="${escapeAttr(JSON.stringify(chartConfig))}" role="img" aria-label="${escapeAttr(chart.title || "Doughnut chart")}"></canvas>
-    </div>
-    <div class="deck-chart-js-fallback">
-      <div class="deck-chart-doughnut-layout">
-        <div class="deck-chart-doughnut-ring" style="background: conic-gradient(${stops.join(", ")})">
-          <span>Total<strong>${escapeHtml(formatNumber(total))}</strong></span>
-        </div>
-        <div class="deck-chart-doughnut-legend">${rows}</div>
-      </div>
-    </div>
-  </div>
+  ${renderDoughnutChartSvg({ ...chart, title: "" }, { cssVariables: true })}
 </figure>`;
 }
 function renderGroupedBarChartHtml(chart) {

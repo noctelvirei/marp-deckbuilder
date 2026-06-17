@@ -1,5 +1,6 @@
 import { escapeAttr, escapeHtml, formatNumber } from './utils.js'
 import { renderBarChartSvg, renderGroupedBarChartSvg, renderStackedBarChartSvg } from '../charts-svg/bar.js'
+import { renderDoughnutChartSvg } from '../charts-svg/doughnut.js'
 import { renderAreaChartSvg, renderLineChartSvg } from '../charts-svg/line.js'
 import { renderBubbleChartSvg, renderScatterChartSvg } from '../charts-svg/point.js'
 import { renderBoxplotSvg } from './boxplot.js'
@@ -145,23 +146,10 @@ function renderParetoChartHtml(chart) {
 }
 
 function renderRadarChartHtml(chart) {
-  const chartConfig = {
-    type: 'radar',
-    labels: chart.labels,
-    values: chart.values,
-    series: chart.series || chart.title || 'Series 1',
-    title: chart.title || '',
-  }
+  // renderRadarSvg is already a complete themed SVG radar; promote it to primary.
   return `<figure class="deck-chart deck-chart-radar">
   ${chart.title ? `<figcaption>${escapeHtml(chart.title)}</figcaption>` : ''}
-  <div class="deck-chart-js" data-deck-chart-type="radar">
-    <div class="deck-chart-js-frame">
-      <canvas class="deck-chart-js-canvas" data-deck-chartjs="radar" data-deck-chart-config="${escapeAttr(JSON.stringify(chartConfig))}" role="img" aria-label="${escapeAttr(chart.title || 'Radar chart')}"></canvas>
-    </div>
-    <div class="deck-chart-js-fallback">
-      ${renderRadarSvg(chart, { cssVariables: true })}
-    </div>
-  </div>
+  ${renderRadarSvg(chart, { cssVariables: true })}
 </figure>`
 }
 
@@ -300,48 +288,9 @@ function renderBubbleChartHtml(chart) {
 }
 
 function renderDoughnutChartHtml(chart) {
-  const chartConfig = {
-    type: 'doughnut',
-    labels: chart.labels,
-    values: chart.values,
-    series: chart.series || chart.title || 'Series 1',
-    title: chart.title || '',
-  }
-  const total = chart.values.reduce((sum, value) => sum + value, 0)
-  let cursor = 0
-  const stops = chart.values.map((value, index) => {
-    const start = cursor
-    cursor += (value / total) * 100
-    return `${chartPalette[index % chartPalette.length]} ${start.toFixed(3)}% ${cursor.toFixed(3)}%`
-  })
-  const rows = chart.labels
-    .map((label, index) => {
-      const value = chart.values[index] ?? 0
-      const percent = total > 0 ? (value / total) * 100 : 0
-      return `<div class="deck-chart-doughnut-row deck-chart-series-${index % 6}">
-  <span class="deck-chart-legend-swatch"></span>
-  <span class="deck-chart-label">${escapeHtml(label)}</span>
-  <strong>${escapeHtml(formatNumber(value))}</strong>
-  <span class="deck-chart-doughnut-percent">${escapeHtml(`${Math.round(percent)}%`)}</span>
-</div>`
-    })
-    .join('\n')
-
   return `<figure class="deck-chart deck-chart-doughnut">
   ${chart.title ? `<figcaption>${escapeHtml(chart.title)}</figcaption>` : ''}
-  <div class="deck-chart-js" data-deck-chart-type="doughnut">
-    <div class="deck-chart-js-frame">
-      <canvas class="deck-chart-js-canvas" data-deck-chartjs="doughnut" data-deck-chart-config="${escapeAttr(JSON.stringify(chartConfig))}" role="img" aria-label="${escapeAttr(chart.title || 'Doughnut chart')}"></canvas>
-    </div>
-    <div class="deck-chart-js-fallback">
-      <div class="deck-chart-doughnut-layout">
-        <div class="deck-chart-doughnut-ring" style="background: conic-gradient(${stops.join(', ')})">
-          <span>Total<strong>${escapeHtml(formatNumber(total))}</strong></span>
-        </div>
-        <div class="deck-chart-doughnut-legend">${rows}</div>
-      </div>
-    </div>
-  </div>
+  ${renderDoughnutChartSvg({ ...chart, title: '' }, { cssVariables: true })}
 </figure>`
 }
 

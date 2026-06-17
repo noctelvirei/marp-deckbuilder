@@ -8,7 +8,7 @@ import {
   buildMarpMarkdown,
   getAnimation,
   load
-} from "./chunk-RE5TDKEQ.mjs";
+} from "./chunk-3L2QPGEH.mjs";
 import {
   require_node
 } from "./chunk-MGQWBMZO.mjs";
@@ -21,7 +21,7 @@ import {
   resolveResourceFile,
   resolveSurfaceResourceFile,
   resourceToDataUri
-} from "./chunk-N36IMZDM.mjs";
+} from "./chunk-NMLKKXNX.mjs";
 import {
   __commonJS,
   __require,
@@ -136406,6 +136406,12 @@ function svgChartCss() {
   .dsvg-point:hover > circle { stroke-width: 2.5; }
   .dsvg-point-label { font-size: 11.5px; font-weight: 600; }
   .dsvg-axislabel { font-size: 12.5px; font-weight: 600; }
+  .dsvg-slice { cursor: default; transition: opacity .12s ease; }
+  .dsvg-slice:hover { opacity: 0.82; }
+  .dsvg-doughnut-cap { font-size: 13px; font-weight: 500; }
+  .dsvg-doughnut-total { font-size: 26px; font-weight: 700; }
+  .dsvg-key-name { font-size: 14px; font-weight: 600; }
+  .dsvg-key-value { font-size: 12.5px; font-weight: 500; }
   .dsvg-marker { cursor: default; }
   .dsvg-marker:hover .dsvg-halo { opacity: 0.4; r: 11; }
   .dsvg-marker:hover .dsvg-dot { r: 6; }

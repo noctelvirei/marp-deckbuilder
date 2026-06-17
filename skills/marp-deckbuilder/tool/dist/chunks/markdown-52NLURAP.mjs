@@ -5,25 +5,20 @@ const require = __deckbuilderCreateRequire(import.meta.url);
 const __filename = __deckbuilderFileURLToPath(import.meta.url);
 const __dirname = __deckbuilderDirname(__filename);
 import {
-  brandBackgroundCss,
-  brandLogoCss,
-  brandSurfaceCss,
-  htmlDocument,
-  renderDeckHtml,
-  resolveResourceUrls,
-  shouldSkipHtml
-} from "./chunk-H63BJ5FV.mjs";
-import "./chunk-RE5TDKEQ.mjs";
-import "./chunk-MGQWBMZO.mjs";
-import "./chunk-RQ4ZKSEQ.mjs";
-import "./chunk-N36IMZDM.mjs";
+  buildMarpMarkdown,
+  extractDirectives,
+  parseDeckMarkdown,
+  parseSlide,
+  splitFrontmatter,
+  splitSlides
+} from "./chunk-3L2QPGEH.mjs";
+import "./chunk-NMLKKXNX.mjs";
 import "./chunk-FUPIT6VP.mjs";
 export {
-  brandBackgroundCss,
-  brandLogoCss,
-  brandSurfaceCss,
-  htmlDocument,
-  renderDeckHtml,
-  resolveResourceUrls,
-  shouldSkipHtml
+  buildMarpMarkdown,
+  extractDirectives,
+  parseDeckMarkdown,
+  parseSlide,
+  splitFrontmatter,
+  splitSlides
 };

@@ -8,6 +8,8 @@ import { writeFileSync } from 'node:fs'
 import { renderLineChartSvg, renderAreaChartSvg } from '../src/charts-svg/line.js'
 import { renderBarChartSvg, renderGroupedBarChartSvg, renderStackedBarChartSvg } from '../src/charts-svg/bar.js'
 import { renderScatterChartSvg, renderBubbleChartSvg } from '../src/charts-svg/point.js'
+import { renderDoughnutChartSvg } from '../src/charts-svg/doughnut.js'
+import { renderRadarSvg } from '../src/components/radar.js'
 import { svgChartCss } from '../src/charts-svg/styles.js'
 import { svgChartHoverScript } from '../src/charts-svg/hover.js'
 
@@ -28,6 +30,8 @@ const grouped = { title: 'Channel mix by quarter', labels: ['Q1', 'Q2', 'Q3', 'Q
 const stacked = { title: 'Volume by channel', labels: ['Q1', 'Q2', 'Q3', 'Q4'], seriesNames: ['Digital', 'Branch', 'Paper'], matrix: [[120, 160, 190, 240], [80, 70, 65, 60], [40, 35, 30, 25]] }
 const scatterData = { title: 'Impact vs effort', xAxisLabel: 'Effort', yAxisLabel: 'Impact', points: [{ x: 2, y: 8, label: 'Auto-verify' }, { x: 5, y: 9, label: 'E-sign' }, { x: 7, y: 4, label: 'Legacy port' }, { x: 3, y: 6, label: 'SMS' }, { x: 8, y: 7, label: 'Co-browse' }, { x: 4, y: 3, label: 'Manual QA' }] }
 const bubbleData = { title: 'Impact by effort (size = reach)', xAxisLabel: 'Effort', yAxisLabel: 'Impact', points: [{ x: 2, y: 8, r: 40, label: 'Auto-verify' }, { x: 5, y: 9, r: 80, label: 'E-sign' }, { x: 7, y: 4, r: 25, label: 'Legacy' }, { x: 3, y: 6, r: 55, label: 'SMS' }, { x: 8, y: 7, r: 70, label: 'Co-browse' }] }
+const doughnutData = { title: 'Case mix by channel', labels: ['Digital', 'Branch', 'Contact centre', 'Paper'], values: [5200, 2100, 1400, 800] }
+const radarData = { title: 'Capability coverage', labels: ['Speed', 'Accuracy', 'Coverage', 'Cost', 'CSAT'], values: [8, 6, 7, 5, 9] }
 
 const darkTiles = [
   tile('line — dark', renderLineChartSvg(completion, { mode: 'dark' })),
@@ -38,6 +42,8 @@ const darkTiles = [
   tile('stacked-bar — dark', renderStackedBarChartSvg(stacked, { mode: 'dark' })),
   tile('scatter — dark', renderScatterChartSvg(scatterData, { mode: 'dark' })),
   tile('bubble — dark', renderBubbleChartSvg(bubbleData, { mode: 'dark' })),
+  tile('doughnut — dark', renderDoughnutChartSvg(doughnutData, { mode: 'dark' })),
+  tile('radar — dark', renderRadarSvg(radarData, { mode: 'dark', cssVariables: false })),
 ].join('\n')
 
 const lightTiles = [

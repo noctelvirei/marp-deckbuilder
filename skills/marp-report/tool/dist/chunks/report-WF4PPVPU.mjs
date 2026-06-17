@@ -7,19 +7,19 @@ const __dirname = __deckbuilderDirname(__filename);
 import {
   require_punycode,
   resolveResourceUrls
-} from "./chunk-H63BJ5FV.mjs";
+} from "./chunk-ZR4GGEH3.mjs";
 import {
   decodeHTML,
   expandSelfClosingComponentTags,
   load,
   splitFrontmatter
-} from "./chunk-RE5TDKEQ.mjs";
+} from "./chunk-3L2QPGEH.mjs";
 import "./chunk-MGQWBMZO.mjs";
 import "./chunk-RQ4ZKSEQ.mjs";
 import {
   normalizeResourceReference,
   resolveSurfaceResourceFile
-} from "./chunk-N36IMZDM.mjs";
+} from "./chunk-NMLKKXNX.mjs";
 import {
   __export,
   __toESM

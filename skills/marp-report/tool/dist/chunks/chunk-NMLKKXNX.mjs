@@ -1132,7 +1132,7 @@ function renderRadarSvg(chart, options = {}) {
     <text x="0" y="-12" text-anchor="middle">${escapeHtml(formatNumber(value))}</text>
   </g>`;
   }).join("\n  ");
-  return `<svg class="deck-chart-radar-svg" viewBox="0 0 ${geometry.width} ${geometry.height}" role="img" aria-label="${escapeAttr(chart.title || "Radar chart")}">
+  return `<svg class="dsvg deck-chart-radar-svg" data-deck-svgchart="radar" viewBox="0 0 ${geometry.width} ${geometry.height}" role="img" aria-label="${escapeAttr(chart.title || "Radar chart")}">
   <style>
     .deck-radar-grid { fill: none; stroke: ${color("grid")}; stroke-width: 1.4; }
     .deck-radar-shape { fill: ${color("fill")}; stroke: ${color("stroke")}; stroke-width: 4; stroke-linejoin: round; }
