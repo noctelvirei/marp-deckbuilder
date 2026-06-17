@@ -420,6 +420,12 @@ section.light .deck-chart {
   --deck-chart-value: #234a7a;
 }
 ${svgChartCss()}
+/* Cap SSR-SVG charts to the same box the old canvas frame used so they sit
+   between header and nav instead of overflowing (preserveAspectRatio letterboxes). */
+.deck-chart .dsvg {
+  width: 100%;
+  height: min(38vh, 340px);
+}
 
 section.light h1,
 section.light h2,
