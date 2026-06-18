@@ -33,7 +33,7 @@ AskUserQuestion({
 
 2. Read the user's source material and identify the deck purpose, audience, narrative arc, and selected output format.
 3. Create one presentation folder for the request. Prefer `Documents/Presentations/YYYY-MM-DD/<deck-title-slug>/` when the user has not specified a location.
-4. Draft `deck.md` in that folder using Marp-style slides separated by `---`.
+4. Plan the narrative arc and get **outline sign-off** (see *Narrative and quality* below) before writing any slides. Then read `examples/example.md` to match its quality bar and draft `deck.md` in that folder using Marp-style slides separated by `---`.
 5. Use supported deck components for native PPTX output: `deck-slide`, `deck-divider`, `deck-stat-grid`, `deck-card-grid`, `deck-chart`, `deck-signal-bars`, `deck-signal-board`, `deck-orchestration`, `deck-funnel`, `deck-metric-trend`, `deck-heatmap`, `deck-impact-radar`, `deck-treemap`, `deck-journey-map`, `deck-journey-path`, `deck-comparison`, `deck-swimlane`, `deck-proof`, `deck-logo-wall`, `deck-next-steps`, `deck-takeaway`, `deck-close`, and the executive layout components (`deck-exec-title`, `deck-exec-rows`, `deck-exec-cards`, `deck-exec-timeline`, `deck-exec-metrics`).
 6. Build the deck from this skill folder, passing the selected output:
 
@@ -44,6 +44,57 @@ node scripts/build-deck.mjs <output-folder>/deck.md --out-dir <output-folder> --
 ```
 
 7. Return only the generated file types the user selected, plus the source `.md` and `resources/` folder if one was requested. By default the HTML is self-contained because `resource:` assets are embedded as `data:` URLs.
+
+## Narrative and quality
+
+A deck that renders cleanly is not the same as a deck that lands. These rules are what separate the two; apply them on every deck, not only when asked.
+
+**Read an exemplar first.** Before writing slides, read `examples/example.md` and match its bar — title voice, density, component variety, and pacing. It is the reference for what good looks like; do not author from a blank page.
+
+**Slide titles carry the argument.** Write every content-slide title as a *claim*, not a label. "Manual handoffs cost 3.8 days per case." — not "Process Overview." The eyebrow names the section, the title makes the point, the takeaway states the evidence-backed conclusion. If a title could be a chapter heading in a textbook, rewrite it.
+
+**Plan a deliberate arc.** A deck argues from context to conclusion — typically Context → Evidence → Recommendation → Plan. Label dividers with plain business sections (`Context`, `Evidence`, `Recommendations`, `Implementation`), not `ACT 01`, unless the source material explicitly uses an act/play structure. Confirm the arc with the user before building when the source does not already imply one.
+
+**Vary the cadence.** Never use the same component type three slides in a row. Give the deck visual rhythm — a stat or exec-metric moment, then cards or rows, then proof — not a wall of identical card grids.
+
+**Choose executive vs standard components by audience:**
+
+| Situation | Use |
+|---|---|
+| Section opener, chapter title, big claim slide | `deck-exec-title` |
+| 1–2 hero numbers that ARE the entire point of the slide | `deck-exec-metrics` |
+| 3-tier strategy, architecture layers, or go-to-market motions | `deck-exec-rows` |
+| 3–4 value pillars or capability loops | `deck-exec-cards` |
+| Chronological story | `deck-exec-timeline` |
+| 3 supporting KPIs alongside content | `deck-stat-grid` |
+| 3–4 parallel recommendations or capability cards | `deck-card-grid` |
+| Customer or research evidence with named stats | `deck-proof` |
+| Process or workflow with phases | `deck-swimlane` |
+| How the product sits between channels and core systems | `deck-orchestration` |
+| Capability balance across 3–8 dimensions | `deck-chart type="radar"` |
+
+Use **executive components** (oversized type, generous whitespace) when the audience reads the slide before the speaker speaks — first-meeting pitches, exec updates, board decks. Use **standard components** when the speaker is the primary channel and slides are support — technical deep-dives, working sessions, QBRs.
+
+### Outline sign-off
+
+Before writing any slides, produce a full outline and get explicit user approval. The outline is complete only when **every** row carries all five of: slide number · eyebrow · title written as a claim · one-sentence takeaway · component type. Do not start the build until the user has approved an outline that meets that bar.
+
+### Persuasion check
+
+Before finalising `deck.md`, confirm:
+
+- Every content-slide title is a claim or argument, not a label or chapter heading.
+- At least one executive-component slide per section; not every slide is a `deck-card-grid`.
+- No slide carries more than one idea; split anything with two competing points.
+- The deck has visual rhythm, not a run of identical components.
+
+## Writing rules
+
+- Slide titles end with a period or no punctuation — never a colon or trailing dash.
+- Eyebrow labels: ALL CAPS, no period.
+- Numbers: `$23M` not `$23,000,000`; `+67 FTE` not "67 net new headcount".
+- Em-dashes: `—` not `--`. No exclamation marks.
+- One idea per slide. Simplify copy before shrinking the font.
 
 ## Authoring Guidance
 
@@ -69,7 +120,6 @@ node scripts/build-deck.mjs <output-folder>/deck.md --out-dir <output-folder> --
 - Do not write raw `<script>`, `<style>`, `<canvas>`, `<iframe>`, `<div>`, `<section>`, `<article>`, `<figure>`, `<table>`, `<img>`, raw chart containers, or raw SVG. The renderer rejects those tags.
 - Use `<deck-slide pptx-skip="true" />` or `<deck-slide html-skip="true" />` only to choose between supported structured alternatives, not to smuggle raw HTML or JavaScript into one output.
 - Use `deck-divider` for sections, `deck-stat-grid` for headline metrics, `deck-card-grid` for recommendations, `deck-comparison` for option tradeoffs, `deck-proof` for customer/research proof, and `deck-next-steps` for close-out actions.
-- Do not label section dividers as `ACT 01`, `ACT 02`, or similar unless the user or source material explicitly uses an act/play structure. Prefer plain business labels such as `Context`, `Evidence`, `Recommendations`, or `Implementation`.
 - Use `icon="filename-stem"` on `deck-card` for icons from `tool/resources/icons/`. Use `icon`, `image`, or `src` for card media; do not put raw `<img>` tags inside cards.
 - Reference assets by file name/path, not by asking the renderer to know product-specific names. `icon="face-scan"` resolves dynamically to `tool/resources/icons/face-scan.svg` or another supported image extension if present.
 - Use `deck-chart` only when the chart can be described with structured labels and values, documented point rows, raw distribution values, documented observation rows, or documented flow links. Supported types are `bar`, `line`, `area`, `waterfall`, `bullet`, `grouped-bar`, `stacked-bar`, `doughnut`, `scatter`, `bubble`, `histogram`, `boxplot`, `pareto`, `radar`, and `sankey`; ask the skill maker to add any other chart type.
