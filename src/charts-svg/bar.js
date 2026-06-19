@@ -113,7 +113,7 @@ export function renderGroupedBarChartSvg(chart, options = {}) {
   const bars = labels.map((label, li) => {
     const x0 = bandCenter(li) - groupW / 2
     return seriesNames.map((name, si) => {
-      const v = Number(matrix[si]?.[li]) || 0
+      const v = Number(matrix[li]?.[si]) || 0
       const x = x0 + si * barW
       const y = yFor(v)
       const h = baseY - y
@@ -132,7 +132,7 @@ export function renderStackedBarChartSvg(chart, options = {}) {
   const labels = chart.labels || []
   const seriesNames = chart.seriesNames || []
   const matrix = chart.matrix || []
-  const totals = labels.map((_, li) => seriesNames.reduce((s, _n, si) => s + (Number(matrix[si]?.[li]) || 0), 0))
+  const totals = labels.map((_, li) => seriesNames.reduce((s, _n, si) => s + (Number(matrix[li]?.[si]) || 0), 0))
   const [, hi] = niceExtent(0, Math.max(...totals, 0), { includeZero: true, pad: 0.16 })
   const plotW = W - margin.left - margin.right
   const plotH = H - margin.top - margin.bottom
@@ -147,7 +147,7 @@ export function renderStackedBarChartSvg(chart, options = {}) {
     const x = bandCenter(li) - barW / 2
     let cursor = 0 // running value from bottom
     const segs = seriesNames.map((name, si) => {
-      const v = Number(matrix[si]?.[li]) || 0
+      const v = Number(matrix[li]?.[si]) || 0
       if (v <= 0) return ''
       const yTop = yFor(cursor + v)
       const yBottom = yFor(cursor)
